@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>Potree Viewer</title>
+
+	<link rel="stylesheet" type="text/css" href="../build/potree/potree.css">
+	<link rel="stylesheet" type="text/css" href="../libs/jquery-ui/jquery-ui.min.css">
+	<link rel="stylesheet" type="text/css" href="../libs/openlayers3/ol.css">
+	<link rel="stylesheet" type="text/css" href="../libs/spectrum/spectrum.css">
+	<link rel="stylesheet" type="text/css" href="../libs/jstree/themes/mixed/style.css">
+</head>
+
+<body>
+	<script src="../libs/jquery/jquery-3.1.1.min.js"></script>
+	<script src="../libs/spectrum/spectrum.js"></script>
+	<script src="../libs/jquery-ui/jquery-ui.min.js"></script>
+	<script src="../libs/other/BinaryHeap.js"></script>
+	<script src="../libs/tween/tween.min.js"></script>
+	<script src="../libs/d3/d3.js"></script>
+	<script src="../libs/proj4/proj4.js"></script>
+	<script src="../libs/openlayers3/ol.js"></script>
+	<script src="../libs/i18next/i18next.js"></script>
+	<script src="../libs/jstree/jstree.js"></script>
+	<script src="../build/potree/potree.js"></script>
+	<script src="../libs/plasio/js/laslaz.js"></script>
+	<script src="../libs/shapefile/shapefile.js"></script>
+
+	<!-- INCLUDE ADDITIONAL DEPENDENCIES HERE -->
+	<!-- INCLUDE SETTINGS HERE -->
+
+	<div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 0px; ">
+		<div id="potree_render_area" style="background-image: url('../build/potree/resources/images/background.jpg');">
+		</div>
+		<div id="potree_sidebar_container"> </div>
+	</div>
+
+
+	<script>
+		let files = [
+
+			/*
+			
+						{
+							obj: `centrogeo_color_by_texture_2.obj`, name: 'centrogeo:color by text2',
+							offset_x: 0.0, offset_y: 0.0, offset_z: 41.0,
+							mtl: 'centrogeo_color_by_texture_2.mtl',
+							preload: false
+						},
+						{
+							obj: `centrogeo_color_by_parts.obj`, name: 'centrogeo:color by parts',
+							offset_x: 0.0, offset_y: 0.0, offset_z: 31.0,
+							preload: true
+						},
+						{
+							obj: `centrogeo_color_by_vertex.obj`, name: 'centrogeo:color by vertex',
+							offset_x: 0.0, offset_y: 0.0, offset_z: 21.0,
+							preload: false
+						},
+						{
+							obj: `centrogeo_color_by_texture_3.obj`, name: 'centrogeo:color by Texture',
+							mtl: 'centrogeo_color_by_texture_3.obj.mtl',
+							offset_x: 0.0, offset_y: 0.0, offset_z: 11.0,
+							preload: true
+						}
+						,
+						{
+							obj: `centrogeo_color_by_texture_3.obj`, name: 'centrogeo:color by TExture NO TExture',
+							offset_x: 0.0, offset_y: 0.0, offset_z: 11.0,
+							preload: true
+						}
+						,
+						*/
+
+			{
+				obj: `obj_assets/au_0.2ppm.obj`, name: 'au_0.2ppm',
+				mtl: `obj_assets/au_0.2ppm.mtl`,
+				position: [376059.635, 2333865.288, 200],
+				offset_x: 0.0, offset_y: 0.0, offset_z: 0.0,
+				preload: true,
+				rotation: [3.14, 3.14, 2],
+				scale: 5.0
+			},
+
+			{
+				obj: `obj_assets/1.0-2.0.obj`, name: '1.0-2.0',
+				mtl: `obj_assets/1.0-2.0.mtl`,
+				position: [376059.635, 2333865.288, 200],
+				offset_x: 0.0, offset_y: 0.0, offset_z: 0.0,
+				preload: true,
+				rotation: [3.14, 3.14, 2],
+				scale: 5.0
+			},
+
+
+
+
+			{
+				obj: `monkeyTextured.obj`, name: 'MonkeyTextured',
+				mtl: 'monkeyTextured.mtl',
+				position: [376359.635, 2333865.288, 824.567],
+				offset_x: 0.0, offset_y: 0.0, offset_z: 11.0,
+				preload: true,
+				rotation: [3.14, 3.14, 2],
+				scale: 10.0
+			},
+
+
+		];
+
+	</script>
+
+
+	<script type="module">
+
+		import * as THREE from "../libs/three.js/build/three.module.js";
+		import * as OBJUtils from "../extralibs/objtools/PotreeOBJUtils.js"
+		import * as UITools from "../extralibs/objtools/PotreeUITools.js"
+		//import GeoPackageLoader from "../src/loader/GeoPackageLoader.js"//testing to load vector files
+		import ShapefileLoader  from  "../src/loader/ShapefileLoader3D.js"//testing to load vector files
+		
+
+
+		window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
+
+		viewer.setEDLEnabled(true);
+		viewer.setFOV(60);
+		viewer.setPointBudget(1_000_000);
+		viewer.loadSettingsFromURL();
+
+		viewer.setDescription("Custom OBJ loader <a target='_blank' href='https://'>TEST</a>");
+
+		
+		viewer.loadGUI(() => {
+			viewer.setLanguage('en');
+			$("#menu_tools").next().show();
+			$("#menu_scene").next().show();
+			viewer.toggleSidebar();
+		});
+		
+		// POINTCLOUD CODE
+		let position;
+
+
+		Potree.loadPointCloud("http://localhost:8080/pointclouds/daitari/metadata.json", "daitari", e => {
+			let scene = viewer.scene;
+			let pointcloud = e.pointcloud;
+
+			let material = pointcloud.material;
+			material.size = 1;
+			material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+			material.shape = Potree.PointShape.SQUARE;
+			material.activeAttributeName = "rgba";
+
+			scene.addPointCloud(pointcloud);
+			position = [
+				scene.pointclouds[0].position.x,
+				scene.pointclouds[0].position.y,
+				scene.pointclouds[0].position.z
+			];
+			viewer.fitToScreen();
+			UITools.setNewViewPosition(position[0], position[1], position[2], 200, viewer);
+
+
+
+		});
+
+
+		///////////////////////////////////code for a custom manager used for the OBJ loader
+		let plainobj = false;
+		if (plainobj) {
+			//section for OBJloader
+			let objPosition = { x: 0, y: 0, z: 0 };
+			files.forEach(file => {
+				OBJUtils.loadOBJMTLSimple(viewer, file);
+			});
+
+		}
+
+
+
+		let delayobj = true;
+
+		if (delayobj) {
+
+
+			viewer.onGUILoaded(async () => {
+
+				OBJUtils.registerOBJActions(viewer);//aqui e especifica que funcion utilizar y como cargar
+				//parameters are passed and nodes addes as required
+				files.forEach(file => {
+					let parameters = file;
+					OBJUtils.addOBJMTLLazy(parameters);
+				});
+
+				//here to load GeoPackage
+
+				//make one with Geopackage as it is, just need to get the z value
+/*
+				{ // load a geopackage, taken from example
+					proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+					proj4.defs("pointcloud", "+proj=utm +zone=45 +datum=WGS84 +units=m +no_defs +type=crs");
+					const params = {
+						transform: proj4("WGS84", "pointcloud"),
+					};
+
+					const url = "./daitari_3dryr_dev_bench_conv.gpkg";
+					const geopackage = await GeoPackageLoader.loadUrl(url, params);
+					viewer.scene.addGeopackage(geopackage);
+				}
+
+				*/
+
+
+	///// shapefiles
+/*
+			{
+				// define the transformation from shapefile to point cloud coordinate systems
+				proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+				proj4.defs("pointcloud", "+proj=utm +zone=45 +datum=WGS84 +units=m +no_defs +type=crs");
+				let transform = proj4("WGS84", "pointcloud");
+
+				const loader = new ShapefileLoader();
+				loader.transform = transform;
+				let offset={x: -10.0, y: 0.0, z: 110.0};//applied to data, can be changed also as a transformation
+
+
+				// group all shapefile scene nodes into this node
+				const shapeNode = new THREE.Object3D();
+				viewer.scene.scene.add(shapeNode);
+
+				// load points.shp
+				const shapefile = await loader.load("./3rdyr_quarrydevelopment.shp",offset);
+				shapeNode.add(shapefile.node);
+				//styling
+				shapefile.node.traverse(node => {
+					if(node.material){
+						node.material.color.setRGB(1, 1, 0)
+					}
+				});
+			}
+
+{
+				// define the transformation from shapefile to point cloud coordinate systems
+				proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+				proj4.defs("pointcloud", "+proj=utm +zone=45 +datum=WGS84 +units=m +no_defs +type=crs");
+				let transform = proj4("WGS84", "pointcloud");
+
+				const loader = new ShapefileLoader();
+				loader.transform = transform;
+				let offset={x: -10.0, y: 0.0, z: 809.9};//applied to data, can be changed also as a transformation
+
+
+				// group all shapefile scene nodes into this node
+				const shapeNode = new THREE.Object3D();
+				viewer.scene.scene.add(shapeNode);
+
+				// load points.shp
+				const shapefile = await loader.load("./3rdyr_quarrydevelopment_.shp",offset);
+				shapeNode.add(shapefile.node);
+				//styling
+				shapefile.node.traverse(node => {
+					if(node.material){
+						node.material.color.setRGB(0, 0, 1)
+					}
+				});
+			}
+
+*/
+
+{
+				// define the transformation from shapefile to point cloud coordinate systems
+				proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+				proj4.defs("pointcloud", "+proj=utm +zone=45 +datum=WGS84 +units=m +no_defs +type=crs");
+				let transform = proj4("WGS84", "pointcloud");
+
+				const loader = new ShapefileLoader();
+				loader.transform = transform;
+				let offset={x: 0.0, y: 0.0, z: 850.0};//applied to data, can be changed also as a transformation
+
+
+				// group all shapefile scene nodes into this node
+				const shapeNode = new THREE.Object3D();
+				viewer.scene.scene.add(shapeNode);
+
+				// load points.shp
+				const shapefile = await loader.load("./2ndyr_quarrydevelopment_.shp",offset);
+				shapeNode.add(shapefile.node);
+				//styling
+				shapefile.node.traverse(node => {
+					if(node.material){
+						node.material.color.setRGB(0, 1, 0)
+					}
+				});
+			}
+
+/*
+{
+				// define the transformation from shapefile to point cloud coordinate systems
+				proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+				proj4.defs("pointcloud", "+proj=utm +zone=45 +datum=WGS84 +units=m +no_defs +type=crs");
+				let transform = proj4("WGS84", "pointcloud");
+
+				const loader = new ShapefileLoader();
+				loader.transform = transform;
+				let offset={x: -10.0, y: 0.0, z: 850.0};//applied to data, can be changed also as a transformation
+
+
+				// group all shapefile scene nodes into this node
+				const shapeNode = new THREE.Object3D();
+				viewer.scene.scene.add(shapeNode);
+
+				// load points.shp
+				const shapefile = await loader.load("./1styr_quarrydevelopment_.shp",offset);
+				shapeNode.add(shapefile.node);
+				//styling
+				shapefile.node.traverse(node => {
+					if(node.material){
+						node.material.color.setRGB(1, 0, 0)
+					}
+				});
+			}
+*/
+				
+/*
+				// load natural.shp and change colors to green
+				const shpNatural = await loader.load("./morro_bay_shp/shape/natural.shp");
+				shapeNode.add(shpNatural.node);
+
+				shpNatural.node.traverse(node => {
+					if(node.material){
+						node.material.color.setRGB(0, 1, 0)
+					}
+				});
+				
+
+				// load waterways.shp and change colors to blue
+				const shpWaterways = await loader.load("./morro_bay_shp/shape/waterways.shp");
+				shapeNode.add(shpWaterways.node);
+				window.shpWaterways = shpWaterways;
+
+				shpWaterways.node.traverse(node => {
+					if(node.material){
+						node.material.color.setRGB(0.3, 0.3, 1)
+					}
+				});
+				
+
+				// add roads.shp and change colors to yellow
+				const shpRoads = await loader.load("./morro_bay_shp/shape/roads.shp");
+				shapeNode.add(shpRoads.node);
+
+				shpRoads.node.traverse(node => {
+					if(node.material){
+						node.material.color.setRGB(1, 1, 0)
+					}
+				});
+
+
+
+
+*/
+
+
+
+
+			});
+
+
+		}
+
+
+
+		/////////////////////////////////code for ilumination
+		{ // LIGHTS
+
+			/*			const directional = new THREE.DirectionalLight(0xffffff, 1.0);
+						directional.position.set(-200, -210, 3000);
+						directional.lookAt(200, 2000, 0);
+						viewer.scene.scene.add(directional);
+			*/
+
+			const ambient = new THREE.AmbientLight(0xFFFFFF);
+			viewer.scene.scene.add(ambient);
+		}
+
+	</script>
+
+
+</body>
+
+</html>
