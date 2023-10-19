@@ -88,6 +88,8 @@ export class Annotation extends EventDispatcher {
 			editable.className="annotation-label-edit";
 			
 
+			this._title=event.target.innerText;
+
 
 			
 			editable.innerText = this._title
@@ -98,9 +100,13 @@ export class Annotation extends EventDispatcher {
 
 			//editable.on('blur', event => { console.log(blur) })
 			editable.onblur=function(event){
+
 				console.log('blur')
+				let text=editable.value;
+
+
 				let label=document.createElement('span',{class: "annotation-label"})
-				label.append(event.target.value)
+				label.append(text)
 
 				event.target.parentElement.replaceChildren(label)
 			}
