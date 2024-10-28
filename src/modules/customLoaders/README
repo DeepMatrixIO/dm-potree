@@ -1,0 +1,19 @@
+A terrain loader is created to retrieve tiled datasets
+
+Using something like Potree.loadPointCloud , a custom loader is passed down an url and it decodes its config from a json file
+
+We use the basis of POCLoader
+
+which uses PointCloudOctreeGeometry
+, which also download a json with configuration.
+
+let xhr = XHRFactory.createXMLHttpRequest();
+xhr.open('GET', url, true);
+a custom function xhr.onreadystatechange is used to process the details.
+
+and a callback to finally do something
+
+In the load method attributes are retrieved and the corresponding
+
+PointCLoudOctreeGeomerty is not a threejs Geoemntry, just a container
+Each Node is a PointCLoudOctreeGeometryNode which is an specialization of PointCLoudThreeNode
