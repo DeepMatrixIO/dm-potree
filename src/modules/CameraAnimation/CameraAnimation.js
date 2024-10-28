@@ -1,15 +1,15 @@
 
 import * as THREE from "../../../libs/three.js/build/three.module.js";
-import { EventDispatcher } from "../../EventDispatcher.js";
-import { Utils } from "../../utils.js";
 import {Line2} from "../../../libs/three.js/lines/Line2.js";
 import {LineGeometry} from "../../../libs/three.js/lines/LineGeometry.js";
 import {LineMaterial} from "../../../libs/three.js/lines/LineMaterial.js";
+import {EventDispatcher} from "../../EventDispatcher.js";
+import {Utils} from "../../utils.js";
 
 
-class ControlPoint{
+class ControlPoint {
 
-	constructor(){
+	constructor() {
 		this.position = new THREE.Vector3(0, 0, 0);
 		this.target = new THREE.Vector3(0, 0, 0);
 		this.positionHandle = null;
@@ -20,18 +20,19 @@ class ControlPoint{
 
 
 
-export class CameraAnimation extends EventDispatcher{
+export class CameraAnimation extends EventDispatcher {
 
-	constructor(viewer){
+	constructor(viewer) {
 		super();
-		
+
 		this.viewer = viewer;
 
 		this.selectedElement = null;
 
 		this.controlPoints = [];
 
-		this.uuid = THREE.Math.generateUUID();
+		//this.uuid = THREE.Math.generateUUID();
+		this.uuid = THREE.MathUtils.generateUUID();
 
 		this.node = new THREE.Object3D();
 		this.node.name = "camera animation";
@@ -44,14 +45,14 @@ export class CameraAnimation extends EventDispatcher{
 		this.duration = 5;
 		this.t = 0;
 		// "centripetal", "chordal", "catmullrom"
-		this.curveType = "centripetal" 
+		this.curveType = "centripetal"
 		this.visible = true;
 
 		this.createUpdateHook();
 		this.createPath();
 	}
 
-	static defaultFromView(viewer){
+	static defaultFromView(viewer) {
 		const animation = new CameraAnimation(viewer);
 
 		const camera = viewer.scene.getActiveCamera();
@@ -75,7 +76,7 @@ export class CameraAnimation extends EventDispatcher{
 		const angle = Utils.computeAzimuth(camera.position, target);
 
 		const n = 5;
-		for(let i = 0; i < n; i++){
+		for (let i = 0; i < n; i++) {
 			let u = 1.5 * Math.PI * (i / n) + angle;
 
 			const dx = r * Math.cos(u);
@@ -101,7 +102,7 @@ export class CameraAnimation extends EventDispatcher{
 		return animation;
 	}
 
-	createUpdateHook(){
+	createUpdateHook() {
 		const viewer = this.viewer;
 
 		viewer.addEventListener("update", () => {
@@ -111,21 +112,21 @@ export class CameraAnimation extends EventDispatcher{
 
 			this.node.visible = this.visible;
 
-			for(const cp of this.controlPoints){
-				
+			for (const cp of this.controlPoints) {
+
 				{ // position
 					const projected = cp.position.clone().project(camera);
 
 					const visible = this.visible && (projected.z < 1 && projected.z > -1);
 
-					if(visible){
+					if (visible) {
 						const x = width * (projected.x * 0.5 + 0.5);
 						const y = height - height * (projected.y * 0.5 + 0.5);
 
 						cp.positionHandle.svg.style.left = x - cp.positionHandle.svg.clientWidth / 2;
 						cp.positionHandle.svg.style.top = y - cp.positionHandle.svg.clientHeight / 2;
 						cp.positionHandle.svg.style.display = "";
-					}else{
+					} else {
 						cp.positionHandle.svg.style.display = "none";
 					}
 				}
@@ -135,14 +136,14 @@ export class CameraAnimation extends EventDispatcher{
 
 					const visible = this.visible && (projected.z < 1 && projected.z > -1);
 
-					if(visible){
+					if (visible) {
 						const x = width * (projected.x * 0.5 + 0.5);
 						const y = height - height * (projected.y * 0.5 + 0.5);
 
 						cp.targetHandle.svg.style.left = x - cp.targetHandle.svg.clientWidth / 2;
 						cp.targetHandle.svg.style.top = y - cp.targetHandle.svg.clientHeight / 2;
 						cp.targetHandle.svg.style.display = "";
-					}else{
+					} else {
 						cp.targetHandle.svg.style.display = "none";
 					}
 				}
@@ -167,16 +168,16 @@ export class CameraAnimation extends EventDispatcher{
 		});
 	}
 
-	createControlPoint(index){
+	createControlPoint(index) {
 
-		if(index === undefined){
+		if (index === undefined) {
 			index = this.controlPoints.length;
 		}
 
 		const cp = new ControlPoint();
 
 
-		if(this.controlPoints.length >= 2 && index === 0){
+		if (this.controlPoints.length >= 2 && index === 0) {
 			const cp1 = this.controlPoints[0];
 			const cp2 = this.controlPoints[1];
 
@@ -185,7 +186,7 @@ export class CameraAnimation extends EventDispatcher{
 
 			const tDir = cp1.target.clone().sub(cp2.target).multiplyScalar(0.5);
 			cp.target.copy(cp1.target).add(tDir);
-		}else if(this.controlPoints.length >= 2 && index === this.controlPoints.length){
+		} else if (this.controlPoints.length >= 2 && index === this.controlPoints.length) {
 			const cp1 = this.controlPoints[this.controlPoints.length - 2];
 			const cp2 = this.controlPoints[this.controlPoints.length - 1];
 
@@ -194,7 +195,7 @@ export class CameraAnimation extends EventDispatcher{
 
 			const tDir = cp2.target.clone().sub(cp1.target).multiplyScalar(0.5);
 			cp.target.copy(cp2.target).add(tDir);
-		}else if(this.controlPoints.length >= 2){
+		} else if (this.controlPoints.length >= 2) {
 			const cp1 = this.controlPoints[index - 1];
 			const cp2 = this.controlPoints[index];
 
@@ -218,7 +219,7 @@ export class CameraAnimation extends EventDispatcher{
 		return cp;
 	}
 
-	removeControlPoint(cp){
+	removeControlPoint(cp) {
 		this.controlPoints = this.controlPoints.filter(_cp => _cp !== cp);
 
 		this.dispatchEvent({
@@ -232,17 +233,17 @@ export class CameraAnimation extends EventDispatcher{
 		// TODO destroy cp
 	}
 
-	createPath(){
+	createPath() {
 
 		{ // position
 			const geometry = new LineGeometry();
 
-			let material = new LineMaterial({ 
-				color: 0x00ff00, 
-				dashSize: 5, 
+			let material = new LineMaterial({
+				color: 0x00ff00,
+				dashSize: 5,
 				gapSize: 2,
-				linewidth: 2, 
-				resolution:  new THREE.Vector2(1000, 1000),
+				linewidth: 2,
+				resolution: new THREE.Vector2(1000, 1000),
 			});
 
 			const line = new Line2(geometry, material);
@@ -254,12 +255,12 @@ export class CameraAnimation extends EventDispatcher{
 		{ // target
 			const geometry = new LineGeometry();
 
-			let material = new LineMaterial({ 
-				color: 0x0000ff, 
-				dashSize: 5, 
+			let material = new LineMaterial({
+				color: 0x0000ff,
+				dashSize: 5,
 				gapSize: 2,
-				linewidth: 2, 
-				resolution:  new THREE.Vector2(1000, 1000),
+				linewidth: 2,
+				resolution: new THREE.Vector2(1000, 1000),
 			});
 
 			const line = new Line2(geometry, material);
@@ -269,33 +270,33 @@ export class CameraAnimation extends EventDispatcher{
 		}
 	}
 
-	createFrustum(){
+	createFrustum() {
 
 		const f = 0.3;
 
 		const positions = [
-			 0,  0,  0,
+			0, 0, 0,
 			-f, -f, +1,
 
-			 0,  0,  0,
-			 f, -f, +1,
+			0, 0, 0,
+			f, -f, +1,
 
-			 0,  0,  0,
-			 f,  f, +1,
+			0, 0, 0,
+			f, f, +1,
 
-			 0,  0,  0,
-			-f,  f, +1,
+			0, 0, 0,
+			-f, f, +1,
 
 			-f, -f, +1,
-			 f, -f, +1,
+			f, -f, +1,
 
-			 f, -f, +1,
-			 f,  f, +1,
+			f, -f, +1,
+			f, f, +1,
 
-			 f,  f, +1,
-			-f,  f, +1,
+			f, f, +1,
+			-f, f, +1,
 
-			-f,  f, +1,
+			-f, f, +1,
 			-f, -f, +1,
 		];
 
@@ -305,19 +306,19 @@ export class CameraAnimation extends EventDispatcher{
 		geometry.verticesNeedUpdate = true;
 		geometry.computeBoundingSphere();
 
-		let material = new LineMaterial({ 
-			color: 0xff0000, 
-			linewidth: 2, 
-			resolution:  new THREE.Vector2(1000, 1000),
+		let material = new LineMaterial({
+			color: 0xff0000,
+			linewidth: 2,
+			resolution: new THREE.Vector2(1000, 1000),
 		});
 
 		const line = new Line2(geometry, material);
 		line.computeLineDistances();
-		
+
 		return line;
 	}
 
-	updatePath(){
+	updatePath() {
 
 		{ // positions
 			const positions = this.controlPoints.map(cp => cp.position);
@@ -329,7 +330,7 @@ export class CameraAnimation extends EventDispatcher{
 			const n = 100;
 
 			const curvePositions = [];
-			for(let k = 0; k <= n; k++){
+			for (let k = 0; k <= n; k++) {
 				const t = k / n;
 
 				const position = curve.getPoint(t).sub(first);
@@ -356,7 +357,7 @@ export class CameraAnimation extends EventDispatcher{
 			const n = 100;
 
 			const curvePositions = [];
-			for(let k = 0; k <= n; k++){
+			for (let k = 0; k <= n; k++) {
 				const t = k / n;
 
 				const position = curve.getPoint(t).sub(first);
@@ -374,11 +375,11 @@ export class CameraAnimation extends EventDispatcher{
 		}
 	}
 
-	at(t){
-		
-		if(t > 1){
+	at(t) {
+
+		if (t > 1) {
 			t = 1;
-		}else if(t < 0){
+		} else if (t < 0) {
 			t = 0;
 		}
 
@@ -393,12 +394,12 @@ export class CameraAnimation extends EventDispatcher{
 		return frame;
 	}
 
-	set(t){
+	set(t) {
 		this.t = t;
 	}
 
-	createHandle(vector){
-		
+	createHandle(vector) {
+
 		const svgns = "http://www.w3.org/2000/svg";
 		const svg = document.createElementNS(svgns, "svg");
 
@@ -415,7 +416,7 @@ export class CameraAnimation extends EventDispatcher{
 		circle.setAttributeNS(null, 'cx', "1em");
 		circle.setAttributeNS(null, 'cy', "1em");
 		circle.setAttributeNS(null, 'r', "0.5em");
-		circle.setAttributeNS(null, 'style', 'fill: red; stroke: black; stroke-width: 0.2em;' );
+		circle.setAttributeNS(null, 'style', 'fill: red; stroke: black; stroke-width: 0.2em;');
 		svg.appendChild(circle);
 
 
@@ -469,12 +470,12 @@ export class CameraAnimation extends EventDispatcher{
 		return handle;
 	}
 
-	setVisible(visible){
+	setVisible(visible) {
 		this.node.visible = visible;
 
 		const display = visible ? "" : "none";
 
-		for(const cp of this.controlPoints){
+		for (const cp of this.controlPoints) {
 			cp.positionHandle.svg.style.display = display;
 			cp.targetHandle.svg.style.display = display;
 		}
@@ -482,15 +483,15 @@ export class CameraAnimation extends EventDispatcher{
 		this.visible = visible;
 	}
 
-	setDuration(duration){
+	setDuration(duration) {
 		this.duration = duration;
 	}
 
-	getDuration(duration){
+	getDuration(duration) {
 		return this.duration;
 	}
 
-	play(){
+	play() {
 
 		const tStart = performance.now();
 		const duration = this.duration;
@@ -512,7 +513,7 @@ export class CameraAnimation extends EventDispatcher{
 			viewer.scene.view.lookAt(frame.target);
 
 
-			if(t > 1){
+			if (t > 1) {
 				this.setVisible(originalyVisible);
 
 				this.viewer.removeEventListener("update", onUpdate);

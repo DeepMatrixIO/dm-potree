@@ -1,13 +1,20 @@
 
 import * as THREE from "../libs/three.js/build/three.module.js";
 import {XHRFactory} from "./XHRFactory.js";
-import {Volume} from "./utils/Volume.js";
-import {Profile} from "./utils/Profile.js";
 import {Measure} from "./utils/Measure.js";
 import {PolygonClipVolume} from "./utils/PolygonClipVolume.js";
+import {Profile} from "./utils/Profile.js";
+import {Volume} from "./utils/Volume.js";
+
+const LINESTRIP = 0;
+const LINEPIECES = 1;
+const NOCOLORS = 0;
+const FACECOLORS = 1;
+const VERTEXCOLORS = 2;
+
 
 export class Utils {
-	static async loadShapefileFeatures (file, callback) {
+	static async loadShapefileFeatures(file, callback) {
 		let features = [];
 
 		let handleFinish = () => {
@@ -16,7 +23,7 @@ export class Utils {
 
 		let source = await shapefile.open(file);
 
-		while(true){
+		while (true) {
 			let result = await source.read();
 
 			if (result.done) {
@@ -31,7 +38,7 @@ export class Utils {
 
 	}
 
-	static toString (value) {
+	static toString(value) {
 		if (value.x != null) {
 			return value.x.toFixed(2) + ', ' + value.y.toFixed(2) + ', ' + value.z.toFixed(2);
 		} else {
@@ -39,13 +46,13 @@ export class Utils {
 		}
 	}
 
-	static normalizeURL (url) {
+	static normalizeURL(url) {
 		let u = new URL(url);
 
 		return u.protocol + '//' + u.hostname + u.pathname.replace(/\/+/g, '/');
 	};
 
-	static pathExists (url) {
+	static pathExists(url) {
 		let req = XHRFactory.createXMLHttpRequest();
 		req.open('GET', url, false);
 		req.send(null);
@@ -55,13 +62,13 @@ export class Utils {
 		return true;
 	};
 
-	static debugSphere(parent, position, scale, color){
+	static debugSphere(parent, position, scale, color) {
 		let geometry = new THREE.SphereGeometry(1, 8, 8);
 		let material;
 
-		if(color !== undefined){
+		if (color !== undefined) {
 			material = new THREE.MeshBasicMaterial({color: color});
-		}else{
+		} else {
 			material = new THREE.MeshNormalMaterial();
 		}
 		let sphere = new THREE.Mesh(geometry, material);
@@ -72,17 +79,18 @@ export class Utils {
 		return sphere;
 	}
 
-	static debugLine(parent, start, end, color){
+	static debugLine(parent, start, end, color) {
 
-		let material = new THREE.LineBasicMaterial({ color: color }); 
-		let geometry = new THREE.Geometry();
+		let material = new THREE.LineBasicMaterial({color: color});
+		//let geometry = new THREE.Geometry();
+		let geometry = new THREE.BufferGeometry();
 
 		const p1 = new THREE.Vector3(0, 0, 0);
 		const p2 = end.clone().sub(start);
 
 		geometry.vertices.push(p1, p2);
 
-		let tl = new THREE.Line( geometry, material );
+		let tl = new THREE.Line(geometry, material);
 		tl.position.copy(start);
 
 		parent.add(tl);
@@ -99,40 +107,41 @@ export class Utils {
 		return line;
 	}
 
-	static debugCircle(parent, center, radius, normal, color){
-		let material = new THREE.LineBasicMaterial({ color: color });
+	static debugCircle(parent, center, radius, normal, color) {
+		let material = new THREE.LineBasicMaterial({color: color});
 
-		let geometry = new THREE.Geometry();
+		//let geometry = new THREE.Geometry();
+		let geometry = new THREE.BufferGeometry();
 
 		let n = 32;
-		for(let i = 0; i <= n; i++){
+		for (let i = 0; i <= n; i++) {
 			let u0 = 2 * Math.PI * (i / n);
 			let u1 = 2 * Math.PI * (i + 1) / n;
 
 			let p0 = new THREE.Vector3(
-				Math.cos(u0), 
-				Math.sin(u0), 
+				Math.cos(u0),
+				Math.sin(u0),
 				0
 			);
 
 			let p1 = new THREE.Vector3(
-				Math.cos(u1), 
-				Math.sin(u1), 
+				Math.cos(u1),
+				Math.sin(u1),
 				0
 			);
 
-			geometry.vertices.push(p0, p1); 
+			geometry.vertices.push(p0, p1);
 		}
 
-		let tl = new THREE.Line( geometry, material ); 
+		let tl = new THREE.Line(geometry, material);
 		tl.position.copy(center);
 		tl.scale.set(radius, radius, radius);
 
 		parent.add(tl);
 	}
 
-	static debugBox(parent, box, transform = new THREE.Matrix4(), color = 0xFFFF00){
-		
+	static debugBox(parent, box, transform = new THREE.Matrix4(), color = 0xFFFF00) {
+
 		let vertices = [
 			[box.min.x, box.min.y, box.min.z],
 			[box.min.x, box.min.y, box.max.z],
@@ -164,27 +173,27 @@ export class Utils {
 			{position: [center.x, center.y, box.max.z], color: 0x000088},
 		];
 
-		for(let vertex of vertices){
+		for (let vertex of vertices) {
 			let pos = vertex.clone().applyMatrix4(transform);
 
 			Utils.debugSphere(parent, pos, 0.1, 0xFF0000);
 		}
 
-		for(let edge of edges){
+		for (let edge of edges) {
 			let start = vertices[edge[0]].clone().applyMatrix4(transform);
 			let end = vertices[edge[1]].clone().applyMatrix4(transform);
 
 			Utils.debugLine(parent, start, end, color);
 		}
 
-		for(let centroid of centroids){
+		for (let centroid of centroids) {
 			let pos = new THREE.Vector3(...centroid.position).applyMatrix4(transform);
 
 			Utils.debugSphere(parent, pos, 0.1, centroid.color);
 		}
 	}
 
-	static debugPlane(parent, plane, size = 1, color = 0x0000FF){
+	static debugPlane(parent, plane, size = 1, color = 0x0000FF) {
 
 		let planehelper = new THREE.PlaneHelper(plane, size, color);
 
@@ -195,7 +204,7 @@ export class Utils {
 	/**
 	 * adapted from mhluska at https://github.com/mrdoob/three.js/issues/1561
 	 */
-	static computeTransformedBoundingBox (box, transform) {
+	static computeTransformedBoundingBox(box, transform) {
 		let vertices = [
 			new THREE.Vector3(box.min.x, box.min.y, box.min.z).applyMatrix4(transform),
 			new THREE.Vector3(box.min.x, box.min.y, box.min.z).applyMatrix4(transform),
@@ -220,7 +229,7 @@ export class Utils {
 	 * @param nStr
 	 * @returns
 	 */
-	static addCommas (nStr) {
+	static addCommas(nStr) {
 		nStr += '';
 		let x = nStr.split('.');
 		let x1 = x[0];
@@ -232,7 +241,7 @@ export class Utils {
 		return x1 + x2;
 	};
 
-	static removeCommas (str) {
+	static removeCommas(str) {
 		return str.replace(/,/g, '');
 	}
 
@@ -241,14 +250,14 @@ export class Utils {
 	 *
 	 * code from http://stackoverflow.com/questions/10343913/how-to-create-a-web-worker-from-a-string
 	 */
-	static createWorker (code) {
+	static createWorker(code) {
 		let blob = new Blob([code], {type: 'application/javascript'});
 		let worker = new Worker(URL.createObjectURL(blob));
 
 		return worker;
 	};
 
-	static moveTo(scene, endPosition, endTarget){
+	static moveTo(scene, endPosition, endTarget) {
 
 		let view = scene.view;
 		let camera = scene.getActiveCamera();
@@ -280,7 +289,7 @@ export class Utils {
 
 	}
 
-	static loadSkybox (path) {
+	static loadSkybox(path) {
 		let parent = new THREE.Object3D("skybox_root");
 
 		let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 100000);
@@ -309,20 +318,21 @@ export class Utils {
 
 				let loader = new THREE.TextureLoader();
 				loader.load(urls[i],
-					function loaded (texture) {
+					function loaded(texture) {
 						material.map = texture;
 						material.needsUpdate = true;
 						material.color.setHex(0xffffff);
-					}, function progress (xhr) {
+					}, function progress(xhr) {
 						// console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-					}, function error (xhr) {
+					}, function error(xhr) {
 						console.log('An error happened', xhr);
 					}
 				);
 			}
 		}
 
-		let skyGeometry = new THREE.CubeGeometry(700, 700, 700);
+		//let skyGeometry = new THREE.CubeGeometry(700, 700, 700);
+		let skyGeometry = new THREE.BoxGeometry(700, 700, 700);//renamed
 		let skybox = new THREE.Mesh(skyGeometry, materialArray);
 
 		scene.add(skybox);
@@ -338,12 +348,13 @@ export class Utils {
 		return {camera, scene, parent};
 	};
 
-	static createGrid (width, length, spacing, color) {
+	static createGrid(width, length, spacing, color) {
 		let material = new THREE.LineBasicMaterial({
 			color: color || 0x888888
 		});
 
-		let geometry = new THREE.Geometry();
+		//let geometry = new THREE.Geometry();
+		let geometry = new THREE.BufferGeometry();
 		for (let i = 0; i <= length; i++) {
 			geometry.vertices.push(new THREE.Vector3(-(spacing * width) / 2, i * spacing - (spacing * length) / 2, 0));
 			geometry.vertices.push(new THREE.Vector3(+(spacing * width) / 2, i * spacing - (spacing * length) / 2, 0));
@@ -354,13 +365,14 @@ export class Utils {
 			geometry.vertices.push(new THREE.Vector3(i * spacing - (spacing * width) / 2, +(spacing * length) / 2, 0));
 		}
 
-		let line = new THREE.LineSegments(geometry, material, THREE.LinePieces);
+		//let line = new THREE.LineSegments(geometry, material, THREE.LinePieces);
+		let line = new THREE.LineSegments(geometry, material, LINEPIECES);
 		line.receiveShadow = true;
 		return line;
 	}
 
-	static createBackgroundTexture (width, height) {
-		function gauss (x, y) {
+	static createBackgroundTexture(width, height) {
+		function gauss(x, y) {
 			return (1 / (2 * Math.PI)) * Math.exp(-(x * x + y * y) / 2);
 		};
 
@@ -396,10 +408,10 @@ export class Utils {
 		return texture;
 	}
 
-	static getMousePointCloudIntersection (mouse, camera, viewer, pointclouds, params = {}) {
-		
+	static getMousePointCloudIntersection(mouse, camera, viewer, pointclouds, params = {}) {
+
 		let renderer = viewer.renderer;
-		
+
 		let nmouse = {
 			x: (mouse.x / renderer.domElement.clientWidth) * 2 - 1,
 			y: -(mouse.y / renderer.domElement.clientHeight) * 2 + 1
@@ -407,7 +419,7 @@ export class Utils {
 
 		let pickParams = {};
 
-		if(params.pickClipped){
+		if (params.pickClipped) {
 			pickParams.pickClipped = params.pickClipped;
 		}
 
@@ -422,11 +434,11 @@ export class Utils {
 		let closestDistance = Infinity;
 		let closestIntersection = null;
 		let closestPoint = null;
-		
-		for(let pointcloud of pointclouds){
+
+		for (let pointcloud of pointclouds) {
 			let point = pointcloud.pick(viewer, camera, ray, pickParams);
-			
-			if(!point){
+
+			if (!point) {
 				continue;
 			}
 
@@ -452,7 +464,7 @@ export class Utils {
 		}
 	}
 
-	static pixelsArrayToImage (pixels, width, height) {
+	static pixelsArrayToImage(pixels, width, height) {
 		let canvas = document.createElement('canvas');
 		canvas.width = width;
 		canvas.height = height;
@@ -498,7 +510,7 @@ export class Utils {
 		return dataURL;
 	}
 
-	static pixelsArrayToCanvas(pixels, width, height){
+	static pixelsArrayToCanvas(pixels, width, height) {
 		let canvas = document.createElement('canvas');
 		canvas.width = width;
 		canvas.height = height;
@@ -513,7 +525,7 @@ export class Utils {
 
 		// flip vertically
 		let bytesPerLine = width * 4;
-		for(let i = 0; i < parseInt(height / 2); i++){
+		for (let i = 0; i < parseInt(height / 2); i++) {
 			let j = height - i - 1;
 
 			let lineI = pixels.slice(i * bytesPerLine, i * bytesPerLine + bytesPerLine);
@@ -529,17 +541,17 @@ export class Utils {
 		return canvas;
 	}
 
-	static removeListeners(dispatcher, type){
+	static removeListeners(dispatcher, type) {
 		if (dispatcher._listeners === undefined) {
 			return;
 		}
 
-		if (dispatcher._listeners[ type ]) {
-			delete dispatcher._listeners[ type ];
+		if (dispatcher._listeners[type]) {
+			delete dispatcher._listeners[type];
 		}
 	}
 
-	static mouseToRay(mouse, camera, width, height){
+	static mouseToRay(mouse, camera, width, height) {
 
 		let normalizedMouse = {
 			x: (mouse.x / width) * 2 - 1,
@@ -556,12 +568,12 @@ export class Utils {
 		return ray;
 	}
 
-	static projectedRadius(radius, camera, distance, screenWidth, screenHeight){
-		if(camera instanceof THREE.OrthographicCamera){
+	static projectedRadius(radius, camera, distance, screenWidth, screenHeight) {
+		if (camera instanceof THREE.OrthographicCamera) {
 			return Utils.projectedRadiusOrtho(radius, camera.projectionMatrix, screenWidth, screenHeight);
-		}else if(camera instanceof THREE.PerspectiveCamera){
+		} else if (camera instanceof THREE.PerspectiveCamera) {
 			return Utils.projectedRadiusPerspective(radius, camera.fov * Math.PI / 180, distance, screenHeight);
-		}else{
+		} else {
 			throw new Error("invalid parameters");
 		}
 	}
@@ -587,42 +599,42 @@ export class Utils {
 		p2.y = (p2.y + 1.0) * 0.5 * screenHeight;
 		return p1.distanceTo(p2);
 	}
-		
-		
-	static topView(camera, node){
+
+
+	static topView(camera, node) {
 		camera.position.set(0, 1, 0);
 		camera.rotation.set(-Math.PI / 2, 0, 0);
 		camera.zoomTo(node, 1);
 	}
 
-	static frontView (camera, node) {
+	static frontView(camera, node) {
 		camera.position.set(0, 0, 1);
 		camera.rotation.set(0, 0, 0);
 		camera.zoomTo(node, 1);
 	}
 
-	static leftView (camera, node) {
+	static leftView(camera, node) {
 		camera.position.set(-1, 0, 0);
 		camera.rotation.set(0, -Math.PI / 2, 0);
 		camera.zoomTo(node, 1);
 	}
 
-	static rightView (camera, node) {
+	static rightView(camera, node) {
 		camera.position.set(1, 0, 0);
 		camera.rotation.set(0, Math.PI / 2, 0);
 		camera.zoomTo(node, 1);
 	}
 
-	
-	static findClosestGpsTime(target, viewer){
+
+	static findClosestGpsTime(target, viewer) {
 		const start = performance.now();
 
 		const nodes = [];
-		for(const pc of viewer.scene.pointclouds){
+		for (const pc of viewer.scene.pointclouds) {
 			nodes.push(pc.root);
 
-			for(const child of pc.root.children){
-				if(child){
+			for (const child of pc.root.children) {
+				if (child) {
 					nodes.push(child);
 				}
 			}
@@ -633,13 +645,13 @@ export class Utils {
 		let closestDistance = Infinity;
 		let closestValue = 0;
 
-		for(const node of nodes){
+		for (const node of nodes) {
 
-			const isOkay = node.geometryNode != null 
+			const isOkay = node.geometryNode != null
 				&& node.geometryNode.geometry != null
 				&& node.sceneNode != null;
 
-			if(!isOkay){
+			if (!isOkay) {
 				continue;
 			}
 
@@ -647,12 +659,12 @@ export class Utils {
 			let gpsTime = geometry.attributes["gps-time"];
 			let range = gpsTime.potree.range;
 
-			for(let i = 0; i < gpsTime.array.length; i++){
+			for (let i = 0; i < gpsTime.array.length; i++) {
 				let value = gpsTime.array[i];
 				value = value * (range[1] - range[0]) + range[0];
 				const distance = Math.abs(target - value);
 
-				if(distance < closestDistance){
+				if (distance < closestDistance) {
 					closestIndex = i;
 					closestDistance = distance;
 					closestValue = value;
@@ -688,7 +700,7 @@ export class Utils {
 	 * 1: intersection
 	 * 2: fully inside
 	 */
-	static frustumSphereIntersection (frustum, sphere) {
+	static frustumSphereIntersection(frustum, sphere) {
 		let planes = frustum.planes;
 		let center = sphere.center;
 		let negRadius = -sphere.radius;
@@ -696,7 +708,7 @@ export class Utils {
 		let minDistance = Number.MAX_VALUE;
 
 		for (let i = 0; i < 6; i++) {
-			let distance = planes[ i ].distanceToPoint(center);
+			let distance = planes[i].distanceToPoint(center);
 
 			if (distance < negRadius) {
 				return 0;
@@ -710,7 +722,7 @@ export class Utils {
 
 	// code taken from three.js
 	// ImageUtils - generateDataTexture()
-	static generateDataTexture (width, height, color) {
+	static generateDataTexture(width, height, color) {
 		let size = width * height;
 		let data = new Uint8Array(4 * width * height);
 
@@ -719,9 +731,9 @@ export class Utils {
 		let b = Math.floor(color.b * 255);
 
 		for (let i = 0; i < size; i++) {
-			data[ i * 3 ] = r;
-			data[ i * 3 + 1 ] = g;
-			data[ i * 3 + 2 ] = b;
+			data[i * 3] = r;
+			data[i * 3 + 1] = g;
+			data[i * 3 + 2] = b;
 		}
 
 		let texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
@@ -732,14 +744,14 @@ export class Utils {
 	}
 
 	// from http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
-	static getParameterByName (name) {
+	static getParameterByName(name) {
 		name = name.replace(/[[]/, '\\[').replace(/[\]]/, '\\]');
 		let regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
 		let results = regex.exec(document.location.search);
 		return results === null ? null : decodeURIComponent(results[1].replace(/\+/g, ' '));
 	}
 
-	static setParameter (name, value) {
+	static setParameter(name, value) {
 		// value = encodeURIComponent(value);
 
 		name = name.replace(/[[]/, '\\[').replace(/[\]]/, '\\]');
@@ -762,7 +774,7 @@ export class Utils {
 		window.history.replaceState({}, '', url);
 	}
 
-	static createChildAABB(aabb, index){
+	static createChildAABB(aabb, index) {
 		let min = aabb.min.clone();
 		let max = aabb.max.clone();
 		let size = new THREE.Vector3().subVectors(max, min);
@@ -789,7 +801,7 @@ export class Utils {
 	}
 
 	// see https://stackoverflow.com/questions/400212/how-do-i-copy-to-the-clipboard-in-javascript
-	static clipboardCopy(text){
+	static clipboardCopy(text) {
 		let textArea = document.createElement("textarea");
 
 		textArea.style.position = 'fixed';
@@ -813,11 +825,11 @@ export class Utils {
 
 		textArea.select();
 
-		 try {
+		try {
 			let success = document.execCommand('copy');
-			if(success){
+			if (success) {
 				console.log("copied text to clipboard");
-			}else{
+			} else {
 				console.log("copy to clipboard failed");
 			}
 		} catch (err) {
@@ -828,7 +840,7 @@ export class Utils {
 
 	}
 
-	static getMeasurementIcon(measurement){
+	static getMeasurementIcon(measurement) {
 		if (measurement instanceof Measure) {
 			if (measurement.showDistances && !measurement.showArea && !measurement.showAngles) {
 				return `${Potree.resourcePath}/icons/distance.svg`;
@@ -852,13 +864,13 @@ export class Utils {
 		}
 	}
 
-	static lineToLineIntersection(P0, P1, P2, P3){
+	static lineToLineIntersection(P0, P1, P2, P3) {
 
 		const P = [P0, P1, P2, P3];
 
 		const d = (m, n, o, p) => {
-			let result =  
-				  (P[m].x - P[n].x) * (P[o].x - P[p].x)
+			let result =
+				(P[m].x - P[n].x) * (P[o].x - P[p].x)
 				+ (P[m].y - P[n].y) * (P[o].y - P[p].y)
 				+ (P[m].z - P[n].z) * (P[o].z - P[p].z);
 
@@ -868,17 +880,17 @@ export class Utils {
 
 		const mua = (d(0, 2, 3, 2) * d(3, 2, 1, 0) - d(0, 2, 1, 0) * d(3, 2, 3, 2))
 		        /**-----------------------------------------------------------------**/ /
-		            (d(1, 0, 1, 0) * d(3, 2, 3, 2) - d(3, 2, 1, 0) * d(3, 2, 1, 0));
+			(d(1, 0, 1, 0) * d(3, 2, 3, 2) - d(3, 2, 1, 0) * d(3, 2, 1, 0));
 
 
 		const mub = (d(0, 2, 3, 2) + mua * d(3, 2, 1, 0))
 		        /**--------------------------------------**/ /
-		                       d(3, 2, 3, 2);
+			d(3, 2, 3, 2);
 
 
 		const P01 = P1.clone().sub(P0);
 		const P23 = P3.clone().sub(P2);
-		
+
 		const Pa = P0.clone().add(P01.multiplyScalar(mua));
 		const Pb = P2.clone().add(P23.multiplyScalar(mub));
 
@@ -887,7 +899,7 @@ export class Utils {
 		return center;
 	}
 
-	static computeCircleCenter(A, B, C){
+	static computeCircleCenter(A, B, C) {
 		const AB = B.clone().sub(A);
 		const AC = C.clone().sub(A);
 
@@ -918,8 +930,8 @@ export class Utils {
 		// Potree.Utils.debugCircle(viewer.scene.scene, center, radius, new THREE.Vector3(0, 0, 1), 0xff00ff);
 	}
 
-	static getNorthVec(p1, distance, projection){
-		if(projection){
+	static getNorthVec(p1, distance, projection) {
+		if (projection) {
 			// if there is a projection, transform coordinates to WGS84
 			// and compute angle to north there
 
@@ -932,22 +944,22 @@ export class Utils {
 			llP2 = [llP1[0], llP1[1] + polarRadius];
 
 			const northVec = transform.inverse(llP2);
-			
+
 			return new THREE.Vector3(...northVec, p1.z).sub(p1);
-		}else{
+		} else {
 			// if there is no projection, assume [0, 1, 0] as north direction
 
 			const vec = new THREE.Vector3(0, 1, 0).multiplyScalar(distance);
-			
+
 			return vec;
 		}
 	}
 
-	static computeAzimuth(p1, p2, projection){
+	static computeAzimuth(p1, p2, projection) {
 
 		let azimuth = 0;
 
-		if(projection){
+		if (projection) {
 			// if there is a projection, transform coordinates to WGS84
 			// and compute angle to north there
 
@@ -967,7 +979,7 @@ export class Utils {
 				llP2[1] - llP1[1],
 			];
 			azimuth = Math.atan2(dir[1], dir[0]) - Math.PI / 2;
-		}else{
+		} else {
 			// if there is no projection, assume [0, 1, 0] as north direction
 
 			const dir = [p2.x - p1.x, p2.y - p1.y];
@@ -980,15 +992,15 @@ export class Utils {
 		return azimuth;
 	}
 
-	static async loadScript(url){
+	static async loadScript(url) {
 
-		return new Promise( resolve => {
+		return new Promise(resolve => {
 
 			const element = document.getElementById(url);
 
-			if(element){
+			if (element) {
 				resolve();
-			}else{
+			} else {
 				const script = document.createElement("script");
 
 				script.id = url;
@@ -1003,7 +1015,7 @@ export class Utils {
 		});
 	}
 
-	static createSvgGradient(scheme){
+	static createSvgGradient(scheme) {
 
 		// this is what we are creating:
 		//
@@ -1021,20 +1033,20 @@ export class Utils {
 
 
 		const gradientId = `${Math.random()}_${Date.now()}`;
-		
+
 		const svgn = "http://www.w3.org/2000/svg";
 		const svg = document.createElementNS(svgn, "svg");
 		svg.setAttributeNS(null, "width", "2em");
 		svg.setAttributeNS(null, "height", "3em");
-		
+
 		{ // <defs>
 			const defs = document.createElementNS(svgn, "defs");
-			
+
 			const linearGradient = document.createElementNS(svgn, "linearGradient");
 			linearGradient.setAttributeNS(null, "id", gradientId);
 			linearGradient.setAttributeNS(null, "gradientTransform", "rotate(90)");
 
-			for(let i = scheme.length - 1; i >= 0; i--){
+			for (let i = scheme.length - 1; i >= 0; i--) {
 				const stopVal = scheme[i];
 				const percent = parseInt(100 - stopVal[0] * 100);
 				const [r, g, b] = stopVal[1].toArray().map(v => parseInt(v * 255));
@@ -1058,16 +1070,16 @@ export class Utils {
 		rect.setAttributeNS(null, "stroke-width", `0.1em`);
 
 		svg.appendChild(rect);
-		
+
 		return svg;
 	}
 
-	static async waitAny(promises){
-		
-		return new Promise( (resolve) => {
+	static async waitAny(promises) {
 
-			promises.map( promise => {
-				promise.then( () => {
+		return new Promise((resolve) => {
+
+			promises.map(promise => {
+				promise.then(() => {
 					resolve();
 				});
 			});
@@ -1080,7 +1092,8 @@ export class Utils {
 
 Utils.screenPass = new function () {
 	this.screenScene = new THREE.Scene();
-	this.screenQuad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2, 1));
+	this.screenQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2, 1));
+	//this.screenQuad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2, 1));
 	this.screenQuad.material.depthTest = true;
 	this.screenQuad.material.depthWrite = true;
 	this.screenQuad.material.transparent = true;

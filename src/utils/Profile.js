@@ -2,9 +2,15 @@
 import * as THREE from "../../libs/three.js/build/three.module.js";
 import {Utils} from "../utils.js";
 
-export class Profile extends THREE.Object3D{
+const LineStrip = 0;
+const LinePieces = 1;
+const NoColors = 0;
+const FaceColors = 1;
+const VERTEXCOLORS = 2;
 
-	constructor () {
+export class Profile extends THREE.Object3D {
+
+	constructor() {
 		super();
 
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
@@ -23,18 +29,19 @@ export class Profile extends THREE.Object3D{
 		this.lineColor = new THREE.Color(0xff0000);
 	}
 
-	createSphereMaterial () {
+	createSphereMaterial() {
 		let sphereMaterial = new THREE.MeshLambertMaterial({
 			//shading: THREE.SmoothShading,
 			color: 0xff0000,
 			depthTest: false,
-			depthWrite: false}
+			depthWrite: false
+		}
 		);
 
 		return sphereMaterial;
 	};
 
-	getSegments () {
+	getSegments() {
 		let segments = [];
 
 		for (let i = 0; i < this.points.length - 1; i++) {
@@ -46,7 +53,7 @@ export class Profile extends THREE.Object3D{
 		return segments;
 	}
 
-	getSegmentMatrices () {
+	getSegmentMatrices() {
 		let segments = this.getSegments();
 		let matrices = [];
 
@@ -74,7 +81,7 @@ export class Profile extends THREE.Object3D{
 		return matrices;
 	}
 
-	addMarker (point) {
+	addMarker(point) {
 		this.points.push(point);
 
 		let sphere = new THREE.Mesh(this.sphereGeometry, this.createSphereMaterial());
@@ -84,11 +91,24 @@ export class Profile extends THREE.Object3D{
 
 		// edges & boxes
 		if (this.points.length > 1) {
-			let lineGeometry = new THREE.Geometry();
-			lineGeometry.vertices.push(new THREE.Vector3(), new THREE.Vector3());
-			lineGeometry.colors.push(this.lineColor, this.lineColor, this.lineColor);
+			//let lineGeometry = new THREE.Geometry();
+			let lineGeometry = new THREE.BufferGeometry();
+
+			lineGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(2 * 3), 3));
+			//lineGeometry.vertices.push(new THREE.Vector3(), new THREE.Vector3());
+
+			let colors = new Float32Array([
+				this.lineColor.r, this.lineColor.g, this.lineColor.b,
+				this.lineColor.r, this.lineColor.g, this.lineColor.b
+			]);
+
+
+			lineGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+			//lineGeometry.colors.push(this.lineColor, this.lineColor, this.lineColor);
+
 			let lineMaterial = new THREE.LineBasicMaterial({
-				vertexColors: THREE.VertexColors,
+				//vertexColors: THREE.VertexColors,
+				vertexColors: VERTEXCOLORS,//2
 				linewidth: 2,
 				transparent: true,
 				opacity: 0.4
@@ -112,9 +132,9 @@ export class Profile extends THREE.Object3D{
 		{ // event listeners
 			let drag = (e) => {
 				let I = Utils.getMousePointCloudIntersection(
-					e.drag.end, 
-					e.viewer.scene.getActiveCamera(), 
-					e.viewer, 
+					e.drag.end,
+					e.viewer.scene.getActiveCamera(),
+					e.viewer,
 					e.viewer.scene.pointclouds);
 
 				if (I) {
@@ -160,7 +180,7 @@ export class Profile extends THREE.Object3D{
 		this.setPosition(this.points.length - 1, point);
 	}
 
-	removeMarker (index) {
+	removeMarker(index) {
 		this.points.splice(index, 1);
 
 		this.remove(this.spheres[index]);
@@ -181,14 +201,14 @@ export class Profile extends THREE.Object3D{
 		});
 	}
 
-	setPosition (index, position) {
+	setPosition(index, position) {
 		let point = this.points[index];
 		point.copy(position);
 
 		let event = {
 			type: 'marker_moved',
-			profile:	this,
-			index:	index,
+			profile: this,
+			index: index,
 			position: point.clone()
 		};
 		this.dispatchEvent(event);
@@ -196,24 +216,24 @@ export class Profile extends THREE.Object3D{
 		this.update();
 	}
 
-	setWidth (width) {
+	setWidth(width) {
 		this.width = width;
 
 		let event = {
 			type: 'width_changed',
-			profile:	this,
-			width:	width
+			profile: this,
+			width: width
 		};
 		this.dispatchEvent(event);
 
 		this.update();
 	}
 
-	getWidth () {
+	getWidth() {
 		return this.width;
 	}
 
-	update () {
+	update() {
 		if (this.points.length === 0) {
 			return;
 		} else if (this.points.length === 1) {
@@ -253,14 +273,17 @@ export class Profile extends THREE.Object3D{
 			}
 
 			if (leftEdge) {
-				leftEdge.geometry.vertices[1].copy(point);
-				leftEdge.geometry.verticesNeedUpdate = true;
+				leftEdge.geometry.getAttribute('position').setXYZ(1, point.x, point.y, point.z);	//modified
+
+				//				leftEdge.geometry.vertices[1].copy(point);
+				//leftEdge.geometry.verticesNeedUpdate = true;
 				leftEdge.geometry.computeBoundingSphere();
 			}
 
-			if (rightEdge) {
-				rightEdge.geometry.vertices[0].copy(point);
-				rightEdge.geometry.verticesNeedUpdate = true;
+			if (rightEdge) {//migrate to buffergeometry
+				rightEdge.geometry.getAttribute('position').setXYZ(0, point.x, point.y, point.z);	//modified
+				//rightEdge.geometry.vertices[0].copy(point);
+				//rightEdge.geometry.verticesNeedUpdate = true;
 				rightEdge.geometry.computeBoundingSphere();
 			}
 
@@ -293,7 +316,7 @@ export class Profile extends THREE.Object3D{
 		}
 	}
 
-	raycast (raycaster, intersects) {
+	raycast(raycaster, intersects) {
 		for (let i = 0; i < this.points.length; i++) {
 			let sphere = this.spheres[i];
 
@@ -308,14 +331,14 @@ export class Profile extends THREE.Object3D{
 			let I = intersects[i];
 			I.distance = raycaster.ray.origin.distanceTo(I.point);
 		}
-		intersects.sort(function (a, b) { return a.distance - b.distance; });
+		intersects.sort(function (a, b) {return a.distance - b.distance;});
 	};
 
-	get modifiable () {
+	get modifiable() {
 		return this._modifiable;
 	}
 
-	set modifiable (value) {
+	set modifiable(value) {
 		this._modifiable = value;
 		this.update();
 	}

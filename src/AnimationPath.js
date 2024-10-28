@@ -1,34 +1,34 @@
-
+//changes to more recent version of three.js, above 0124 require to move from Geometry to BufferGeometry
 import * as THREE from "../libs/three.js/build/three.module.js";
 
-export class PathAnimation{
-	
-	constructor(path, start, end, speed, callback){
-			this.path = path;
-			this.length = this.path.spline.getLength();
-			this.speed = speed;
-			this.callback = callback;
-			this.tween = null;
-			this.startPoint = Math.max(start, 0);
-			this.endPoint = Math.min(end, this.length);
-			this.t = 0.0;
+export class PathAnimation {
+
+	constructor(path, start, end, speed, callback) {
+		this.path = path;
+		this.length = this.path.spline.getLength();
+		this.speed = speed;
+		this.callback = callback;
+		this.tween = null;
+		this.startPoint = Math.max(start, 0);
+		this.endPoint = Math.min(end, this.length);
+		this.t = 0.0;
 	}
 
-	start(resume = false){
-		if(this.tween){
+	start(resume = false) {
+		if (this.tween) {
 			this.tween.stop();
 			this.tween = null;
 		}
-	
+
 		let tStart;
-		if(resume){
+		if (resume) {
 			tStart = this.t;
-		}else{
+		} else {
 			tStart = this.startPoint / this.length;
 		}
 		let tEnd = this.endPoint / this.length;
 		let animationDuration = (tEnd - tStart) * this.length * 1000 / this.speed;
-	
+
 		let progress = {t: tStart};
 		this.tween = new TWEEN.Tween(progress).to({t: tEnd}, animationDuration);
 		this.tween.easing(TWEEN.Easing.Linear.None);
@@ -37,7 +37,7 @@ export class PathAnimation{
 			this.callback(progress.t);
 		});
 		this.tween.onComplete(() => {
-			if(this.repeat){
+			if (this.repeat) {
 				this.start();
 			}
 		});
@@ -47,8 +47,8 @@ export class PathAnimation{
 		}, 0);
 	}
 
-	stop(){
-		if(!this.tween){
+	stop() {
+		if (!this.tween) {
 			return;
 		}
 		this.tween.stop();
@@ -56,62 +56,63 @@ export class PathAnimation{
 		this.t = 0;
 	}
 
-	pause(){
-		if(!this.tween){
+	pause() {
+		if (!this.tween) {
 			return;
 		}
-		
+
 		this.tween.stop();
 		TWEEN.remove(this.tween);
 		this.tween = null;
 	}
 
-	resume(){
+	resume() {
 		this.start(true);
 	}
 
-	getPoint(t){
+	getPoint(t) {
 		return this.path.spline.getPoint(t);
 	}
 
 }
 
-export class AnimationPath{
-	constructor (points = []) {
+export class AnimationPath {
+	constructor(points = []) {
 		this.points = points;
 		this.spline = new THREE.CatmullRomCurve3(points);
 		//this.spline.reparametrizeByArcLength(1 / this.spline.getLength().total);
 	}
 
-	get (t) {
+	get(t) {
 		return this.spline.getPoint(t);
 	}
 
-	getLength () {
+	getLength() {
 		return this.spline.getLength();
 	}
 
-	animate (start, end, speed, callback) {
+	animate(start, end, speed, callback) {
 		let animation = new PathAnimation(this, start, end, speed, callback);
 		animation.start();
 
 		return animation;
 	}
 
-	pause () {
+	pause() {
 		if (this.tween) {
 			this.tween.stop();
 		}
 	}
 
-	resume () {
+	resume() {
 		if (this.tween) {
 			this.tween.start();
 		}
 	}
 
-	getGeometry () {
-		let geometry = new THREE.Geometry();
+	getGeometry() {
+		//let geometry = new THREE.Geometry();
+		let geometry = new THREE.BufferGeometry();
 
 		let samples = 500;
 		let i = 0;
@@ -122,7 +123,7 @@ export class AnimationPath{
 			i++;
 		}
 
-		if(this.closed){
+		if (this.closed) {
 			let position = this.spline.getPoint(0);
 			geometry.vertices[i] = new THREE.Vector3(position.x, position.y, position.z);
 		}
@@ -130,11 +131,11 @@ export class AnimationPath{
 		return geometry;
 	}
 
-	get closed(){
+	get closed() {
 		return this.spline.closed;
 	}
 
-	set closed(value){
+	set closed(value) {
 		this.spline.closed = value;
 	}
 

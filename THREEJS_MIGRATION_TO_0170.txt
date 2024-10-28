@@ -1,0 +1,56 @@
+MIGRATION to THREEJS:
+
+Reports
+
+
+GLTF produce errors
+
+Geometry was changed for BufferGeometry and its corresponding methods
+SRGBEncoding for sRGCCololrspace
+MAth was replaced by MathUtil.Math 
+
+
+Existing Errors:
+
+viewer.html works fine
+
+ElevationProfile.html has errors, mostly for the geometry change, which requires set POSITON attribute from an array
+and setting color from attribute.
+Also does not worl due glsl shader
+
+Clipping_Volume.html does not work due glsl shader
+Elevation pr
+
+
+ept_zstandard.htnl also due glsl shaders
+
+features_sorvilier.js does not start, no errors
+
+gradient_colors.js also due glsl errors  RawShaderMAterial
+
+light_ca_13.html also errors due glsl
+
+lion_las.html als due rawshadermaterial does not start
+
+load_project.html does not start RawShaderMAterial	
+meshes.html does not worl	
+
+page.html works because is a catalog
+
+toolbar does work
+
+Tools do not work
+
+360 works partially, only loads certain things
+
+Annotations works partially dot does not load pointcloud properly
+
+CameraAnnotation worls partially
+
+cesiumSorvellier works partuially too
+
+customSidebarSection.html does not work
+embedded_iframe works ok
+
+ept does not work.html due RAW ShaderMAterial
+

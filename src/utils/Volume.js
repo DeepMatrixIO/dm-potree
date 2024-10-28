@@ -3,10 +3,10 @@ import * as THREE from "../../libs/three.js/build/three.module.js";
 import {TextSprite} from "../TextSprite.js";
 
 export class Volume extends THREE.Object3D {
-	constructor (args = {}) {
+	constructor(args = {}) {
 		super();
 
-		if(this.constructor.name === "Volume"){
+		if (this.constructor.name === "Volume") {
 			console.warn("Can't create object of class Volume directly. Use classes BoxVolume or SphereVolume instead.");
 		}
 
@@ -37,7 +37,7 @@ export class Volume extends THREE.Object3D {
 			this.label.matrixWorldNeedsUpdate = false;
 
 			for (let i = 0, l = this.label.children.length; i < l; i++) {
-				this.label.children[ i ].updateMatrixWorld(true);
+				this.label.children[i].updateMatrixWorld(true);
 			}
 		};
 
@@ -48,37 +48,37 @@ export class Volume extends THREE.Object3D {
 
 	}
 
-	get visible(){
+	get visible() {
 		return this._visible;
 	}
 
-	set visible(value){
-		if(this._visible !== value){
+	set visible(value) {
+		if (this._visible !== value) {
 			this._visible = value;
 
 			this.dispatchEvent({type: "visibility_changed", object: this});
 		}
 	}
 
-	getVolume () {
+	getVolume() {
 		console.warn("override this in subclass");
 	}
 
-	update () {
-		
+	update() {
+
 	};
 
-	raycast (raycaster, intersects) {
+	raycast(raycaster, intersects) {
 
 	}
 
-	get clip () {
+	get clip() {
 		return this._clip;
 	}
 
-	set clip (value) {
+	set clip(value) {
 
-		if(this._clip !== value){
+		if (this._clip !== value) {
 			this._clip = value;
 
 			this.update();
@@ -88,14 +88,14 @@ export class Volume extends THREE.Object3D {
 				object: this
 			});
 		}
-		
+
 	}
 
-	get modifieable () {
+	get modifieable() {
 		return this._modifiable;
 	}
 
-	set modifieable (value) {
+	set modifieable(value) {
 		this._modifiable = value;
 
 		this.update();
@@ -103,9 +103,9 @@ export class Volume extends THREE.Object3D {
 };
 
 
-export class BoxVolume extends Volume{
+export class BoxVolume extends Volume {
 
-	constructor(args = {}){
+	constructor(args = {}) {
 		super(args);
 
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
@@ -114,7 +114,8 @@ export class BoxVolume extends Volume{
 		let boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 		boxGeometry.computeBoundingBox();
 
-		let boxFrameGeometry = new THREE.Geometry();
+		//let boxFrameGeometry = new THREE.Geometry();
+		let boxFrameGeometry = new THREE.BufferGeometry();
 		{
 			let Vector3 = THREE.Vector3;
 
@@ -157,7 +158,8 @@ export class BoxVolume extends Volume{
 			transparent: true,
 			opacity: 0.3,
 			depthTest: true,
-			depthWrite: false});
+			depthWrite: false
+		});
 		this.box = new THREE.Mesh(boxGeometry, this.material);
 		this.box.geometry.computeBoundingBox();
 		this.boundingBox = this.box.geometry.boundingBox;
@@ -170,7 +172,7 @@ export class BoxVolume extends Volume{
 		this.update();
 	}
 
-	update(){
+	update() {
 		this.boundingBox = this.box.geometry.boundingBox;
 		this.boundingSphere = this.boundingBox.getBoundingSphere(new THREE.Sphere());
 
@@ -183,7 +185,7 @@ export class BoxVolume extends Volume{
 		}
 	}
 
-	raycast (raycaster, intersects) {
+	raycast(raycaster, intersects) {
 		let is = [];
 		this.box.raycast(raycaster, is);
 
@@ -197,15 +199,15 @@ export class BoxVolume extends Volume{
 		}
 	}
 
-	getVolume(){
+	getVolume() {
 		return Math.abs(this.scale.x * this.scale.y * this.scale.z);
 	}
 
 };
 
-export class SphereVolume extends Volume{
+export class SphereVolume extends Volume {
 
-	constructor(args = {}){
+	constructor(args = {}) {
 		super(args);
 
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
@@ -219,7 +221,8 @@ export class SphereVolume extends Volume{
 			transparent: true,
 			opacity: 0.3,
 			depthTest: true,
-			depthWrite: false});
+			depthWrite: false
+		});
 		this.sphere = new THREE.Mesh(sphereGeometry, this.material);
 		this.sphere.visible = false;
 		this.sphere.geometry.computeBoundingBox();
@@ -229,20 +232,22 @@ export class SphereVolume extends Volume{
 		this.label.visible = false;
 
 
-		let frameGeometry = new THREE.Geometry();
+		//let frameGeometry = new THREE.Geometry();
+		let frameGeometry = new THREE.BufferGeometry();
+
 		{
 			let steps = 64;
 			let uSegments = 8;
 			let vSegments = 5;
 			let r = 1;
 
-			for(let uSegment = 0; uSegment < uSegments; uSegment++){
+			for (let uSegment = 0; uSegment < uSegments; uSegment++) {
 
 				let alpha = (uSegment / uSegments) * Math.PI * 2;
 				let dirx = Math.cos(alpha);
 				let diry = Math.sin(alpha);
 
-				for(let i = 0; i <= steps; i++){
+				for (let i = 0; i <= steps; i++) {
 					let v = (i / steps) * Math.PI * 2;
 					let vNext = v + 2 * Math.PI / steps;
 
@@ -261,16 +266,16 @@ export class SphereVolume extends Volume{
 			}
 
 			// creates rings at poles, just because it's easier to implement
-			for(let vSegment = 0; vSegment <= vSegments + 1; vSegment++){
+			for (let vSegment = 0; vSegment <= vSegments + 1; vSegment++) {
 
 				//let height = (vSegment / (vSegments + 1)) * 2 - 1; // -1 to 1
 				let uh = (vSegment / (vSegments + 1)); // -1 to 1
-				uh = (1 - uh) * (-Math.PI / 2) + uh *(Math.PI / 2);
+				uh = (1 - uh) * (-Math.PI / 2) + uh * (Math.PI / 2);
 				let height = Math.sin(uh);
 
 				console.log(uh, height);
 
-				for(let i = 0; i <= steps; i++){
+				for (let i = 0; i <= steps; i++) {
 					let u = (i / steps) * Math.PI * 2;
 					let uNext = u + 2 * Math.PI / steps;
 
@@ -305,7 +310,7 @@ export class SphereVolume extends Volume{
 		this.update();
 	}
 
-	update(){
+	update() {
 		this.boundingBox = this.sphere.geometry.boundingBox;
 		this.boundingSphere = this.boundingBox.getBoundingSphere(new THREE.Sphere());
 
@@ -318,7 +323,7 @@ export class SphereVolume extends Volume{
 		//}
 	}
 
-	raycast (raycaster, intersects) {
+	raycast(raycaster, intersects) {
 		let is = [];
 		this.sphere.raycast(raycaster, is);
 
@@ -331,9 +336,9 @@ export class SphereVolume extends Volume{
 			});
 		}
 	}
-	
+
 	// see https://en.wikipedia.org/wiki/Ellipsoid#Volume
-	getVolume(){
+	getVolume() {
 		return (4 / 3) * Math.PI * this.scale.x * this.scale.y * this.scale.z;
 	}
 
