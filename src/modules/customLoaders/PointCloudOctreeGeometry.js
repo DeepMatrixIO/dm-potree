@@ -1,13 +1,13 @@
 
 
 import * as THREE from "../libs/three.js/build/three.module.js";
-import { PointCloudTreeNode } from "./PointCloudTree.js";
-import { XHRFactory } from "./XHRFactory.js";
-import { Utils } from "./utils.js";
+import {PointCloudTreeNode} from "./PointCloudTree.js";
+import {XHRFactory} from "./XHRFactory.js";
+import {Utils} from "./utils.js";
 
-export class PointCloudOctreeGeometry {
+export class PointCloudOctreeGeometry{
 
-	constructor() {
+	constructor(){
 		this.url = null;
 		this.octreeDir = null;
 		this.spacing = 0;
@@ -18,15 +18,15 @@ export class PointCloudOctreeGeometry {
 		this.hierarchyStepSize = -1;
 		this.loader = null;
 	}
-
+	
 }
 
-export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
+export class PointCloudOctreeGeometryNode extends PointCloudTreeNode{
 
-	constructor(name, pcoGeometry, boundingBox) {
+	constructor(name, pcoGeometry, boundingBox){
 		super();
 
-		this.id = PointCloudOctreeGeometryNode.IDCount++;//unique ID
+		this.id = PointCloudOctreeGeometryNode.IDCount++;
 		this.name = name;
 		this.index = parseInt(name.charAt(name.length - 1));
 		this.pcoGeometry = pcoGeometry;
@@ -40,31 +40,31 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 		this.oneTimeDisposeHandlers = [];
 	}
 
-	isGeometryNode() {
+	isGeometryNode(){
 		return true;
 	}
 
-	getLevel() {
+	getLevel(){
 		return this.level;
 	}
 
-	isTreeNode() {
+	isTreeNode(){
 		return false;
 	}
 
-	isLoaded() {
+	isLoaded(){
 		return this.loaded;
 	}
 
-	getBoundingSphere() {
+	getBoundingSphere(){
 		return this.boundingSphere;
 	}
 
-	getBoundingBox() {
+	getBoundingBox(){
 		return this.boundingBox;
 	}
 
-	getChildren() {
+	getChildren(){
 		let children = [];
 
 		for (let i = 0; i < 8; i++) {
@@ -76,11 +76,11 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 		return children;
 	}
 
-	getBoundingBox() {
+	getBoundingBox(){
 		return this.boundingBox;
 	}
 
-	getURL() {
+	getURL(){
 		let url = '';
 
 		let version = this.pcoGeometry.loader.version;
@@ -96,7 +96,7 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 		return url;
 	}
 
-	getHierarchyPath() {
+	getHierarchyPath(){
 		let path = 'r/';
 
 		let hierarchyStepSize = this.pcoGeometry.hierarchyStepSize;
@@ -117,7 +117,7 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 		child.parent = this;
 	}
 
-	load() {
+	load(){
 		if (this.loading === true || this.loaded === true || Potree.numNodesLoading >= Potree.maxNodesLoading) {
 			return;
 		}
@@ -137,11 +137,11 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 		}
 	}
 
-	loadPoints() {
+	loadPoints(){
 		this.pcoGeometry.loader.load(this);
 	}
 
-	loadHierachyThenPoints() {
+	loadHierachyThenPoints(){
 		let node = this;
 
 		// load hierarchy
@@ -155,7 +155,7 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 			let children = view.getUint8(0);
 			let numPoints = view.getUint32(1, true);
 			node.numPoints = numPoints;
-			stack.push({ children: children, numPoints: numPoints, name: node.name });
+			stack.push({children: children, numPoints: numPoints, name: node.name});
 
 			let decoded = [];
 
@@ -170,9 +170,9 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 						let childChildren = view.getUint8(offset);
 						let childNumPoints = view.getUint32(offset + 1, true);
 
-						stack.push({ children: childChildren, numPoints: childNumPoints, name: childName });
+						stack.push({children: childChildren, numPoints: childNumPoints, name: childName});
 
-						decoded.push({ children: childChildren, numPoints: childNumPoints, name: childName });
+						decoded.push({children: childChildren, numPoints: childNumPoints, name: childName});
 
 						offset += 5;
 					}
@@ -210,7 +210,7 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 			}
 
 			let duration = performance.now() - tStart;
-			if (duration > 5) {
+			if(duration > 5){
 				let msg = `duration: ${duration}ms, numNodes: ${decoded.length}`;
 				console.log(msg);
 			}
@@ -244,18 +244,18 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 		}
 	}
 
-	getNumPoints() {
+	getNumPoints(){
 		return this.numPoints;
 	}
 
-	dispose() {
+	dispose(){
 		if (this.geometry && this.parent != null) {
 			this.geometry.dispose();
 			this.geometry = null;
 			this.loaded = false;
 
-			this.dispatchEvent({ type: 'dispose' });
-
+			this.dispatchEvent( { type: 'dispose' } );
+			
 			for (let i = 0; i < this.oneTimeDisposeHandlers.length; i++) {
 				let handler = this.oneTimeDisposeHandlers[i];
 				handler();
@@ -263,7 +263,7 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode {
 			this.oneTimeDisposeHandlers = [];
 		}
 	}
-
+	
 }
 
 PointCloudOctreeGeometryNode.IDCount = 0;
