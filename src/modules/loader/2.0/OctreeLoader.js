@@ -242,6 +242,8 @@ export class NodeLoader{
 		// }
 	}
 
+	//if a node is not a terminal node, its internal is read and parsed recursively.
+	//
 	async loadHierarchy(node){
 
 		let {hierarchyByteOffset, hierarchyByteSize} = node;

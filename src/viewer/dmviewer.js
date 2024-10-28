@@ -35,8 +35,11 @@ import { VRButton } from '../../libs/three.js/extra/VRButton.js';
 
 import JSON5 from "../../libs/json5-2.1.3/json5.mjs";
 
+//follows the Viewer construction but without all the HTML stuff and UI
+//state is tracked internally
+//events are kept as a communication procedure
 
-export class Viewer extends EventDispatcher {
+export class DMViewer extends EventDispatcher {
 
 	constructor(domElement, args = {}) {
 		super();
@@ -48,6 +51,9 @@ export class Viewer extends EventDispatcher {
 		this.onVrListeners = [];
 
 		this.messages = [];
+		
+
+		//ui mixed with messages
 		this.elMessages = $(`
 		<div id="message_listing" 
 			style="position: absolute; z-index: 1000; left: 10px; bottom: 10px">
@@ -57,6 +63,7 @@ export class Viewer extends EventDispatcher {
 		try {
 
 			{ // generate missing dom hierarchy
+				//leaflet map
 				if ($(domElement).find('#potree_map').length === 0) {
 					let potreeMap = $(`
 					<div id="potree_map" class="mapBox" style="position: absolute; left: 50px; top: 50px; width: 400px; height: 400px; display: none">
@@ -68,11 +75,13 @@ export class Viewer extends EventDispatcher {
 					$(domElement).append(potreeMap);
 				}
 
+				//over the window message
 				if ($(domElement).find('#potree_description').length === 0) {
 					let potreeDescription = $(`<div id="potree_description" class="potree_info_text"></div>`);
 					$(domElement).append(potreeDescription);
 				}
 
+				//direct link to potree annotations
 				if ($(domElement).find('#potree_annotations').length === 0) {
 					let potreeAnnotationContainer = $(`
 					<div id="potree_annotation_container" 
@@ -80,6 +89,7 @@ export class Viewer extends EventDispatcher {
 					$(domElement).append(potreeAnnotationContainer);
 				}
 
+				//over the map quick buttons
 				if ($(domElement).find('#potree_quick_buttons').length === 0) {
 					let potreeMap = $(`
 					<div id="potree_quick_buttons" class="quick_buttons_container" style="">
@@ -259,9 +269,11 @@ export class Viewer extends EventDispatcher {
 
 				this.compass = new Compass(this);
 
-				this.createControls();
+				this.createControls();//all view controls
 
 				this.clippingTool.setScene(this.scene);
+
+			//adding all sort of callbacks for listeners
 
 				let onPointcloudAdded = (e) => {
 					if (this.scene.pointclouds.length === 1) {
@@ -271,6 +283,7 @@ export class Viewer extends EventDispatcher {
 					}
 				};
 
+		
 				let onVolumeRemoved = (e) => {
 					this.inputHandler.deselect(e.volume);
 				};
