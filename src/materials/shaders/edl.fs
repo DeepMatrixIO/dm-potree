@@ -1,6 +1,5 @@
-#version 300 es
-
-// #extension GL_EXT_frag_depth : enable
+// updated to webgl 2, added glsl to RAWShaderMaterial
+//  #extension GL_EXT_frag_depth : enable//not required in webgl 2
 
 //
 // adapted from the EDL shader code from Christian Boucheny in cloud compare:

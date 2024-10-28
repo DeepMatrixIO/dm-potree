@@ -1,9 +1,8 @@
-#version 300 es
-
+// updated to webgl 2, added glsl to RAWShaderMaterial
 in vec3 position;
 in vec2 uv;
 
-uniform mat4 modelViewMatrix;
+uniform mat4 modelViewMatrix; // comes from
 uniform mat4 projectionMatrix;
 
 out vec2 vUv;

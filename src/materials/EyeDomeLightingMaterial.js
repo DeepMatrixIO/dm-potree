@@ -1,6 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
 import {Shaders} from "../../build/shaders/shaders.js";
+import * as THREE from "../../libs/three.js/build/three.module.js";
 
 //
 // Algorithm by Christian Boucheny
@@ -11,24 +11,24 @@ import {Shaders} from "../../build/shaders/shaders.js";
 // http://www.kitware.com/source/home/post/9
 // https://tel.archives-ouvertes.fr/tel-00438464/document p. 115+ (french)
 
-export class EyeDomeLightingMaterial extends THREE.RawShaderMaterial{
+export class EyeDomeLightingMaterial extends THREE.RawShaderMaterial {
 
-	constructor(parameters = {}){
+	constructor(parameters = {}) {
 		super();
-
+		this.glslVersion = THREE.GLSL3;//required for webgl2 and esgl 3
 		let uniforms = {
-			screenWidth:    { type: 'f', 	value: 0 },
-			screenHeight:   { type: 'f', 	value: 0 },
-			edlStrength:    { type: 'f', 	value: 1.0 },
-			uNear:          { type: 'f', 	value: 1.0 },
-			uFar:           { type: 'f', 	value: 1.0 },
-			radius:         { type: 'f', 	value: 1.0 },
-			neighbours:     { type: '2fv', 	value: [] },
-			depthMap:       { type: 't', 	value: null },
-			uEDLColor:      { type: 't', 	value: null },
-			uEDLDepth:      { type: 't', 	value: null },
-			opacity:        { type: 'f',	value: 1.0 },
-			uProj:          { type: "Matrix4fv", value: [] },
+			screenWidth: {type: 'f', value: 0},
+			screenHeight: {type: 'f', value: 0},
+			edlStrength: {type: 'f', value: 1.0},
+			uNear: {type: 'f', value: 1.0},
+			uFar: {type: 'f', value: 1.0},
+			radius: {type: 'f', value: 1.0},
+			neighbours: {type: '2fv', value: []},
+			depthMap: {type: 't', value: null},
+			uEDLColor: {type: 't', value: null},
+			uEDLDepth: {type: 't', value: null},
+			opacity: {type: 'f', value: 1.0},
+			uProj: {type: "Matrix4fv", value: []},
 		};
 
 		this.setValues({
@@ -64,11 +64,11 @@ export class EyeDomeLightingMaterial extends THREE.RawShaderMaterial{
 		this.needsUpdate = true;
 	}
 
-	get neighbourCount(){
+	get neighbourCount() {
 		return this._neighbourCount;
 	}
 
-	set neighbourCount(value){
+	set neighbourCount(value) {
 		if (this._neighbourCount !== value) {
 			this._neighbourCount = value;
 			this.neighbours = new Float32Array(this._neighbourCount * 2);
@@ -81,6 +81,6 @@ export class EyeDomeLightingMaterial extends THREE.RawShaderMaterial{
 		}
 	}
 
-	
+
 }
 
