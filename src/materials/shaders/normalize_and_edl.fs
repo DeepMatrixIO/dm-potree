@@ -1,7 +1,7 @@
 
-#extension GL_EXT_frag_depth : enable
+// #extension GL_EXT_frag_depth : enable
 
-// 
+//
 // adapted from the EDL shader code from Christian Boucheny in cloud compare:
 // https://github.com/cloudcompare/trunk/tree/master/plugins/qEDL/shaders/EDL
 //
@@ -19,46 +19,62 @@ uniform vec2 neighbours[NEIGHBOUR_COUNT];
 uniform float edlStrength;
 uniform float radius;
 
-varying vec2 vUv;
+in vec2 vUv;
+//   added
+out vec4 fragColor;
 
-float response(float depth){
+float response(float depth)
+{
 	vec2 uvRadius = radius / vec2(screenWidth, screenHeight);
-	
-	float sum = 0.0;
-	
-	for(int i = 0; i < NEIGHBOUR_COUNT; i++){
-		vec2 uvNeighbor = vUv + uvRadius * neighbours[i];
-		
-		float neighbourDepth = texture2D(uEDLMap, uvNeighbor).a;
 
-		if(neighbourDepth != 0.0){
-			if(depth == 0.0){
+	float sum = 0.0;
+
+	for (int i = 0; i < NEIGHBOUR_COUNT; i++)
+	{
+		vec2 uvNeighbor = vUv + uvRadius * neighbours[i];
+
+		// float neighbourDepth = texture2D(uEDLMap, uvNeighbor).a;
+		float neighbourDepth = texture(uEDLMap, uvNeighbor).a;
+
+		if (neighbourDepth != 0.0)
+		{
+			if (depth == 0.0)
+			{
 				sum += 100.0;
-			}else{
+			}
+			else
+			{
 				sum += max(0.0, depth - neighbourDepth);
 			}
 		}
 	}
-	
+
 	return sum / float(NEIGHBOUR_COUNT);
 }
 
-void main() {
+void main()
+{
 
-	float edlDepth = texture2D(uEDLMap, vUv).a;
+	// float edlDepth = texture2D(uEDLMap, vUv).a;
+	float edlDepth = texture(uEDLMap, vUv).a;
 	float res = response(edlDepth);
 	float shade = exp(-res * 300.0 * edlStrength);
 
-	float depth = texture2D(uDepthMap, vUv).r;
-	if(depth >= 1.0 && res == 0.0){
+	// float depth = texture2D(uDepthMap, vUv).r;
+	float depth = texture(uDepthMap, vUv).r;
+	if (depth >= 1.0 && res == 0.0)
+	{
 		discard;
 	}
-	
-	vec4 color = texture2D(uWeightMap, vUv); 
+
+	// vec4 color = texture2D(uWeightMap, vUv);
+	vec4 color = texture(uWeightMap, vUv);
 	color = color / color.w;
 	color = color * shade;
 
-	gl_FragColor = vec4(color.xyz, 1.0); 
+	// gl_FragColor = vec4(color.xyz, 1.0);
+	fragColor = vec4(color.xyz, 1.0);
 
-	gl_FragDepthEXT = depth;
+	// gl_FragDepthEXT = depth;
+	gl_FragDepth = depth;
 }

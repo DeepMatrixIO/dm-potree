@@ -18,39 +18,87 @@ ElevationProfile.html has errors, mostly for the geometry change, which requires
 and setting color from attribute.
 Also does not worl due glsl shader
 
-Clipping_Volume.html does not work due glsl shader
-Elevation pr
 
 
-ept_zstandard.htnl also due glsl shaders
 
-features_sorvilier.js does not start, no errors
 
-gradient_colors.js also due glsl errors  RawShaderMAterial
 
-light_ca_13.html also errors due glsl
 
-lion_las.html als due rawshadermaterial does not start
+features_sorvilier.js Start but requires loaders
 
-load_project.html does not start RawShaderMAterial	
-meshes.html does not worl	
+gradient_colors.js Errors on html 		
+				e.pointcloud.updateMatrixWorld();
+				let box = e.pointcloud.pcoGeometry.tightBoundingBox.clone();
+				box.applyMatrix4(e.pointcloud.matrixWorld);
+				let center = box.getCenter();  <---------- It has no volume, as its 0,0,0
+
+light_ca_13.html also errors due glsl and AnimationPAth due Geometry to BufferGeometry errors
+shadere requires an array and not receiving
+
+In HTML creates an Animation PAth which nos gets a BufferGeometry, uses it to create THREE.LineBasicMAterial, then  THREE.Line
+
+
+load_project.html has issues with LineGeometry.LineSegmentsGeometry due to usage of instanced geometry, check it further
+
+
+meshes.html does not work due to missing loaders
 
 page.html works because is a catalog
 
-toolbar does work
+toolbar does work due to Toolbars and Instanced Geometries, Tools do not work
 
-Tools do not work
+360 works fine
 
-360 works partially, only loads certain things
+Annotations works fine
 
-Annotations works partially dot does not load pointcloud properly
+CameraAnimation has errors due to LineGeometry, as cannot instance it.
 
-CameraAnnotation worls partially
+cesiumSorvellier works fine
 
-cesiumSorvellier works partuially too
+customSidebarSection.html works fine
 
-customSidebarSection.html does not work
 embedded_iframe works ok
 
-ept does not work.html due RAW ShaderMAterial
+ept.html works fine
 
+geopackage does not load geopackage due LineMAterial errors. ShaderMaterial cannot be invoked without new
+
+light.html Does not work due to animation errors
+
+lion_laz.html works fine
+
+matcap.html works fine
+
+multiple_pointclouds work fine
+
+viewer.html works fine
+
+AnimationPAths work fine unlike othher animations   <----- Check it
+
+Arena4D.html does not work.  PointCloudArena4DGeometrey is not defined
+
+cesium_ca13.hrtml fine
+
+classifications.html work fine
+
+device_orientation.html workl fine
+
+
+ept_binary.html fine
+
+
+features_ca13.html does not work due to InstanceBufferGeomtry, LineSegmentsGeometry
+
+light_animated.html Does not work. Shader Error on array viewer.js:375 Uncaught could not compile shader pointcloud: ERROR: 0:1079: '[' : array index for samplers must be constant integral expressions
+
+
+lines.html Does not work due lines geometry
+
+measurements.html does not work too
+
+orientedImages does not work completely in Orientedimages.js Hay un elemento que es nulo.
+
+shapefiles.html does not work due ShaderMAterial and LineMAterial
+
+
+VR tampoco funciona

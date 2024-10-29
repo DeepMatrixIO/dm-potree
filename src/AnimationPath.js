@@ -91,6 +91,7 @@ export class AnimationPath {
 		return this.spline.getLength();
 	}
 
+	//changes to more recent version of three.js, above 0124 require to move from Geometry to BufferGeometry
 	animate(start, end, speed, callback) {
 		let animation = new PathAnimation(this, start, end, speed, callback);
 		animation.start();
@@ -112,21 +113,26 @@ export class AnimationPath {
 
 	getGeometry() {
 		//let geometry = new THREE.Geometry();
-		let geometry = new THREE.BufferGeometry();
+		let geometry = new THREE.BufferGeometry();//this affects whenever geometry is accessed 
 
 		let samples = 500;
 		let i = 0;
+		let vertices = []
 		for (let u = 0; u <= 1; u += 1 / samples) {
 			let position = this.spline.getPoint(u);
-			geometry.vertices[i] = new THREE.Vector3(position.x, position.y, position.z);
+			//geometry.vertices[i] = new THREE.Vector3(position.x, position.y, position.z);
+			vertices.push(position.x, position.y, position.z);
 
 			i++;
 		}
 
 		if (this.closed) {
 			let position = this.spline.getPoint(0);
-			geometry.vertices[i] = new THREE.Vector3(position.x, position.y, position.z);
+			//geometry.vertices[i] = new THREE.Vector3(position.x, position.y, position.z);
+			vertices.push(position.x, position.y, position.z);
+
 		}
+		geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
 
 		return geometry;
 	}

@@ -1,3 +1,4 @@
+#version 300 es //
 
 precision highp float;
 precision highp int;
@@ -9,15 +10,13 @@ attribute vec3 position;
 // DYNAMIC LIST OF ATTRIBUTES IN USE
 #define NUM_ATTRIBUTES
 
-attribute float attribute_0;
+in float attribute_0;
 
-uniform float uAttribute_w[NUM_ATTRIBUTES];      // composite weight
-uniform vec3  uAttribute_gbc[NUM_ATTRIBUTES];    // gamma, brightness, contrast
-uniform vec2  uAttribute_range[NUM_ATTRIBUTES];  // 
+uniform float uAttribute_w[NUM_ATTRIBUTES];	   // composite weight
+uniform vec3 uAttribute_gbc[NUM_ATTRIBUTES];   // gamma, brightness, contrast
+uniform vec2 uAttribute_range[NUM_ATTRIBUTES]; //
 
 // filter
-
-
 
 uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
@@ -28,9 +27,10 @@ uniform mat4 uViewInv;
 uniform sampler2D gradient;
 uniform sampler2D classificationLUT;
 
-varying vec3 vColor;
+out vec3 vColor;
 
-vec4 getColor(float value, int index){
+vec4 getColor(float value, int index)
+{
 
 	vec2 range = uAttribute_range[index];
 	vec3 gbc = uAttribute_gbc[index];
@@ -47,7 +47,8 @@ vec4 getColor(float value, int index){
 	return w;
 }
 
-vec4 getColor(vec4 value, int index){
+vec4 getColor(vec4 value, int index)
+{
 
 	vec4 color = value;
 
@@ -64,15 +65,13 @@ vec4 getColor(vec4 value, int index){
 	return color;
 }
 
-vec4 getColor(){
-
-	
-
+vec4 getColor()
+{
 }
 
-
-void main() {
-	vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+void main()
+{
+	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
 
 	gl_Position = projectionMatrix * mvPosition;
 
@@ -80,5 +79,4 @@ void main() {
 
 	// COLOR
 	vColor = getColor();
-
 }

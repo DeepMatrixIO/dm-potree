@@ -21,6 +21,7 @@ const VERTEXCOLORS = 2;
 export class PointCloudMaterial extends THREE.RawShaderMaterial {
 	constructor(parameters = {}) {
 		super();
+		this.glslVersion = THREE.GLSL3;//required for webgl2 
 
 		this.visibleNodesTexture = Utils.generateDataTexture(2048, 1, new THREE.Color(0xffffff));
 		this.visibleNodesTexture.minFilter = THREE.NearestFilter;

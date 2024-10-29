@@ -119,7 +119,7 @@ export class BoxVolume extends Volume {
 		{
 			let Vector3 = THREE.Vector3;
 
-			boxFrameGeometry.vertices.push(
+			let vertices = [
 
 				// bottom
 				new Vector3(-0.5, -0.5, 0.5),
@@ -148,8 +148,17 @@ export class BoxVolume extends Volume {
 				new Vector3(0.5, 0.5, -0.5),
 				new Vector3(-0.5, -0.5, -0.5),
 				new Vector3(-0.5, 0.5, -0.5),
+			]
+			const positions = new Float32Array(vertices.length * 3);
+			for (let i = 0; i < vertices.length; i++) {
+				positions[i * 3] = vertices[i].x;
+				positions[i * 3 + 1] = vertices[i].y;
+				positions[i * 3 + 2] = vertices[i].z;
+			}
 
-			);
+
+			boxFrameGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
 
 		}
 
