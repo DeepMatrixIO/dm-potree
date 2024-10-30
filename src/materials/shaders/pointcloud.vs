@@ -117,9 +117,12 @@ uniform sampler2D matcapTextureUniform;
 uniform bool backfaceCulling;
 
 #if defined(num_shadowmaps) && num_shadowmaps > 0
+
 uniform sampler2D uShadowMap[num_shadowmaps];
 uniform mat4 uShadowWorldView[num_shadowmaps];
 uniform mat4 uShadowProj[num_shadowmaps];
+
+// #endif
 #endif
 
 out vec3 vColor;
@@ -1029,7 +1032,7 @@ void main()
 	}
 #endif
 
-#if defined(num_shadowmaps) && num_shadowmaps > 0
+#if defined(num_shadowmaps) && num_shadowmaps > 0 // must be in the same line
 
 	const float sm_near = 0.1;
 	const float sm_far = 10000.0;
@@ -1037,8 +1040,10 @@ void main()
 	for (int i = 0; i < num_shadowmaps; i++)
 	{
 		vec3 viewPos = (uShadowWorldView[i] * vec4(position, 1.0)).xyz;
+
 		float distanceToLight = abs(viewPos.z);
 
+		// vec4 projPos = uShadowProj[i] * uShadowWorldView[i] * vec4(position, 1);
 		vec4 projPos = uShadowProj[i] * uShadowWorldView[i] * vec4(position, 1);
 		vec3 nc = projPos.xyz / projPos.w;
 
@@ -1066,7 +1071,15 @@ void main()
 		for (int j = 0; j < 9; j++)
 		{
 			// vec4 depthMapValue = texture2D(uShadowMap[i], vec2(u, v) + sampleLocations[j]);
-			vec4 depthMapValue = texture(uShadowMap[i], vec2(u, v) + sampleLocations[j]);
+			vec4 depthMapValue;
+			if (i == 0)
+			{
+				depthMapValue = texture(uShadowMap[0], vec2(u, v) + sampleLocations[j]);
+			}
+			if (i == 1)
+			{
+				depthMapValue = texture(uShadowMap[0], vec2(u, v) + sampleLocations[j]);
+			}
 
 			float linearDepthFromSM = depthMapValue.x + bias;
 			float linearDepthFromViewer = distanceToLight;
@@ -1093,4 +1106,5 @@ void main()
 	}
 
 #endif
+	// #endif
 }

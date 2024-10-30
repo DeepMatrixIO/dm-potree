@@ -164,8 +164,14 @@ class ProfileFakeOctree extends PointCloudTree {
 
 		for (let key of Object.keys(this.currentBatch.geometry.attributes)) {
 			let attribute = this.currentBatch.geometry.attributes[key];
-			attribute.updateRange.offset = updateRange.start;
-			attribute.updateRange.count = updateRange.count;
+			//this does not exist in newer versions, but addUpdateRanges
+			//attribute.updateRange.offset = updateRange.start;//???????
+			//attribute.updateRange.count = updateRange.count;
+
+
+			//newer threejs versions use addUpdateRanges
+			attribute.clearUpdateRanges()
+			attribute.addUpdateRange(updateRange.start, updateRange.count);
 			attribute.needsUpdate = true;
 		}
 

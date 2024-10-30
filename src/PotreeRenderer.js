@@ -1131,16 +1131,25 @@ export class Renderer {
 				let vsVersionIndex = vs.indexOf("#version ");
 				let fsVersionIndex = fs.indexOf("#version ");
 
+				//if it exists somewhere in the text but not the first line, is placed at the begining, is replaced by all defines and an empty line w new line
+				//this may not be correct as it 
 				if (vsVersionIndex >= 0) {
 					vs = vs.replace(/(#version .*)/, `$1\n${definesString}`)
-				} else {
+					//console.log('VERSION STRING AT THE BEGINNING of VS')
+				} else {//else 
 					vs = `${definesString}\n${vs}`;
+					console.log('VERSION STRING DOES NOT EXIST on VS')
 				}
 
+				//Doing the same for fragment shaders
 				if (fsVersionIndex >= 0) {
 					fs = fs.replace(/(#version .*)/, `$1\n${definesString}`)
+					//console.log('VERSION STRING AT THE BEGINNING of FS')
+
 				} else {
 					fs = `${definesString}\n${fs}`;
+					console.log('VERSION STRING DOES NOT EXIST on FS')
+
 				}
 
 

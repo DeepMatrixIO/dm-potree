@@ -14,26 +14,18 @@ Existing Errors:
 
 viewer.html works fine
 
-ElevationProfile.html has errors, mostly for the geometry change, which requires set POSITON attribute from an array
-and setting color from attribute.
-Also does not worl due glsl shader
-
-
-
+ElevationProfile.html Works, but the Spheres do not show color.
 
 
 
 
 features_sorvilier.js Start but requires loaders
 
-gradient_colors.js Errors on html 		
-				e.pointcloud.updateMatrixWorld();
-				let box = e.pointcloud.pcoGeometry.tightBoundingBox.clone();
-				box.applyMatrix4(e.pointcloud.matrixWorld);
-				let center = box.getCenter();  <---------- It has no volume, as its 0,0,0
+gradient_colors.js Errors had errors on html. Fixed. box.getCenter added  an empty vector to operate and compute results		
 
-light_ca_13.html also errors due glsl and AnimationPAth due Geometry to BufferGeometry errors
-shadere requires an array and not receiving
+
+light_ca_13.html pointcloud.vs got a temporary fix, so only the one shadowmap is being applied. The 
+
 
 In HTML creates an Animation PAth which nos gets a BufferGeometry, uses it to create THREE.LineBasicMAterial, then  THREE.Line
 
@@ -63,7 +55,7 @@ ept.html works fine
 
 geopackage does not load geopackage due LineMAterial errors. ShaderMaterial cannot be invoked without new
 
-light.html Does not work due to animation errors
+light.html Works fine.
 
 lion_laz.html works fine
 
