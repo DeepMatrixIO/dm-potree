@@ -17,35 +17,34 @@ viewer.html works fine
 ElevationProfile.html Works, but the Spheres do not show color.
 
 
-
-
 features_sorvilier.js Start but requires loaders
 
 gradient_colors.js Errors had errors on html. Fixed. box.getCenter added  an empty vector to operate and compute results		
 
-
 light_ca_13.html pointcloud.vs got a temporary fix, so only the one shadowmap is being applied. The 
-
 
 In HTML creates an Animation PAth which nos gets a BufferGeometry, uses it to create THREE.LineBasicMAterial, then  THREE.Line
 
 
-load_project.html has issues with LineGeometry.LineSegmentsGeometry due to usage of instanced geometry, check it further
+load_project.html 
+LineSegmentsGeometry and others fixed, placed yet in /libs/thre.js/lines
+ES5 was swhitched to ES6 and class inheritance.
+It fixes now tools like point but the color of the sphere is still black
 
 
 meshes.html does not work due to missing loaders
 
 page.html works because is a catalog
 
-toolbar does work due to Toolbars and Instanced Geometries, Tools do not work
+toolbar.html Fixed with LineSegmentsGeometry and related classes migrated and VS FS
 
 360 works fine
 
 Annotations works fine
 
-CameraAnimation has errors due to LineGeometry, as cannot instance it.
+CameraAnimation works fine
 
-cesiumSorvellier works fine
+cesiumSorvellier.html works fine
 
 customSidebarSection.html works fine
 
@@ -53,9 +52,12 @@ embedded_iframe works ok
 
 ept.html works fine
 
-geopackage does not load geopackage due LineMAterial errors. ShaderMaterial cannot be invoked without new
+geopackage.html Works fine after fixing lineMAterial
 
-light.html Works fine.
+
+
+
+light.html Works fine. Shadow works fine
 
 lion_laz.html works fine
 
@@ -65,7 +67,7 @@ multiple_pointclouds work fine
 
 viewer.html works fine
 
-AnimationPAths work fine unlike othher animations   <----- Check it
+AnimationPAths work fine 
 
 Arena4D.html does not work.  PointCloudArena4DGeometrey is not defined
 
@@ -79,18 +81,18 @@ device_orientation.html workl fine
 ept_binary.html fine
 
 
-features_ca13.html does not work due to InstanceBufferGeomtry, LineSegmentsGeometry
+features_ca13.html Apparently works fine.  <----- Check it
 
-light_animated.html Does not work. Shader Error on array viewer.js:375 Uncaught could not compile shader pointcloud: ERROR: 0:1079: '[' : array index for samplers must be constant integral expressions
+light_animated.html Works fine. Shadowmaps fixed but only on single shadow. Uses PointcloudSM
 
 
-lines.html Does not work due lines geometry
+lines.html Works fine. It is a single line and color applied
 
-measurements.html does not work too
+measurements.html Work fine but the sphere color does not show color.
 
-orientedImages does not work completely in Orientedimages.js Hay un elemento que es nulo.
+orientedImages OrientedImage.js set  does not work completely in Orientedimages.js Some issue on a null object. Check for extra resources <---- check
 
-shapefiles.html does not work due ShaderMAterial and LineMAterial
+shapefiles.html Work Fine
 
 
 VR tampoco funciona

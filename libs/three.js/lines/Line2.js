@@ -1,24 +1,26 @@
-import { LineSegments2 } from '../lines/LineSegments2.js';
-import { LineGeometry } from '../lines/LineGeometry.js';
-import { LineMaterial } from '../lines/LineMaterial.js';
+import {LineGeometry} from '../lines/LineGeometry.js';
+import {LineMaterial} from '../lines/LineMaterial.js';
+import {LineSegments2} from '../lines/LineSegments2.js';
 
-var Line2 = function ( geometry, material ) {
 
-	if ( geometry === undefined ) geometry = new LineGeometry();
-	if ( material === undefined ) material = new LineMaterial( { color: Math.random() * 0xffffff } );
+class Line2 extends LineSegments2 {
 
-	LineSegments2.call( this, geometry, material );
+	constructor(geometry, material) {
 
-	this.type = 'Line2';
+		if (geometry === undefined) geometry = new LineGeometry();
+		if (material === undefined) material = new LineMaterial({color: Math.random() * 0xffffff});
 
-};
+		super(geometry, material);
 
-Line2.prototype = Object.assign( Object.create( LineSegments2.prototype ), {
+		this.type = 'Line2';
 
-	constructor: Line2,
+		this.isLine2 = true;
 
-	isLine2: true
+	}
 
-} );
+}
 
-export { Line2 };
+
+
+export {Line2};
+
