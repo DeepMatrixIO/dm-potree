@@ -241,12 +241,12 @@ ShaderLib['line'] = {
 			#include <logdepthbuf_fragment>
 			#include <color_fragment>
 
-			gl_FragColor = vec4( diffuseColor.rgb, diffuseColor.a );//glsl 1
-			//fragColor = vec4( diffuseColor.rgb, diffuseColor.a );//glsl 3
+			gl_FragColor = vec4( diffuseColor.rgb, diffuseColor.a );
+			//fragColor = vec4( diffuseColor.rgb, diffuseColor.a );
 
 			#include <tonemapping_fragment>
 			//#include <encodings_fragment>//deprecated 			
-			//#include <colorspace_fragment>
+			#include <colorspace_fragment>
 			#include <fog_fragment>
 			#include <premultiplied_alpha_fragment>
 
@@ -271,7 +271,7 @@ class LineMaterial extends ShaderMaterial {
 			clipping: true // required for clipping support
 
 		});
-		//this.glslVersion = GLSL3;//yet does not work as three.js still uses glsl 1
+		this.glslVersion = GLSL3;//this is not defined
 		this.isLineMaterial = true;
 		this.dashed = false;
 		Object.defineProperties(this, {

@@ -1,4 +1,4 @@
-#version 300 es // unsure who uses it
+#version 300 es // pointcloud_sm.fs Shadow Mapping
 precision mediump float;
 precision mediump int;
 

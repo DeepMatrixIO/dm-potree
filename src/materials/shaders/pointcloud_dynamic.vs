@@ -1,4 +1,4 @@
-#version 300 es //
+#version 300 es // pointcloud_dynamic.vs
 
 precision highp float;
 precision highp int;

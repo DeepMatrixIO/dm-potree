@@ -1,4 +1,4 @@
-#version 300 es // FS. not added in PointCloudMaterial.js
+#version 300 es // pointcloud.fs  added in PointCloudMaterial.js
 // #if defined paraboloid_point_shape
 // #extension GL_EXT_frag_depth : enable
 // #endif

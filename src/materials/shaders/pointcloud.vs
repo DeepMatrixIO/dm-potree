@@ -1,4 +1,4 @@
-#version 300 es // PointCloudMaterial (pointcloud.vs) does not add it like in eyeDomeLighthing Material
+#version 300 es // (pointcloud.vs) PointCloudMaterial does not add it like in eyeDomeLighthing Material
 precision highp float;
 precision highp int;
 

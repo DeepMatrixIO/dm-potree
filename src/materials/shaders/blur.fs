@@ -1,5 +1,5 @@
 #version 300 es // PointCloudMaterial does not add it unline eyeDomeLighthing Material
-
+// blur.fs
 uniform mat4 projectionMatrix;
 
 uniform float screenWidth;

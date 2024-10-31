@@ -1,4 +1,4 @@
-#version 300 es // pointcloud_sm.vs. Unshure who calls it, but it in the base code
+#version 300 es // pointcloud_sm.vs.
 precision mediump float;
 precision mediump int;
 

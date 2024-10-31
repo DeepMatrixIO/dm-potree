@@ -1,4 +1,4 @@
-// updated to webgl 2, added glsl to RAWShaderMaterial
+// edl.vs updated to webgl 2, added glsl to RAWShaderMaterial
 in vec3 position;
 in vec2 uv;
 

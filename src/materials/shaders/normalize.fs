@@ -1,4 +1,4 @@
-// #version 300 es // FS. not added in PointCloudMaterial.js
+// #version 300 es // normalize.fs  not added in PointCloudMaterial.js
 
 // #extension GL_EXT_frag_depth : enable
 

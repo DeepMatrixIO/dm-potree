@@ -1,5 +1,6 @@
 
 #version 300 es // PointCloudMaterial does not add it unline eyeDomeLighthing Material
+// blur.vs
 out vec2 vUv;
 
 void main()

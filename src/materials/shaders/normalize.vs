@@ -1,4 +1,4 @@
-// #version 300 es //
+// #version 300 es //normalize.vs
 
 precision mediump float;
 precision mediump int;

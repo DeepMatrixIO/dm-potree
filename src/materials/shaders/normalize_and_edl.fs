@@ -1,5 +1,6 @@
 
-// #extension GL_EXT_frag_depth : enable
+// normalize_and_edl.fs
+//  #extension GL_EXT_frag_depth : enable
 
 //
 // adapted from the EDL shader code from Christian Boucheny in cloud compare:
