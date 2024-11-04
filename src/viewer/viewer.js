@@ -321,10 +321,13 @@ export class Viewer extends EventDispatcher {
 
 			this.loadGUI = this.loadGUI.bind(this);
 
-			this.annotationTool = new AnnotationTool(this);
-			this.measuringTool = new MeasuringTool(this);
-			this.profileTool = new ProfileTool(this);
-			this.volumeTool = new VolumeTool(this);
+			//where are these being rendered and  updated?
+			//within viewer.update are being update as result of camera changes
+			//later rendered within potreeRenderer
+			this.annotationTool = new AnnotationTool(this);//has its own render method and update method but no real implementation
+			this.measuringTool = new MeasuringTool(this);//has its own render method and update method
+			this.profileTool = new ProfileTool(this);//has its own update and render methods. Its object a raycaster
+			this.volumeTool = new VolumeTool(this);//has its own update and render methods
 
 		} catch (e) {
 			this.onCrash(e);
@@ -1617,6 +1620,7 @@ export class Viewer extends EventDispatcher {
 
 	}
 
+	//checking and updating all items in the scene
 	update(delta, timestamp) {
 
 		if (Potree.measureTimings) performance.mark("update-start");
@@ -1639,7 +1643,7 @@ export class Viewer extends EventDispatcher {
 		this.scene.directionalLight.lookAt(lTarget);
 
 
-		for (let pointcloud of visiblePointClouds) {
+		for (let pointcloud of visiblePointClouds) {//POINTCLOUDS UPDATES
 
 			pointcloud.showBoundingBox = this.showBoundingBox;
 			pointcloud.generateDEM = this.generateDEM;
@@ -1658,7 +1662,7 @@ export class Viewer extends EventDispatcher {
 			this.updateMaterialDefaults(pointcloud);
 		}
 
-		{
+		{//BOUNDING BOXES UPDATES
 			if (this.showBoundingBox) {
 				let bbRoot = this.scene.scene.getObjectByName("potree_bounding_box_root");
 				if (!bbRoot) {
@@ -1873,8 +1877,9 @@ export class Viewer extends EventDispatcher {
 			}
 		}
 
+		////////////////updating related tools, associated to navigation cube
 		{ // update navigation cube
-			this.navigationCube.update(camera.rotation);
+			this.navigationCube.update(camera.rotation);//measuring tool is updated,
 		}
 
 		this.updateAnnotations();
@@ -1901,6 +1906,7 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+	//multiple pointcloud renderers exist, depending on the quality settings
 	getPRenderer() {
 		if (this.useHQ) {
 			if (!this.hqRenderer) {
@@ -2116,7 +2122,7 @@ export class Viewer extends EventDispatcher {
 
 		pRenderer.clear();
 
-		pRenderer.render(this.renderer);
+		pRenderer.render(this.renderer);//everything  gets updated, including viewer.scene.scene
 		this.renderer.render(this.overlay, this.overlayCamera);
 	}
 
@@ -2243,6 +2249,9 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+	//this is the main loop
+	//at every cicle, additional objects are updated before being rendered,
+	//in particular, all objects within viewer.scene.scene 
 	loop(timestamp) {
 
 		if (this.stats) {
@@ -2253,8 +2262,8 @@ export class Viewer extends EventDispatcher {
 			performance.mark("loop-start");
 		}
 
-		this.update(this.clock.getDelta(), timestamp);
-		this.render();
+		this.update(this.clock.getDelta(), timestamp);// <------- Updates al data but not renders yet
+		this.render();//calls potreeRenderer, which renders all available scenes
 
 		// let vrActive = viewer.renderer.xr.isPresenting;
 		// if(vrActive){
