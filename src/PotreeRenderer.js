@@ -24,7 +24,7 @@ function paramThreeToGL(_gl, p) {
 	if (p === THREE.UnsignedShort4444Type) return _gl.UNSIGNED_SHORT_4_4_4_4;
 	if (p === THREE.UnsignedShort5551Type) return _gl.UNSIGNED_SHORT_5_5_5_1;
 	//if (p === THREE.UnsignedShort565Type) return _gl.UNSIGNED_SHORT_5_6_5;// removed from 136 to 137, use UnsignedShort5551Type isntead
-	if (p === THREE.UnsignedShort5551Type) return _gl.UNSIGNED_SHORT_5_6_5;
+
 
 	if (p === THREE.ByteType) return _gl.BYTE;
 	if (p === THREE.ShortType) return _gl.SHORT;
@@ -856,6 +856,7 @@ export class Renderer {
 
 			const geometry = node.geometryNode.geometry;
 
+			if (!geometry) console.log('Missing geometry', node)
 			if (geometry.attributes["gps-time"]) {
 				const bufferAttribute = geometry.attributes["gps-time"];
 				const attGPS = octree.getAttribute("gps-time");
@@ -1131,25 +1132,16 @@ export class Renderer {
 				let vsVersionIndex = vs.indexOf("#version ");
 				let fsVersionIndex = fs.indexOf("#version ");
 
-				//if it exists somewhere in the text but not the first line, is placed at the begining, is replaced by all defines and an empty line w new line
-				//this may not be correct as it 
 				if (vsVersionIndex >= 0) {
 					vs = vs.replace(/(#version .*)/, `$1\n${definesString}`)
-					//console.log('VERSION STRING AT THE BEGINNING of VS')
-				} else {//else 
+				} else {
 					vs = `${definesString}\n${vs}`;
-					console.log('VERSION STRING DOES NOT EXIST on VS')
 				}
 
-				//Doing the same for fragment shaders
 				if (fsVersionIndex >= 0) {
 					fs = fs.replace(/(#version .*)/, `$1\n${definesString}`)
-					//console.log('VERSION STRING AT THE BEGINNING of FS')
-
 				} else {
 					fs = `${definesString}\n${fs}`;
-					console.log('VERSION STRING DOES NOT EXIST on FS')
-
 				}
 
 

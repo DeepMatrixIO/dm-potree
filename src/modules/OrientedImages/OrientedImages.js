@@ -108,8 +108,13 @@ export class OrientedImage {
 	updateTransform() {
 		let {mesh, line, fov} = this;
 
-		mesh.updateMatrixWorld();
-		const dir = mesh.getWorldDirection();
+
+
+		let target = new THREE.Vector3();
+		//why the target was added?
+		mesh.updateMatrixWorld();//target was added as newer version of three.js requires it
+		const dir = mesh.getWorldDirection(target);//is crashing here
+		//const dir = mesh.getWorldDirection();//is crashing here
 		const alpha = THREE.MathUtils.degToRad(fov / 2);
 		const d = -0.5 / Math.tan(alpha);
 		const move = dir.clone().multiplyScalar(d);

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="utf-8">
 	<meta name="description" content="">
@@ -25,20 +26,25 @@
 	<script src="../libs/openlayers3/ol.js"></script>
 	<script src="../libs/i18next/i18next.js"></script>
 	<script src="../libs/jstree/jstree.js"></script>
+	<script src="../libs/copc/index.js"></script>
+
 	<script src="../build/potree/potree.js"></script>
 	<script src="../libs/plasio/js/laslaz.js"></script>
+
+
 
 	<!-- INCLUDE ADDITIONAL DEPENDENCIES HERE -->
 	<!-- INCLUDE SETTINGS HERE -->
 
 	<div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 0px; ">
-		<div id="potree_render_area" style="background-image: url('../build/potree/resources/images/background.jpg');"></div>
+		<div id="potree_render_area" style="background-image: url('../build/potree/resources/images/background.jpg');">
+		</div>
 		<div id="potree_sidebar_container"> </div>
 	</div>
 
 	<script type="module">
 
-	import * as THREE from "../libs/three.js/build/three.module.js";
+		import * as THREE from "../libs/three.js/build/three.module.js";
 		window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
 
 		viewer.setEDLEnabled(true);
@@ -53,10 +59,10 @@
 			$("#menu_appearance").next().show();
 		});
 
-        var path = "../pointclouds/lion_takanawa_ept_bin/ept.json";
+		var path = "../pointclouds/lion_takanawa_ept_bin/ept.json";
 		var name = "lion";
 
-		var getQueryParam = function(name) {
+		var getQueryParam = function (name) {
 			name = name.replace(/[\[\]]/g, "\\$&");
 			var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
 				results = regex.exec(window.location.href);
@@ -64,15 +70,15 @@
 			return decodeURIComponent(results[2].replace(/\+/g, " "));
 		}
 
-        var r = getQueryParam('r');
-        if (r) {
+		var r = getQueryParam('r');
+		if (r) {
 			name = r;
-            var http = 'http';
-            if (r.substr(0, http.length) == http) path = name;
-            else path = "../pointclouds/" + name + "/ept.json";
-        }
+			var http = 'http';
+			if (r.substr(0, http.length) == http) path = name;
+			else path = "../pointclouds/" + name + "/ept.json";
+		}
 
-		Potree.loadPointCloud(path, name, function(e){
+		Potree.loadPointCloud(path, name, function (e) {
 			viewer.scene.addPointCloud(e.pointcloud);
 
 			let material = e.pointcloud.material;
@@ -82,6 +88,6 @@
 			viewer.fitToScreen(0.5);
 		});
 	</script>
-  </body>
-</html>
+</body>
 
+</html>

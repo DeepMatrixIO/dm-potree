@@ -1236,7 +1236,7 @@ export class Viewer extends EventDispatcher {
 			elButtons.append(imgMapToggle);
 
 
-			VRButton.createButton(this.renderer).then(vrButton => {
+			false && VRButton.createButton(this.renderer).then(vrButton => {
 
 				if (vrButton == null) {
 					console.log("VR not supported or active.");

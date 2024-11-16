@@ -8,14 +8,14 @@ GLTF produce errors
 Geometry was changed for BufferGeometry and its corresponding methods
 SRGBEncoding for sRGCCololrspace
 MAth was replaced by MathUtil.Math 
+MOst functions now require a vector to store results instead of operating on the object.
 
 
 Existing Errors:
 
 viewer.html works fine
 
-ElevationProfile.html Works, but the Spheres do not show color.
-
+ElevationProfile.html Works, but the Spheres do not show color.  <-----
 
 features_sorvilier.js Start but requires loaders
 
@@ -29,8 +29,7 @@ In HTML creates an Animation PAth which nos gets a BufferGeometry, uses it to cr
 load_project.html 
 LineSegmentsGeometry and others fixed, placed yet in /libs/thre.js/lines
 ES5 was swhitched to ES6 and class inheritance.
-It fixes now tools like point but the color of the sphere is still black
-
+It fixes now tools like point but the color of the sphere is still black, illumination is required
 
 meshes.html does not work due to missing loaders
 
@@ -90,9 +89,19 @@ lines.html Works fine. It is a single line and color applied
 
 measurements.html Work fine but the sphere color does not show color.
 
-orientedImages OrientedImage.js set  does not work completely in Orientedimages.js Some issue on a null object. Check for extra resources <---- check
+orientedImages OrientedImage.js Done. mesh.getWorldDirection not requires a target vector to copy values to
+
 
 shapefiles.html Work Fine
 
 
 VR tampoco funciona
+
+
+Added COPC examples
+
+ept.html works fine
+copc.html  Works, required extra files
+ept_laz14.html
+ept_binary.html does not work. REquirec COPC. BinaryLoader does not work, requires node.url
+ept_standard.html does not work. REquirec COPC. BinaryLoader does not work, requires node.url
