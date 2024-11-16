@@ -89,7 +89,9 @@ lines.html Works fine. It is a single line and color applied
 
 measurements.html Work fine but the sphere color does not show color.
 
-orientedImages OrientedImage.js Done. mesh.getWorldDirection not requires a target vector to copy values to
+orientedImages OrientedImage.js DONE  mesh.getWorldDirection now requires a target vector to copy values to.
+Most methods should be checked for a target now. 
+
 
 
 shapefiles.html Work Fine

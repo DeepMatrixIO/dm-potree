@@ -372,7 +372,7 @@ export class OrientedImageLoader {
 				camera.rotation.copy(img.mesh.rotation);
 				{
 					const mesh = img.mesh;
-					const dir = mesh.getWorldDirection();
+					const dir = mesh.getWorldDirection(new THREE.Vector3());//fixed for the new version
 					const pos = mesh.position;
 					const alpha = THREE.MathUtils.degToRad(fov / 2);
 					const d = 0.5 / Math.tan(alpha);
