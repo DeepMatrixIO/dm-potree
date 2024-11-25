@@ -316,6 +316,7 @@ export class OrientedImageLoader {
 		let hoveredElement = null;
 		let clipVolume = null;
 
+		//on every mouse movement, raycasts the images.
 		const onMouseMove = (evt) => {
 			const tStart = performance.now();
 			if (hoveredElement) {
