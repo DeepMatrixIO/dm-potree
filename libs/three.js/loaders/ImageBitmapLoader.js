@@ -1,31 +1,32 @@
-import { Cache } from './Cache.js';
-import { Loader } from './Loader.js';
+import {updateFetchToken} from '../../../src/tokenUpdater.js';
+import {Cache} from './Cache.js';
+import {Loader} from './Loader.js';
 
 class ImageBitmapLoader extends Loader {
 
-	constructor( manager ) {
+	constructor(manager) {
 
-		super( manager );
+		super(manager);
 
 		this.isImageBitmapLoader = true;
 
-		if ( typeof createImageBitmap === 'undefined' ) {
+		if (typeof createImageBitmap === 'undefined') {
 
-			console.warn( 'THREE.ImageBitmapLoader: createImageBitmap() not supported.' );
-
-		}
-
-		if ( typeof fetch === 'undefined' ) {
-
-			console.warn( 'THREE.ImageBitmapLoader: fetch() not supported.' );
+			console.warn('THREE.ImageBitmapLoader: createImageBitmap() not supported.');
 
 		}
 
-		this.options = { premultiplyAlpha: 'none' };
+		if (typeof fetch === 'undefined') {
+
+			console.warn('THREE.ImageBitmapLoader: fetch() not supported.');
+
+		}
+
+		this.options = {premultiplyAlpha: 'none'};
 
 	}
 
-	setOptions( options ) {
+	setOptions(options) {
 
 		this.options = options;
 
@@ -33,91 +34,94 @@ class ImageBitmapLoader extends Loader {
 
 	}
 
-	load( url, onLoad, onProgress, onError ) {
+	load(url, onLoad, onProgress, onError) {
 
-		if ( url === undefined ) url = '';
+		if (url === undefined) url = '';
 
-		if ( this.path !== undefined ) url = this.path + url;
+		if (this.path !== undefined) url = this.path + url;
 
-		url = this.manager.resolveURL( url );
+		url = this.manager.resolveURL(url);
 
 		const scope = this;
 
-		const cached = Cache.get( url );
+		const cached = Cache.get(url);
 
-		if ( cached !== undefined ) {
+		if (cached !== undefined) {
 
-			scope.manager.itemStart( url );
+			scope.manager.itemStart(url);
 
 			// If cached is a promise, wait for it to resolve
-			if ( cached.then ) {
+			if (cached.then) {
 
-				cached.then( imageBitmap => {
+				cached.then(imageBitmap => {
 
-					if ( onLoad ) onLoad( imageBitmap );
+					if (onLoad) onLoad(imageBitmap);
 
-					scope.manager.itemEnd( url );
+					scope.manager.itemEnd(url);
 
-				} ).catch( e => {
+				}).catch(e => {
 
-					if ( onError ) onError( e );
+					if (onError) onError(e);
 
-				} );
+				});
 				return;
 
 			}
 
 			// If cached is not a promise (i.e., it's already an imageBitmap)
-			setTimeout( function () {
+			setTimeout(function () {
 
-				if ( onLoad ) onLoad( cached );
+				if (onLoad) onLoad(cached);
 
-				scope.manager.itemEnd( url );
+				scope.manager.itemEnd(url);
 
-			}, 0 );
+			}, 0);
 
 			return cached;
 
 		}
 
 		const fetchOptions = {};
-		fetchOptions.credentials = ( this.crossOrigin === 'anonymous' ) ? 'same-origin' : 'include';
-		fetchOptions.headers = this.requestHeader;
+		fetchOptions.credentials = (this.crossOrigin === 'anonymous') ? 'same-origin' : 'include';
 
-		const promise = fetch( url, fetchOptions ).then( function ( res ) {
+		fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
+
+
+		const promise = fetch(url, fetchOptions).then(function (res) {
 
 			return res.blob();
 
-		} ).then( function ( blob ) {
+		}).then(function (blob) {
 
-			return createImageBitmap( blob, Object.assign( scope.options, { colorSpaceConversion: 'none' } ) );
+			return createImageBitmap(blob, Object.assign(scope.options, {colorSpaceConversion: 'none'}));
 
-		} ).then( function ( imageBitmap ) {
+		}).then(function (imageBitmap) {
 
-			Cache.add( url, imageBitmap );
+			Cache.add(url, imageBitmap);
 
-			if ( onLoad ) onLoad( imageBitmap );
+			if (onLoad) onLoad(imageBitmap);
 
-			scope.manager.itemEnd( url );
+			scope.manager.itemEnd(url);
 
 			return imageBitmap;
 
-		} ).catch( function ( e ) {
+		}).catch(function (e) {
 
-			if ( onError ) onError( e );
+			if (onError) onError(e);
 
-			Cache.remove( url );
+			Cache.remove(url);
 
-			scope.manager.itemError( url );
-			scope.manager.itemEnd( url );
+			scope.manager.itemError(url);
+			scope.manager.itemEnd(url);
 
-		} );
+		});
 
-		Cache.add( url, promise );
-		scope.manager.itemStart( url );
+		Cache.add(url, promise);
+		scope.manager.itemStart(url);
 
 	}
 
 }
 
-export { ImageBitmapLoader };
+export {ImageBitmapLoader};
+

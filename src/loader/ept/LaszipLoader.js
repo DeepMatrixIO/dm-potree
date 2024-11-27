@@ -1,22 +1,26 @@
 import * as THREE from "../../../libs/three.js/build/three.module.js";
+import {updateFetchToken} from "../../tokenUpdater.js"; //added by jguerrer
 
 export class EptLaszipLoader {
 	async load(node) {
 		if (node.loaded) return;
 
-		const { Key } = window.Copc
+		const {Key} = window.Copc
+
+		const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
 
 		const url = `${node.owner.base}/ept-data/${Key.toString(node.key)}.laz`
-		const response = await fetch(url);
+
+		const response = await fetch(url, fetchOptions);
 		const buffer = await response.arrayBuffer();
 		this.parse(node, buffer);
 	}
 
-	async parse(node, compressed){
+	async parse(node, compressed) {
 		let handler = new EptLazBatcher(node);
 
 		try {
-			const { Bounds, Las } = Copc
+			const {Bounds, Las} = Copc
 
 			const get = (begin, end) => new Uint8Array(compressed, begin, end - begin)
 
@@ -51,14 +55,14 @@ export class CopcLaszipLoader {
 		// isolate the compressed data buffer, which is passed to the worker.
 		// The time-consuming decompression and extracting the data into 
 		// GPU-compatible buffers happens in the worker.
-		const { pointCount, pointDataOffset, pointDataLength } = node.nodeinfo
+		const {pointCount, pointDataOffset, pointDataLength} = node.nodeinfo
 
 		// Note that COPC explicitly allows nodes to exist with no data.  They
 		// may have children, but there is no point cloud data.  Make sure we
 		// don't try to fetch a slice of point data in this case.
 		if (!pointCount) return this.parse(node, new ArrayBuffer())
 		const compressed = await node.owner.getter(
-			pointDataOffset, 
+			pointDataOffset,
 			pointDataOffset + pointDataLength)
 		this.parse(node, compressed.buffer);
 	}
@@ -82,10 +86,10 @@ export class CopcLaszipLoader {
 };
 
 export class EptLazBatcher {
-	constructor(node) { this.node = node; }
+	constructor(node) {this.node = node;}
 
 	push(las) {
-		const { isFullFile, compressed, header, eb, pointCount, nodemin } = las
+		const {isFullFile, compressed, header, eb, pointCount, nodemin} = las
 
 		let workerPath = Potree.scriptPath +
 			'/workers/EptLaszipDecoderWorker.js';
@@ -97,7 +101,7 @@ export class EptLazBatcher {
 
 			let positions = new Float32Array(e.data.position);
 			let colors = new Uint8Array(e.data.color);
-			
+
 			let intensities = new Float32Array(e.data.intensity);
 			let classifications = new Uint8Array(e.data.classification);
 			let returnNumbers = new Uint8Array(e.data.returnNumber);
@@ -107,23 +111,23 @@ export class EptLazBatcher {
 			let gpsTime = new Float32Array(e.data.gpsTime);
 
 			g.setAttribute('position',
-					new THREE.BufferAttribute(positions, 3));
+				new THREE.BufferAttribute(positions, 3));
 			g.setAttribute('rgba',
-					new THREE.BufferAttribute(colors, 4, true));
+				new THREE.BufferAttribute(colors, 4, true));
 			g.setAttribute('intensity',
-					new THREE.BufferAttribute(intensities, 1));
+				new THREE.BufferAttribute(intensities, 1));
 			g.setAttribute('classification',
-					new THREE.BufferAttribute(classifications, 1));
+				new THREE.BufferAttribute(classifications, 1));
 			g.setAttribute('return number',
-					new THREE.BufferAttribute(returnNumbers, 1));
+				new THREE.BufferAttribute(returnNumbers, 1));
 			g.setAttribute('number of returns',
-					new THREE.BufferAttribute(numberOfReturns, 1));
+				new THREE.BufferAttribute(numberOfReturns, 1));
 			g.setAttribute('source id',
-					new THREE.BufferAttribute(pointSourceIds, 1));
+				new THREE.BufferAttribute(pointSourceIds, 1));
 			g.setAttribute('indices',
-					new THREE.BufferAttribute(indices, 4));
+				new THREE.BufferAttribute(indices, 4));
 			g.setAttribute('gps-time',
-					new THREE.BufferAttribute(gpsTime, 1));
+				new THREE.BufferAttribute(gpsTime, 1));
 			this.node.gpsTime = e.data.gpsMeta;
 
 			g.attributes.indices.normalized = true;
@@ -156,7 +160,7 @@ export class EptLazBatcher {
 			Potree.workerPool.returnWorker(workerPath, worker);
 		};
 
-		let message = { isFullFile, compressed, header, eb, pointCount, nodemin };
+		let message = {isFullFile, compressed, header, eb, pointCount, nodemin};
 
 		worker.postMessage(message, [message.compressed]);
 	};

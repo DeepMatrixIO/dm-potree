@@ -1,12 +1,13 @@
 
 import * as THREE from "../../../libs/three.js/build/three.module.js";
+import {updateFetchToken} from "../../tokenUpdater.js";
 import {Utils} from "../../utils.js";
-import {Volume, BoxVolume, SphereVolume} from "../../utils/Volume.js";
+import {BoxVolume, SphereVolume} from "../../utils/Volume.js";
 
 import {MeasurePanel} from "./MeasurePanel.js";
 
-export class VolumePanel extends MeasurePanel{
-	constructor(viewer, measurement, propertiesPanel){
+export class VolumePanel extends MeasurePanel {
+	constructor(viewer, measurement, propertiesPanel) {
 		super(viewer, measurement, propertiesPanel);
 
 		let copyIconPath = Potree.resourcePath + '/icons/copy.svg';
@@ -106,7 +107,7 @@ export class VolumePanel extends MeasurePanel{
 		{ // download
 			this.elDownloadButton = this.elContent.find("input[name=download_volume]");
 
-			if(this.propertiesPanel.viewer.server){
+			if (this.propertiesPanel.viewer.server) {
 				this.elDownloadButton.click(() => this.download());
 			} else {
 				this.elDownloadButton.hide();
@@ -114,29 +115,29 @@ export class VolumePanel extends MeasurePanel{
 		}
 
 		this.elCopyRotation = this.elContent.find("img[name=copyRotation]");
-		this.elCopyRotation.click( () => {
+		this.elCopyRotation.click(() => {
 			let rotation = this.measurement.rotation.toArray().slice(0, 3);
 			let msg = rotation.map(c => c.toFixed(3)).join(", ");
 			Utils.clipboardCopy(msg);
 
 			this.viewer.postMessage(
-					`Copied value to clipboard: <br>'${msg}'`,
-					{duration: 3000});
+				`Copied value to clipboard: <br>'${msg}'`,
+				{duration: 3000});
 		});
 
 		this.elCopyScale = this.elContent.find("img[name=copyScale]");
-		this.elCopyScale.click( () => {
+		this.elCopyScale.click(() => {
 			let scale = this.measurement.scale.toArray();
 			let msg = scale.map(c => c.toFixed(3)).join(", ");
 			Utils.clipboardCopy(msg);
 
 			this.viewer.postMessage(
-					`Copied value to clipboard: <br>'${msg}'`,
-					{duration: 3000});
+				`Copied value to clipboard: <br>'${msg}'`,
+				{duration: 3000});
 		});
 
 		this.elRemove = this.elContent.find("img[name=remove]");
-		this.elRemove.click( () => {
+		this.elRemove.click(() => {
 			this.viewer.scene.removeVolume(measurement);
 		});
 
@@ -167,7 +168,7 @@ export class VolumePanel extends MeasurePanel{
 		this.update();
 	}
 
-	async download(){
+	async download() {
 
 		let clipBox = this.measurement;
 
@@ -200,7 +201,7 @@ export class VolumePanel extends MeasurePanel{
 			];
 
 			let planeQueryParts = [];
-			for(let plane of planes){
+			for (let plane of planes) {
 				let part = [plane.normal.toArray(), plane.constant].join(",");
 				part = `[${part}]`;
 				planeQueryParts.push(part);
@@ -212,8 +213,8 @@ export class VolumePanel extends MeasurePanel{
 		let regionsArg = regions.join(",");
 
 		let pointcloudArgs = [];
-		for(let pointcloud of this.viewer.scene.pointclouds){
-			if(!pointcloud.visible){
+		for (let pointcloud of this.viewer.scene.pointclouds) {
+			if (!pointcloud.visible) {
 				continue;
 			}
 
@@ -248,19 +249,22 @@ export class VolumePanel extends MeasurePanel{
 		let handle = null;
 		{ // START FILTER
 			let url = `${viewer.server}/create_regions_filter?pointclouds=[${pointcloudsArg}]&regions=[${regionsArg}]`;
-			
+
 			//console.log(url);
 
 			info("estimating results ...");
 
-			let response = await fetch(url);
+			const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
+
+			let response = await fetch(url, fetchOptions);
+
 			let jsResponse = await response.json();
 			//console.log(jsResponse);
 
-			if(!jsResponse.handle){
+			if (!jsResponse.handle) {
 				error(jsResponse.message);
 				return;
-			}else{
+			} else {
 				handle = jsResponse.handle;
 			}
 		}
@@ -268,8 +272,8 @@ export class VolumePanel extends MeasurePanel{
 		{ // WAIT, CHECK PROGRESS, HANDLE FINISH
 			let url = `${viewer.server}/check_regions_filter?handle=${handle}`;
 
-			let sleep = (function(duration){
-				return new Promise( (res, rej) => {
+			let sleep = (function (duration) {
+				return new Promise((res, rej) => {
 					setTimeout(() => {
 						res();
 					}, duration);
@@ -289,7 +293,7 @@ export class VolumePanel extends MeasurePanel{
 				let message = "downloads ready: <br>";
 				message += "<ul>";
 
-				for(let i = 0; i < jsResponse.pointclouds.length; i++){
+				for (let i = 0; i < jsResponse.pointclouds.length; i++) {
 					let url = `${viewer.server}/download_regions_filter_result?handle=${handle}&index=${i}`;
 
 					message += `<li><a href="${url}">result_${i}.las</a> </li>\n`;
@@ -316,19 +320,22 @@ export class VolumePanel extends MeasurePanel{
 
 			let start = Date.now();
 
-			while(true){
-				let response = await fetch(url);
+			while (true) {
+				const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
+
+				let response = await fetch(url, fetchOptions);
+
 				let jsResponse = await response.json();
 
-				if(jsResponse.status === "ERROR"){
+				if (jsResponse.status === "ERROR") {
 					handleError(jsResponse);
-				}else if(jsResponse.status === "FILTERING"){
+				} else if (jsResponse.status === "FILTERING") {
 					handleFiltering(jsResponse);
-				}else if(jsResponse.status === "FINISHED"){
+				} else if (jsResponse.status === "FINISHED") {
 					handleFinish(jsResponse);
 
 					break;
-				}else{
+				} else {
 					handleUnexpected(jsResponse);
 				}
 
@@ -341,7 +348,7 @@ export class VolumePanel extends MeasurePanel{
 
 	}
 
-	update(){
+	update() {
 		let elCoordiantesContainer = this.elContent.find('.coordinates_table_container');
 		elCoordiantesContainer.empty();
 		elCoordiantesContainer.append(this.createCoordinatesTable([this.measurement.position]));

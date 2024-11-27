@@ -34,12 +34,17 @@ import {Compass} from "../utils/Compass.js";
 import {NavigationCube} from "./NavigationCube.js";
 
 import JSON5 from "../../libs/json5-2.1.3/json5.mjs";
+import {updateFetchToken} from "../tokenUpdater.js";
 
 
 export class Viewer extends EventDispatcher {
 
 	constructor(domElement, args = {}) {
 		super();
+
+		//wont break if not provided 
+		this.customUpdates = []; //ADDED by  @jguerrer // runs on each  loop before general update.i.e. viewer.scene.scene  or others. Check also Input Handler for other ways
+		this.extraRenders = [];//ADDED by  @jguerrer // runs on each loop after potree  render loop
 
 		this.renderArea = domElement;
 		this.guiLoaded = false;
@@ -333,6 +338,29 @@ export class Viewer extends EventDispatcher {
 			this.onCrash(e);
 		}
 	}
+
+	//ADDED by  @jguerrer
+	triggerUpdates() {
+		try {
+			this.customUpdates.forEach((item) => {
+				item.refresh(this);
+			});
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
+	//ADDED by  @jguerrer
+	extraRenderers(timestamp) {
+		try {
+			if (this.extraRenders != null) {//added by jguerrer to enable Cesium extra render, requires an extra attr 
+				this.extraRenders.forEach((newRender) => newRender(timestamp));
+			}
+		} catch (e) {
+			console.error(e, 'Error on extra renderer');
+		}
+	}
+
 
 	onCrash(error) {
 
@@ -1001,7 +1029,10 @@ export class Viewer extends EventDispatcher {
 
 	async loadProject(url) {
 
-		const response = await fetch(url);
+		const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
+
+
+		const response = await fetch(url, fetchOptions);//added by jguerrer
 
 		const text = await response.text();
 		const json = JSON5.parse(text);
@@ -2261,9 +2292,15 @@ export class Viewer extends EventDispatcher {
 		if (Potree.measureTimings) {
 			performance.mark("loop-start");
 		}
-
+		// Update registered items before general potree items
+		this.triggerUpdates();//added by jguerrer 
 		this.update(this.clock.getDelta(), timestamp);// <------- Updates al data but not renders yet
 		this.render();//calls potreeRenderer, which renders all available scenes
+
+		this.extraRenderers(timestamp)//added by jguerrer to enable Cesium extra render, requires an extra attr 
+
+
+
 
 		// let vrActive = viewer.renderer.xr.isPresenting;
 		// if(vrActive){

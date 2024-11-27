@@ -1,6 +1,7 @@
 
 import * as THREE from "../../../libs/three.js/build/three.module.js";
 import {EventDispatcher} from "../../EventDispatcher.js";
+import {updateFetchToken} from "../../tokenUpdater.js"; //added by jguerrer
 
 let sg = new THREE.SphereGeometry(1, 8, 8);
 let sgHigh = new THREE.SphereGeometry(1, 128, 128);
@@ -264,7 +265,10 @@ export class Images360Loader {
 			};
 		}
 
-		let response = await fetch(`${url}/coordinates.txt`);
+		const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
+
+
+		let response = await fetch(`${url}/coordinates.txt`, fetchOptions);
 		let text = await response.text();
 
 		let lines = text.split(/\r?\n/);

@@ -6,11 +6,14 @@
 //do not use global potree, instead import modules
 
 import {PointCloudCopcGeometryNode, PointCloudEptGeometry} from "../PointCloudEptGeometry.js";
+import {updateFetchToken} from "../tokenUpdater.js"; //added by jguerrer
 
 export class EptLoader {
 	static async load(file, callback) {
 
-		let response = await fetch(file);
+		const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
+		let response = await fetch(file, fetchOptions);
+		//		let response = await fetch(file);
 		let json = await response.json();
 
 		let url = file.substr(0, file.lastIndexOf('/ept.json'));

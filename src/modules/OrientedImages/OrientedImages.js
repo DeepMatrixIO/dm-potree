@@ -1,6 +1,7 @@
 
 import * as THREE from "../../../libs/three.js/build/three.module.js";
 import {EventDispatcher} from "../../EventDispatcher.js";
+import {updateFetchToken} from "../../tokenUpdater.js";
 import {OrientedImageControls} from "./OrientedImageControls.js";
 
 // https://support.pix4d.com/hc/en-us/articles/205675256-How-are-yaw-pitch-roll-defined
@@ -166,7 +167,11 @@ export class OrientedImages extends EventDispatcher {
 export class OrientedImageLoader {
 
 	static async loadCameraParams(path) {
-		const res = await fetch(path);
+		const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
+
+
+		const res = await fetch(path, fetchOptions);
+		//const res = await fetch(path);
 		const text = await res.text();
 
 		const parser = new DOMParser();

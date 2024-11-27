@@ -15,15 +15,15 @@
 
 import * as THREE from "../../libs/three.js/build/three.module.js";
 import {MOUSE} from "../defines.js";
-import {Utils} from "../utils.js";
 import {EventDispatcher} from "../EventDispatcher.js";
+import {Utils} from "../utils.js";
 
- 
-export class OrbitControls extends EventDispatcher{
-	
-	constructor(viewer){
+
+export class OrbitControls extends EventDispatcher {
+
+	constructor(viewer) {
 		super();
-		
+
 		this.viewer = viewer;
 		this.renderer = viewer.renderer;
 
@@ -41,6 +41,9 @@ export class OrbitControls extends EventDispatcher{
 		this.doubleClockZoomEnabled = true;
 
 		this.tweens = [];
+
+		this.customUpdates = []; //ADDED by  @jguerrer
+
 
 		let drag = (e) => {
 			if (e.drag.object !== null) {
@@ -84,7 +87,7 @@ export class OrbitControls extends EventDispatcher{
 		};
 
 		let dblclick = (e) => {
-			if(this.doubleClockZoomEnabled){
+			if (this.doubleClockZoomEnabled) {
 				this.zoomToLocation(e.mouse);
 			}
 		};
@@ -99,7 +102,7 @@ export class OrbitControls extends EventDispatcher{
 		};
 
 		let touchMove = e => {
-			if (e.touches.length === 2 && previousTouch.touches.length === 2){
+			if (e.touches.length === 2 && previousTouch.touches.length === 2) {
 				let prev = previousTouch;
 				let curr = e;
 
@@ -117,7 +120,7 @@ export class OrbitControls extends EventDispatcher{
 				this.radiusDelta = newRadius - resolvedRadius;
 
 				this.stopTweens();
-			}else if(e.touches.length === 3 && previousTouch.touches.length === 3){
+			} else if (e.touches.length === 3 && previousTouch.touches.length === 3) {
 				let prev = previousTouch;
 				let curr = e;
 
@@ -150,20 +153,20 @@ export class OrbitControls extends EventDispatcher{
 		this.addEventListener('dblclick', dblclick);
 	}
 
-	setScene (scene) {
+	setScene(scene) {
 		this.scene = scene;
 	}
 
-	stop(){
+	stop() {
 		this.yawDelta = 0;
 		this.pitchDelta = 0;
 		this.radiusDelta = 0;
 		this.panDelta.set(0, 0);
 	}
-	
-	zoomToLocation(mouse){
+
+	zoomToLocation(mouse) {
 		let camera = this.scene.getActiveCamera();
-		
+
 		let I = Utils.getMousePointCloudIntersection(
 			mouse,
 			camera,
@@ -225,13 +228,14 @@ export class OrbitControls extends EventDispatcher{
 		}
 	}
 
-	stopTweens () {
+	stopTweens() {
 		this.tweens.forEach(e => e.stop());
 		this.tweens = [];
 	}
 
-	update (delta) {
+	update(delta) {
 		let view = this.scene.view;
+		this.triggerUpdates(); ////ADDED by  @jguerrer  . Helpful for some
 
 		{ // apply rotation
 			let progression = Math.min(1, this.fadeFactor * delta);
@@ -291,4 +295,18 @@ export class OrbitControls extends EventDispatcher{
 			this.radiusDelta -= progression * this.radiusDelta;
 		}
 	}
+
+
+	//ADDED by  @jguerrer
+	//cheched during update
+	triggerUpdates() {
+		try {
+			this.customUpdates.forEach((item) => {
+				item.refresh(this.viewer);
+			});
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
 };
