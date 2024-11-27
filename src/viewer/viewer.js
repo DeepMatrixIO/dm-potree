@@ -1464,10 +1464,15 @@ export class Viewer extends EventDispatcher {
 		// 	preserveDrawingBuffer: true,
 		// };
 
-		let canvas = document.createElement("canvas");
-
-		//let context = canvas.getContext('webgl', contextAttributes );//up to 163 webgl 1 was supported
-		let context = canvas.getContext('webgl2', contextAttributes);//to be tested al glsl functions
+		//		let canvas = document.createElement("canvas");
+		let canvas = document.getElementById('potree');
+		//added to query if canvas is already created and  avoid left over canvases
+		if (canvas === null) {
+			canvas = document.createElement('canvas');
+			canvas.setAttribute('id', 'potree');
+		}
+		//let context = canvas.getContext('webgl', contextAttributes );//up to 124 webgl 1 was supported
+		let context = canvas.getContext('webgl2', contextAttributes);//to be tested as glsl functions changed
 
 		this.renderer = new THREE.WebGLRenderer({
 			alpha: true,
