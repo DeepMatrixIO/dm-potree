@@ -264,7 +264,7 @@ export class NodeLoader {
 		// 		'Range': `bytes=${first}-${last}`,
 		// 	},
 		// });
-		const fetchOptions = {
+		let fetchOptions = {
 			headers: {
 				'content-type': 'multipart/byteranges',
 				Range: `bytes=${first}-${last}`,
@@ -403,7 +403,7 @@ export class OctreeLoader {
 
 	static async load(url) {
 
-		const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
+		let fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
 
 		let response = await fetch(url, fetchOptions);
 		//		let response = await fetch(url);

@@ -218,7 +218,8 @@ export class InputHandler extends EventDispatcher {
 
 		let consumed = false;
 		for (let hovered of this.hoveredElements) {
-			if (hovered._listeners && hovered._listeners['dblclick']) {
+			//if (hovered._listeners && hovered._listeners['dblclick']) {//getHoveredElements does not return the object but the event 
+			if (hovered.object._listeners && hovered.object._listeners['dblclick']) {//fixed to listen to the object
 				hovered.object.dispatchEvent({
 					type: 'dblclick',
 					mouse: this.mouse,

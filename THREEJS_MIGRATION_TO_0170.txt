@@ -1,9 +1,28 @@
 MIGRATION to THREEJS:
 
-Reports
 
 
-GLTF produce errors
+Classes to be changed:
+
+SphereBufferGeometry to SphereGeometry, just a renaming
+
+
+
+
+When using as module:
+exports not accessible, in Annotations for icons
+jquery must be removed but is highly attached to rendering and object mgmnt like annotationw shich are based on html and dom 
+
+
+
+
+
+
+
+
+
+
+TODO GLTF produce errors  due to older js style. Needs to be UPDATED
 
 Geometry was changed for BufferGeometry and its corresponding methods
 SRGBEncoding for sRGCCololrspace

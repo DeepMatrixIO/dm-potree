@@ -29,7 +29,7 @@ import {EarthControls} from "../navigation/EarthControls.js";
 import {FirstPersonControls} from "../navigation/FirstPersonControls.js";
 import {InputHandler} from "../navigation/InputHandler.js";
 import {OrbitControls} from "../navigation/OrbitControls.js";
-import {VRControls} from "../navigation/VRControls.js";
+//import {VRControls} from "../navigation/VRControls.js";
 import {Compass} from "../utils/Compass.js";
 import {NavigationCube} from "./NavigationCube.js";
 

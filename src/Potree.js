@@ -76,7 +76,7 @@ export {DeviceOrientationControls} from "./navigation/DeviceOrientationControls.
 export {EarthControls} from "./navigation/EarthControls.js";
 export {FirstPersonControls} from "./navigation/FirstPersonControls.js";
 export {OrbitControls} from "./navigation/OrbitControls.js";
-export {VRControls} from "./navigation/VRControls.js";
+//export {VRControls} from "./navigation/VRControls.js";
 
 import "./extensions/OrthographicCamera.js";
 import "./extensions/PerspectiveCamera.js";

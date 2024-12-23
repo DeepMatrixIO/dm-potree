@@ -3,7 +3,7 @@ const XHRFactory = {
 	config: {
 		withCredentials: false,
 		customHeaders: [
-			{ header: null, value: null }
+			{header: null, value: null}
 		]
 	},
 

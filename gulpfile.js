@@ -174,7 +174,7 @@ gulp.task('build',
 );
 
 gulp.task("pack", async function () {
-	exec('rollup -c', function (err, stdout, stderr) {
+	exec('rollup --logLevel debug -c', function (err, stdout, stderr) {
 		console.log(stdout);
 		console.log(stderr);
 	});
