@@ -82,14 +82,20 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 			returnNumber: {type: 'f', value: []},
 			numberOfReturns: {type: 'f', value: []},
 			pointSourceID: {type: 'f', value: []},
-			indices: {type: 'fv', value: []}
+			indices: {type: 'fv', value: []},
+			aExtra: {type: 'f', value: []},
+			Linearity: {type: 'f', value: []},
+			vegetation_distance: {type: 'f', value: []}
 		};
 
 		this.uniforms = {
+
+
+
 			level: {type: "f", value: 0.0},
 			vnStart: {type: "f", value: 0.0},
 			spacing: {type: "f", value: 1.0},
-			blendHardness: {type: "f", value: 2.0},
+			blendHardness: {type: "f", value: 3.0},
 			blendDepthSupplement: {type: "f", value: 0.0},
 			fov: {type: "f", value: 1.0},
 			screenWidth: {type: "f", value: 1.0},
@@ -121,7 +127,7 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 			uHQDepthMap: {type: "t", value: null},
 			toModel: {type: "Matrix4f", value: []},
 			diffuse: {type: "fv", value: [1, 1, 1]},
-			transition: {type: "f", value: 0.5},
+			transition: {type: "f", value: 0.4},
 
 			intensityRange: {type: "fv", value: [Infinity, -Infinity]},
 
@@ -150,12 +156,24 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 			uExtraRange: {type: "2fv", value: [0, 1]},
 			uExtraGammaBrightContr: {type: "3fv", value: [1, 0, 0]},
 
+			//reference: {type: "fv", value: new THREE.Vector3(589500.0, 231300.0, 722.5050)},//defaulted at zero
+
+
+
+
 			uFilterReturnNumberRange: {type: "fv", value: [0, 7]},
 			uFilterNumberOfReturnsRange: {type: "fv", value: [0, 7]},
 			uFilterGPSTimeClipRange: {type: "fv", value: [0, 7]},
 			uFilterPointSourceIDClipRange: {type: "fv", value: [0, 65535]},
 			matcapTextureUniform: {type: "t", value: this.matcapTexture},
 			backfaceCulling: {type: "b", value: false},
+
+			reference: {value: [589500.0, 231300.0, 722.5050]},
+			// , )},//defaulted at zero
+			referenceMin: {type: "f", value: 10.0},
+			referenceMax: {type: "f", value: 100.0}//just for fun
+
+
 		};
 
 		this.classification = ClassificationScheme.DEFAULT;
@@ -164,11 +182,19 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 		this.defaultAttributeValues.classification = [0, 0, 0];
 		this.defaultAttributeValues.indices = [0, 0, 0, 0];
 
-		this.vertexShader = Shaders['pointcloud.vs'];
-		this.fragmentShader = Shaders['pointcloud.fs'];
+		this._reference = [589500.0, 231300.0, 722.5050];
+		this._referenceMin = 0.0;
+		this._referenceMax = 1000.0;
+
+		//testing for pointcloud classification by distance
+		//this.vertexShader = Shaders['pointcloud_class.vs'];
+		//this.fragmentShader = Shaders['pointcloud.fs'];
 
 		//this.vertexColors = THREE.VertexColors;
 		this.vertexColors = VERTEXCOLORS;//2
+
+		//trying to add variables for reference point wrt shader
+
 
 		this.updateShaderSource();
 	}
@@ -190,7 +216,7 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 
 	updateShaderSource() {
 
-		let vs = Shaders['pointcloud.vs'];
+		let vs = Shaders['pointcloud_class.vs'];
 		let fs = Shaders['pointcloud.fs'];
 		let definesString = this.getDefines();
 
@@ -259,6 +285,7 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 			defines.push('#define use_edl');
 		}
 
+		//this updatesde prefix for color functionality
 		if (this.activeAttributeName) {
 			let attributeName = this.activeAttributeName.replace(/[^a-zA-Z0-9]/g, '_');
 
@@ -324,6 +351,84 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 			this.updateShaderSource();
 		}
 	}
+
+	///////////testing reference point
+
+	get reference() {
+		return this._reference;
+	}
+
+	set reference(value) {
+		console.log("setReferencePoint")
+
+		// if (value.isVector3) {
+		// 	if (this._reference !== value) {
+		// 		this._reference = value;
+		// 		//this.gradientTexture = PointCloudMaterial.generateGradientTexture(this._gradient);
+		// 		//this.uniforms.gradient.value = this.gradientTexture;
+		// 		this.uniforms.reference.value = this._reference
+		// 		this.dispatchEvent({
+		// 			type: 'material_property_changed',
+		// 			target: this
+		// 		});
+		// 	}
+		// 	this.updateShaderSource()
+		// 	return
+		// }
+
+		if (Array.isArray(value)) {
+			//let tmp = new THREE.Vector3().fromArray(value)
+			if (this._reference !== value) {
+				this._reference = value;
+				//this.gradientTexture = PointCloudMaterial.generateGradientTexture(this._gradient);
+				//this.uniforms.gradient.value = this.gradientTexture;
+				this.uniforms.reference.value = this._reference
+				this.dispatchEvent({
+					type: 'material_property_changed',
+					target: this
+				});
+			}
+			this.updateShaderSource()
+		}
+
+
+	}
+
+	get referenceMin() {
+		console.log('set referencePointMinRange')
+
+		return this._referenceMin;
+	}
+
+	set referenceMin(value) {
+
+		if (this._referenceMin !== value) {
+			console.log('set referencePointMinRange')
+
+			this._referenceMin = value;
+			this.uniforms.referenceMin.value = this._referenceMin;
+		}
+	}
+
+	get referenceMax() {
+		console.log('get referencePointMaxRange')
+
+		return this._referenceMax;
+	}
+
+	set referenceMax(value) {
+		if (this._referenceMax !== value) {
+			console.log('set referencePointMaxRange')
+
+			this._referenceMax = value;
+			this.uniforms.referenceMax.value = this._referenceMax;
+		}
+	}
+
+
+
+
+
 
 	get gradient() {
 		return this._gradient;

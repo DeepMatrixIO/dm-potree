@@ -131,6 +131,7 @@ function paramThreeToGL(_gl, p) {
 
 };
 
+//t his has to be changed and adjusted as location 11 does not exist on all pointclouds
 let attributeLocations = {
 	"position": {name: "position", location: 0},
 	"color": {name: "color", location: 1},
@@ -150,6 +151,7 @@ let attributeLocations = {
 	"spacing": {name: "spacing", location: 9},
 	"gps-time": {name: "gpsTime", location: 10},
 	"aExtra": {name: "aExtra", location: 11},
+	//"aExtra": {name: "aExtra", location: 7},//due to input size differences, set to 7 for testing
 };
 
 class Shader {
@@ -944,6 +946,7 @@ export class Renderer {
 
 			gl.bindVertexArray(webglBuffer.vao);
 
+			//for all other attributes
 			let isExtraAttribute =
 				attributeLocations[material.activeAttributeName] === undefined
 				&& Object.keys(geometry.attributes).includes(material.activeAttributeName);
@@ -952,22 +955,22 @@ export class Renderer {
 
 				const attributeLocation = attributeLocations["aExtra"].location;
 
-				for (const attributeName in geometry.attributes) {
-					const bufferAttribute = geometry.attributes[attributeName];
+				for (const attributeName in geometry.attributes) {//disables all other attributes
+					//const bufferAttribute = geometry.attributes[attributeName];
 					const vbo = webglBuffer.vbos.get(attributeName);
 
 					gl.bindBuffer(gl.ARRAY_BUFFER, vbo.handle);
 					gl.disableVertexAttribArray(attributeLocation);
 				}
 
-				const attName = material.activeAttributeName;
-				const bufferAttribute = geometry.attributes[attName];
+				const attName = material.activeAttributeName;//current attribute name
+				const bufferAttribute = geometry.attributes[attName];//get the buffer
 				const vbo = webglBuffer.vbos.get(attName);
 
 				if (bufferAttribute !== undefined && vbo !== undefined) {
 					let type = this.glTypeMapping.get(bufferAttribute.array.constructor);
 					let normalized = bufferAttribute.normalized;
-
+					//binds the buffer to the current ARRAY_BUFFER bind point
 					gl.bindBuffer(gl.ARRAY_BUFFER, vbo.handle);
 					gl.vertexAttribPointer(attributeLocation, bufferAttribute.itemSize, type, normalized, 0, 0);
 					gl.enableVertexAttribArray(attributeLocation);
@@ -1003,6 +1006,29 @@ export class Renderer {
 
 					shader.setUniform1f("uExtraScale", scale);
 					shader.setUniform1f("uExtraOffset", offset);
+					shader.setUniform2f("uExtraRange", globalRange);
+					let debug = false;
+					if (debug) {
+						let attLoc = 0
+						let numAttr = gl.getProgramParameter(shader.program, gl.ACTIVE_ATTRIBUTES)
+						const activeAttribute = gl.getActiveAttrib(shader.program, attLoc)
+						//retrieve vertex attribute by index and  information to query
+
+						//only returnt vertex attributes
+						let vatt = gl.getVertexAttrib(attLoc, gl.CURRENT_VERTEX_ATTRIB)
+						let vattbuff = gl.getVertexAttrib(attLoc, gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING)
+
+
+						//console.log("activeAttribute", activeAttribute)
+						//console.log("vatt", vatt)
+						const bufferData = new Float32Array(bufferAttribute.array.length);
+						gl.getBufferSubData(gl.ARRAY_BUFFER, 0, bufferData);
+						//console.log(bufferAttribute.array)
+						//console.log(bufferData)
+
+					}
+
+
 				}
 
 			} else {
@@ -1329,6 +1355,10 @@ export class Renderer {
 			shader.setUniform1f("wSourceID", material.weightSourceID);
 
 			shader.setUniform("backfaceCulling", material.uniforms.backfaceCulling.value);
+
+			shader.setUniform3f("reference", material.reference);//test
+
+
 
 			let vnWebGLTexture = this.textures.get(material.visibleNodesTexture);
 			if (vnWebGLTexture) {
