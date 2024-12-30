@@ -187,8 +187,8 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 		this._referenceMax = 1000.0;
 
 		//testing for pointcloud classification by distance
-		//this.vertexShader = Shaders['pointcloud_class.vs'];
-		//this.fragmentShader = Shaders['pointcloud.fs'];
+		this.vertexShader = Shaders['pointcloud.vs'];
+		this.fragmentShader = Shaders['pointcloud.fs'];
 
 		//this.vertexColors = THREE.VertexColors;
 		this.vertexColors = VERTEXCOLORS;//2
@@ -216,7 +216,7 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 
 	updateShaderSource() {
 
-		let vs = Shaders['pointcloud_class.vs'];
+		let vs = Shaders['pointcloud.vs'];
 		let fs = Shaders['pointcloud.fs'];
 		let definesString = this.getDefines();
 

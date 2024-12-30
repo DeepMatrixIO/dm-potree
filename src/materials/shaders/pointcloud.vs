@@ -655,24 +655,28 @@ vec3 getMatcap()
 }
 #endif
 
+//it does work with all
 vec3 getExtra()
 {
 
 	float w = (aExtra + uExtraOffset) * uExtraScale;
-	w = clamp(w, 0.0, 1.0);
+	//w = w/40.0;
+	//w = clamp(w, 0.0, 1.0);
 
-	// vec3 color = texture2D(gradient, vec2(w, 1.0 - w)).rgb;
-	vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	// vec3 color = texture2D(gradient, vec2(w, 1.0 - w)).rgb;//deprecated now use texture
+	//vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	
 
 	// vec2 r = uExtraNormalizedRange;
 
 	// float w = aExtra * (r.y - r.x) + r.x;
 
-	// w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
+	 w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
 
-	// w = clamp(w, 0.0, 1.0);
+	 w = clamp(w, 0.0, 1.0);
 
-	// vec3 color = texture2D(gradient, vec2(w,1.0-w)).rgb;
+	 //vec3 color = texture2D(gradient, vec2(w,1.0-w)).rgb;
+	 vec3 color = texture(gradient, vec2(w,1.0-w)).rgb;
 
 	return color;
 }
