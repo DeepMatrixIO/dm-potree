@@ -1,8 +1,6 @@
 
 import * as THREE from "../../../libs/three.js/build/three.module.js";
-import {Line2} from "../../../libs/three.js/lines/Line2.js";
-import {LineGeometry} from "../../../libs/three.js/lines/LineGeometry.js";
-import {LineMaterial} from "../../../libs/three.js/lines/LineMaterial.js";
+import {Line2, LineGeometry, LineMaterial} from "../../../libs/three.js/jsm/Addons.js";
 import {EventDispatcher} from "../../EventDispatcher.js";
 import {Utils} from "../../utils.js";
 

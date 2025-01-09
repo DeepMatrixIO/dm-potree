@@ -1,5 +1,7 @@
+import proj4 from "proj4";
 
 import * as THREE from "../../libs/three.js/build/three.module.js";
+
 import {CameraMode, ClipMethod, ClipTask, ElevationGradientRepeat, LengthUnits} from "../defines.js";
 import {Features} from "../Features.js";
 import {Renderer} from "../PotreeRenderer.js";
@@ -21,7 +23,10 @@ import {MeasuringTool} from "../utils/MeasuringTool.js";
 import {ProfileTool} from "../utils/ProfileTool.js";
 import {VolumeTool} from "../utils/VolumeTool.js";
 
-import {VRButton} from '../../libs/three.js/extra/VRButton.js';
+//import {VRButton} from '../../libs/three.js/jsm/Addons.js'; //ignore specific paths
+import {VRButton} from 'three/examples/jsm/Addons.js'; //ignore specific paths
+//import {Line2, LineGeometry, LineMaterial} from "three/examples/jsm/Addons.js";
+
 import {EventDispatcher} from "../EventDispatcher.js";
 import {ClassificationScheme} from "../materials/ClassificationScheme.js";
 import {DeviceOrientationControls} from "../navigation/DeviceOrientationControls.js";

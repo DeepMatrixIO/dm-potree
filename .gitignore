@@ -16,6 +16,12 @@ libs/CesiumUnminified
 /resources/icons/index.html
 /examples/page.html
 libs/giro3d
+libs/three.js/examples
+libs/three.js/files
+libs/three.js/playground
+libs/three.js/textures
+libs/three.js_0124
+libs/three.js_0170dev
 /pointclouds/retz
 /pointclouds/NVIDIA_Ph01-20160403_tiles_converted
 /pointclouds/D
@@ -31,3 +37,10 @@ libs/giro3d
 /pointclouds/morro_bay_converted
 /pointclouds/helimap_epalinges
 .vscode/settings.json
+examples/vegetation_zone_ROW_75_20_1_64930dd1.las
+examples/inegi_point_cloud_cov_40cm.las_converted/hierarchy.bin
+examples/inegi_point_cloud_cov_40cm.las_converted/metadata.json
+examples/inegi_point_cloud_cov_40cm.las_converted/octree.bin
+examples/vegetation_zone_ROW_75_20_1_64930dd1.las_converted/hierarchy.bin
+examples/vegetation_zone_ROW_75_20_1_64930dd1.las_converted/metadata.json
+examples/vegetation_zone_ROW_75_20_1_64930dd1.las_converted/octree.bin

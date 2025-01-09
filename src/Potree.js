@@ -1,3 +1,4 @@
+//import {$} as jQuery from "jquery";
 
 export * from "./Actions.js";
 export * from "./AnimationPath.js";
@@ -103,7 +104,19 @@ console.log('Potree ' + version.major + '.' + version.minor + version.suffix);
 
 export let pointBudget = 1 * 1000 * 1000;
 export let framenumber = 0;
-export let numNodesLoading = 0;
+export const numNodesLoading = {
+	_value: 0,
+	get() {
+		return this._value;
+	},
+	set(value) {
+		this._value = value;
+	}
+}
+
+
+
+
 export let maxNodesLoading = 4;
 
 export const debug = {};
@@ -233,6 +246,8 @@ export function loadPointCloud(path, name, callback) {
 
 
 // add selectgroup
+
+/**
 (function ($) {
 	$.fn.extend({
 		selectgroup: function (args = {}) {
@@ -307,3 +322,4 @@ export function loadPointCloud(path, name, callback) {
 		}
 	});
 })(jQuery);
+ */

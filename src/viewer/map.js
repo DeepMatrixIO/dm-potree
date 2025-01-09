@@ -1,8 +1,10 @@
 
+import proj4 from "proj4";
 import * as THREE from "../../libs/three.js/build/three.module.js";
 import {updateFetchToken} from "../tokenUpdater.js";
 
 // http://epsg.io/
+//global
 proj4.defs([
 	['UTM10N', '+proj=utm +zone=10 +ellps=GRS80 +datum=NAD83 +units=m +no_defs'],
 	['EPSG:6339', '+proj=utm +zone=10 +ellps=GRS80 +units=m +no_defs'],

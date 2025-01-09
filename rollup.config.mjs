@@ -57,6 +57,13 @@ export default [
 			format: 'es',
 			name: 'Potree',
 			sourcemap: true,
+			globals: {
+				three: 'THREE'
+			},
+			globals: {
+				proj4: 'proj4'
+			},
+
 		},
 		external: [
 			fileURLToPath(
@@ -98,12 +105,16 @@ export default [
 				)
 			),
 			'three'
+			,
+			'proj4'
 
 
 
 			//,some other libs like tween.js
 		],
-		plugins: [nodeResolve(), commonjs()] // Convert CommonJS modules to ES6
+		plugins: [
+			nodeResolve(),
+			commonjs()] // Convert CommonJS modules to ES6
 
 	}
 	,

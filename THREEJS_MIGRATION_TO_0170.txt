@@ -126,3 +126,18 @@ copc.html  Works, required extra files
 ept_laz14.html
 ept_binary.html does not work. REquirec COPC. BinaryLoader does not work, requires node.url
 ept_standard.html does not work. REquirec COPC. BinaryLoader does not work, requires node.url
+
+
+
+ThreeJS incorporation and easier export requires it to be split in two parts:
+
+The Core THREEJS as an independent Module
+The extra code from THREEJS examples jsm folder which has its own static imports from THREEJS.
+
+That Extra code can be either added to web-core-ui 2.0 or made as an externa module, but requires extra work as module.
+
+
+Within the current structure,  the libs/three.js/extra folder contains the added code which corresponds the custom segment lines. libs/three.js/extra/lines
+
+
+
