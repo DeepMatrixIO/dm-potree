@@ -1,23 +1,22 @@
-#version 300 es
 precision highp float;
 precision highp int;
 
 #define max_clip_polygons 8
 #define PI 3.141592653589793
 
-in vec3 position;
-in vec3 color;
-in float intensity;
-in float classification;
-in float returnNumber;
-in float numberOfReturns;
-in float pointSourceID;
-in vec4 indices;
-in float spacing;
-in float gpsTime;
-in vec3 normal;
-in float aExtra;
-in float seg_cluster_id;
+attribute vec3 position;
+attribute vec3 color;
+attribute float intensity;
+attribute float classification;
+attribute float returnNumber;
+attribute float numberOfReturns;
+attribute float pointSourceID;
+attribute vec4 indices;
+attribute float spacing;
+attribute float gpsTime;
+attribute vec3 normal;
+attribute float aExtra;
+attribute float ${attributeKey};
 
 uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
@@ -137,14 +136,14 @@ uniform mat4 uShadowWorldView[num_shadowmaps];
 uniform mat4 uShadowProj[num_shadowmaps];
 #endif
 
-out vec3	vColor;
-out float	vLogDepth;
-out vec3	vViewPosition;
-out float 	vRadius;
-out float 	vPointSize;
+varying vec3	vColor;
+varying float	vLogDepth;
+varying vec3	vViewPosition;
+varying float 	vRadius;
+varying float 	vPointSize;
 
 
-float roundDeprecated(float number){
+float round(float number){
 	return floor(number + 0.5);
 }
 
@@ -239,8 +238,8 @@ float getLOD(){
 		index3d = floor(index3d + 0.5);
 		int index = int(round(4.0 * index3d.x + 2.0 * index3d.y + index3d.z));
 		
-		// vec4 value = texture(visibleNodes, vec2(iOffset / 2048.0, 0.0));
-		vec4 value = texture(visibleNodes, vec2(iOffset / 2048.0, 0.0));		int mask = int(round(value.r * 255.0));
+		vec4 value = texture2D(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));
+		int mask = int(round(value.r * 255.0));
 
 		if(isBitSet(mask, index)){
 			// there are more visible child nodes at this position
@@ -279,8 +278,7 @@ float getSpacing(){
 		index3d = floor(index3d + 0.5);
 		int index = int(round(4.0 * index3d.x + 2.0 * index3d.y + index3d.z));
 		
-		//vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));
-		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));
+		vec4 value = texture2D(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));
 		int mask = int(round(value.r * 255.0));
 		float spacingFactor = value.a;
 
@@ -338,7 +336,7 @@ float getLOD(){
 		
 	for(float i = 0.0; i <= 1000.0; i++){
 		
-		vec4 value = texture(visibleNodes, vec2(iOffset / 2048.0, 0.0));
+		vec4 value = texture2D(visibleNodes, vec2(iOffset / 2048.0, 0.0));
 		
 		int children = int(value.r * 255.0);
 		float next = value.g * 255.0;
@@ -435,13 +433,13 @@ vec3 getGpsTime(){
 	float w = (gpsTime + uGpsOffset) * uGpsScale;
 
 
-	vec3 c = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	vec3 c = texture2D(gradient, vec2(w, 1.0 - w)).rgb;
 
 
 	// vec2 r = uNormalizedGpsBufferRange;
 	// float w = gpsTime * (r.y - r.x) + r.x;
 	// w = clamp(w, 0.0, 1.0);
-	// vec3 c = texture(gradient, vec2(w,1.0-w)).rgb;
+	// vec3 c = texture2D(gradient, vec2(w,1.0-w)).rgb;
 	
 	return c;
 }
@@ -449,7 +447,7 @@ vec3 getGpsTime(){
 vec3 getElevation(){
 	vec4 world = modelMatrix * vec4( position, 1.0 );
 	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);
-	vec3 cElevation = texture(gradient, vec2(w,1.0-w)).rgb;
+	vec3 cElevation = texture2D(gradient, vec2(w,1.0-w)).rgb;
 	
 	return cElevation;
 }
@@ -459,7 +457,7 @@ vec4 getClassification(){
 
 	#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
 		for(int i = 0; i < num_clusteredpointsegments; i++){
-			if (clusteredpointsegments[i] == seg_cluster_id) {
+			if (clusteredpointsegments[i] == ${attributeKey}) {
 				float segmentClass = segmentClassifications[i];
 				if (segmentClass != -1.0) {
 					uv = vec2(segmentClass / 255.0, 0.5);
@@ -471,8 +469,8 @@ vec4 getClassification(){
 		}
     #endif
 
-	vec4 classColor = texture(classificationLUT, uv);
-  //vec4 classColor = texture(gradient, uv);
+	vec4 classColor = texture2D(classificationLUT, uv);
+  //vec4 classColor = texture2D(gradient, uv);
 	
 	return classColor;
 }
@@ -481,17 +479,23 @@ vec4 getClassificationBak(){
 	vec2 uv = vec2(classification / 255.0, 0.5);
 
 	#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-
-      if(seg_cluster_id < 57.0){  
+		//for(int i = 0; i < num_clusteredpointsegments; i++){
+			//if (clusteredpointsegments[i] == ${attributeKey}) {
+				//float segmentClass = segmentClassifications[i];
+				//if (segmentClass != -1.0) {
+					//uv = vec2(segmentClass / 255.0, 0.5);
+          //uv = vec2(segmentClass / 255.0, 0.5);
+				//}
+      if(${attributeKey} < 57.0){  
         uv = vec2(32.0 / 255.0, 0.5);//just ingnore the segmentClassification mapping
       }else
-        if(seg_cluster_id < 195.0){  
+        if(${attributeKey} < 195.0){  
         uv = vec2(64.0 / 255.0, 0.5);//just ingnore the segmentClassification mapping
       }else
-        if(seg_cluster_id < 200.0){  
+        if(${attributeKey} < 200.0){  
         uv = vec2(128.0 / 255.0, 0.5);//just ingnore the segmentClassification mapping
       }else
-        if(seg_cluster_id < 230.0){  
+        if(${attributeKey} < 230.0){  
         uv = vec2(196.0 / 255.0, 0.5);//just ingnore the segmentClassification mapping
       }else{
         uv = vec2(255.0 / 255.0, 0.5);//just ingnore the segmentClassification mapping
@@ -500,8 +504,8 @@ vec4 getClassificationBak(){
 		//}
     #endif
 
-	//vec4 classColor = texture(classificationLUT, uv);
-  vec4 classColor = texture(gradient, uv);
+	//vec4 classColor = texture2D(classificationLUT, uv);
+  vec4 classColor = texture2D(gradient, uv);
 	
 	return classColor;
 }
@@ -565,14 +569,14 @@ vec3 getNumberOfReturns(){
 
 	float w = value / 6.0;
 
-	vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	vec3 color = texture2D(gradient, vec2(w, 1.0 - w)).rgb;
 
 	return color;
 }
 
 vec3 getSourceID(){
 	float w = mod(pointSourceID, 10.0) / 10.0;
-	return texture(gradient, vec2(w,1.0 - w)).rgb;
+	return texture2D(gradient, vec2(w,1.0 - w)).rgb;
 }
 
 vec3 getCompositeColor(){
@@ -636,7 +640,7 @@ vec3 getMatcap(){
 	vec3 r_en = reflect( eye, getNormal() ); // or r_en = e - 2. * dot( n, e ) * n;
 	float m = 2. * sqrt(pow( r_en.x, 2. ) + pow( r_en.y, 2. ) + pow( r_en.z + 1., 2. ));
 	vec2 vN = r_en.xy / m + .5;
-	return texture(matcapTextureUniform, vN).rgb; 
+	return texture2D(matcapTextureUniform, vN).rgb; 
 }
 #endif
 
@@ -645,7 +649,7 @@ vec3 getExtra(){
 	float w = (aExtra + uExtraOffset) * uExtraScale;
 	//w = clamp(w, 0.0, 1.0);
 
-	//vec3 color = texture(gradient, vec2(w,1.0-w)).rgb;
+	//vec3 color = texture2D(gradient, vec2(w,1.0-w)).rgb;
 
 	// vec2 r = uExtraNormalizedRange;
 
@@ -655,7 +659,7 @@ vec3 getExtra(){
 
 	 w = clamp(w, 0.0, 1.0);
 
-	 vec3 color = texture(gradient, vec2(w,1.0-w)).rgb;
+	 vec3 color = texture2D(gradient, vec2(w,1.0-w)).rgb;
 
 	return color;
 }
@@ -682,13 +686,13 @@ vec3 getColor(){
 		color = getGpsTime();
 	#elif defined color_type_intensity_gradient
 		float w = getIntensity();
-		color = texture(gradient, vec2(w,1.0-w)).rgb;
+		color = texture2D(gradient, vec2(w,1.0-w)).rgb;
 	#elif defined color_type_color
 		color = uColor;
 	#elif defined color_type_level_of_detail
 		float depth = getLOD();
 		float w = depth / 10.0;
-		color = texture(gradient, vec2(w,1.0-w)).rgb;
+		color = texture2D(gradient, vec2(w,1.0-w)).rgb;
 	#elif defined color_type_indices
 		color = indices.rgb;
 	#elif defined color_type_classification
@@ -891,14 +895,14 @@ void doClipping(){
 	bool grayscaleAnything = false;
 	bool grayscaleThis = true;
 	bool highlight = false;
-	bool active_ = false;
+	bool active = false;
 	bool visible = true;
 	vec3 highlightColor = vec3(0.0, 0.0, 0.0);
 
 	#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
 		for(int i = 0; i < num_clusteredpointsegments; i++){
-			if (clusteredpointsegments[i] == seg_cluster_id) {
-				active_ = activeStates[i];
+			if (clusteredpointsegments[i] == ${attributeKey}) {
+				active = activeStates[i];
 				highlight = selectedStates[i];
 				visible = visibleStates[i];
 				highlightColor = vec3(1, 0, 0);
@@ -941,7 +945,7 @@ void doClipping(){
 					highlight = true;
 					highlightColor = boxColors[i];
 				} else if (clipTasks[i] == CLIPTASK_ACTIVE) {
-					active_ = true;
+					active = true;
 				}
 			} else {
 				if (clipTasks[i] == CLIPTASK_SHOW_INSIDE) {
@@ -961,7 +965,7 @@ void doClipping(){
 
 	if ((isolateAnything && !isolateThis) || clip) {
 		gl_Position = vec4(100.0, 100.0, 100.0, 1.0);
-	} else if (active_) {
+	} else if (active) {
 		float grayScale75p = 3.0 * (0.299*vColor.r + 0.587*vColor.g + 0.114*vColor.b) / 4.0;
 		vColor.r = grayScale75p + 0.71 / 2.0;
 		vColor.g = grayScale75p + 1.0 / 2.0;
@@ -1042,7 +1046,7 @@ void main() {
 
 			if(distance < 1.0){
 				float w = distance;
-				vec3 cGradient = texture(gradient, vec2(w, 1.0 - w)).rgb;
+				vec3 cGradient = texture2D(gradient, vec2(w, 1.0 - w)).rgb;
 				
 				vColor = cGradient;
 				//vColor = cGradient * 0.7 + vColor * 0.3;
@@ -1084,7 +1088,7 @@ void main() {
 			float bias = vRadius * 2.0;
 
 			for(int j = 0; j < 9; j++){
-				vec4 depthMapValue = texture(uShadowMap[i], vec2(u, v) + sampleLocations[j]);
+				vec4 depthMapValue = texture2D(uShadowMap[i], vec2(u, v) + sampleLocations[j]);
 
 				float linearDepthFromSM = depthMapValue.x + bias;
 				float linearDepthFromViewer = distanceToLight;
@@ -1109,4 +1113,106 @@ void main() {
 		}
 
 	#endif
+}
+`;
+
+  Shaders['pointcloud.fs'] = `
+#if defined paraboloid_point_shape
+	#extension GL_EXT_frag_depth : enable
+#endif
+
+precision highp float;
+precision highp int;
+
+uniform mat4 viewMatrix;
+uniform mat4 uViewInv;
+uniform mat4 uProjInv;
+uniform vec3 cameraPosition;
+
+
+uniform mat4 projectionMatrix;
+uniform float uOpacity;
+
+uniform float blendHardness;
+uniform float blendDepthSupplement;
+uniform float fov;
+uniform float uSpacing;
+uniform float near;
+uniform float far;
+uniform float uPCIndex;
+uniform float uScreenWidth;
+uniform float uScreenHeight;
+
+varying vec3	vColor;
+varying float	vLogDepth;
+varying vec3	vViewPosition;
+varying float	vRadius;
+varying float 	vPointSize;
+varying vec3 	vPosition;
+
+
+float specularStrength = 1.0;
+
+void main() {
+
+	// gl_FragColor = vec4(vColor, 1.0);
+
+	vec3 color = vColor;
+	float depth = gl_FragCoord.z;
+
+	#if defined(circle_point_shape) || defined(paraboloid_point_shape) 
+		float u = 2.0 * gl_PointCoord.x - 1.0;
+		float v = 2.0 * gl_PointCoord.y - 1.0;
+	#endif
+	
+	#if defined(circle_point_shape) 
+		float cc = u*u + v*v;
+		if(cc > 1.0){
+			discard;
+		}
+	#endif
+		
+	#if defined color_type_indices
+		gl_FragColor = vec4(color, uPCIndex / 255.0);
+	#else
+		gl_FragColor = vec4(color, uOpacity);
+	#endif
+
+	#if defined paraboloid_point_shape
+		float wi = 0.0 - ( u*u + v*v);
+		vec4 pos = vec4(vViewPosition, 1.0);
+		pos.z += wi * vRadius;
+		float linearDepth = -pos.z;
+		pos = projectionMatrix * pos;
+		pos = pos / pos.w;
+		float expDepth = pos.z;
+		depth = (pos.z + 1.0) / 2.0;
+		gl_FragDepthEXT = depth;
+		
+		#if defined(color_type_depth)
+			color.r = linearDepth;
+			color.g = expDepth;
+		#endif
+		
+		#if defined(use_edl)
+			gl_FragColor.a = log2(linearDepth);
+		#endif
+		
+	#else
+		#if defined(use_edl)
+			gl_FragColor.a = vLogDepth;
+		#endif
+	#endif
+
+	// #if defined(weighted_splats)
+	// 	float distance = 2.0 * length(gl_PointCoord.xy - 0.5);
+	// 	float weight = max(0.0, 1.0 - distance);
+	// 	weight = pow(weight, 1.5);
+
+	// 	gl_FragColor.a = weight;
+	// 	gl_FragColor.xyz = gl_FragColor.xyz * weight;
+	// #endif
+
+	//gl_FragColor = vec4(0.0, 0.7, 0.0, 1.0);
+	
 }

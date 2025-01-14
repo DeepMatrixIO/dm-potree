@@ -1,27 +1,31 @@
+
 import {Shaders} from "../../build/shaders/shaders.js";
-import {
-	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
-	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
-} from "../../libs/three.js/build/three.core.js";
+import * as THREE from "../../libs/three.js/build/three.module.js";
 import {ElevationGradientRepeat, PointShape, PointSizeType, TreeType} from "../defines.js";
 import {Utils} from "../utils.js";
 import {ClassificationScheme} from "./ClassificationScheme.js";
 import {Gradients} from "./Gradients.js";
 
+const LINESTRIP = 0;
+const LINEPIECES = 1;
+const NOCOLORS = 0;
+const FACECOLORS = 1;
+const VERTEXCOLORS = 2;
+//
+// how to calculate the radius of a projected sphere in screen space
+// http://stackoverflow.com/questions/21648630/radius-of-projected-sphere-in-screen-space
+// http://stackoverflow.com/questions/3717226/radius-of-projected-sphere
+//
 
-export class PointCloudMaterial extends RawShaderMaterial {
+
+export class PointCloudMaterial extends THREE.RawShaderMaterial {
 	constructor(parameters = {}) {
 		super();
+		this.glslVersion = THREE.GLSL3;//required for webgl2 
 
-
-
-		this.visibleNodesTexture = Utils.generateDataTexture(
-			2048,
-			1,
-			new Color(0xffffff)
-		);
-		this.visibleNodesTexture.minFilter = NearestFilter;
-		this.visibleNodesTexture.magFilter = NearestFilter;
+		this.visibleNodesTexture = Utils.generateDataTexture(2048, 1, new THREE.Color(0xffffff));
+		this.visibleNodesTexture.minFilter = THREE.NearestFilter;
+		this.visibleNodesTexture.magFilter = THREE.NearestFilter;
 
 		let getValid = (a, b) => {
 			if (a !== undefined) {
@@ -29,7 +33,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			} else {
 				return b;
 			}
-		};
+		}
 
 		let pointSize = getValid(parameters.size, 1.0);
 		let minSize = getValid(parameters.minSize, 2.0);
@@ -41,17 +45,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this._useClipBox = false;
 		this.clipBoxes = [];
 		this.clipPolygons = [];
-		this.pointClusters = [];
 		this._weighted = false;
-		this._gradientName = 'SPECTRAL';
 		this._gradient = Gradients.SPECTRAL;
-		this.gradientTexture = PointCloudMaterial.generateGradientTexture(
-			this._gradient
-		);
-		this._matcap = 'matcap.jpg';
-		this.matcapTexture = Potree.PointCloudMaterial.generateMatcapTexture(
-			this._matcap
-		);
+		this.gradientTexture = PointCloudMaterial.generateGradientTexture(this._gradient);
+		this._matcap = "matcap.jpg";
+		this.matcapTexture = Potree.PointCloudMaterial.generateMatcapTexture(this._matcap);
 		this.lights = false;
 		this.fog = false;
 		this._treeType = treeType;
@@ -68,8 +66,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		{
 			const [width, height] = [256, 1];
 			let data = new Uint8Array(width * 4);
-			let texture = new DataTexture(data, width, height, RGBAFormat);
-			texture.magFilter = NearestFilter;
+			let texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
+			texture.magFilter = THREE.NearestFilter;
 			texture.needsUpdate = true;
 
 			this.classificationTexture = texture;
@@ -85,91 +83,97 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			numberOfReturns: {type: 'f', value: []},
 			pointSourceID: {type: 'f', value: []},
 			indices: {type: 'fv', value: []},
-			//[this.attributeKey]: {type: 'fv', value: []},
-			seg_cluster_id: {type: 'fv', value: []},
+			aExtra: {type: 'f', value: []},
+			Linearity: {type: 'f', value: []},
+			vegetation_distance: {type: 'f', value: []}
 		};
 
-		//we may move this to the corresponding tool as this is 
-		//if (Potree.segmentsAttributeKey) {
-		//	this.attributes[Potree.segmentsAattributeKey] = {type: 'fv', value: []};
-		//}
-
-
-
 		this.uniforms = {
-			level: {type: 'f', value: 0.0},
-			vnStart: {type: 'f', value: 0.0},
-			spacing: {type: 'f', value: 1.0},
-			blendHardness: {type: 'f', value: 2.0},
-			blendDepthSupplement: {type: 'f', value: 0.0},
-			fov: {type: 'f', value: 1.0},
-			screenWidth: {type: 'f', value: 1.0},
-			screenHeight: {type: 'f', value: 1.0},
-			near: {type: 'f', value: 0.1},
-			far: {type: 'f', value: 1.0},
-			uColor: {type: 'c', value: new Color(0xffffff)},
-			uOpacity: {type: 'f', value: 1.0},
-			size: {type: 'f', value: pointSize},
-			minSize: {type: 'f', value: minSize},
-			maxSize: {type: 'f', value: maxSize},
-			octreeSize: {type: 'f', value: 0},
-			bbSize: {type: 'fv', value: [0, 0, 0]},
-			elevationRange: {type: '2fv', value: [0, 0]},
 
-			clipBoxCount: {type: 'f', value: 0},
+
+
+			level: {type: "f", value: 0.0},
+			vnStart: {type: "f", value: 0.0},
+			spacing: {type: "f", value: 1.0},
+			blendHardness: {type: "f", value: 3.0},
+			blendDepthSupplement: {type: "f", value: 0.0},
+			fov: {type: "f", value: 1.0},
+			screenWidth: {type: "f", value: 1.0},
+			screenHeight: {type: "f", value: 1.0},
+			near: {type: "f", value: 0.1},
+			far: {type: "f", value: 1.0},
+			uColor: {type: "c", value: new THREE.Color(0xffffff)},
+			uOpacity: {type: "f", value: 1.0},
+			size: {type: "f", value: pointSize},
+			minSize: {type: "f", value: minSize},
+			maxSize: {type: "f", value: maxSize},
+			octreeSize: {type: "f", value: 0},
+			bbSize: {type: "fv", value: [0, 0, 0]},
+			elevationRange: {type: "2fv", value: [0, 0]},
+
+			clipBoxCount: {type: "f", value: 0},
 			//clipSphereCount:	{ type: "f", value: 0 },
-			clipPolygonCount: {type: 'i', value: 0},
-			clipBoxes: {type: 'Matrix4fv', value: []},
+			clipPolygonCount: {type: "i", value: 0},
+			clipBoxes: {type: "Matrix4fv", value: []},
 			//clipSpheres:		{ type: "Matrix4fv", value: [] },
-			clipPolygons: {type: '3fv', value: []},
-			clipPolygonVCount: {type: 'iv', value: []},
-			clipPolygonVP: {type: 'Matrix4fv', value: []},
+			clipPolygons: {type: "3fv", value: []},
+			clipPolygonVCount: {type: "iv", value: []},
+			clipPolygonVP: {type: "Matrix4fv", value: []},
 
-			visibleNodes: {type: 't', value: this.visibleNodesTexture},
-			pcIndex: {type: 'f', value: 0},
-			gradient: {type: 't', value: this.gradientTexture},
-			classificationLUT: {type: 't', value: this.classificationTexture},
-			uHQDepthMap: {type: 't', value: null},
-			toModel: {type: 'Matrix4f', value: []},
-			diffuse: {type: 'fv', value: [1, 1, 1]},
-			transition: {type: 'f', value: 0.5},
+			visibleNodes: {type: "t", value: this.visibleNodesTexture},
+			pcIndex: {type: "f", value: 0},
+			gradient: {type: "t", value: this.gradientTexture},
+			classificationLUT: {type: "t", value: this.classificationTexture},
+			uHQDepthMap: {type: "t", value: null},
+			toModel: {type: "Matrix4f", value: []},
+			diffuse: {type: "fv", value: [1, 1, 1]},
+			transition: {type: "f", value: 0.4},
 
-			intensityRange: {type: 'fv', value: [0, 0]},
+			intensityRange: {type: "fv", value: [Infinity, -Infinity]},
 
-			intensity_gbc: {type: 'fv', value: [1, 0, 0]},
-			uRGB_gbc: {type: 'fv', value: [1, 0, 0]},
+			intensity_gbc: {type: "fv", value: [1, 0, 0]},
+			uRGB_gbc: {type: "fv", value: [1, 0, 0]},
 			// intensityGamma:		{ type: "f", value: 1 },
 			// intensityContrast:	{ type: "f", value: 0 },
 			// intensityBrightness:{ type: "f", value: 0 },
 			// rgbGamma:			{ type: "f", value: 1 },
 			// rgbContrast:		{ type: "f", value: 0 },
 			// rgbBrightness:		{ type: "f", value: 0 },
-			wRGB: {type: 'f', value: 1},
-			wIntensity: {type: 'f', value: 0},
-			wElevation: {type: 'f', value: 0},
-			wClassification: {type: 'f', value: 0},
-			wReturnNumber: {type: 'f', value: 0},
-			wSourceID: {type: 'f', value: 0},
-			useOrthographicCamera: {type: 'b', value: false},
-			elevationGradientRepat: {
-				type: 'i',
-				value: ElevationGradientRepeat.CLAMP,
-			},
-			clipTask: {type: 'i', value: 1},
-			clipMethod: {type: 'i', value: 1},
-			uShadowColor: {type: '3fv', value: [0, 0, 0]},
+			wRGB: {type: "f", value: 1},
+			wIntensity: {type: "f", value: 0},
+			wElevation: {type: "f", value: 0},
+			wClassification: {type: "f", value: 0},
+			wReturnNumber: {type: "f", value: 0},
+			wSourceID: {type: "f", value: 0},
+			useOrthographicCamera: {type: "b", value: false},
+			elevationGradientRepat: {type: "i", value: ElevationGradientRepeat.CLAMP},
+			clipTask: {type: "i", value: 1},
+			clipMethod: {type: "i", value: 1},
+			uShadowColor: {type: "3fv", value: [0, 0, 0]},
 
-			uExtraScale: {type: 'f', value: 1},
-			uExtraOffset: {type: 'f', value: 0},
-			uExtraRange: {type: '2fv', value: [0, 1]},
-			uExtraGammaBrightContr: {type: '3fv', value: [1, 0, 0]},
+			uExtraScale: {type: "f", value: 1},
+			uExtraOffset: {type: "f", value: 0},
+			uExtraRange: {type: "2fv", value: [0, 1]},
+			uExtraGammaBrightContr: {type: "3fv", value: [1, 0, 0]},
 
-			uFilterReturnNumberRange: {type: 'fv', value: [0, 7]},
-			uFilterNumberOfReturnsRange: {type: 'fv', value: [0, 7]},
-			uFilterGPSTimeClipRange: {type: 'fv', value: [0, 7]},
-			uFilterPointSourceIDClipRange: {type: 'fv', value: [0, 65535]},
-			matcapTextureUniform: {type: 't', value: this.matcapTexture},
-			backfaceCulling: {type: 'b', value: false},
+			//reference: {type: "fv", value: new THREE.Vector3(589500.0, 231300.0, 722.5050)},//defaulted at zero
+
+
+
+
+			uFilterReturnNumberRange: {type: "fv", value: [0, 7]},
+			uFilterNumberOfReturnsRange: {type: "fv", value: [0, 7]},
+			uFilterGPSTimeClipRange: {type: "fv", value: [0, 7]},
+			uFilterPointSourceIDClipRange: {type: "fv", value: [0, 65535]},
+			matcapTextureUniform: {type: "t", value: this.matcapTexture},
+			backfaceCulling: {type: "b", value: false},
+
+			reference: {value: [589500.0, 231300.0, 722.5050]},
+			// , )},//defaulted at zero
+			referenceMin: {type: "f", value: 10.0},
+			referenceMax: {type: "f", value: 100.0}//just for fun
+
+
 		};
 
 		this.classification = ClassificationScheme.DEFAULT;
@@ -178,10 +182,19 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.defaultAttributeValues.classification = [0, 0, 0];
 		this.defaultAttributeValues.indices = [0, 0, 0, 0];
 
+		this._reference = [589500.0, 231300.0, 722.5050];
+		this._referenceMin = 0.0;
+		this._referenceMax = 1000.0;
+
+		//testing for pointcloud classification by distance
 		this.vertexShader = Shaders['pointcloud.vs'];
 		this.fragmentShader = Shaders['pointcloud.fs'];
 
-		//this.vertexColors = false;
+		//this.vertexColors = THREE.VertexColors;
+		this.vertexColors = VERTEXCOLORS;//2
+
+		//trying to add variables for reference point wrt shader
+
 
 		this.updateShaderSource();
 	}
@@ -202,21 +215,22 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	}
 
 	updateShaderSource() {
+
 		let vs = Shaders['pointcloud.vs'];
 		let fs = Shaders['pointcloud.fs'];
 		let definesString = this.getDefines();
 
-		let vsVersionIndex = vs.indexOf('#version ');
-		let fsVersionIndex = fs.indexOf('#version ');
+		let vsVersionIndex = vs.indexOf("#version ");
+		let fsVersionIndex = fs.indexOf("#version ");
 
 		if (vsVersionIndex >= 0) {
-			vs = vs.replace(/(#version .*)/, `$1\n${definesString}`);
+			vs = vs.replace(/(#version .*)/, `$1\n${definesString}`)
 		} else {
 			vs = `${definesString}\n${vs}`;
 		}
 
 		if (fsVersionIndex >= 0) {
-			fs = fs.replace(/(#version .*)/, `$1\n${definesString}`);
+			fs = fs.replace(/(#version .*)/, `$1\n${definesString}`)
 		} else {
 			fs = `${definesString}\n${fs}`;
 		}
@@ -225,21 +239,21 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.fragmentShader = fs;
 
 		if (this.opacity === 1.0) {
-			this.blending = NoBlending;
+			this.blending = THREE.NoBlending;
 			this.transparent = false;
 			this.depthTest = true;
 			this.depthWrite = true;
-			this.depthFunc = LessEqualDepth;
+			this.depthFunc = THREE.LessEqualDepth;
 		} else if (this.opacity < 1.0 && !this.useEDL) {
-			this.blending = AdditiveBlending;
+			this.blending = THREE.AdditiveBlending;
 			this.transparent = true;
 			this.depthTest = false;
 			this.depthWrite = true;
-			this.depthFunc = AlwaysDepth;
+			this.depthFunc = THREE.AlwaysDepth;
 		}
 
 		if (this.weighted) {
-			this.blending = AdditiveBlending;
+			this.blending = THREE.AdditiveBlending;
 			this.transparent = true;
 			this.depthTest = true;
 			this.depthWrite = false;
@@ -271,11 +285,9 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			defines.push('#define use_edl');
 		}
 
+		//this updatesde prefix for color functionality
 		if (this.activeAttributeName) {
-			let attributeName = this.activeAttributeName.replace(
-				/[^a-zA-Z0-9]/g,
-				'_'
-			);
+			let attributeName = this.activeAttributeName.replace(/[^a-zA-Z0-9]/g, '_');
 
 			defines.push(`#define color_type_${attributeName}`);
 		}
@@ -294,7 +306,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			defines.push(value);
 		}
 
-		return defines.join('\n');
+		return defines.join("\n");
 	}
 
 	setClipBoxes(clipBoxes) {
@@ -302,9 +314,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			return;
 		}
 
-		let doUpdate =
-			this.clipBoxes.length !== clipBoxes.length &&
-			(clipBoxes.length === 0 || this.clipBoxes.length === 0);
+		let doUpdate = (this.clipBoxes.length !== clipBoxes.length) && (clipBoxes.length === 0 || this.clipBoxes.length === 0);
 
 		this.uniforms.clipBoxCount.value = this.clipBoxes.length;
 		this.clipBoxes = clipBoxes;
@@ -313,9 +323,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.updateShaderSource();
 		}
 
-		this.uniforms.clipBoxes.value = new Float32Array(
-			this.clipBoxes.length * 16
-		);
+		this.uniforms.clipBoxes.value = new Float32Array(this.clipBoxes.length * 16);
 
 		for (let i = 0; i < this.clipBoxes.length; i++) {
 			let box = clipBoxes[i];
@@ -330,10 +338,6 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		}
 	}
 
-	setPointClusters(pointClusters) {
-		this.pointClusters = pointClusters;
-	}
-
 	setClipPolygons(clipPolygons, maxPolygonVertices) {
 		if (!clipPolygons) {
 			return;
@@ -341,12 +345,90 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		this.clipPolygons = clipPolygons;
 
-		let doUpdate = this.clipPolygons.length !== clipPolygons.length;
+		let doUpdate = (this.clipPolygons.length !== clipPolygons.length);
 
 		if (doUpdate) {
 			this.updateShaderSource();
 		}
 	}
+
+	///////////testing reference point
+
+	get reference() {
+		return this._reference;
+	}
+
+	set reference(value) {
+		console.log("setReferencePoint")
+
+		// if (value.isVector3) {
+		// 	if (this._reference !== value) {
+		// 		this._reference = value;
+		// 		//this.gradientTexture = PointCloudMaterial.generateGradientTexture(this._gradient);
+		// 		//this.uniforms.gradient.value = this.gradientTexture;
+		// 		this.uniforms.reference.value = this._reference
+		// 		this.dispatchEvent({
+		// 			type: 'material_property_changed',
+		// 			target: this
+		// 		});
+		// 	}
+		// 	this.updateShaderSource()
+		// 	return
+		// }
+
+		if (Array.isArray(value)) {
+			//let tmp = new THREE.Vector3().fromArray(value)
+			if (this._reference !== value) {
+				this._reference = value;
+				//this.gradientTexture = PointCloudMaterial.generateGradientTexture(this._gradient);
+				//this.uniforms.gradient.value = this.gradientTexture;
+				this.uniforms.reference.value = this._reference
+				this.dispatchEvent({
+					type: 'material_property_changed',
+					target: this
+				});
+			}
+			this.updateShaderSource()
+		}
+
+
+	}
+
+	get referenceMin() {
+		console.log('set referencePointMinRange')
+
+		return this._referenceMin;
+	}
+
+	set referenceMin(value) {
+
+		if (this._referenceMin !== value) {
+			console.log('set referencePointMinRange')
+
+			this._referenceMin = value;
+			this.uniforms.referenceMin.value = this._referenceMin;
+		}
+	}
+
+	get referenceMax() {
+		console.log('get referencePointMaxRange')
+
+		return this._referenceMax;
+	}
+
+	set referenceMax(value) {
+		if (this._referenceMax !== value) {
+			console.log('set referencePointMaxRange')
+
+			this._referenceMax = value;
+			this.uniforms.referenceMax.value = this._referenceMax;
+		}
+	}
+
+
+
+
+
 
 	get gradient() {
 		return this._gradient;
@@ -355,19 +437,9 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	set gradient(value) {
 		if (this._gradient !== value) {
 			this._gradient = value;
-			this.gradientTexture = PointCloudMaterial.generateGradientTexture(
-				this._gradient
-			);
+			this.gradientTexture = PointCloudMaterial.generateGradientTexture(this._gradient);
 			this.uniforms.gradient.value = this.gradientTexture;
 		}
-	}
-
-	set gradientName(value) {
-		this._gradientName = value;
-	}
-
-	get gradientName() {
-		return this._gradientName;
 	}
 
 	get matcap() {
@@ -377,9 +449,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	set matcap(value) {
 		if (this._matcap !== value) {
 			this._matcap = value;
-			this.matcapTexture = Potree.PointCloudMaterial.generateMatcapTexture(
-				this._matcap
-			);
+			this.matcapTexture = Potree.PointCloudMaterial.generateMatcapTexture(this._matcap);
 			this.uniforms.matcapTextureUniform.value = this.matcapTexture;
 		}
 	}
@@ -413,6 +483,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		let valuesChanged = false;
 
 		for (let i = 0; i < width; i++) {
+
 			let color;
 			let visible = true;
 
@@ -433,6 +504,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			const g = parseInt(255 * color[1]);
 			const b = parseInt(255 * color[2]);
 			const a = visible ? parseInt(255 * color[3]) : 0;
+
 
 			if (data[4 * i + 0] !== r) {
 				data[4 * i + 0] = r;
@@ -460,7 +532,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -585,11 +657,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 				this.updateShaderSource();
 				this.dispatchEvent({
 					type: 'opacity_changed',
-					target: this,
+					target: this
 				});
 				this.dispatchEvent({
 					type: 'material_property_changed',
-					target: this,
+					target: this
 				});
 			}
 		}
@@ -606,12 +678,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.updateShaderSource();
 			this.dispatchEvent({
 				type: 'active_attribute_changed',
-				target: this,
+				target: this
 			});
 
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -626,11 +698,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.updateShaderSource();
 			this.dispatchEvent({
 				type: 'point_size_type_changed',
-				target: this,
+				target: this
 			});
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -656,11 +728,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 			this.dispatchEvent({
 				type: 'color_changed',
-				target: this,
+				target: this
 			});
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -676,7 +748,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.dispatchEvent({type: 'point_shape_changed', target: this});
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -710,11 +782,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 			this.dispatchEvent({
 				type: 'point_size_changed',
-				target: this,
+				target: this
 			});
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -729,11 +801,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 			this.dispatchEvent({
 				type: 'point_size_changed',
-				target: this,
+				target: this
 			});
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -743,9 +815,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	}
 
 	set elevationRange(value) {
-		let changed =
-			this.uniforms.elevationRange.value[0] !== value[0] ||
-			this.uniforms.elevationRange.value[1] !== value[1];
+		let changed = this.uniforms.elevationRange.value[0] !== value[0]
+			|| this.uniforms.elevationRange.value[1] !== value[1];
 
 		if (changed) {
 			this.uniforms.elevationRange.value = value;
@@ -754,7 +825,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -767,14 +838,6 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.elevationRange = [value, this.elevationRange[1]];
 	}
 
-	get initialHeightMin() {
-		return this._initialHeightMin;
-	}
-
-	set initialHeightMin(value) {
-		this._initialHeightMin = value;
-	}
-
 	get heightMax() {
 		return this.uniforms.elevationRange.value[1];
 	}
@@ -783,52 +846,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.elevationRange = [this.elevationRange[0], value];
 	}
 
-	get initialHeightMax() {
-		return this._initialHeightMax;
-	}
-
-	set initialHeightMax(value) {
-		this._initialHeightMax = value;
-	}
-
 	get transition() {
 		return this.uniforms.transition.value;
 	}
 
 	set transition(value) {
 		this.uniforms.transition.value = value;
-	}
-
-	get intensityMin() {
-		return this.uniforms.intensityRange.value[0];
-	}
-
-	set intensityMin(value) {
-		this.intensityRange = [value, this.intensityRange[1]];
-	}
-
-	get initialIntensityMin() {
-		return this._initialIntensityMin;
-	}
-
-	set initialIntensityMin(value) {
-		this._initialIntensityMin = value;
-	}
-
-	get intensityMax() {
-		return this.uniforms.intensityRange.value[1];
-	}
-
-	set intensityMax(value) {
-		this.intensityRange = [this.intensityRange[0], value];
-	}
-
-	get initialIntensityMax() {
-		return this._initialIntensityMax;
-	}
-
-	set initialIntensityMax(value) {
-		this._initialIntensityMax = value;
 	}
 
 	get intensityRange() {
@@ -840,24 +863,18 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			return;
 		}
 
-		if (
-			value[0] === this.uniforms.intensityRange.value[0] &&
-			value[1] === this.uniforms.intensityRange.value[1]
-		) {
+		if (value[0] === this.uniforms.intensityRange.value[0] &&
+			value[1] === this.uniforms.intensityRange.value[1]) {
 			return;
 		}
 
 		this.uniforms.intensityRange.value = value;
 
-		if (!this._defaultIntensityRangeChanged) {
-			this._initialIntensityMin = value[0];
-			this._initialIntensityMax = value[1];
-		}
 		this._defaultIntensityRangeChanged = true;
 
 		this.dispatchEvent({
 			type: 'material_property_changed',
-			target: this,
+			target: this
 		});
 	}
 
@@ -870,7 +887,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.intensity_gbc.value[0] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -884,7 +901,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.intensity_gbc.value[2] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -898,7 +915,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.intensity_gbc.value[1] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -912,7 +929,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.uRGB_gbc.value[0] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -926,7 +943,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.uRGB_gbc.value[2] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -940,10 +957,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.uRGB_gbc.value[1] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
+
 
 	get extraGamma() {
 		return this.uniforms.uExtraGammaBrightContr.value[0];
@@ -954,7 +972,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.uExtraGammaBrightContr.value[0] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -968,7 +986,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.uExtraGammaBrightContr.value[1] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -982,7 +1000,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.uExtraGammaBrightContr.value[2] = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -992,13 +1010,13 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	}
 
 	setRange(attributeName, newRange) {
+
 		let rangeChanged = false;
 
 		let oldRange = this.ranges.get(attributeName);
 
 		if (oldRange != null && newRange != null) {
-			rangeChanged =
-				oldRange[0] !== newRange[0] || oldRange[1] !== newRange[1];
+			rangeChanged = oldRange[0] !== newRange[0] || oldRange[1] !== newRange[1];
 		} else {
 			rangeChanged = true;
 		}
@@ -1008,7 +1026,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		if (rangeChanged) {
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -1022,10 +1040,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			return;
 		}
 
-		if (
-			value[0] === this.uniforms.uExtraRange.value[0] &&
-			value[1] === this.uniforms.uExtraRange.value[1]
-		) {
+		if (value[0] === this.uniforms.uExtraRange.value[0] &&
+			value[1] === this.uniforms.uExtraRange.value[1]) {
 			return;
 		}
 
@@ -1035,7 +1051,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		this.dispatchEvent({
 			type: 'material_property_changed',
-			target: this,
+			target: this
 		});
 	}
 
@@ -1048,7 +1064,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.wRGB.value = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -1062,7 +1078,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.wIntensity.value = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -1076,7 +1092,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.wElevation.value = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -1090,7 +1106,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.wClassification.value = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -1104,7 +1120,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.wReturnNumber.value = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -1118,7 +1134,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.uniforms.wSourceID.value = value;
 			this.dispatchEvent({
 				type: 'material_property_changed',
-				target: this,
+				target: this
 			});
 		}
 	}
@@ -1148,11 +1164,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		context.fill();
 
 		//let texture = new THREE.Texture(canvas);
-		let texture = new CanvasTexture(canvas);
+		let texture = new THREE.CanvasTexture(canvas);
 		texture.needsUpdate = true;
 
-		texture.minFilter = LinearFilter;
-		texture.wrap = RepeatWrapping;
+		texture.minFilter = THREE.LinearFilter;
+		texture.wrap = THREE.RepeatWrapping;
 		texture.repeat = 2;
 		// textureImage = texture.image;
 
@@ -1160,13 +1176,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	}
 
 	static generateMatcapTexture(matcap) {
-		var url = new URL(Potree.resourcePath + '/textures/matcap/' + matcap)
-			.href;
-		let texture = new TextureLoader().load(url);
-		texture.magFilter = texture.minFilter = LinearFilter;
+		var url = new URL(Potree.resourcePath + "/textures/matcap/" + matcap).href;
+		let texture = new THREE.TextureLoader().load(url);
+		texture.magFilter = texture.minFilter = THREE.LinearFilter;
 		texture.needsUpdate = true;
 		// PotreeConverter_1.6_2018_07_29_windows_x64\PotreeConverter.exe autzen_xyzrgbXYZ_ascii.xyz -f xyzrgbXYZ -a RGB NORMAL -o autzen_xyzrgbXYZ_ascii_a -p index --overwrite
-		// Switch matcap texture on the fly : viewer.scene.pointclouds[0].material.matcap = 'matcap1.jpg';
+		// Switch matcap texture on the fly : viewer.scene.pointclouds[0].material.matcap = 'matcap1.jpg'; 
 		// For non power of 2, use LinearFilter and dont generate mipmaps, For power of 2, use NearestFilter and generate mipmaps : matcap2.jpg 1 2 8 11 12 13
 		return texture;
 	}
@@ -1176,12 +1191,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this._hiddenListeners = this._listeners;
 			this._listeners = {};
 		}
-	}
+	};
 
 	enableEvents() {
 		this._listeners = this._hiddenListeners;
 		this._hiddenListeners = undefined;
-	}
+	};
 
 	// copyFrom(from){
 
@@ -1195,4 +1210,5 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	// copy(from){
 	// 	this.copyFrom(from);
 	// }
+
 }

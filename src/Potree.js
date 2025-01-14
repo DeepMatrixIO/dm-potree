@@ -71,6 +71,11 @@ export * from "./modules/loader/2.0/OctreeLoader.js";
 
 export * from './tokenUpdater.js';
 
+//export {ClusteredPoint} from './dm_custom_tools/clustering/ClusteredPoint.js';
+export {ClusterTool} from './dm_custom_tools/clustering/ClusterTool.js';
+export {PointCluster} from './dm_custom_tools/clustering/PointCluster.js';
+
+
 
 export {DeviceOrientationControls} from "./navigation/DeviceOrientationControls.js";
 export {EarthControls} from "./navigation/EarthControls.js";
@@ -88,6 +93,8 @@ import {LRU} from "./LRU.js";
 import {OctreeLoader} from "./modules/loader/2.0/OctreeLoader.js";
 import {PointCloudOctree} from "./PointCloudOctree.js";
 import {WorkerPool} from "./WorkerPool.js";
+
+export const segmentsAttributeKey = 'seg_cluster_id';//used to set the attribute key for the segments
 
 export const workerPool = new WorkerPool();
 

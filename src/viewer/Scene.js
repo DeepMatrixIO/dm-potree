@@ -47,7 +47,28 @@ export class Scene extends EventDispatcher {
 
 		this.directionalLight = null;
 
+		this.initializePointClusters();//not in original code
+
 		this.initialize();
+
+
+	}
+
+	//Added to support point clusters. 
+	initializePointClusters() {
+		this.pointClusters = [];
+		/**
+				this.addPointCluster = function (pointCluster) {
+					//this.viewer.scene.addPointCluster = function (pointCluster) {
+					this.pointClusters.push(pointCluster);
+					;
+				}
+				 */
+		this.addPointCluster = function (pointCluster) {
+			//this.viewer.scene.removePointCluster = function (pointCluster) {
+			this.pointClusters = this.pointClusters.filter((cluster) => cluster !== pointCluster);
+			this.pointClusters.push(pointCluster);
+		}
 	}
 
 	estimateHeightAt(position) {

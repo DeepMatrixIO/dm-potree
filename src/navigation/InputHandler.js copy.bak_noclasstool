@@ -36,7 +36,7 @@ export class InputHandler extends EventDispatcher {
 
 		this.speed = 1;
 
-		this.logMessages = true;
+		this.logMessages = false;
 
 		this.extraTools = [];//to register additional tools and events
 
@@ -197,8 +197,9 @@ export class InputHandler extends EventDispatcher {
 				if (document.fullscreenElement) {
 					document.exitFullscreen();
 				}
-				if (this.viewer.clusterTool.active)
-					this.viewer.clusterTool.onClick(this.mouse, MOUSE$1.RIGHT);
+				//				if (this.viewer.clusterTool.active)
+				//					this.viewer.clusterTool.onClick(this.mouse, MOUSE$1.RIGHT);
+				this.extraTools.forEach(tool => {tool.active && tool.onTouchEnd(this.mouse, MOUSE$1.RIGHT);});
 				return;
 			}
 			// More than two finger tap
@@ -266,6 +267,7 @@ export class InputHandler extends EventDispatcher {
 			}
 		}
 	}
+
 
 	onTouchMove(e) {
 		if (this.logMessages) console.log(this.constructor.name + ': onTouchMove');
@@ -358,7 +360,7 @@ export class InputHandler extends EventDispatcher {
 		e.preventDefault();
 	}
 
-	onDoubleClickOld(e) {
+	onDoubleClick(e) {
 		if (this.logMessages) console.log(this.constructor.name + ': onDoubleClick');
 
 		if (this.viewer.measuringTool.currentTool) {
@@ -399,45 +401,9 @@ export class InputHandler extends EventDispatcher {
 			}
 		}
 
-		e.preventDefault();//removed from clustertool
+		e.preventDefault();
 	}
-	onDoubleClick() {
-		//clustertool pointorama tool
 
-		if (this.logMessages)
-			console.log(this.constructor.name + ': onDoubleClick');
-
-		if (this.viewer.measuringTool.currentTool) {
-			this.viewer.measuringTool.onDoubleClick();
-			return;
-		} else if (this.viewer.clusterTool.active) {
-			this.viewer.clusterTool.onDoubleClick();
-			return;
-		}
-
-		let consumed = false;
-		for (let hovered of this.hoveredElements) {
-			if (hovered._listeners && hovered._listeners['dblclick']) {
-				hovered.object.dispatchEvent({
-					type: 'dblclick',
-					mouse: this.mouse,
-					object: hovered.object,
-				});
-				consumed = true;
-				break;
-			}
-		}
-
-		if (!consumed) {
-			for (let inputListener of this.getSortedListeners()) {
-				inputListener.dispatchEvent({
-					type: 'dblclick',
-					mouse: this.mouse,
-					object: null,
-				});
-			}
-		}
-	}
 	onMouseClick(e) {
 		if (this.logMessages) console.log(this.constructor.name + ': onMouseClick');
 
@@ -590,9 +556,8 @@ export class InputHandler extends EventDispatcher {
 			}
 		}
 	}
+	//taken from pointorama
 	onMouseUp(e) {
-		//taken from pointorama clusterTool
-
 		if (this.logMessages) console.log(this.constructor.name + ': onMouseUp');
 
 		e.preventDefault();
@@ -613,18 +578,17 @@ export class InputHandler extends EventDispatcher {
 
 				if (this.viewer.measuringTool.currentTool) {
 					this.viewer.measuringTool.onClick(e.button);
+				} else {
+					this.extraTools.forEach(tool => {tool.active && tool.onClick(this.mouse, e.button);});
 				}
-				//not workling yet
-				//else {					this.extraTools.forEach(tool => {tool.active && tool.onClick(this.mouse, e.button);});				}
-				if (this.viewer.clusterTool.active) {
-					this.viewer.clusterTool.onClick(this.mouse, e.button);
-				}
+				//if (this.viewer.clusterTool.active) {
+				//	this.viewer.clusterTool.onClick(this.mouse, e.button);
+				//}
 
 				const hoveredObject = this.hoveredElements
 					.map((e) => e.object)
 					.find((e) => e._listeners && e._listeners['click']);
 				if (this.viewer.selectionTool.active && !hoveredObject) {
-					console.log('SelectionTool:deselect all');
 					this.viewer.selectionTool.deselectAll();
 				} else if (hoveredObject) {
 					hoveredObject.dispatchEvent({
@@ -664,164 +628,8 @@ export class InputHandler extends EventDispatcher {
 		}
 	}
 
-
-	onMouseMove(e) {
-		//pointorama version
-		e.preventDefault();
-		this.mouseHasMovedSinceMouseDown = true;
-		this.mouseHasMovedSinceLastClick = true;
-		const rect = this.domElement.getBoundingClientRect();
-		const x = e.clientX - rect.left;
-		const y = e.clientY - rect.top;
-		this.mouse.set(x, y);
-
-		let hoveredElements = this.getHoveredElements();
-		if (hoveredElements.length > 0) {
-			let names = hoveredElements.map((h) => h.object.name).join(', ');
-			if (this.logMessages)
-				console.log(
-					`${this.constructor.name}: onMouseMove; hovered: '${names}'`
-				);
-		}
-
-		if (this.viewer.clusterTool.active) {
-			this.viewer.clusterTool.onMouseMove(this.mouse);
-		}
-
-		if (this.draw?.object) {
-			this.draw.object.dispatchEvent({
-				type: 'draw',
-				mouse: this.mouse,
-				viewer: this.viewer,
-				drawingTarget: hoveredElements[0]?.object.parent.editable
-					? hoveredElements[0]
-					: undefined,
-			});
-		}
-
-		if (this.drag) {
-			this.drag.mouse = e.buttons;
-
-			this.drag.lastDrag.x = x - this.drag.end.x;
-			this.drag.lastDrag.y = y - this.drag.end.y;
-
-			this.drag.end.set(x, y);
-
-			if (this.drag.object) {
-				if (this.logMessages)
-					console.log(
-						this.constructor.name + ': drag: ' + this.drag.object.name
-					);
-				this.drag.object.dispatchEvent({
-					type: 'drag',
-					drag: this.drag,
-					viewer: this.viewer,
-				});
-			} else {
-				if (this.logMessages) console.log(this.constructor.name + ': drag: ');
-
-				let dragConsumed = false;
-				for (let inputListener of this.getSortedListeners()) {
-					inputListener.dispatchEvent({
-						type: 'drag',
-						drag: this.drag,
-						viewer: this.viewer,
-						consume: () => {
-							dragConsumed = true;
-						},
-					});
-
-					if (dragConsumed) {
-						break;
-					}
-				}
-			}
-			return;
-		}//drag end, no else
-
-		const currentlyHoveredObjects
-			= hoveredElements.map(
-				(element) => element.object
-			);
-		const previouslyHoveredObjects = this.hoveredElements.map(
-			(element) => element.object
-		);
-
-		const abandonedHovers = previouslyHoveredObjects.filter(
-			(object) => !currentlyHoveredObjects.includes(object)
-		);
-		const newHovers = currentlyHoveredObjects.filter(
-			(object) => !previouslyHoveredObjects.includes(object)
-		);
-
-		const currentFrontObject = currentlyHoveredObjects.find((a) => true);
-		const previousFrontObject = previouslyHoveredObjects.find((a) => true);
-
-		if (currentFrontObject !== previousFrontObject) {
-			if (previousFrontObject) {
-				if (this.logMessages)
-					console.log(
-						`${this.constructor.name}: mouseleave: ${previousFrontObject.name}`
-					);
-				previousFrontObject.dispatchEvent({
-					type: 'mouseleave',
-					object: previousFrontObject,
-					viewer: this.viewer,
-				});
-			}
-			if (currentFrontObject) {
-				if (this.logMessages)
-					console.log(
-						`${this.constructor.name}: mouseover: ${currentFrontObject.name}`
-					);
-				currentFrontObject.dispatchEvent({
-					type: 'mouseover',
-					object: currentFrontObject,
-					viewer: this.viewer,
-				});
-			}
-		}
-
-		for (const object of abandonedHovers) {
-			object.dispatchEvent({
-				type: 'mouseleavemultiple',
-				object: object,
-				viewer: this.viewer,
-			});
-		}
-		for (const object of newHovers) {
-			object.dispatchEvent({
-				type: 'mouseovermultiple',
-				object: object,
-				viewer: this.viewer,
-			});
-		}
-
-		if (hoveredElements.length > 0) {
-			let object = hoveredElements
-				.map((e) => e.object)
-				.find((e) => e._listeners && e._listeners['mousemove']);
-
-			if (object) {
-				object.dispatchEvent({
-					type: 'mousemove',
-					object: object,
-				});
-			}
-		}
-
-		// for (let inputListener of this.getSortedListeners()) {
-		// 	inputListener.dispatchEvent({
-		// 		type: 'mousemove',
-		// 		object: null
-		// 	});
-		// }
-
-		this.hoveredElements = hoveredElements;
-	}
-
 	//double check because is really changed
-	onMouseMoveOld(e) {
+	onMouseMove(e) {
 		e.preventDefault();
 		this.mouseHasMovedSinceMouseDown = true;//clusterTool
 		this.mouseHasMovedSinceLastClick = true;//clusterTool

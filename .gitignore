@@ -30,4 +30,7 @@ libs/giro3d
 /pointclouds/sjl2
 /pointclouds/morro_bay_converted
 /pointclouds/helimap_epalinges
+/pointclouds/*.las
+/pointclouds/vegetation_zone_ROW_75_20_1_64930dd1.las_converted
+/pointclouds/inegi_point_cloud_cov_40cm.las_converted
 .vscode/settings.json

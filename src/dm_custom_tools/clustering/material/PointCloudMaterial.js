@@ -1,19 +1,8 @@
-import {Shaders} from "../../build/shaders/shaders.js";
-import {
-	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
-	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
-} from "../../libs/three.js/build/three.core.js";
-import {ElevationGradientRepeat, PointShape, PointSizeType, TreeType} from "../defines.js";
-import {Utils} from "../utils.js";
-import {ClassificationScheme} from "./ClassificationScheme.js";
-import {Gradients} from "./Gradients.js";
+import {RawShaderMaterial} from "../../../../libs/three.js/build/three.core"; //can be changed to three.module.js
 
-
-export class PointCloudMaterial extends RawShaderMaterial {
+class PointCloudMaterial extends RawShaderMaterial {
 	constructor(parameters = {}) {
 		super();
-
-
 
 		this.visibleNodesTexture = Utils.generateDataTexture(
 			2048,
@@ -45,7 +34,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this._weighted = false;
 		this._gradientName = 'SPECTRAL';
 		this._gradient = Gradients.SPECTRAL;
-		this.gradientTexture = PointCloudMaterial.generateGradientTexture(
+		this.gradientTexture = PointCloudMaterial$1.generateGradientTexture(
 			this._gradient
 		);
 		this._matcap = 'matcap.jpg';
@@ -85,16 +74,9 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			numberOfReturns: {type: 'f', value: []},
 			pointSourceID: {type: 'f', value: []},
 			indices: {type: 'fv', value: []},
-			//[this.attributeKey]: {type: 'fv', value: []},
-			seg_cluster_id: {type: 'fv', value: []},
+			[attributeKey]: {type: 'fv', value: []},
+			//seg_cluster_id: {type: 'fv', value: []},
 		};
-
-		//we may move this to the corresponding tool as this is 
-		//if (Potree.segmentsAttributeKey) {
-		//	this.attributes[Potree.segmentsAattributeKey] = {type: 'fv', value: []};
-		//}
-
-
 
 		this.uniforms = {
 			level: {type: 'f', value: 0.0},
@@ -202,8 +184,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	}
 
 	updateShaderSource() {
-		let vs = Shaders['pointcloud.vs'];
-		let fs = Shaders['pointcloud.fs'];
+		let vs = Shaders['pointcloud_clusters.vs'];
+		let fs = Shaders['pointcloud_clusters.fs'];
 		let definesString = this.getDefines();
 
 		let vsVersionIndex = vs.indexOf('#version ');
