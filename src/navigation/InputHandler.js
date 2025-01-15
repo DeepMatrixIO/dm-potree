@@ -8,6 +8,7 @@ import * as THREE from "../../libs/three.js/build/three.module.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";
 import {Utils} from "../utils.js";
+import {BoxVolume} from "../utils/Volume.js";
 
 export class InputHandler extends EventDispatcher {
 	constructor(viewer) {
@@ -401,23 +402,34 @@ export class InputHandler extends EventDispatcher {
 
 		e.preventDefault();//removed from clustertool
 	}
-	onDoubleClick() {
+	onDoubleClick(e) {
 		//clustertool pointorama tool
 
 		if (this.logMessages)
 			console.log(this.constructor.name + ': onDoubleClick');
 
+		//added
 		if (this.viewer.measuringTool.currentTool) {
 			this.viewer.measuringTool.onDoubleClick();
 			return;
-		} else if (this.viewer.clusterTool.active) {
-			this.viewer.clusterTool.onDoubleClick();
-			return;
+		} else {
+			let toolStatus = false
+			this.extraTools.forEach(tool => {
+				if (tool.active) {
+					toolStatus = true
+					tool.onDoubleClick();
+				}
+			});//to avoid other actions if a tool is active
+			if (toolStatus) return;
 		}
+		//added end
 
+		//std
 		let consumed = false;
 		for (let hovered of this.hoveredElements) {
-			if (hovered._listeners && hovered._listeners['dblclick']) {
+			//			if (hovered._listeners && hovered._listeners['dblclick']) {
+			if (hovered.object._listeners && hovered.object._listeners['dblclick']) {//fixed to listen to the object
+
 				hovered.object.dispatchEvent({
 					type: 'dblclick',
 					mouse: this.mouse,
@@ -437,6 +449,8 @@ export class InputHandler extends EventDispatcher {
 				});
 			}
 		}
+		e.preventDefault();//not present in clusterTool
+
 	}
 	onMouseClick(e) {
 		if (this.logMessages) console.log(this.constructor.name + ': onMouseClick');
@@ -597,15 +611,16 @@ export class InputHandler extends EventDispatcher {
 
 		e.preventDefault();
 
+		//// code added from ClusterTool
 		if (this.mouseHasMovedSinceMouseDown) {
-			this.mouseHasMovedSinceMouseDown = false;
+			this.mouseHasMovedSinceMouseDown = false;//reset the flag
 			// Drag end functions should go here
-		} else {
+		} else {//in less than 300ms means performs doubleclick but breaks previous behaviour
 			const interval = new Date().getTime() - this.lastClick;
 			if (interval < 300 && !this.mouseHasMovedSinceLastClick) {
 				// Double click
 				// TODO: Differentiate between double click with left and right mouse button
-				this.onDoubleClick();
+				this.onDoubleClick(e);
 			} else {
 				// Click
 				this.lastClick = new Date().getTime();
@@ -615,10 +630,12 @@ export class InputHandler extends EventDispatcher {
 					this.viewer.measuringTool.onClick(e.button);
 				}
 				//not workling yet
-				//else {					this.extraTools.forEach(tool => {tool.active && tool.onClick(this.mouse, e.button);});				}
-				if (this.viewer.clusterTool.active) {
-					this.viewer.clusterTool.onClick(this.mouse, e.button);
+				else {
+					this.extraTools.forEach(tool => {tool.active && tool.onClick(this.mouse, e.button);});
 				}
+				// (this.viewer.clusterTool.active) {
+				//his.viewer.clusterTool.onClick(this.mouse, e.button);
+				//
 
 				const hoveredObject = this.hoveredElements
 					.map((e) => e.object)
@@ -637,6 +654,39 @@ export class InputHandler extends EventDispatcher {
 				}
 			}
 		}
+
+		//old code is missing related to propagatting code
+
+
+		let consumed = false;
+		let consume = () => {return consumed = true;};
+		if (this.hoveredElements.length === 0) {
+			for (let inputListener of this.getSortedListeners()) {
+				inputListener.dispatchEvent({
+					type: 'mouseup',
+					viewer: this.viewer,
+					mouse: this.mouse,
+					consume: consume
+				});
+
+				if (consumed) {
+					break;
+				}
+			}
+		} else {
+			let hovered = this.hoveredElements
+				.map(e => e.object)
+				.find(e => (e._listeners && e._listeners['mouseup']));
+			if (hovered) {
+				hovered.dispatchEvent({
+					type: 'mouseup',
+					viewer: this.viewer,
+					consume: consume
+				});
+			}
+		}
+
+		//// end code added from ClusterTool
 
 		if (this.drag) {
 			if (this.drag.object) {

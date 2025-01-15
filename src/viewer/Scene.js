@@ -151,6 +151,14 @@ export class Scene extends EventDispatcher {
 		});
 	}
 
+	// removePointCluster
+	removePointCluster(pointCluster) {
+		const index = this.pointClusters.indexOf(pointCluster);
+		if (index > -1) {
+			this.pointClusters.splice(index, 1);
+		}
+	}
+
 	addVolume(volume) {
 		this.volumes.push(volume);
 		this.dispatchEvent({

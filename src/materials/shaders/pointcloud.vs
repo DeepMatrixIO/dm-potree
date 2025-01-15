@@ -240,7 +240,8 @@ float getLOD(){
 		int index = int(round(4.0 * index3d.x + 2.0 * index3d.y + index3d.z));
 		
 		// vec4 value = texture(visibleNodes, vec2(iOffset / 2048.0, 0.0));
-		vec4 value = texture(visibleNodes, vec2(iOffset / 2048.0, 0.0));		int mask = int(round(value.r * 255.0));
+		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));	//cannot operate on different typesww
+		int mask = int(round(value.r * 255.0));
 
 		if(isBitSet(mask, index)){
 			// there are more visible child nodes at this position
@@ -338,7 +339,7 @@ float getLOD(){
 		
 	for(float i = 0.0; i <= 1000.0; i++){
 		
-		vec4 value = texture(visibleNodes, vec2(iOffset / 2048.0, 0.0));
+		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));
 		
 		int children = int(value.r * 255.0);
 		float next = value.g * 255.0;

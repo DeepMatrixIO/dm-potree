@@ -13,8 +13,9 @@ export class ClusterTool extends EventDispatcher {
 		//shall I add code to the scene???
 		//this.viewer.scene.pointClusters = [];
 
+		this.viewer.inputHandler.registerExtraTool(this);//extra tools registered in InputHandler
 
-		//relies on code added to scene in viewer.scene
+
 
 
 	}
@@ -22,6 +23,7 @@ export class ClusterTool extends EventDispatcher {
 		console.log('ClusterTool:activate');
 		this.active = true;
 		this.startNewPointCluster();
+		this.viewer.addTool(this);
 	}
 	deactivate() {
 		console.log('ClusterTool:deactivate');
