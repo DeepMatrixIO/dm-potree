@@ -37,7 +37,7 @@ export class InputHandler extends EventDispatcher {
 
 		this.speed = 1;
 
-		this.logMessages = true;
+		this.logMessages = false;
 
 		this.extraTools = [];//to register additional tools and events
 

@@ -1,5 +1,6 @@
 import {Shaders} from "../../build/shaders/shaders.js";
 import {
+	AdditiveBlending,
 	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
 	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
 } from "../../libs/three.js/build/three.core.js";
