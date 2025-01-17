@@ -59,35 +59,35 @@ export class NodeLoader {
 						'Range': `bytes=${first}-${last}`,
 					}
 				};
-				let maxRetries = 10;
+				let maxRetries = 3;
 				//fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
 				//let response = await fetch(urlOctree, fetchOptions);
 				let retry = 1;
 
-				do {
-					fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
-					response = await fetch(urlOctree, fetchOptions);
-					if (response.status >= 400) {
-						//console.log("OCTREELOADER " + (retry) + " loading node: " + node.name + " from: " + urlOctree +
-						//	"\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
+				//do {
+				fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
+				response = await fetch(urlOctree, fetchOptions);
+				//	if (response.status >= 400) {
+				//console.log("OCTREELOADER " + (retry) + " loading node: " + node.name + " from: " + urlOctree +
+				//	"\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
+				//		retry++;
+				//activeWait(100);
+				//	} else {
+				//		break
+				//	}
 
-						retry++;
-						//activeWait(100);
-					} else {
-						break
-					}
-
-				} while (retry <= maxRetries && response.status >= 400);
+				//} while (retry <= maxRetries && response.status >= 400);
 
 
 				if (response.status >= 400) {
-
-
+					throw new Error(`Failed to load node ${node.name} from ${urlOctree}. Status: ${response.status}, StatusText: ${response.statusText}, OK: ${response.ok}`);
 				}
-				if (retry > 1) {
-					console.log("OCTREELOADER DONE AT " + retry + " try.  Loading node: " + node.name + " from: " + urlOctree +
-						"\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
-				}
+
+				//}
+				//if (retry > 1) {
+				//	console.log("OCTREELOADER DONE AT " + retry + " try.  Loading node: " + node.name + " from: " + urlOctree +
+				//		"\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
+				//}
 				buffer = await response.arrayBuffer();
 
 			}
