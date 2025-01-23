@@ -1,0 +1,134 @@
+Clustering tools is inserted within the viewer 
+as viewer.clusterTool object
+
+
+ClusterTool create PointCluster objects and 
+are stored withing the scene as
+viewer.scene.pointCLusters=[]
+
+
+
+ClusterTool methods
+
+activate()
+deactivate()
+
+
+PointCluster:
+
+segments=[{pointcloudid:xxx,  segmentid:yyy}]
+classification
+active: To indicate segments being added/ existing
+selected:  true/false, to highlight the whole cluster
+
+ methods:
+ - activate()
+ - deactivate()
+
+
+PointClusters contain a segment List
+
+
+PointClusters are just information to be rendered within the vertex shader and color based on a classification value given a pointcloud attribute, which is a segment_id.
+
+Rendered information are all the clusteredSegments and from all PointClusters,,, segments and tempSegments
+
+Currently , they are being colored into the getClassification() method and getClip() in the vertex shader pointcloud.vs
+
+Shader only deals with segment_id attributte, clusteredSegments (list of all semgents), segmentClassification array and others: 
+
+clusteredSegments[segment a, segment b, ...]    segmentClassification[ class_segment_a, class_segment_b], so they share the same size
+
+colors are assigned based on a LookupTable array mapping segmentClassification -> lookupTable using a 255 array
+
+getClassification() deals with the main classification color
+
+getClip() deals with clip, highlight and active colors on basis of current classification color
+
+
+
+
+Attributes, uniforms and  defines are set/commited  commited  into Renderer.renderOctree for every frame.
+
+Input Handler also requires some extra code to address ClusterTool, speciifically in 
+onMouseMove
+    if (this.viewer.clusterTool.active) {
+        this.viewer.clusterTool.onMouseMove(this.mouse);
+      }
+
+onTouchEnd()
+  // Two finger tap
+        if (e.touches.length === 1) {
+          if (this.logMessages) console.log('Two finger tap');
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          }
+          if (this.viewer.clusterTool.active)
+            this.viewer.clusterTool.onClick(this.mouse, MOUSE$1.RIGHT);
+          return;
+        }
+
+ onDoubleClick() {
+      if (this.logMessages)
+        console.log(this.constructor.name + ': onDoubleClick');
+
+      if (this.viewer.measuringTool.currentTool) {
+        this.viewer.measuringTool.onDoubleClick();
+        return;
+      } else if (this.viewer.clusterTool.active) {
+        this.viewer.clusterTool.onDoubleClick();
+        return;
+      }
+
+
+onMouseUp(e) {
+      if (this.logMessages) console.log(this.constructor.name + ': onMouseUp');
+
+      e.preventDefault();
+
+      if (this.mouseHasMovedSinceMouseDown) {
+        this.mouseHasMovedSinceMouseDown = false;
+        // Drag end functions should go here
+      } else {
+        const interval = new Date().getTime() - this.lastClick;
+        if (interval < 300 && !this.mouseHasMovedSinceLastClick) {
+          // Double click
+          // TODO: Differentiate between double click with left and right mouse button
+          this.onDoubleClick();
+        } else {
+          // Click
+          this.lastClick = new Date().getTime();
+          this.mouseHasMovedSinceLastClick = false;
+
+          if (this.viewer.measuringTool.currentTool) {
+            this.viewer.measuringTool.onClick(e.button);
+          } else if (this.viewer.clusterTool.active) {
+            this.viewer.clusterTool.onClick(this.mouse, e.button);
+          }
+
+
+
+in viewer.update, also for all pointclouds materials are being updated, means the clusteredSegments  updated
+
+, so 
+1) all pointclouds information is updated in update(), i.e. conpying segments and PointCLoud info
+2) all pointclouds are rendered with the included renderOctree method for each pointcloud, where attributes, uniforms and defines set
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

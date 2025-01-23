@@ -1,4 +1,5 @@
-#version 300 es // pointcloud_sm.vs.
+#version 300 es
+//...loaded
 precision mediump float;
 precision mediump int;
 

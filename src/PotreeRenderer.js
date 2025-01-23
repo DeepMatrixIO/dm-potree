@@ -151,7 +151,10 @@ let attributeLocations = {
 	"spacing": {name: "spacing", location: 9},
 	"gps-time": {name: "gpsTime", location: 10},
 	"aExtra": {name: "aExtra", location: 11},
+	"seg_cluster_id": {name: 'seg_cluster_id', location: 12},
 	//"aExtra": {name: "aExtra", location: 7},//due to input size differences, set to 7 for testing
+
+
 };
 
 class Shader {
@@ -1107,7 +1110,8 @@ export class Renderer {
 		{ // UPDATE SHADER AND TEXTURES
 			if (!this.shaders.has(material)) {
 				let [vs, fs] = [material.vertexShader, material.fragmentShader];
-				let shader = new Shader(gl, "pointcloud", vs, fs);
+				//let shader = new Shader(gl, "pointcloud", vs, fs);//shall i rename them?
+				let shader = new Shader(gl, "pointcloud", vs, fs);//shall i rename them?
 
 				this.shaders.set(material, shader);
 			}
@@ -1115,136 +1119,142 @@ export class Renderer {
 			shader = this.shaders.get(material);
 
 			//if(material.needsUpdate){
-			{
-				let [vs, fs] = [material.vertexShader, material.fragmentShader];
+			//{
+			let [vs, fs] = [material.vertexShader, material.fragmentShader];
 
-				let numSnapshots = material.snapEnabled ? material.numSnapshots : 0;
-				let numClipBoxes = (material.clipBoxes && material.clipBoxes.length) ? material.clipBoxes.length : 0;
-				let numClipSpheres = (params.clipSpheres && params.clipSpheres.length) ? params.clipSpheres.length : 0;
-				let numClipPolygons = (material.clipPolygons && material.clipPolygons.length) ? material.clipPolygons.length : 0;
+			let numSnapshots = material.snapEnabled ? material.numSnapshots : 0;
+			let numClipBoxes = (material.clipBoxes && material.clipBoxes.length) ? material.clipBoxes.length : 0;
+			let numClipSpheres = (params.clipSpheres && params.clipSpheres.length) ? params.clipSpheres.length : 0;
+			let numClipPolygons = (material.clipPolygons && material.clipPolygons.length) ? material.clipPolygons.length : 0;
+			const numClusteredPointSegments = material.pointClusters.reduce(
+				(segmentCount, cluster) => {
+					return segmentCount + cluster.segments.length;
+				},
+				0
+			);
+			const roundedNumberOfSegments = numClusteredPointSegments
+				? (Math.trunc(numClusteredPointSegments / 20) + 1) * 20
+				: 0;
 
-				let defines = [
-					`#define num_shadowmaps ${shadowMaps.length}`,
-					`#define num_snapshots ${numSnapshots}`,
-					`#define num_clipboxes ${numClipBoxes}`,
-					`#define num_clipspheres ${numClipSpheres}`,
-					`#define num_clippolygons ${numClipPolygons}`,
-				];
+			let defines = [
+				`#define num_shadowmaps ${shadowMaps.length}`,
+				`#define num_snapshots ${numSnapshots}`,
+				`#define num_clipboxes ${numClipBoxes}`,
+				`#define num_clipspheres ${numClipSpheres}`,
+				`#define num_clippolygons ${numClipPolygons}`,
+			];
+			//{//block for point cluste
 
 
-				if (octree.pcoGeometry.root.isLoaded()) {
-					let attributes = octree.pcoGeometry.root.geometry.attributes;
 
-					if (attributes["gps-time"]) {
-						defines.push("#define clip_gps_enabled");
-					}
+			defines.push(`#define num_clusteredpointsegments ${roundedNumberOfSegments}`);
+			//}
 
-					if (attributes["return number"]) {
-						defines.push("#define clip_return_number_enabled");
-					}
+			if (octree.pcoGeometry.root.isLoaded()) {
+				let attributes = octree.pcoGeometry.root.geometry.attributes;
 
-					if (attributes["number of returns"]) {
-						defines.push("#define clip_number_of_returns_enabled");
-					}
-
-					if (attributes["source id"] || attributes["point source id"]) {
-						defines.push("#define clip_point_source_id_enabled");
-					}
-
+				if (attributes["gps-time"]) {
+					defines.push("#define clip_gps_enabled");
 				}
 
-				let definesString = defines.join("\n");
-
-				let vsVersionIndex = vs.indexOf("#version ");
-				let fsVersionIndex = fs.indexOf("#version ");
-
-				if (vsVersionIndex >= 0) {
-					vs = vs.replace(/(#version .*)/, `$1\n${definesString}`)
-				} else {
-					vs = `${definesString}\n${vs}`;
+				if (attributes["return number"]) {
+					defines.push("#define clip_return_number_enabled");
 				}
 
-				if (fsVersionIndex >= 0) {
-					fs = fs.replace(/(#version .*)/, `$1\n${definesString}`)
-				} else {
-					fs = `${definesString}\n${fs}`;
+				if (attributes["number of returns"]) {
+					defines.push("#define clip_number_of_returns_enabled");
 				}
 
+				if (attributes["source id"] || attributes["point source id"]) {
+					defines.push("#define clip_point_source_id_enabled");
+				}
 
-				shader.update(vs, fs);
-
-				material.needsUpdate = false;
 			}
+
+			let definesString = defines.join("\n");
+
+			let vsVersionIndex = vs.indexOf("#version ");
+			let fsVersionIndex = fs.indexOf("#version ");
+
+			if (vsVersionIndex >= 0) {
+				vs = vs.replace(/(#version .*)/, `$1\n${definesString}`)
+			} else {
+				vs = `${definesString}\n${vs}`;
+			}
+
+			if (fsVersionIndex >= 0) {
+				fs = fs.replace(/(#version .*)/, `$1\n${definesString}`)
+			} else {
+				fs = `${definesString}\n${fs}`;
+			}
+
+
+			shader.update(vs, fs);
+
+			material.needsUpdate = false;
+			//}
 
 			for (let uniformName of Object.keys(material.uniforms)) {
 				let uniform = material.uniforms[uniformName];
-
 				if (uniform.type == "t") {
-
 					let texture = uniform.value;
-
 					if (!texture) {
 						continue;
 					}
-
 					if (!this.textures.has(texture)) {
 						let webglTexture = new WebGLTexture(gl, texture);
-
 						this.textures.set(texture, webglTexture);
 					}
-
 					let webGLTexture = this.textures.get(texture);
 					webGLTexture.update();
-
-
 				}
 			}
-		}
+			//}
 
-		gl.useProgram(shader.program);
+			gl.useProgram(shader.program);
 
-		let transparent = false;
-		if (params.transparent !== undefined) {
-			transparent = params.transparent && material.opacity < 1;
-		} else {
-			transparent = material.opacity < 1;
-		}
-
-		if (transparent) {
-			gl.enable(gl.BLEND);
-			gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-			gl.depthMask(false);
-			gl.disable(gl.DEPTH_TEST);
-		} else {
-			gl.disable(gl.BLEND);
-			gl.depthMask(true);
-			gl.enable(gl.DEPTH_TEST);
-		}
-
-		if (params.blendFunc !== undefined) {
-			gl.enable(gl.BLEND);
-			gl.blendFunc(...params.blendFunc);
-		}
-
-		if (params.depthTest !== undefined) {
-			if (params.depthTest === true) {
-				gl.enable(gl.DEPTH_TEST);
+			let transparent = false;
+			if (params.transparent !== undefined) {
+				transparent = params.transparent && material.opacity < 1;
 			} else {
-				gl.disable(gl.DEPTH_TEST);
+				transparent = material.opacity < 1;
 			}
-		}
 
-		if (params.depthWrite !== undefined) {
-			if (params.depthWrite === true) {
-				gl.depthMask(true);
-			} else {
+			if (transparent) {
+				gl.enable(gl.BLEND);
+				gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 				gl.depthMask(false);
+				gl.disable(gl.DEPTH_TEST);
+			} else {
+				gl.disable(gl.BLEND);
+				gl.depthMask(true);
+				gl.enable(gl.DEPTH_TEST);
 			}
 
-		}
+			if (params.blendFunc !== undefined) {
+				gl.enable(gl.BLEND);
+				gl.blendFunc(...params.blendFunc);
+			}
+
+			if (params.depthTest !== undefined) {
+				if (params.depthTest === true) {
+					gl.enable(gl.DEPTH_TEST);
+				} else {
+					gl.disable(gl.DEPTH_TEST);
+				}
+			}
+
+			if (params.depthWrite !== undefined) {
+				if (params.depthWrite === true) {
+					gl.depthMask(true);
+				} else {
+					gl.depthMask(false);
+				}
+
+			}
 
 
-		{ // UPDATE UNIFORMS
+			//{ // UPDATE UNIFORMS
 			shader.setUniformMatrix4("projectionMatrix", proj);
 			shader.setUniformMatrix4("viewMatrix", view);
 			shader.setUniformMatrix4("uViewInv", viewInv);
@@ -1283,6 +1293,71 @@ export class Renderer {
 
 				const lClipBoxes = shader.uniformLocations["clipBoxes[0]"];
 				gl.uniformMatrix4fv(lClipBoxes, false, material.uniforms.clipBoxes.value);
+
+				{//added for ClusterTool
+					const clipTasks = material.clipBoxes.map(
+						(box) => box.box.actualClipTask
+					);
+					const lClipTasks = shader.uniformLocations['clipTasks[0]'];
+					gl.uniform1iv(lClipTasks, clipTasks);
+					const boxColors = material.clipBoxes
+						.map((box) => [box.box.color.r, box.box.color.g, box.box.color.b])
+						.flat();
+					const lBoxColors = shader.uniformLocations['boxColors[0]'];
+					gl.uniform3fv(lBoxColors, boxColors);
+				}
+
+			}
+
+			// added for pointclusters
+			if (material.pointClusters && material.pointClusters.length > 0) {//nned to
+
+
+
+
+				const clusteredPointSegments = material.pointClusters
+					.map((cluster) => cluster.getSegmentIdentifiers())
+					.flat();
+				while (clusteredPointSegments.length < roundedNumberOfSegments) {
+					clusteredPointSegments.push(-1);
+				}
+				const lClusteredPointSegments =
+					shader.uniformLocations['clusteredpointsegments[0]'];
+				gl.uniform1fv(lClusteredPointSegments, clusteredPointSegments);
+
+				//segments flatted commited
+
+				const segmentClipTasks = Array(roundedNumberOfSegments).fill(0);
+				const segmentClassifications = Array(roundedNumberOfSegments).fill(0);
+				const selectedStates = Array(roundedNumberOfSegments).fill(0);
+				const activeStates = Array(roundedNumberOfSegments).fill(0);
+				const visibleStates = Array(roundedNumberOfSegments).fill(0);
+				material.pointClusters
+					.map((cluster) => cluster.getSegmentInfo())
+					.flat()
+					.forEach((info, index) => {
+						segmentClipTasks[index] = info.clipTask;
+						segmentClassifications[index] = info.classification;
+						selectedStates[index] = info.selected ? 1 : 0;
+						activeStates[index] = info.active ? 1 : 0;
+						visibleStates[index] = info.visible ? 1 : 0;
+					});
+				const lSegmentClipTasks =
+					shader.uniformLocations['segmentClipTasks[0]'];
+				gl.uniform1iv(lSegmentClipTasks, segmentClipTasks);
+				const lSegmentClassifications =
+					shader.uniformLocations['segmentClassifications[0]'];
+
+
+
+				//segmentClassifications = segmentClassifications.map((c) => c % 100);
+				gl.uniform1fv(lSegmentClassifications, segmentClassifications);
+				const lSelectedStates = shader.uniformLocations['selectedStates[0]'];
+				gl.uniform1iv(lSelectedStates, selectedStates);
+				const lActiveStates = shader.uniformLocations['activeStates[0]'];
+				gl.uniform1iv(lActiveStates, activeStates);
+				const lVisible = shader.uniformLocations['visibleStates[0]'];
+				gl.uniform1iv(lVisible, visibleStates);
 			}
 
 			// TODO CLIPSPHERES
@@ -1461,7 +1536,14 @@ export class Renderer {
 			}
 		}
 
-		this.renderNodes(octree, nodes, visibilityTextureData, camera, target, shader, params);
+		this.renderNodes(
+			octree,
+			nodes,
+			visibilityTextureData,
+			camera,
+			target,
+			shader,
+			params);
 
 		gl.activeTexture(gl.TEXTURE2);
 		gl.bindTexture(gl.TEXTURE_2D, null);

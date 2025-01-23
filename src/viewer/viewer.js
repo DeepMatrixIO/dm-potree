@@ -36,7 +36,8 @@ import {NavigationCube} from "./NavigationCube.js";
 import JSON5 from "../../libs/json5-2.1.3/json5.mjs";
 import {updateFetchToken} from "../tokenUpdater.js";
 
-
+import {ClusterTool} from "../dm_custom_tools/clustering/ClusterTool.js"; //JUST A REFERENCE
+import {SelectionTool} from "../dm_custom_tools/clustering/SelectionTool.js"; //JUST A REFERENCE
 export class Viewer extends EventDispatcher {
 
 	constructor(domElement, args = {}) {
@@ -334,9 +335,46 @@ export class Viewer extends EventDispatcher {
 			this.profileTool = new ProfileTool(this);//has its own update and render methods. Its object a raycaster
 			this.volumeTool = new VolumeTool(this);//has its own update and render methods
 
+
+
+			//ADDED by  @jguerrer
+			this.extraTools = []
+			//			this.selectionTool = new SelectionTool(this);
+			this.clusterTool = new ClusterTool(this);
+			this.selectionTool = new SelectionTool(this);
+
+			//this.addTool
+
+
 		} catch (e) {
 			this.onCrash(e);
 		}
+	}
+
+	//for clustering tool
+	addPointCluster(pointCluster) {
+		this.pointClusters.push(pointCluster);
+	}
+	//on adding custom tools
+	removePointCluster(pointCluster) {
+		const index = this.pointClusters.indexOf(pointCluster);
+		if (index > -1) {
+			this.pointClusters.splice(index, 1);
+		}
+	}
+	getTool(name) {
+		return this.extraTools.find((tool) => tool.name === name);
+	}
+
+	addTool(tool) {
+		this.extraTools.push(tool);
+		tool.init(this);//commit the viewer
+
+	}
+
+	removeTool(name) {
+		this.extraTools = this.extraTools.filter((tool) => tool.name !== name);
+
 	}
 
 	//ADDED by  @jguerrer
@@ -1674,7 +1712,9 @@ export class Viewer extends EventDispatcher {
 
 		Potree.pointLoadLimit = Potree.pointBudget * 2;
 
-		const lTarget = camera.position.clone().add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1000));
+		const lTarget = camera.position
+			.clone()
+			.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1000));
 		this.scene.directionalLight.position.copy(camera.position);
 		this.scene.directionalLight.lookAt(lTarget);
 
@@ -1687,10 +1727,14 @@ export class Viewer extends EventDispatcher {
 
 			let material = pointcloud.material;
 
-			material.uniforms.uFilterReturnNumberRange.value = this.filterReturnNumberRange;
-			material.uniforms.uFilterNumberOfReturnsRange.value = this.filterNumberOfReturnsRange;
-			material.uniforms.uFilterGPSTimeClipRange.value = this.filterGPSTimeRange;
-			material.uniforms.uFilterPointSourceIDClipRange.value = this.filterPointSourceIDRange;
+			material.uniforms.uFilterReturnNumberRange.value =
+				this.filterReturnNumberRange;
+			material.uniforms.uFilterNumberOfReturnsRange.value =
+				this.filterNumberOfReturnsRange;
+			material.uniforms.uFilterGPSTimeClipRange.value =
+				this.filterGPSTimeRange;
+			material.uniforms.uFilterPointSourceIDClipRange.value =
+				this.filterPointSourceIDRange;
 
 			material.classification = this.classifications;
 			material.recomputeClassification();
@@ -1700,7 +1744,8 @@ export class Viewer extends EventDispatcher {
 
 		{//BOUNDING BOXES UPDATES
 			if (this.showBoundingBox) {
-				let bbRoot = this.scene.scene.getObjectByName("potree_bounding_box_root");
+				let bbRoot = this.scene.scene.getObjectByName(
+					"potree_bounding_box_root");
 				if (!bbRoot) {
 					let node = new THREE.Object3D();
 					node.name = "potree_bounding_box_root";
@@ -1710,7 +1755,8 @@ export class Viewer extends EventDispatcher {
 
 				let visibleBoxes = [];
 				for (let pointcloud of this.scene.pointclouds) {
-					for (let node of pointcloud.visibleNodes.filter(vn => vn.boundingBoxNode !== undefined)) {
+					for (let node of pointcloud.visibleNodes.filter(
+						vn => vn.boundingBoxNode !== undefined)) {
 						let box = node.boundingBoxNode;
 						visibleBoxes.push(box);
 					}
@@ -1721,7 +1767,10 @@ export class Viewer extends EventDispatcher {
 		}
 
 		if (!this.freeze) {
-			let result = Potree.updatePointClouds(scene.pointclouds, camera, this.renderer);
+			let result = Potree.updatePointClouds(
+				scene.pointclouds,
+				camera,
+				this.renderer);
 
 
 			// DEBUG - ONLY DISPLAY NODES THAT INTERSECT MOUSE
@@ -1898,12 +1947,43 @@ export class Viewer extends EventDispatcher {
 
 			let clipPolygons = this.scene.polygonClipVolumes.filter(vol => vol.initialized);
 
+			//to do update clipPlanes from pointorama for planeTools
+			/////////////////////////////
+			/**
+			let planes = [];
+			// Add planes with clipTasks
+			planes.push(...this.scene.planes.filter(p => p.clipTask !== ClipTask.NONE));
+			let planeDegenerate = plane => plane.matrixWorld.determinant() !== 0;
+			let clipPlanes = planes.filter(planeDegenerate).map(plane => {
+			  plane.updateMatrixWorld();
+			  let planeInverse = plane.matrixWorld.clone().invert();
+			  let planePosition = plane.getWorldPosition(new Vector3());
+			  return {plane: plane, inverse: planeInverse, position: planePosition};
+			});
+				*/
+
+
+
 			// set clip volumes in material
 			for (let pointcloud of visiblePointClouds) {
 				pointcloud.material.setClipBoxes(clipBoxes);
 				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);
 				pointcloud.material.clipTask = this.clipTask;
 				pointcloud.material.clipMethod = this.clipMethod;
+
+				//added for classification and segmentation
+				//const pointCloudPointClusters = this.scene.pointClusters.map(cluster => cluster.filterSegmentsByPointCloud(pointcloud.identifier));
+
+				const pointCloudPointClusters = this.scene.pointClusters.map(//TODO take identifier from some other place or default it
+					cluster => {
+						let identifier = pointcloud.dataId || pointcloud.identifier || pointcloud.id || 0;
+						return cluster.filterSegmentsByPointCloud(identifier);
+					}
+				);
+
+				pointcloud.material.setPointClusters(pointCloudPointClusters);
+				//pointcloud.material.setClipPlanes(clipPlanes);
+
 			}
 		}
 

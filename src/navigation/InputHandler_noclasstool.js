@@ -8,7 +8,6 @@ import * as THREE from "../../libs/three.js/build/three.module.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";
 import {Utils} from "../utils.js";
-import {BoxVolume} from "../utils/Volume.js";
 
 export class InputHandler extends EventDispatcher {
 	constructor(viewer) {
@@ -116,9 +115,8 @@ export class InputHandler extends EventDispatcher {
 		}
 	}
 
-	onTouchEndOld(e) {
+	onTouchEnd(e) {
 		if (this.logMessages) console.log(this.constructor.name + ': onTouchEnd');
-		this.lastTouchEnd = new Date().getTime();//added cluster tool
 
 		e.preventDefault();
 
@@ -131,7 +129,6 @@ export class InputHandler extends EventDispatcher {
 		}
 
 		this.drag = null;
-		this.touchMoved = false;//added cluster tool
 
 		for (let inputListener of this.getSortedListeners()) {
 			inputListener.dispatchEvent({
@@ -139,132 +136,6 @@ export class InputHandler extends EventDispatcher {
 				touches: e.touches,
 				changedTouches: e.changedTouches
 			});
-		}
-	}
-	onTouchEnd(e) {
-		if (this.logMessages) console.log(this.constructor.name + ': onTouchEnd');
-		this.lastTouchEnd = new Date().getTime();
-
-		const handleRegularTouchEnd = () => {
-			e.preventDefault();
-
-			for (let inputListener of this.getSortedListeners()) {
-				inputListener.dispatchEvent({
-					type: 'drop',
-					drag: this.drag,
-					viewer: this.viewer,
-				});
-			}
-
-			this.drag = null;
-			this.touchMoved = false;
-
-			for (let inputListener of this.getSortedListeners()) {
-				inputListener.dispatchEvent({
-					type: e.type,
-					touches: e.touches,
-					changedTouches: e.changedTouches,
-				});
-			}
-		};
-
-		const rect = this.domElement.getBoundingClientRect();
-		const x = e.changedTouches[0].pageX - rect.left;
-		const y = e.changedTouches[0].pageY - rect.top;
-		this.mouse.set(x, y);
-		const hoveredElements = this.getHoveredElements();
-
-		// Multiple fingers, touchEnd already triggered
-		if (this.ignoreNextTouchEnd) {
-			if (this.logMessages) console.log('Touchend multiple fingers');
-			if (e.touches.length === 0) {
-				this.ignoreNextTouchEnd = false;
-			}
-			return;
-		}
-		// Multiple fingers, first touchEnd
-		if (e.touches.length > 0) {
-			if (this.logMessages) console.log('Touchend first of multiple fingers');
-			this.ignoreNextTouchEnd = true;
-			// Pan or Zoom
-			if (this.touchMoved) {
-				if (this.logMessages) console.log('Pan or zoom');
-				handleRegularTouchEnd();
-				return;
-			}
-			// Two finger tap
-			if (e.touches.length === 1) {
-				if (this.logMessages) console.log('Two finger tap');
-				if (document.fullscreenElement) {
-					document.exitFullscreen();
-				}
-				if (this.viewer.clusterTool.active)
-					this.viewer.clusterTool.onClick(this.mouse, MOUSE$1.RIGHT);
-				return;
-			}
-			// More than two finger tap
-			if (e.touches.length > 1) {
-				if (this.logMessages) console.log('More than two finger tap');
-				return;
-			}
-		}
-		// Single finger drag
-		if (
-			this.drag &&
-			(this.drag.lastDrag.x !== 0 || this.drag.lastDrag.y !== 0)
-		) {
-			if (this.drag.object) {
-				if (this.logMessages)
-					console.log('Touchend single finger drag object');
-				this.drag.object.dispatchEvent({
-					type: 'touchEnd',
-					drag: this.drag,
-					button: MOUSE$1.LEFT,
-					viewer: this.viewer,
-				});
-				this.viewer.measuringTool.lastMovedMeasure = this.drag.object.parent;
-				this.drag = null;
-			} else {
-				if (this.logMessages) console.log('Touchend single finger drag');
-				handleRegularTouchEnd();
-			}
-			return;
-		}
-
-		// Single finger tap
-		if (this.viewer.volumeTool.active) {
-			const tappedBoxes = this.getHoveredElements()
-				.map((element) => element.object)
-				.filter((object) => object instanceof BoxVolume && object.visible);
-			this.viewer.volumeTool.dispatchEvent({
-				type: 'tap',
-				location: this.mouse,
-				tappedBox: tappedBoxes[0] || null,
-				viewer: this.viewer,
-			});
-		} else if (this.viewer.clusterTool.active) {
-			this.viewer.clusterTool.onClick(this.mouse, MOUSE$1.LEFT);
-		}
-		if (this.draw?.object) {
-			if (this.logMessages) console.log('Touchend single finger tap draw');
-			this.draw.object.dispatchEvent({
-				type: 'draw',
-				mouse: this.mouse,
-				viewer: this.viewer,
-				drawingTarget: hoveredElements[0]?.object.parent.editable
-					? hoveredElements[0]
-					: undefined,
-			});
-		} else {
-			if (this.logMessages) console.log('Touchend single finger tap');
-			if (hoveredElements[0]?.object) {
-				hoveredElements[0].object.dispatchEvent({
-					type: 'click',
-					viewer: this.viewer,
-					isCtrl: false,
-					button: MOUSE$1.LEFT,
-				});
-			}
 		}
 	}
 
@@ -359,22 +230,8 @@ export class InputHandler extends EventDispatcher {
 		e.preventDefault();
 	}
 
-	onDoubleClickOld(e) {
+	onDoubleClick(e) {
 		if (this.logMessages) console.log(this.constructor.name + ': onDoubleClick');
-
-		if (this.viewer.measuringTool.currentTool) {
-			this.viewer.measuringTool.onDoubleClick();
-			return;
-		} else {
-			this.extraTools.forEach(tool => {tool.active && tool.onDoubleClick();});
-		}
-		/**
-		 * if (this.viewer.clusterTool.active) {
-			this.viewer.clusterTool.onDoubleClick();
-			return;
-		}
-		**/
-
 
 		let consumed = false;
 		for (let hovered of this.hoveredElements) {
@@ -400,58 +257,9 @@ export class InputHandler extends EventDispatcher {
 			}
 		}
 
-		e.preventDefault();//removed from clustertool
+		e.preventDefault();
 	}
-	onDoubleClick(e) {
-		//clustertool pointorama tool
 
-		if (this.logMessages)
-			console.log(this.constructor.name + ': onDoubleClick');
-
-		//added
-		if (this.viewer.measuringTool.currentTool) {
-			this.viewer.measuringTool.onDoubleClick();
-			return;
-		} else {
-			let toolStatus = false
-			this.extraTools.forEach(tool => {
-				if (tool.active) {
-					toolStatus = true
-					tool.onDoubleClick();
-				}
-			});//to avoid other actions if a tool is active
-			if (toolStatus) return;
-		}
-		//added end
-
-		//std
-		let consumed = false;
-		for (let hovered of this.hoveredElements) {
-			//			if (hovered._listeners && hovered._listeners['dblclick']) {
-			if (hovered.object._listeners && hovered.object._listeners['dblclick']) {//fixed to listen to the object
-
-				hovered.object.dispatchEvent({
-					type: 'dblclick',
-					mouse: this.mouse,
-					object: hovered.object,
-				});
-				consumed = true;
-				break;
-			}
-		}
-
-		if (!consumed) {
-			for (let inputListener of this.getSortedListeners()) {
-				inputListener.dispatchEvent({
-					type: 'dblclick',
-					mouse: this.mouse,
-					object: null,
-				});
-			}
-		}
-		e.preventDefault();//not present in clusterTool
-
-	}
 	onMouseClick(e) {
 		if (this.logMessages) console.log(this.constructor.name + ': onMouseClick');
 
@@ -462,8 +270,6 @@ export class InputHandler extends EventDispatcher {
 		if (this.logMessages) console.log(this.constructor.name + ': onMouseDown');
 
 		e.preventDefault();
-
-		this.mouseHasMovedSinceMouseDown = false;//pointorama
 
 		let consumed = false;
 		let consume = () => {return consumed = true;};
@@ -509,7 +315,7 @@ export class InputHandler extends EventDispatcher {
 		}
 	}
 
-	onMouseUpOld(e) {
+	onMouseUp(e) {
 		if (this.logMessages) console.log(this.constructor.name + ': onMouseUp');
 
 		e.preventDefault();
@@ -579,7 +385,7 @@ export class InputHandler extends EventDispatcher {
 		}
 
 		if (!consumed) {
-			if (e.button === THREE.MOUSE.LEFT) {
+			if (e.button === MOUSE$1.LEFT) {
 				if (noMovement) {
 					let selectable = this.hoveredElements
 						.find(el => el.object._listeners && el.object._listeners['select']);
@@ -599,282 +405,15 @@ export class InputHandler extends EventDispatcher {
 						this.deselectAll();
 					}
 				}
-			} else if ((e.button === THREE.MOUSE.RIGHT) && noMovement) {
+			} else if ((e.button === MOUSE$1.RIGHT) && noMovement) {
 				this.deselectAll();
 			}
 		}
 	}
-	onMouseUp(e) {
-		//taken from pointorama clusterTool
-
-		if (this.logMessages) console.log(this.constructor.name + ': onMouseUp');
-
-		e.preventDefault();
-
-		//// code added from ClusterTool
-		if (this.mouseHasMovedSinceMouseDown) {
-			this.mouseHasMovedSinceMouseDown = false;//reset the flag
-			// Drag end functions should go here
-		} else {//in less than 300ms means performs doubleclick but breaks previous behaviour
-			const interval = new Date().getTime() - this.lastClick;
-			if (interval < 300 && !this.mouseHasMovedSinceLastClick) {
-				// Double click
-				// TODO: Differentiate between double click with left and right mouse button
-				this.onDoubleClick(e);
-			} else {
-				// Click
-				this.lastClick = new Date().getTime();
-				this.mouseHasMovedSinceLastClick = false;
-
-				if (this.viewer.measuringTool.currentTool) {
-					this.viewer.measuringTool.onClick(e.button);
-				}
-				//not workling yet
-				else {
-					this.extraTools.forEach(tool => {tool.active && tool.onClick(this.mouse, e.button);});
-				}
-				// (this.viewer.clusterTool.active) {
-				//his.viewer.clusterTool.onClick(this.mouse, e.button);
-				//
-
-				const hoveredObject = this.hoveredElements
-					.map((e) => e.object)
-					.find((e) => e._listeners && e._listeners['click']);
-				if (this.viewer.selectionTool.active && !hoveredObject) {
-					console.log('SelectionTool:deselect all');
-					this.viewer.selectionTool.deselectAll();
-				} else if (hoveredObject) {
-					hoveredObject.dispatchEvent({
-						type: 'click',
-						viewer: this.viewer,
-						consume: () => {},
-						isCtrl: this.pressedKeys[KeyCodes.CONTROL],
-						button: e.button,
-					});
-				}
-			}
-		}
-
-		//old code is missing related to propagatting code
-
-
-		let consumed = false;
-		let consume = () => {return consumed = true;};
-		if (this.hoveredElements.length === 0) {
-			for (let inputListener of this.getSortedListeners()) {
-				inputListener.dispatchEvent({
-					type: 'mouseup',
-					viewer: this.viewer,
-					mouse: this.mouse,
-					consume: consume
-				});
-
-				if (consumed) {
-					break;
-				}
-			}
-		} else {
-			let hovered = this.hoveredElements
-				.map(e => e.object)
-				.find(e => (e._listeners && e._listeners['mouseup']));
-			if (hovered) {
-				hovered.dispatchEvent({
-					type: 'mouseup',
-					viewer: this.viewer,
-					consume: consume
-				});
-			}
-		}
-
-		//// end code added from ClusterTool
-
-		if (this.drag) {
-			if (this.drag.object) {
-				if (this.logMessages)
-					console.log(
-						`${this.constructor.name}: drop ${this.drag.object.name}`
-					);
-				this.drag.object.dispatchEvent({
-					type: 'drop',
-					drag: this.drag,
-					button: e.button,
-					viewer: this.viewer,
-				});
-			} else {
-				for (let inputListener of this.getSortedListeners()) {
-					inputListener.dispatchEvent({
-						type: 'drop',
-						drag: this.drag,
-						viewer: this.viewer,
-					});
-				}
-			}
-			if (!['DRAG', 'PAN'].includes(this.viewer.orbitControls.mode))
-				this.drag = null;
-		}
-	}
-
 
 	onMouseMove(e) {
-		//pointorama version
 		e.preventDefault();
-		this.mouseHasMovedSinceMouseDown = true;
-		this.mouseHasMovedSinceLastClick = true;
-		const rect = this.domElement.getBoundingClientRect();
-		const x = e.clientX - rect.left;
-		const y = e.clientY - rect.top;
-		this.mouse.set(x, y);
 
-		let hoveredElements = this.getHoveredElements();
-		if (hoveredElements.length > 0) {
-			let names = hoveredElements.map((h) => h.object.name).join(', ');
-			if (this.logMessages)
-				console.log(
-					`${this.constructor.name}: onMouseMove; hovered: '${names}'`
-				);
-		}
-
-		if (this.viewer.clusterTool.active) {
-			this.viewer.clusterTool.onMouseMove(this.mouse);
-		}
-
-		if (this.draw?.object) {
-			this.draw.object.dispatchEvent({
-				type: 'draw',
-				mouse: this.mouse,
-				viewer: this.viewer,
-				drawingTarget: hoveredElements[0]?.object.parent.editable
-					? hoveredElements[0]
-					: undefined,
-			});
-		}
-
-		if (this.drag) {
-			this.drag.mouse = e.buttons;
-
-			this.drag.lastDrag.x = x - this.drag.end.x;
-			this.drag.lastDrag.y = y - this.drag.end.y;
-
-			this.drag.end.set(x, y);
-
-			if (this.drag.object) {
-				if (this.logMessages)
-					console.log(
-						this.constructor.name + ': drag: ' + this.drag.object.name
-					);
-				this.drag.object.dispatchEvent({
-					type: 'drag',
-					drag: this.drag,
-					viewer: this.viewer,
-				});
-			} else {
-				if (this.logMessages) console.log(this.constructor.name + ': drag: ');
-
-				let dragConsumed = false;
-				for (let inputListener of this.getSortedListeners()) {
-					inputListener.dispatchEvent({
-						type: 'drag',
-						drag: this.drag,
-						viewer: this.viewer,
-						consume: () => {
-							dragConsumed = true;
-						},
-					});
-
-					if (dragConsumed) {
-						break;
-					}
-				}
-			}
-			return;
-		}//drag end, no else
-
-		const currentlyHoveredObjects
-			= hoveredElements.map(
-				(element) => element.object
-			);
-		const previouslyHoveredObjects = this.hoveredElements.map(
-			(element) => element.object
-		);
-
-		const abandonedHovers = previouslyHoveredObjects.filter(
-			(object) => !currentlyHoveredObjects.includes(object)
-		);
-		const newHovers = currentlyHoveredObjects.filter(
-			(object) => !previouslyHoveredObjects.includes(object)
-		);
-
-		const currentFrontObject = currentlyHoveredObjects.find((a) => true);
-		const previousFrontObject = previouslyHoveredObjects.find((a) => true);
-
-		if (currentFrontObject !== previousFrontObject) {
-			if (previousFrontObject) {
-				if (this.logMessages)
-					console.log(
-						`${this.constructor.name}: mouseleave: ${previousFrontObject.name}`
-					);
-				previousFrontObject.dispatchEvent({
-					type: 'mouseleave',
-					object: previousFrontObject,
-					viewer: this.viewer,
-				});
-			}
-			if (currentFrontObject) {
-				if (this.logMessages)
-					console.log(
-						`${this.constructor.name}: mouseover: ${currentFrontObject.name}`
-					);
-				currentFrontObject.dispatchEvent({
-					type: 'mouseover',
-					object: currentFrontObject,
-					viewer: this.viewer,
-				});
-			}
-		}
-
-		for (const object of abandonedHovers) {
-			object.dispatchEvent({
-				type: 'mouseleavemultiple',
-				object: object,
-				viewer: this.viewer,
-			});
-		}
-		for (const object of newHovers) {
-			object.dispatchEvent({
-				type: 'mouseovermultiple',
-				object: object,
-				viewer: this.viewer,
-			});
-		}
-
-		if (hoveredElements.length > 0) {
-			let object = hoveredElements
-				.map((e) => e.object)
-				.find((e) => e._listeners && e._listeners['mousemove']);
-
-			if (object) {
-				object.dispatchEvent({
-					type: 'mousemove',
-					object: object,
-				});
-			}
-		}
-
-		// for (let inputListener of this.getSortedListeners()) {
-		// 	inputListener.dispatchEvent({
-		// 		type: 'mousemove',
-		// 		object: null
-		// 	});
-		// }
-
-		this.hoveredElements = hoveredElements;
-	}
-
-	//double check because is really changed
-	onMouseMoveOld(e) {
-		e.preventDefault();
-		this.mouseHasMovedSinceMouseDown = true;//clusterTool
-		this.mouseHasMovedSinceLastClick = true;//clusterTool
 		let rect = this.domElement.getBoundingClientRect();
 		let x = e.clientX - rect.left;
 		let y = e.clientY - rect.top;
@@ -885,27 +424,6 @@ export class InputHandler extends EventDispatcher {
 			let names = hoveredElements.map(h => h.object.name).join(", ");
 			if (this.logMessages) console.log(`${this.constructor.name}: onMouseMove; hovered: '${names}'`);
 		}
-
-		//added for cluster tool
-		//		if (this.viewer.clusterTool.active) {
-		//			this.viewer.clusterTool.onMouseMove(this.mouse);
-		//		}
-
-		this.extraTools.forEach(tool => {tool.active && tool.onMouseMove(this.mouse);});
-
-
-		if (this.draw?.object) {
-			this.draw.object.dispatchEvent({
-				type: 'draw',
-				mouse: this.mouse,
-				viewer: this.viewer,
-				drawingTarget: hoveredElements[0]?.object.parent.editable
-					? hoveredElements[0]
-					: undefined,
-			});
-		}
-
-		//end of additions
 
 		if (this.drag) {
 			this.drag.mouse = e.buttons;
@@ -939,11 +457,7 @@ export class InputHandler extends EventDispatcher {
 					}
 				}
 			}
-
-			//it used to be a return and no else here, but it turned into an else
-			return;//added by me
-		} else //no else in clustered version
-		{
+		} else {
 			let curr = hoveredElements.map(a => a.object).find(a => true);
 			let prev = this.hoveredElements.map(a => a.object).find(a => true);
 
@@ -1033,7 +547,7 @@ export class InputHandler extends EventDispatcher {
 		this.drag = {
 			start: this.mouse.clone(),
 			end: this.mouse.clone(),
-			lastDrag: new THREE.Vector2(0, 0),
+			lastDrag: new Vector2(0, 0),
 			startView: this.scene.view.clone(),
 			object: object
 		};
@@ -1115,6 +629,8 @@ export class InputHandler extends EventDispatcher {
 			});
 		}
 	}
+
+
 
 	isSelected(object) {
 		let index = this.selection.indexOf(object);

@@ -1,0 +1,131 @@
+{
+	"version": "2.0",
+	"name": "dense_cloud_crop2_out_a6ac0ecb",
+	"description": "",
+	"points": 110833,
+	"projection": "",
+	"hierarchy": {
+		"firstChunkSize": 1452, 
+		"stepSize": 4, 
+		"depth": 0
+	},
+	"offset": [701380.41000000003, 3144070.8599999999, 234.15000000000001],
+	"scale": [0.01, 0.01, 0.01],
+	"spacing": 0.43570312500014552,
+	"boundingBox": {
+		"min": [701380.41000000003, 3144070.8599999999, 234.15000000000001], 
+		"max": [701436.18000000005, 3144126.6299999999, 289.9200000000186]
+	},
+	"encoding": "DEFAULT",
+	"attributes": [
+		{
+			"name": "position",
+			"description": "",
+			"size": 12,
+			"numElements": 3,
+			"elementSize": 4,
+			"type": "int32",
+			"min": [701380.41000000003, 3144070.8599999999, 234.15000000000001],
+			"max": [701436.18000000005, 3144125.2000000002, 248.74000000000001]
+		},{
+			"name": "intensity",
+			"description": "",
+			"size": 2,
+			"numElements": 1,
+			"elementSize": 2,
+			"type": "uint16",
+			"min": [0],
+			"max": [0]
+		},{
+			"name": "return number",
+			"description": "",
+			"size": 1,
+			"numElements": 1,
+			"elementSize": 1,
+			"type": "uint8",
+			"min": [0],
+			"max": [0]
+		},{
+			"name": "number of returns",
+			"description": "",
+			"size": 1,
+			"numElements": 1,
+			"elementSize": 1,
+			"type": "uint8",
+			"min": [0],
+			"max": [0]
+		},{
+			"name": "classification",
+			"description": "",
+			"size": 1,
+			"numElements": 1,
+			"elementSize": 1,
+			"type": "uint8",
+			"min": [0],
+			"max": [0]
+		},{
+			"name": "scan angle rank",
+			"description": "",
+			"size": 1,
+			"numElements": 1,
+			"elementSize": 1,
+			"type": "uint8",
+			"min": [0],
+			"max": [0]
+		},{
+			"name": "user data",
+			"description": "",
+			"size": 1,
+			"numElements": 1,
+			"elementSize": 1,
+			"type": "uint8",
+			"min": [0],
+			"max": [0]
+		},{
+			"name": "point source id",
+			"description": "",
+			"size": 2,
+			"numElements": 1,
+			"elementSize": 2,
+			"type": "uint16",
+			"min": [0],
+			"max": [0]
+		},{
+			"name": "gps-time",
+			"description": "",
+			"size": 8,
+			"numElements": 1,
+			"elementSize": 8,
+			"type": "double",
+			"min": [0],
+			"max": [0]
+		},{
+			"name": "rgb",
+			"description": "",
+			"size": 6,
+			"numElements": 3,
+			"elementSize": 2,
+			"type": "uint16",
+			"min": [4864, 5888, 4608],
+			"max": [65280, 65280, 65280]
+		},{
+			"name": "seg_cluster_id",
+			"description": "",
+			"size": 4,
+			"numElements": 1,
+			"elementSize": 4,
+			"type": "uint32",
+			"min": [0],
+			"max": [435]
+		},{
+			"name": "seg_type",
+			"description": "",
+			"size": 1,
+			"numElements": 1,
+			"elementSize": 1,
+			"type": "uint8",
+			"min": [0],
+			"max": [1]
+		}
+	]
+}
