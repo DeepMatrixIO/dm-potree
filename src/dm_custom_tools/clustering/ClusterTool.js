@@ -17,8 +17,8 @@ export class ClusterTool extends EventDispatcher {
 
 
 
-
 	}
+	init() {}
 	activate() {
 		console.log('ClusterTool:activate');
 		this.active = true;

@@ -4,7 +4,7 @@
 		"*.vs": "cpp",
 		"*.fs": "cpp"
 	},
-	"files.trimTrailingWhitespace": false,
+	"files.trimTrailingWhitespace": true,
 	"editor.fontSize": 12,
 	"editor.autoIndent": "advanced",
 	"editor.detectIndentation": false,
@@ -19,4 +19,21 @@
 	"workbench.tree.indent": 30,
 	"editor.autoClosingQuotes": "never",
 	"editor.autoSurround": "never",
+
+    "javascript.format.insertSpaceBeforeFunctionParenthesis": false,
+    "typescript.format.insertSpaceBeforeFunctionParenthesis": false,
+    "typescript.format.insertSpaceBeforeAndAfterBinaryOperators": true,
+    "javascript.format.insertSpaceBeforeAndAfterBinaryOperators": true,
+    "typescript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": false,
+    "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": false,
+    "json.format.enable": true,
+    "json.format.keepLines": true,
+    "typescript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": false,
+    "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": false,
+	"javascript.format.insertSpaceAfterOpeningAndBeforeClosingEmptyBraces": false,
+	"javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": false,
+	"javascript.format.insertSpaceAfterSemicolonInForStatements": false,
+
+
+
 }
