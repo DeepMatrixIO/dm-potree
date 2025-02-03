@@ -36,7 +36,11 @@ libs/three.js_0170dev
 /pointclouds/sjl2
 /pointclouds/morro_bay_converted
 /pointclouds/helimap_epalinges
+/pointclouds/*.las
+/pointclouds/vegetation_zone_ROW_75_20_1_64930dd1.las_converted
+/pointclouds/inegi_point_cloud_cov_40cm.las_converted
 .vscode/settings.json
+<<<<<<< HEAD
 examples/vegetation_zone_ROW_75_20_1_64930dd1.las
 examples/inegi_point_cloud_cov_40cm.las_converted/hierarchy.bin
 examples/inegi_point_cloud_cov_40cm.las_converted/metadata.json
@@ -44,3 +48,6 @@ examples/inegi_point_cloud_cov_40cm.las_converted/octree.bin
 examples/vegetation_zone_ROW_75_20_1_64930dd1.las_converted/hierarchy.bin
 examples/vegetation_zone_ROW_75_20_1_64930dd1.las_converted/metadata.json
 examples/vegetation_zone_ROW_75_20_1_64930dd1.las_converted/octree.bin
+=======
+.prettierrc
+>>>>>>> threejs_upgrade
