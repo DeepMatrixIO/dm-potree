@@ -1,11 +1,13 @@
 //import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 //@ts-ignore
-import * as Potree from '../src/Potree.js';
+//import * as Potree from '../src/Potree.js';
+import * as Potree from '../src/PotreeModule';
 
 
-// @ts-ignore	
+// @ts-ignore
 
-window.Potree = Potree;
+window.Potree = Potree;//mantains compatibility with the old code  but the most relevant item is viewer bcs is the running instance
+
 
 document.body.onload = function () {
 
@@ -50,4 +52,16 @@ document.body.onload = function () {
 
 	// @ts-ignore
 	document.body.onresize();
+
+
+
+	//entry point
+
+	Potree.loadPointCloud('data/lion_takanawa/cloud.js', 'LionHead', (e: any) => {
+
+
+	});
+
+
+
 };

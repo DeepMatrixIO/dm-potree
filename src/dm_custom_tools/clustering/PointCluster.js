@@ -1,4 +1,4 @@
-import {ClipTask} from '../../defines';
+import {ClipTask} from '../../defines.js';
 
 export function v4() {
 	return crypto.randomUUID();

@@ -1,4 +1,4 @@
-Most of the exports and Potree vatiables need to be plugged into a proper CLass and instantiated accordingly
+Most of the exports and Potree variables need to be plugged into a proper CLass and instantiated accordingly
 
 exports.*  which can be named as PotreeGobals
 Potree.*  _> is stored as global var but variables can be stored within within PotreeGlobals
@@ -7,6 +7,8 @@ Potree.*  _> is stored as global var but variables can be stored within within P
 So all should be replaced and instantiated accodringly
 
 All variables can be appended get and set functions.
+
+Potre-core adds
 
 
 

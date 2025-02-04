@@ -1,4 +1,4 @@
-import {EventDispatcher} from "../../EventDispatcher";
+import {EventDispatcher} from "../../EventDispatcher.js";
 
 export class SelectionTool extends EventDispatcher {
 	constructor(viewer) {

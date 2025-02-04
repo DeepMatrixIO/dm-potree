@@ -1,6 +1,6 @@
 /** Interactive tool for reassigning classification values to PointCloud segments by */
-import {EventDispatcher} from "../../EventDispatcher";
-import {PointCluster} from "./PointCluster";
+import {EventDispatcher} from "../../EventDispatcher.js";
+import {PointCluster} from "./PointCluster.js";
 
 export class ClusterTool extends EventDispatcher {
 	constructor(viewer) {
@@ -94,7 +94,7 @@ export class ClusterTool extends EventDispatcher {
 				//2 check if segment is clustered, i.e. if it is part of another cluster and returns it
 				const cluster = this.segmentIsClustered(id, segment);//if the segment is on another PointCluster
 				//3 if the segment is in a cluster, use that cluster
-				// if that cluster has elements, but this segment, 
+				// if that cluster has elements, but this segment,
 
 				if (cluster) {//if segment is on another cluster
 					// Don't allow users to activate clusters while they're in the process of creating/editing another cluster.
@@ -104,7 +104,7 @@ export class ClusterTool extends EventDispatcher {
 						currentPointCluster.addTempCluster(cluster);//if the segment is not in the cluster
 					}
 				}
-				else {//if the segment is nowhere on any PointCluster, 
+				else {//if the segment is nowhere on any PointCluster,
 					// them add that segment as tmpSegment in current pointCluster
 
 					currentPointCluster.addTempSegment(id, segment);//add it as tempSegment
@@ -174,7 +174,7 @@ export class ClusterTool extends EventDispatcher {
 				// do nothing?
 			}
 		} else {
-			if (button + 1 !== Potree.MOUSE.LEFT) {//TODO  fix this 
+			if (button + 1 !== Potree.MOUSE.LEFT) {//TODO  fix this
 				return;
 			}
 			const cluster = this.segmentIsClustered(id, segment);

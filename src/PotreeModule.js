@@ -76,17 +76,20 @@ export {ClusterTool} from './dm_custom_tools/clustering/ClusterTool.js';
 export {PointCluster} from './dm_custom_tools/clustering/PointCluster.js';
 
 
-
+//CONTROLS
 export {DeviceOrientationControls} from "./navigation/DeviceOrientationControls.js";
 export {EarthControls} from "./navigation/EarthControls.js";
 export {FirstPersonControls} from "./navigation/FirstPersonControls.js";
 export {OrbitControls} from "./navigation/OrbitControls.js";
 //export {VRControls} from "./navigation/VRControls.js";
 
+//CAMERAS EXTENSIONS
 import "./extensions/OrthographicCamera.js";
 import "./extensions/PerspectiveCamera.js";
 import "./extensions/Ray.js";
 
+
+//LOADERS
 import {CopcLoader, EptLoader} from "./loader/EptLoader.js";
 import {POCLoader} from "./loader/POCLoader.js";
 import {LRU} from "./LRU.js";
@@ -96,9 +99,9 @@ import {WorkerPool} from "./WorkerPool.js";
 
 
 //Taken from Potree.js
-//exposes all the classes and functions in the Potree namespace
+//exposes varaibles , classes and functions in the Potree namespace
 
-class PotreeModule {
+export class PotreeModule {
 
 
 	static segmentsAttributeKey = 'seg_cluster_id';//used to set the attribute key for the segments
@@ -123,13 +126,21 @@ class PotreeModule {
 
 	scriptPath = "";
 	resourcePath = "";
+
 	showInfo() {
 		console.log('Potree ' + version.major + '.' + version.minor + version.suffix);
 	}
 
+	getResourcePath() {
+		return resourcePath;
+	}
+
+
 	constructor() {
+		//displaying  Potree version
 		this.showInfo();
 
+		//setting  relative potree paths for the rest of the modules
 		if (document.currentScript && document.currentScript.src) {
 			scriptPath = new URL(document.currentScript.src + '/..').href;
 			if (scriptPath.slice(-1) === '/') {
@@ -156,107 +167,109 @@ class PotreeModule {
 	// resourcePath:build/potree/resources
 
 
-	loadPointCloud(path, name, callback) {
-		let loaded = function (e) {
-			e.pointcloud.name = name;
-			callback(e);
-		};
 
-		let promise = new Promise(resolve => {
+}
 
-			// load pointcloud
-			if (!path) {
-				// TODO: callback? comment? Hello? Bueller? Anyone?
-			} else if (path.includes('ept.json')) {
-				EptLoader.load(path, function (geometry) {
-					if (!geometry) {
-						console.error(new Error(`failed to load point cloud from URL: ${path}`));
-					}
-					else {
-						let pointcloud = new PointCloudOctree(geometry);
-						resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
-					}
-				});
-			} else if (path.includes('.copc.laz')) {
-				CopcLoader.load(path, function (geometry) {
-					if (!geometry) {
-						console.error(new Error(`failed to load point cloud from URL: ${path}`));
-					}
-					else {
-						let pointcloud = new PointCloudOctree(geometry);
-						resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
-					}
-				});
-			} else if (path.indexOf('cloud.js') > 0) {
-				POCLoader.load(path, function (geometry) {
-					if (!geometry) {
-						//callback({type: 'loading_failed'});
-						console.error(new Error(`failed to load point cloud from URL: ${path}`));
-					} else {
-						let pointcloud = new PointCloudOctree(geometry);
-						// loaded(pointcloud);
-						resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
-					}
-				});
-			} else if (path.indexOf('metadata.json') > 0) {
-				Potree.OctreeLoader.load(path).then(e => {
-					let geometry = e.geometry;
 
-					if (!geometry) {
-						console.error(new Error(`failed to load point cloud from URL: ${path}`));
-					} else {
-						let pointcloud = new PointCloudOctree(geometry);
+//Static function to load point cloud from an URL, assign a name to it and process as a callback on done
+export function loadPointCloud(path, name, callback) {
+	let loaded = function (e) {
+		e.pointcloud.name = name;
+		callback(e);
+	};
 
-						let aPosition = pointcloud.getAttribute("position");
+	let promise = new Promise(resolve => {
 
-						let material = pointcloud.material;
-						material.elevationRange = [
-							aPosition.range[0][2],
-							aPosition.range[1][2],
-						];
+		// load pointcloud
+		if (!path) {
+			// TODO: callback? comment? Hello? Bueller? Anyone?
+		} else if (path.includes('ept.json')) {
+			EptLoader.load(path, function (geometry) {
+				if (!geometry) {
+					console.error(new Error(`failed to load point cloud from URL: ${path}`));
+				}
+				else {
+					let pointcloud = new PointCloudOctree(geometry);
+					resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
+				}
+			});
+		} else if (path.includes('.copc.laz')) {
+			CopcLoader.load(path, function (geometry) {
+				if (!geometry) {
+					console.error(new Error(`failed to load point cloud from URL: ${path}`));
+				}
+				else {
+					let pointcloud = new PointCloudOctree(geometry);
+					resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
+				}
+			});
+		} else if (path.indexOf('cloud.js') > 0) {
+			POCLoader.load(path, function (geometry) {
+				if (!geometry) {
+					//callback({type: 'loading_failed'});
+					console.error(new Error(`failed to load point cloud from URL: ${path}`));
+				} else {
+					let pointcloud = new PointCloudOctree(geometry);
+					// loaded(pointcloud);
+					resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
+				}
+			});
+		} else if (path.indexOf('metadata.json') > 0) {
+			Potree.OctreeLoader.load(path).then(e => {
+				let geometry = e.geometry;
 
-						// loaded(pointcloud);
-						resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
-					}
-				});
+				if (!geometry) {
+					console.error(new Error(`failed to load point cloud from URL: ${path}`));
+				} else {
+					let pointcloud = new PointCloudOctree(geometry);
 
-				OctreeLoader.load(path, function (geometry) {
-					if (!geometry) {
-						//callback({type: 'loading_failed'});
-						console.error(new Error(`failed to load point cloud from URL: ${path}`));
-					} else {
-						let pointcloud = new PointCloudOctree(geometry);
-						// loaded(pointcloud);
-						resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
-					}
-				});
-			} else if (path.indexOf('.vpc') > 0) {
-				PointCloudArena4DGeometry.load(path, function (geometry) {
-					if (!geometry) {
-						//callback({type: 'loading_failed'});
-						console.error(new Error(`failed to load point cloud from URL: ${path}`));
-					} else {
-						let pointcloud = new PointCloudArena4D(geometry);
-						// loaded(pointcloud);
-						resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
-					}
-				});
-			} else {
-				//callback({'type': 'loading_failed'});
-				console.error(new Error(`failed to load point cloud from URL: ${path}`));
-			}
-		});
+					let aPosition = pointcloud.getAttribute("position");
 
-		if (callback) {
-			promise.then(pointcloud => {
-				loaded(pointcloud);
+					let material = pointcloud.material;
+					material.elevationRange = [
+						aPosition.range[0][2],
+						aPosition.range[1][2],
+					];
+
+					// loaded(pointcloud);
+					resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
+				}
+			});
+
+			OctreeLoader.load(path, function (geometry) {
+				if (!geometry) {
+					//callback({type: 'loading_failed'});
+					console.error(new Error(`failed to load point cloud from URL: ${path}`));
+				} else {
+					let pointcloud = new PointCloudOctree(geometry);
+					// loaded(pointcloud);
+					resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
+				}
+			});
+		} else if (path.indexOf('.vpc') > 0) {
+			PointCloudArena4DGeometry.load(path, function (geometry) {
+				if (!geometry) {
+					//callback({type: 'loading_failed'});
+					console.error(new Error(`failed to load point cloud from URL: ${path}`));
+				} else {
+					let pointcloud = new PointCloudArena4D(geometry);
+					// loaded(pointcloud);
+					resolve({type: 'pointcloud_loaded', pointcloud: pointcloud});
+				}
 			});
 		} else {
-			return promise;
+			//callback({'type': 'loading_failed'});
+			console.error(new Error(`failed to load point cloud from URL: ${path}`));
 		}
+	});
+
+	if (callback) {
+		promise.then(pointcloud => {
+			loaded(pointcloud);
+		});
+	} else {
+		return promise;
 	}
-
-
 }
 
 
@@ -265,79 +278,3 @@ class PotreeModule {
 
 
 
-
-// add selectgroup
-(function ($) {
-	$.fn.extend({
-		selectgroup: function (args = {}) {
-
-			let elGroup = $(this);
-			let rootID = elGroup.prop("id");
-			let groupID = `${rootID}`;
-			let groupTitle = (args.title !== undefined) ? args.title : "";
-
-			let elButtons = [];
-			elGroup.find("option").each((index, value) => {
-				let buttonID = $(value).prop("id");
-				let label = $(value).html();
-				let optionValue = $(value).prop("value");
-
-				let elButton = $(`
-					<span style="flex-grow: 1; display: inherit">
-					<label for="${buttonID}" class="ui-button" style="width: 100%; padding: .4em .1em">${label}</label>
-					<input type="radio" name="${groupID}" id="${buttonID}" value="${optionValue}" style="display: none"/>
-					</span>
-				`);
-				let elLabel = elButton.find("label");
-				let elInput = elButton.find("input");
-
-				elInput.change(() => {
-					elGroup.find("label").removeClass("ui-state-active");
-					elGroup.find("label").addClass("ui-state-default");
-					if (elInput.is(":checked")) {
-						elLabel.addClass("ui-state-active");
-					} else {
-						//elLabel.addClass("ui-state-default");
-					}
-				});
-
-				elButtons.push(elButton);
-			});
-
-			let elFieldset = $(`
-				<fieldset style="border: none; margin: 0px; padding: 0px">
-					<legend>${groupTitle}</legend>
-					<span style="display: flex">
-
-					</span>
-				</fieldset>
-			`);
-
-			let elButtonContainer = elFieldset.find("span");
-			for (let elButton of elButtons) {
-				elButtonContainer.append(elButton);
-			}
-
-			elButtonContainer.find("label").each((index, value) => {
-				$(value).css("margin", "0px");
-				$(value).css("border-radius", "0px");
-				$(value).css("border", "1px solid black");
-				$(value).css("border-left", "none");
-			});
-			elButtonContainer.find("label:first").each((index, value) => {
-				$(value).css("border-radius", "4px 0px 0px 4px");
-
-			});
-			elButtonContainer.find("label:last").each((index, value) => {
-				$(value).css("border-radius", "0px 4px 4px 0px");
-				$(value).css("border-left", "none");
-			});
-
-			elGroup.empty();
-			elGroup.append(elFieldset);
-
-
-
-		}
-	});
-})(jQuery);
