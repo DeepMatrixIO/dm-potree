@@ -378,7 +378,7 @@ export class InputHandler extends EventDispatcher {
 
 		let consumed = false;
 		for (let hovered of this.hoveredElements) {
-			//if (hovered._listeners && hovered._listeners['dblclick']) {//getHoveredElements does not return the object but the event 
+			//if (hovered._listeners && hovered._listeners['dblclick']) {//getHoveredElements does not return the object but the event
 			if (hovered.object._listeners && hovered.object._listeners['dblclick']) {//fixed to listen to the object
 				hovered.object.dispatchEvent({
 					type: 'dblclick',
@@ -620,7 +620,7 @@ export class InputHandler extends EventDispatcher {
 			if (interval < 300 && !this.mouseHasMovedSinceLastClick) {
 				// Double click
 				// TODO: Differentiate between double click with left and right mouse button
-				this.onDoubleClick(e);
+				this.onDoubleClick(e);// simulated double click
 			} else {
 				// Click
 				this.lastClick = new Date().getTime();
@@ -643,15 +643,25 @@ export class InputHandler extends EventDispatcher {
 				if (this.viewer.selectionTool.active && !hoveredObject) {
 					console.log('SelectionTool:deselect all');
 					this.viewer.selectionTool.deselectAll();
-				} else if (hoveredObject) {
-					hoveredObject.dispatchEvent({
-						type: 'click',
-						viewer: this.viewer,
-						consume: () => {},
-						isCtrl: this.pressedKeys[KeyCodes.CONTROL],
-						button: e.button,
-					});
-				}
+				} else
+
+					if (hoveredObject) {
+						hoveredObject.dispatchEvent({
+							type: 'click',
+							viewer: this.viewer,
+							consume: () => {},
+							isCtrl: this.pressedKeys[KeyCodes.CONTROL],
+							button: e.button,
+						});
+					} else {
+						//checking if i can buuble an event
+						if (this.hoveredElements.length > 0) {
+
+							const hoveredObject = this.hoveredElements
+								.find((obj) => obj.rootScene && obj.rootScene._listeners['click']);
+							hoveredObject.rootScene.dispatchEvent({type: 'mouseup', source: hoveredObject});//force it on the source
+						}
+					}
 			}
 		}
 
@@ -1153,7 +1163,7 @@ export class InputHandler extends EventDispatcher {
 		}
 	}
 
-	getHoveredElements() {
+	getHoveredElementsOld() {
 		let scenes = this.interactiveScenes.concat(this.scene.scene);
 
 		let interactableListeners = ['mouseup', 'mousemove', 'mouseover', 'mouseleave', 'drag', 'drop', 'click', 'select', 'deselect'];
@@ -1184,6 +1194,72 @@ export class InputHandler extends EventDispatcher {
 		return intersections;
 	}
 
+	//split the raycasting betwen native  camera and ECEF cameras or others.
+	//Others implement a transformCamera method or even custon raycaster
+	//if transform camera is used, camera is transformed from current projection to ecef
+	getHoveredElements() {
+		let scenes = this.interactiveScenes.concat(this.scene.scene);
+
+		let interactableListeners = ['mouseup', 'mousemove', 'mouseover', 'mouseleave', 'drag', 'drop', 'click', 'select', 'deselect'];
+		let interactables = [];
+		for (let scene of scenes) {
+			scene.traverseVisible(node => {
+				if (node._listeners && node.visible && !this.blacklist.has(node)) {
+					let hasInteractableListener = interactableListeners.filter((e) => {
+						return node._listeners[e] !== undefined;
+					}).length > 0;
+
+					if (hasInteractableListener) {
+						interactables.push(node);
+					}
+				}
+			});
+		}
+
+		let camera = this.scene.getActiveCamera();
+		let ray = Utils.mouseToRay(this.mouse, camera, this.domElement.clientWidth, this.domElement.clientHeight);
+
+		//raycasting is split into two parts, one for native camera and one for ECEF cameras
+		const scenesWithTransformCamera = interactables.filter(scene => scene.transformCamera);
+		const scenesWithoutTransformCamera = interactables.filter(scene => !scene.transformCamera);
+
+		let intersections = [];
+		if (scenesWithTransformCamera.length > 0) {
+
+			scenesWithTransformCamera.forEach(scene => {
+
+				if (scene.visible) {
+
+					let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
+					let ray = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);
+
+					let raycaster = new THREE.Raycaster();
+					raycaster.params.Line.threshold = 0.4;
+					raycaster.ray.set(ray.origin, ray.direction);
+					let intersect = raycaster.intersectObject(scene, true);
+					if (intersect.length) {
+						intersect[0].rootScene = scene;//link to root node with events
+						intersections = intersections.concat(intersect);
+					}
+				}
+			})
+
+		}
+		if (scenesWithoutTransformCamera.length > 0) {
+			let raycaster = new THREE.Raycaster();
+			raycaster.ray.set(ray.origin, ray.direction);
+			raycaster.params.Line.threshold = 0.2;
+
+			intersections.concat(raycaster.intersectObjects(interactables.filter(o => o.visible), false));
+		}
+		// let raycaster = new THREE.Raycaster();
+		// raycaster.ray.set(ray.origin, ray.direction);
+		// raycaster.params.Line.threshold = 0.2;
+
+		// let intersections = raycaster.intersectObjects(interactables.filter(o => o.visible), false);
+
+		return intersections;
+	}
 	setScene(scene) {
 		this.deselectAll();
 

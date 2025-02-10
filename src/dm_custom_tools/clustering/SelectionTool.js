@@ -3,7 +3,7 @@ import {EventDispatcher} from "../../EventDispatcher";
 export class SelectionTool extends EventDispatcher {
 	constructor(viewer) {
 		super();
-		this.active = true;
+		this.active = false;
 		this.viewer = viewer;
 	}
 	activate() {
