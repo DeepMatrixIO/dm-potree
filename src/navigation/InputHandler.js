@@ -654,12 +654,28 @@ export class InputHandler extends EventDispatcher {
 							button: e.button,
 						});
 					} else {
-						//checking if i can buuble an event
-						if (this.hoveredElements.length > 0) {
+						//added for listening to items where events are not directly attached, but in the rootScene or group
+						if (this.hoveredElements.length) {
 
-							const hoveredObject = this.hoveredElements
-								.find((obj) => obj.rootScene && obj.rootScene._listeners['click']);
-							hoveredObject.rootScene.dispatchEvent({type: 'mouseup', source: hoveredObject});//force it on the source
+							{//2d tiles renderer case, where the root scene is linked to the object
+								const hoveredObject = this.hoveredElements
+									.find((obj) => obj.rootScene && obj.rootScene._listeners['click']);//this works for 3dTilesRenderer, where the intersect
+								if (hoveredObject !== undefined) {//must have rootScene
+									hoveredObject.rootScene.dispatchEvent({type: 'mouseup', source: hoveredObject});//force it on the source
+								}
+							}
+
+							////other cases where a group contains multiple meshes and events are declared and listened at the root
+							//the raycasted object must have alink to that group   as rootScene
+							// {//2d tiles renderer case, where the root scene is linked to the object
+							// 	const hoveredObject = this.hoveredElements
+							// 		.find((intersected) => intersected.object.rootScene && intersected.object.rootScene._listeners['click']);//this works for 3dTilesRenderer, where the intersect
+							// 	if (hoveredObject !== undefined) {//must have rootScene
+							// 		hoveredObject.object.rootScene.dispatchEvent({type: 'mouseup', source: hoveredObject});//force it on the source
+							// 	}
+							// }
+
+
 						}
 					}
 			}
@@ -1224,6 +1240,10 @@ export class InputHandler extends EventDispatcher {
 		const scenesWithoutTransformCamera = interactables.filter(scene => !scene.transformCamera);
 
 		let intersections = [];
+
+		// Additional code for ECEF cameras
+		// search for transformCamera method and appends a link to the root objet of the registered scnee (or group)
+		// Allowing to have a group with children raycasted but without events per child, which can be expensive
 		if (scenesWithTransformCamera.length > 0) {
 
 			scenesWithTransformCamera.forEach(scene => {
@@ -1238,19 +1258,21 @@ export class InputHandler extends EventDispatcher {
 					raycaster.ray.set(ray.origin, ray.direction);
 					let intersect = raycaster.intersectObject(scene, true);
 					if (intersect.length) {
-						intersect[0].rootScene = scene;//link to root node with events
+						intersect[0].rootScene = scene;//link to root node with events for 3dTilesRendered structure
 						intersections = intersections.concat(intersect);
 					}
 				}
 			})
 
 		}
+
+		// code for regular UTM cameras or native projection
 		if (scenesWithoutTransformCamera.length > 0) {
 			let raycaster = new THREE.Raycaster();
 			raycaster.ray.set(ray.origin, ray.direction);
 			raycaster.params.Line.threshold = 0.2;
 
-			intersections.concat(raycaster.intersectObjects(interactables.filter(o => o.visible), false));
+			intersections = intersections.concat(raycaster.intersectObjects(interactables.filter(o => o.visible), false));
 		}
 		// let raycaster = new THREE.Raycaster();
 		// raycaster.ray.set(ray.origin, ray.direction);
