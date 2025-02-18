@@ -43,8 +43,9 @@ export class Viewer extends EventDispatcher {
 	constructor(domElement, args = {}) {
 		super();
 
-		//wont break if not provided 
+		//wont break if not provided
 		this.customUpdates = []; //ADDED by  @jguerrer // runs on each  loop before general update.i.e. viewer.scene.scene  or others. Check also Input Handler for other ways
+		this.ecefRenderers = [];//ADDED by  @jguerrer // To render it before all other
 		this.extraRenders = [];//ADDED by  @jguerrer // runs on each loop after potree  render loop
 
 		this.renderArea = domElement;
@@ -55,7 +56,7 @@ export class Viewer extends EventDispatcher {
 
 		this.messages = [];
 		this.elMessages = $(`
-		<div id="message_listing" 
+		<div id="message_listing"
 			style="position: absolute; z-index: 1000; left: 10px; bottom: 10px">
 		</div>`);
 		$(domElement).append(this.elMessages);
@@ -81,7 +82,7 @@ export class Viewer extends EventDispatcher {
 
 				if ($(domElement).find('#potree_annotations').length === 0) {
 					let potreeAnnotationContainer = $(`
-					<div id="potree_annotation_container" 
+					<div id="potree_annotation_container"
 						style="position: absolute; z-index: 100000; width: 100%; height: 100%; pointer-events: none;"></div>`);
 					$(domElement).append(potreeAnnotationContainer);
 				}
@@ -388,10 +389,17 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+	ecefRenderer() {
+		this.ecefRenderers.forEach((render) => {
+			render();
+
+		})
+	};
+
 	//ADDED by  @jguerrer
 	extraRenderers(timestamp) {
 		try {
-			if (this.extraRenders != null) {//added by jguerrer to enable Cesium extra render, requires an extra attr 
+			if (this.extraRenders != null) {//added by jguerrer to enable Cesium extra render, requires an extra attr
 				this.extraRenders.forEach((newRender) => newRender(timestamp));
 			}
 		} catch (e) {
@@ -406,33 +414,33 @@ export class Viewer extends EventDispatcher {
 
 		if ($(this.renderArea).find('#potree_failpage').length === 0) {
 			let elFailPage = $(`
-			<div id="#potree_failpage" class="potree_failpage"> 
-				
+			<div id="#potree_failpage" class="potree_failpage">
+
 				<h1>Potree Encountered An Error </h1>
 
 				<p>
 				This may happen if your browser or graphics card is not supported.
 				<br>
-				We recommend to use 
+				We recommend to use
 				<a href="https://www.google.com/chrome/browser" target="_blank" style="color:initial">Chrome</a>
-				or 
+				or
 				<a href="https://www.mozilla.org/" target="_blank">Firefox</a>.
 				</p>
 
 				<p>
-				Please also visit <a href="http://webglreport.com/" target="_blank">webglreport.com</a> and 
+				Please also visit <a href="http://webglreport.com/" target="_blank">webglreport.com</a> and
 				check whether your system supports WebGL.
 				</p>
 				<p>
-				If you are already using one of the recommended browsers and WebGL is enabled, 
+				If you are already using one of the recommended browsers and WebGL is enabled,
 				consider filing an issue report at <a href="https://github.com/potree/potree/issues" target="_blank">github</a>,<br>
-				including your operating system, graphics card, browser and browser version, as well as the 
+				including your operating system, graphics card, browser and browser version, as well as the
 				error message below.<br>
 				Please do not report errors on unsupported browsers.
 				</p>
 
 				<pre id="potree_error_console" style="width: 100%; height: 100%"></pre>
-				
+
 			</div>`);
 
 			let elErrorMessage = elFailPage.find('#potree_error_console');
@@ -578,7 +586,7 @@ export class Viewer extends EventDispatcher {
 	};
 
 	setWeightClassification(w) {
-		for (let i = 0; i < this.scene.pointclouds.length; i++) {
+		for (let i = 0;i < this.scene.pointclouds.length;i++) {
 			this.scene.pointclouds[i].material.weightClassification = w;
 			this.dispatchEvent({'type': 'attribute_weights_changed' + i, 'viewer': this});
 		}
@@ -1223,7 +1231,7 @@ export class Viewer extends EventDispatcher {
 			this.deviceControls.addEventListener('end', this.enableAnnotations.bind(this));
 		}
 
-		if (false)//refactoring to three 169 and gltf crashes	
+		if (false)//refactoring to three 169 and gltf crashes
 		{ // create VR CONTROLS
 			this.vrControls = new VRControls(this);
 			this.vrControls.enabled = false;
@@ -1661,10 +1669,10 @@ export class Viewer extends EventDispatcher {
 		// PROBLEM STATEMENT:
 		// * [min, max] of intensity, source id, etc. are computed as point clouds are loaded
 		// * the point cloud material won't know the range it should use until some data is loaded
-		// * users can modify the range at runtime, but sensible default ranges should be 
+		// * users can modify the range at runtime, but sensible default ranges should be
 		//   applied even if no GUI is present
 		// * display ranges shouldn't suddenly change even if the actual range changes over time.
-		//   e.g. the root node has intensity range [1, 478]. One of the descendants increases range to 
+		//   e.g. the root node has intensity range [1, 478]. One of the descendants increases range to
 		//   [0, 2047]. We should not automatically change to the new range because that would result
 		//   in sudden and drastic changes of brightness. We should adjust the min/max of the sidebar slider.
 
@@ -1774,7 +1782,7 @@ export class Viewer extends EventDispatcher {
 
 
 			// DEBUG - ONLY DISPLAY NODES THAT INTERSECT MOUSE
-			//if(false){ 
+			//if(false){
 
 			//	let renderer = viewer.renderer;
 			//	let mouse = viewer.inputHandler.mouse;
@@ -2156,7 +2164,7 @@ export class Viewer extends EventDispatcher {
 			pointcloud.screenHeight = viewport.height;
 			pointcloud.screenWidth = viewport.width;
 
-			// automatically switch to paraboloids because they cause far less flickering in VR, 
+			// automatically switch to paraboloids because they cause far less flickering in VR,
 			// when point sizes are larger than around 2 pixels
 			// if(Features.SHADER_INTERPOLATION.isSupported()){
 			// 	pointcloud.material.shape = Potree.PointShape.PARABOLOID;
@@ -2367,7 +2375,7 @@ export class Viewer extends EventDispatcher {
 
 	//this is the main loop
 	//at every cicle, additional objects are updated before being rendered,
-	//in particular, all objects within viewer.scene.scene 
+	//in particular, all objects within viewer.scene.scene
 	loop(timestamp) {
 
 		if (this.stats) {
@@ -2378,11 +2386,11 @@ export class Viewer extends EventDispatcher {
 			performance.mark("loop-start");
 		}
 		// Update registered items before general potree items
-		this.triggerUpdates();//added by jguerrer 
+		this.triggerUpdates();//added by jguerrer
 		this.update(this.clock.getDelta(), timestamp);// <------- Updates al data but not renders yet
 		this.render();//calls potreeRenderer, which renders all available scenes
 
-		this.extraRenderers(timestamp)//added by jguerrer to enable Cesium extra render, requires an extra attr 
+		this.extraRenderers(timestamp)//added by jguerrer to enable Cesium extra render, requires an extra attr
 
 
 

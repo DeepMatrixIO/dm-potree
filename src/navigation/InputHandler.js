@@ -438,6 +438,20 @@ export class InputHandler extends EventDispatcher {
 				consumed = true;
 				break;
 			}
+
+			//all other objects that are not directly attached to the object but to the rootScene
+			{//2d tiles renderer case, where the root scene is linked to the object
+
+				if (hovered.rootScene !== undefined) {//must have rootScene
+
+					if (hovered.rootScene._listeners['dblclick']) {
+						hovered.rootScene.dispatchEvent({type: 'dblclick', source: hovered});
+					}
+				}
+			}//adding additional cases where the event is not directly attached to the object bot to root as rootScene
+
+
+
 		}
 
 		if (!consumed) {
@@ -620,8 +634,10 @@ export class InputHandler extends EventDispatcher {
 			if (interval < 300 && !this.mouseHasMovedSinceLastClick) {
 				// Double click
 				// TODO: Differentiate between double click with left and right mouse button
+				console.log('detected double click');
 				this.onDoubleClick(e);// simulated double click
 			} else {
+				console.log('detected single click');
 				// Click
 				this.lastClick = new Date().getTime();
 				this.mouseHasMovedSinceLastClick = false;
