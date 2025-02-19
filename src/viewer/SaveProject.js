@@ -47,7 +47,7 @@ function createPointcloudData(pointcloud) {
 		dataId: pointcloud.dataId,
 		material: jsonMaterial,
 		visible: pointcloud.visible === false ? false : true,
-		pcoGeometry: pcoAttributeData,
+		pcoGeometry: pointcloud.pcoAttributeData,
 	};
 
 	return pcdata;
