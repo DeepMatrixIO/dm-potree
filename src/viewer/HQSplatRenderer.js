@@ -1,15 +1,15 @@
 
 import * as THREE from "../../libs/three.js/build/three.module.js";
-import {NormalizationMaterial} from "../materials/NormalizationMaterial.js";
-import {NormalizationEDLMaterial} from "../materials/NormalizationEDLMaterial.js";
-import {PointCloudMaterial} from "../materials/PointCloudMaterial.js";
 import {PointShape} from "../defines.js";
-import {SphereVolume} from "../utils/Volume.js";
+import {NormalizationEDLMaterial} from "../materials/NormalizationEDLMaterial.js";
+import {NormalizationMaterial} from "../materials/NormalizationMaterial.js";
+import {PointCloudMaterial} from "../materials/PointCloudMaterial.js";
 import {Utils} from "../utils.js";
+import {SphereVolume} from "../utils/Volume.js";
 
 
 export class HQSplatRenderer{
-	
+
 	constructor(viewer){
 		this.viewer = viewer;
 
@@ -117,6 +117,10 @@ export class HQSplatRenderer{
 		const visiblePointClouds = viewer.scene.pointclouds.filter(pc => pc.visible);
 		const originalMaterials = new Map();
 
+		//forcefully adding ecef rendering
+
+
+
 		for(let pointcloud of visiblePointClouds){
 			originalMaterials.set(pointcloud, pointcloud.material);
 
@@ -171,7 +175,7 @@ export class HQSplatRenderer{
 
 				pointcloud.material = depthMaterial;
 			}
-			
+
 			viewer.pRenderer.render(viewer.scene.scenePointCloud, camera, this.rtDepth, {
 				clipSpheres: viewer.scene.volumes.filter(v => (v instanceof SphereVolume)),
 			});
@@ -238,7 +242,7 @@ export class HQSplatRenderer{
 
 				pointcloud.material = attributeMaterial;
 			}
-			
+
 			let gl = this.gl;
 
 			viewer.renderer.setRenderTarget(null);
@@ -251,6 +255,8 @@ export class HQSplatRenderer{
 			});
 		}
 
+
+
 		for(let [pointcloud, material] of originalMaterials){
 			pointcloud.material = material;
 		}
@@ -262,7 +268,7 @@ export class HQSplatRenderer{
 			viewer.skybox.camera.rotation.copy(viewer.scene.cameraP.rotation);
 			viewer.skybox.camera.fov = viewer.scene.cameraP.fov;
 			viewer.skybox.camera.aspect = viewer.scene.cameraP.aspect;
-			
+
 			viewer.skybox.parent.rotation.x = 0;
 			viewer.skybox.parent.updateMatrixWorld();
 
@@ -296,9 +302,12 @@ export class HQSplatRenderer{
 
 			normalizationMaterial.uniforms.uWeightMap.value = this.rtAttribute.texture;
 			normalizationMaterial.uniforms.uDepthMap.value = this.rtAttribute.depthTexture;
-			
+
 			Utils.screenPass.render(viewer.renderer, normalizationMaterial);
 		}
+
+
+			viewer.ecefRenderer();//TODO, look for better way to do this
 
 		viewer.renderer.render(viewer.scene.scene, camera);
 
@@ -314,12 +323,12 @@ export class HQSplatRenderer{
 		viewer.renderer.render(viewer.clippingTool.sceneVolume, camera);
 		viewer.renderer.render(viewer.transformationTool.scene, camera);
 
-		viewer.renderer.setViewport(width - viewer.navigationCube.width, 
-									height - viewer.navigationCube.width, 
+		viewer.renderer.setViewport(width - viewer.navigationCube.width,
+									height - viewer.navigationCube.width,
 									viewer.navigationCube.width, viewer.navigationCube.width);
-		viewer.renderer.render(viewer.navigationCube, viewer.navigationCube.camera);		
+		viewer.renderer.render(viewer.navigationCube, viewer.navigationCube.camera);
 		viewer.renderer.setViewport(0, 0, width, height);
-		
+
 		viewer.dispatchEvent({type: "render.pass.end",viewer: viewer});
 
 	}
