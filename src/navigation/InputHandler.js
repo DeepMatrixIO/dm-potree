@@ -634,10 +634,10 @@ export class InputHandler extends EventDispatcher {
 			if (interval < 300 && !this.mouseHasMovedSinceLastClick) {
 				// Double click
 				// TODO: Differentiate between double click with left and right mouse button
-				console.log('detected double click');
+				//console.log('detected double click');
 				this.onDoubleClick(e);// simulated double click
 			} else {
-				console.log('detected single click');
+				//console.log('detected single click');
 				// Click
 				this.lastClick = new Date().getTime();
 				this.mouseHasMovedSinceLastClick = false;
@@ -1260,6 +1260,17 @@ export class InputHandler extends EventDispatcher {
 		// Additional code for ECEF cameras
 		// search for transformCamera method and appends a link to the root objet of the registered scnee (or group)
 		// Allowing to have a group with children raycasted but without events per child, which can be expensive
+
+
+		// code for regular UTM cameras or native projection
+		if (scenesWithoutTransformCamera.length > 0) {
+			let raycaster = new THREE.Raycaster();
+			raycaster.ray.set(ray.origin, ray.direction);
+			raycaster.params.Line.threshold = 0.2;
+
+			intersections = intersections.concat(raycaster.intersectObjects(interactables.filter(o => o.visible), false));
+		}
+
 		if (scenesWithTransformCamera.length > 0) {
 
 			scenesWithTransformCamera.forEach(scene => {
@@ -1280,15 +1291,6 @@ export class InputHandler extends EventDispatcher {
 				}
 			})
 
-		}
-
-		// code for regular UTM cameras or native projection
-		if (scenesWithoutTransformCamera.length > 0) {
-			let raycaster = new THREE.Raycaster();
-			raycaster.ray.set(ray.origin, ray.direction);
-			raycaster.params.Line.threshold = 0.2;
-
-			intersections = intersections.concat(raycaster.intersectObjects(interactables.filter(o => o.visible), false));
 		}
 		// let raycaster = new THREE.Raycaster();
 		// raycaster.ray.set(ray.origin, ray.direction);
