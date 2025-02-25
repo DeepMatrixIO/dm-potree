@@ -259,7 +259,7 @@ class Shader {
 			{ // attribute locations
 				let numAttributes = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
 
-				for (let i = 0; i < numAttributes; i++) {
+				for (let i = 0;i < numAttributes;i++) {
 					let attribute = gl.getActiveAttrib(program, i);
 
 					let location = gl.getAttribLocation(program, attribute.name);
@@ -271,7 +271,7 @@ class Shader {
 			{ // uniform locations
 				let numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
 
-				for (let i = 0; i < numUniforms; i++) {
+				for (let i = 0;i < numUniforms;i++) {
 					let uniform = gl.getActiveUniform(program, i);
 
 					let location = gl.getUniformLocation(program, uniform.name);
@@ -288,7 +288,7 @@ class Shader {
 			if (gl instanceof WebGL2RenderingContext) {
 				let numBlocks = gl.getProgramParameter(program, gl.ACTIVE_UNIFORM_BLOCKS);
 
-				for (let i = 0; i < numBlocks; i++) {
+				for (let i = 0;i < numBlocks;i++) {
 					let blockName = gl.getActiveUniformBlockName(program, i);
 
 					let blockIndex = gl.getUniformBlockIndex(program, blockName);
@@ -767,7 +767,7 @@ export class Renderer {
 			const lModelView = shader.uniformLocations["modelViewMatrix"];
 			//mat4holder.set(worldView.elements);
 			// faster then set in chrome 63
-			for (let j = 0; j < 16; j++) {
+			for (let j = 0;j < 16;j++) {
 				mat4holder[j] = worldView.elements[j];
 			}
 			gl.uniformMatrix4fv(lModelView, false, mat4holder);
@@ -792,9 +792,9 @@ export class Renderer {
 					let flattenedMatrices = [].concat(...worldViewProjMatrices.map(m => m.elements));
 
 					let flattenedVertices = new Array(8 * 3 * material.clipPolygons.length);
-					for (let i = 0; i < material.clipPolygons.length; i++) {
+					for (let i = 0;i < material.clipPolygons.length;i++) {
 						let clipPolygon = material.clipPolygons[i];
-						for (let j = 0; j < clipPolygon.markers.length; j++) {
+						for (let j = 0;j < clipPolygon.markers.length;j++) {
 							flattenedVertices[i * 24 + (j * 3 + 0)] = clipPolygon.markers[j].position.x;
 							flattenedVertices[i * 24 + (j * 3 + 1)] = clipPolygon.markers[j].position.y;
 							flattenedVertices[i * 24 + (j * 3 + 2)] = clipPolygon.markers[j].position.z;
@@ -832,7 +832,7 @@ export class Renderer {
 				let bindingPoints = new Array(shadowMaps.length).fill(bindingStart).map((a, i) => (a + i));
 				gl.uniform1iv(lShadowMap, bindingPoints);
 
-				for (let i = 0; i < shadowMaps.length; i++) {
+				for (let i = 0;i < shadowMaps.length;i++) {
 					let shadowMap = shadowMaps[i];
 					let bindingPoint = bindingPoints[i];
 					let glTexture = this.threeRenderer.properties.get(shadowMap.target.texture).__webglTexture;
@@ -1294,18 +1294,44 @@ export class Renderer {
 				const lClipBoxes = shader.uniformLocations["clipBoxes[0]"];
 				gl.uniformMatrix4fv(lClipBoxes, false, material.uniforms.clipBoxes.value);
 
-				{//added for ClusterTool
-					const clipTasks = material.clipBoxes.map(
-						(box) => box.box.actualClipTask
-					);
-					const lClipTasks = shader.uniformLocations['clipTasks[0]'];
-					gl.uniform1iv(lClipTasks, clipTasks);
-					const boxColors = material.clipBoxes
-						.map((box) => [box.box.color.r, box.box.color.g, box.box.color.b])
-						.flat();
-					const lBoxColors = shader.uniformLocations['boxColors[0]'];
-					gl.uniform3fv(lBoxColors, boxColors);
-				}
+
+
+
+				//// TODO CHECK using some variable or some other element clipboxes used for clustering tool, which are stored
+				let clusterToolClipBoxes = true;
+				if (clusterToolClipBoxes) {//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes
+					//basically it adds colors from the clipboxes to the shader, as it was not present before within the
+					//uniform clipboxes location boxColors[0] and clipTask[0]
+
+					//of course it crashes within the existing profile as it is made of clipboxes
+					//a proper if wuilf
+					try {
+						const clipTasks = material.clipBoxes.map(
+							(clipbox) => clipbox.box.actualClipTask
+						);
+						const lClipTasks = shader.uniformLocations['clipTasks[0]'];
+						gl.uniform1iv(lClipTasks, clipTasks);
+
+						const boxColors = material.clipBoxes
+							.map((clipbox) => {
+
+								if (clipbox.box.color !== undefined) {
+									return [clipbox.box.color.r, clipbox.box.color.g, clipbox.box.color.b]//check why they store materials in such way when using cluster tool
+								} else {
+									return [clipbox.box.material.color.r, clipbox.box.material.color.g, clipbox.box.material.color.b]
+								}
+
+							})
+							.flat();
+
+						const lBoxColors = shader.uniformLocations['boxColors[0]'];
+						gl.uniform3fv(lBoxColors, boxColors);
+
+
+					} catch (error) {
+						console.log("PotreeRenderer.js Error in in ClusterTool clipBoxes added code");
+					}
+				}//ignore until implemented
 
 			}
 
@@ -1490,7 +1516,7 @@ export class Renderer {
 					gl.uniform1iv(lSnapshot, lSnapshotBindingPoints);
 					gl.uniform1iv(lSnapshotDepth, lSnapshotDepthBindingPoints);
 
-					for (let i = 0; i < 5; i++) {
+					for (let i = 0;i < 5;i++) {
 						let texture = material.uniforms[`uSnapshot`].value[i];
 						let textureDepth = material.uniforms[`uSnapshotDepth`].value[i];
 
@@ -1554,7 +1580,7 @@ export class Renderer {
 
 		const gl = this.gl;
 
-		// PREPARE 
+		// PREPARE
 		if (target != null) {
 			this.threeRenderer.setRenderTarget(target);
 		}
