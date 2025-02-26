@@ -1,8 +1,8 @@
 
 import * as THREE from "../../libs/three.js/build/three.module.js";
-import {Profile} from "./Profile.js";
+import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
-import { EventDispatcher } from "../EventDispatcher.js";
+import {Profile} from "./Profile.js";
 
 
 export class ProfileTool extends EventDispatcher {
@@ -20,7 +20,12 @@ export class ProfileTool extends EventDispatcher {
 
 		this.scene = new THREE.Scene();
 		this.scene.name = 'scene_profile';
-		this.light = new THREE.PointLight(0xffffff, 1.0);
+		//this.light = new THREE.PointLight(0xffffff, 1.0);
+		//this.light = new THREE.AmbientLight(0xffffff, 1.5);
+		this.light = new THREE.DirectionalLight(0xffffff, 2.5);
+		this.light.position.copy(viewer.scene.getActiveCamera().position);
+		this.light.position.z += 1000;
+
 		this.scene.add(this.light);
 
 		this.viewer.inputHandler.registerInteractiveScene(this.scene);
@@ -105,7 +110,7 @@ export class ProfileTool extends EventDispatcher {
 
 		return profile;
 	}
-	
+
 	update(){
 		let camera = this.viewer.scene.getActiveCamera();
 		let profiles = this.viewer.scene.profiles;
@@ -113,11 +118,11 @@ export class ProfileTool extends EventDispatcher {
 		let clientWidth = renderAreaSize.width;
 		let clientHeight = renderAreaSize.height;
 
-		this.light.position.copy(camera.position);
+		//this.light.position.copy(camera.position);
 
 		// make size independant of distance
 		for(let profile of profiles){
-			for(let sphere of profile.spheres){				
+			for(let sphere of profile.spheres){
 				let distance = camera.position.distanceTo(sphere.getWorldPosition(new THREE.Vector3()));
 				let pr = Utils.projectedRadius(1, camera, distance, clientWidth, clientHeight);
 				let scale = (15 / pr);

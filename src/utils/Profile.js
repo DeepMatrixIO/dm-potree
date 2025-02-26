@@ -27,6 +27,11 @@ export class Profile extends THREE.Object3D {
 		this.sphereGeometry = new THREE.SphereGeometry(0.4, 10, 10);
 		this.color = new THREE.Color(0xff0000);
 		this.lineColor = new THREE.Color(0xff0000);
+
+		//this.add(new THREE.AmbientLight(0xffffff,0.2));
+
+		// this.light=new THREE.DirectionalLight(0xffffff,0.7);
+		// this.add(this.light);
 	}
 
 	createSphereMaterial() {
@@ -37,6 +42,15 @@ export class Profile extends THREE.Object3D {
 			depthWrite: false
 		}
 		);
+
+	// let sphereMaterial2 = new THREE.MeshBasicMaterial({
+	// 		//shading: THREE.SmoothShading,
+	// 		color: 0xff0000,
+	// 		depthTest: false,
+	// 		depthWrite: false
+	// 	}
+	// 	);
+
 
 		return sphereMaterial;
 	};
@@ -82,6 +96,10 @@ export class Profile extends THREE.Object3D {
 	}
 
 	addMarker(point) {
+
+
+
+
 		this.points.push(point);
 
 		let sphere = new THREE.Mesh(this.sphereGeometry, this.createSphereMaterial());
@@ -234,6 +252,10 @@ export class Profile extends THREE.Object3D {
 	}
 
 	update() {
+
+
+		//this.light.position.copy(this.viewer.scene.getActiveCamera().position).normalize();
+
 		if (this.points.length === 0) {
 			return;
 		} else if (this.points.length === 1) {

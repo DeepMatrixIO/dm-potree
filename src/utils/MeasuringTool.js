@@ -138,15 +138,19 @@ export class MeasuringTool extends EventDispatcher {
 		this.scene = new THREE.Scene();
 		this.scene.name = 'scene_measurement';
 		//this.light = new THREE.PointLight(0xffffff, 1000, 10);
-		this.light = new THREE.DirectionalLight(0xffffff, 4.0)
+		this.light = new THREE.DirectionalLight(0xffffff, 2.5)
 		this.light.position.copy(viewer.scene.getActiveCamera().position);
-		this.light.position.z += 500;
+				//this.light.position.z += 500;
+		this.light.position.z += 1000;
+		//this.light.lookAt(viewer.scene.view.getPivot());
 
-		//let plh = new THREE.PointLightHelper(this.light, 1);
-		this.light.target.position.copy(viewer.scene.getActiveCamera().position)
+
+
+		//this.light.target.position.copy(viewer.scene.getActiveCamera().position)
+
 		this.scene.add(this.light);
 		//this.scene.add(plh);
-		this.scene.add(new THREE.AmbientLight(0x00ff00, 1.0));
+		//this.scene.add(new THREE.AmbientLight(0x00ff00, 0.5));
 		//this.add(dl);
 		//this.light = new THREE.PointLight(0xffffff, 1.0);
 		//this.scene.add(this.light);
@@ -264,10 +268,10 @@ export class MeasuringTool extends EventDispatcher {
 		let clientWidth = renderAreaSize.width;
 		let clientHeight = renderAreaSize.height;
 
-		this.light.position.copy(camera.position);
-		//this.light.position.z += 5000;
-		//if (this.light.target)
-		//	this.light.target.position.copy(viewer.scene.view.getPivot());
+		// this.light.position.copy(camera.position);
+		// //this.light.position.z += 5000;
+		// if (this.light.target)
+		// 	this.light.target.position.copy(viewer.scene.view.getPivot());
 
 		// make size independant of distance
 		for (let measure of measurements) {
