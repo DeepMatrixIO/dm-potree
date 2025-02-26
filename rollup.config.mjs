@@ -27,7 +27,6 @@ export default [
 		},
 		plugins: [
 
-			commonjs(), // Convert CommonJS modules to ES6
 			terser() // Minify the bundle
 		],
 
