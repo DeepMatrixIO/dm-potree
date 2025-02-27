@@ -369,10 +369,15 @@ export class Viewer extends EventDispatcher {
 			//proj4.defs("pointcloud",this.projection )
 			if (this.projection != null && this.projection != '') {
 
-				const position = this.scene.getActiveCamera().position;
+				let ecefPosition = this.scene.getActiveCamera().position.clone();
+				let wgs84Position = this.scene.getActiveCamera().position.clone();
 
-				let ecefPosition = proj4("pointcloud", this.ecef, position);
-				let wgs84Position = proj4("pointcloud", this.wgs84, position);
+
+	//this modifies the reference
+				//let ecefPosition =
+				proj4("pointcloud", this.ecef, ecefPosition);
+				//let wgs84Position =
+				proj4("pointcloud", this.wgs84, wgs84Position);
 				this.currentECEFPosition = ecefPosition;
 				this.currentWGS84Position = wgs84Position;
 
