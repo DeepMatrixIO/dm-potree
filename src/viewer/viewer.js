@@ -43,10 +43,15 @@ export class Viewer extends EventDispatcher {
 	constructor(domElement, args = {}) {
 		super();
 
+		proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+
 		//wont break if not provided
 		this.customUpdates = []; //ADDED by  @jguerrer // runs on each  loop before general update.i.e. viewer.scene.scene  or others. Check also Input Handler for other ways
 		this.ecefRenderers = [];//ADDED by  @jguerrer // To render it before all other
 		this.extraRenders = [];//ADDED by  @jguerrer // runs on each loop after potree  render loop
+		this.currentWGS84Position = {lat: 0, lon: 0, alt: 0};//ADDED by  @jguerrer // updated on each loop before general update.
+		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
+		this.projection = null;//some value must exist , but it may change over time
 
 		this.renderArea = domElement;
 		this.guiLoaded = false;
@@ -350,6 +355,94 @@ export class Viewer extends EventDispatcher {
 		} catch (e) {
 			this.onCrash(e);
 		}
+	}
+
+	ecef = 'EPSG:4978'; // ECEF
+	wgs84 = 'EPSG:4326'; // ECEF
+
+	updateCurrentPosition() {
+		try {
+
+
+
+			//this.projection=this.getProjection()
+			//proj4.defs("pointcloud",this.projection )
+			if (this.projection != null && this.projection != '') {
+
+				const position = this.scene.getActiveCamera().position;
+
+				let ecefPosition = proj4("pointcloud", this.ecef, position);
+				let wgs84Position = proj4("pointcloud", this.wgs84, position);
+				this.currentECEFPosition = ecefPosition;
+				this.currentWGS84Position = wgs84Position;
+
+
+
+			}
+			else {
+				this.projection = this.getProjection();
+				if (this.projection) {
+					proj4.defs("pointcloud", this.projection)
+					proj4.defs(
+						'EPSG:4978',
+						'+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'
+					);
+				}
+			}
+			// 	let msg = "At least one point cloud is needed that specifies the ";
+			// 				msg += "coordinate reference system before loading vector data.";
+			// 				console.error(msg);
+
+			// }
+
+		} catch (e) {
+			console.error(e);
+		}
+
+		//creating a new camera requires more code
+
+	}
+
+
+	// wgs84ToEcef(lat, lon, alt) {
+	// 	// Convert latitude, longitude, altitude to ECEF
+	// 	const [x, y, z] = proj4(this.wgs84, this.ecef, [lon, lat, alt]);
+	// 	return {x, y, z};
+	// }
+
+	//takes the current projection and turns into ECEF. Requires WGS84 as intermediary
+	//pos is Vector3
+	toECEF(vector3, sourceProj) {
+		// Define the source projection
+		const source = proj4.defs(sourceProj);
+
+		//let pointCloudProjection = window.toScene;
+
+		// Convert the coordinates from the source projection to WGS84
+		//@ts-ignore
+		//const [lon, lat, alt] = proj4(source, this.wgs84, [vector3.x, vector3.y, vector3.z]);
+
+		// Convert the WGS84 coordinates to ECEF
+		//const [x, y, z] = proj4(this.wgs84, this.ecef, [lon, lat, alt]);
+
+		const [x,y,z] = proj4(source, this.ecef, [vector3.x, vector3.y, vector3.z]);
+
+
+		//return { x, y, z };
+		return new Vector3(x, y, z);
+	}
+
+
+	getWGS84Position() {
+		return this.currentWGS84Position;
+	}
+
+	getECEFPosition() {
+		return this.currentECEFPosition;
+	}
+
+	getCurrentPosition() {
+		return {wgs84: this.currentWGS84Position, ecef: this.currentECEFPosition};
 	}
 
 	//for clustering tool
@@ -2385,6 +2478,7 @@ export class Viewer extends EventDispatcher {
 		if (Potree.measureTimings) {
 			performance.mark("loop-start");
 		}
+		this.updateCurrentPosition();// Assuming a valid projection and camera position, updates the current position in both wgs84 and ecef, easing the general handling
 		// Update registered items before general potree items
 		this.triggerUpdates();//added by jguerrer
 		this.update(this.clock.getDelta(), timestamp);// <------- Updates al data but not renders yet

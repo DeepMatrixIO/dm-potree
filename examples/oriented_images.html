@@ -49,10 +49,10 @@
 		viewer.setPointBudget(3_000_000);
 
 		viewer.setDescription(`
-			Use Potree.OrientedImageLoader.load(...) to populate the scene with captured images. 
-			Clicking an image will move the scene camera towards the image and overlay it over the point cloud. 
-			You can use the measurement tools while the scene camera is bound to an image. Zoom in and out of the image via the mouse wheel. 
-			Go back to 3D mode by clicking the button on the bottom right. 
+			Use Potree.OrientedImageLoader.load(...) to populate the scene with captured images.
+			Clicking an image will move the scene camera towards the image and overlay it over the point cloud.
+			You can use the measurement tools while the scene camera is bound to an image. Zoom in and out of the image via the mouse wheel.
+			Go back to 3D mode by clicking the button on the bottom right.
 
 			Point cloud courtesy of <a href="http://www.helimap.ch" target="_blank">Helimap System SA</a>.
 		`);
@@ -88,9 +88,10 @@
 		import * as THREE from "../libs/three.js/build/three.module.js";
 
 		//cameraPArams are all the intrisnic parameters of the camera
-		const cameraParamsPath = "http://5.9.65.151/mschuetz/potree/resources/pointclouds/helimap/epalinges/img_selected/IXM35_190522_nodistortion.xml";
+		//const cameraParamsPath = "http://5.9.65.151/mschuetz/potree/resources/pointclouds/helimap/epalinges/img_selected/IXM35_190522_nodistortion.xml";
+		const cameraParamsPath = "oriented_images_data/IXM35_190522_nodistortion.xml";
 		//projection, images have xyz opega phi kappa
-		const imageParamsPath = "http://5.9.65.151/mschuetz/potree/resources/pointclouds/helimap/epalinges/img_selected/Calib190522_MN95_NF2_cam_estim.txt";
+		const imageParamsPath = "oriented_images_data/Calib190522_MN95_NF2_cam_estim.txt";
 
 		Potree.OrientedImageLoader.load(cameraParamsPath, imageParamsPath, viewer).then(images => {
 			viewer.scene.addOrientedImages(images);
