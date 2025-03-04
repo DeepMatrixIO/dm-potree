@@ -51,7 +51,12 @@ export class Viewer extends EventDispatcher {
 		this.extraRenders = [];//ADDED by  @jguerrer // runs on each loop after potree  render loop
 		this.currentWGS84Position = {lat: 0, lon: 0, alt: 0};//ADDED by  @jguerrer // updated on each loop before general update.
 		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
-		this.projection = null;//some value must exist , but it may change over time
+
+		this.projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
+
+		this.ecefCamera=new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
+
+
 
 		this.renderArea = domElement;
 		this.guiLoaded = false;
@@ -369,22 +374,23 @@ export class Viewer extends EventDispatcher {
 			//proj4.defs("pointcloud",this.projection )
 			if (this.projection != null && this.projection != '') {
 
-				let ecefPosition = this.scene.getActiveCamera().position.clone();
-				let wgs84Position = this.scene.getActiveCamera().position.clone();
+				let pos = this.scene.getActiveCamera().position.clone();
 
 
-	//this modifies the reference
-				//let ecefPosition =
-				proj4("pointcloud", this.ecef, ecefPosition);
-				//let wgs84Position =
-				proj4("pointcloud", this.wgs84, wgs84Position);
+				let ecefPosition =
+					proj4("pointcloud", this.ecef, [pos.x, pos.y, pos.z]);
+				let wgs84Position =
+					proj4("pointcloud", this.wgs84, [pos.x, pos.y, pos.z]);
 				this.currentECEFPosition = ecefPosition;
 				this.currentWGS84Position = wgs84Position;
 
 
-
+				return;
 			}
-			else {
+
+			if (this.projection == '') {return;}
+
+			if (this.projection == null) {
 				this.projection = this.getProjection();
 				if (this.projection) {
 					proj4.defs("pointcloud", this.projection)
@@ -409,6 +415,122 @@ export class Viewer extends EventDispatcher {
 	}
 
 
+
+
+
+	updateCameraPosition(customCamera) {
+		//const groundOffset = -40;
+		const groundOffset = 0;
+
+		try {
+			if ( !this.scene || !this.scene.getActiveCamera()) {
+				return;
+			}
+
+			//requestAnimationFrame(loop);//
+			//let delta = window.viewer.clock?.getDelta()
+			//window.viewer.update(delta, timestamp);
+			//window.viewer.render();
+
+			if (this.projection != null && this.projection != '') {
+				//let camera = window.viewer.scene.getActiveCamera(); //custom or potree camera
+				let camera = customCamera
+					? customCamera
+					: this.scene.getActiveCamera(); //custom or potree camera
+				//let pPos = new Vector3(0, 0, 0).applyMatrix4(camera.matrixWorld);
+				let cmw = camera.matrixWorld; //brings the transformation of the camera from 0 to world in utm as potree
+
+				let t = new THREE.Matrix4().makeTranslation(0, 0, groundOffset); //translate to the given offset in z
+
+				let n = new THREE.Matrix4();
+				n.multiplyMatrices(t, cmw); //apply the translation to the camera matrix to get the new position offset
+
+				let o = new THREE.Vector3(0, 0, 0).applyMatrix4(n); //origin
+
+				let pRight = new THREE.Vector3(600, 0, 0).applyMatrix4(n);
+				let pUp = new THREE.Vector3(0, 600, 0).applyMatrix4(n);
+				let pTarget = this.scene.view.getPivot();
+				pTarget.z = pTarget.z + groundOffset;
+				//
+
+				//projects to ECEF, requires a current UTM zone
+				//@ts-ignore
+				// if (this.UTMProjection === undefined) {
+				//   this.updateUTMZone();
+				// }
+
+
+				//@ts-ignore
+				let projectProj = this.projection; //
+				let cPos = this.toECEF(o, projectProj); //offending line
+
+				let cUpTarget = this.toECEF(pUp, projectProj);
+				let cTarget = this.toECEF(pTarget, projectProj);
+				let cDir = cTarget.clone().sub(cPos).normalize();
+				let cUp = cUpTarget.clone().sub(cPos).normalize();
+
+				if (cDir.x == 0 || cDir.y == 0 || cDir.z == 0) {
+					cDir.x = 1;
+					cDir.y = 1;
+					cDir.z = 0;
+				}
+
+				this.ecefCamera.position.set(cPos.x, cPos.y, cPos.z);
+				this.ecefCamera.up.set(cUp.x, cUp.y, cUp.z);
+				this.ecefCamera.lookAt(cTarget.x, cTarget.y, cTarget.z);
+
+				let aspect = this.scene.getActiveCamera().aspect;
+				//let aspect = window.viewer.scene.getActiveCamera().aspect;
+
+				// if (aspect < 1) {
+				//   let fovy = Math.PI * (camera.fov / 180);
+				//   this.camera.fov = fovy
+				// } else {
+				//   let fovy = Math.PI * (camera.fov / 180);
+				//   let fovx = Math.atan(Math.tan(0.5 * fovy) * aspect) * 2;
+				//   this.camera.fov = fovx;
+				//   //window.cesiumViewer.camera.frustum.fov = fovx;
+				// }
+
+				this.ecefCamera.fov = camera.fov; //required?
+				//this.camera.fov=camera.fov;//required?
+				this.ecefCamera.aspect = aspect;
+				this.ecefCamera.setFocalLength(camera.getFocalLength());
+				this.ecefCamera.width = window.innerWidth;//to remove warnings
+				this.ecefCamera.height = window.innerHeight;
+				//rendering here only occurs if no errors
+
+				return;
+			}
+
+			if (this.projection == '') {return;}
+
+			if (this.projection == null) {
+				this.projection = this.getProjection();
+				if (this.projection) {
+					proj4.defs("pointcloud", this.projection)
+					proj4.defs(
+						'EPSG:4978',
+						'+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'
+					);
+				}
+			}
+
+
+			//rendering here occurs even if errors
+		} catch (error) {
+			//this is removed as produces excessive console logs
+			//most errors ocurr if
+			console.error('ERROR LOOP:', error);
+		}
+	}
+
+
+	//creating a new camera requires more code
+
+
+
+
 	// wgs84ToEcef(lat, lon, alt) {
 	// 	// Convert latitude, longitude, altitude to ECEF
 	// 	const [x, y, z] = proj4(this.wgs84, this.ecef, [lon, lat, alt]);
@@ -419,7 +541,7 @@ export class Viewer extends EventDispatcher {
 	//pos is Vector3
 	toECEF(vector3, sourceProj) {
 		// Define the source projection
-		const source = proj4.defs(sourceProj);
+		//const source = proj4.defs(sourceProj);
 
 		//let pointCloudProjection = window.toScene;
 
@@ -430,11 +552,11 @@ export class Viewer extends EventDispatcher {
 		// Convert the WGS84 coordinates to ECEF
 		//const [x, y, z] = proj4(this.wgs84, this.ecef, [lon, lat, alt]);
 
-		const [x,y,z] = proj4(source, this.ecef, [vector3.x, vector3.y, vector3.z]);
+		const [x, y, z] = proj4('pointcloud', this.ecef, [vector3.x, vector3.y, vector3.z]);
 
 
 		//return { x, y, z };
-		return new Vector3(x, y, z);
+		return new THREE.Vector3(x, y, z);
 	}
 
 
@@ -1170,6 +1292,18 @@ export class Viewer extends EventDispatcher {
 			return null;
 		}
 	}
+
+
+	getProjectionsList() {
+
+		let projectionsList = this.scene.pointclouds.map((pointcloud) => {
+			return [pointcloud.name] = pointcloud.projection;
+		})
+
+		console.log(projectionsList)
+		return projectionsList
+	}
+
 
 	async loadProject(url) {
 
@@ -2483,7 +2617,10 @@ export class Viewer extends EventDispatcher {
 		if (Potree.measureTimings) {
 			performance.mark("loop-start");
 		}
-		this.updateCurrentPosition();// Assuming a valid projection and camera position, updates the current position in both wgs84 and ecef, easing the general handling
+		//this.updateCurrentPosition();// Assuming a valid projection and camera position, updates the current position in both wgs84 and ecef, easing the general handling
+		this.updateCameraPosition();//updates the camera position, easing the general handling
+
+
 		// Update registered items before general potree items
 		this.triggerUpdates();//added by jguerrer
 		this.update(this.clock.getDelta(), timestamp);// <------- Updates al data but not renders yet
