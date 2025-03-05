@@ -348,13 +348,16 @@ export class VolumePanel extends MeasurePanel {
 
 	}
 
+	//removes toVector3
 	update() {
 		let elCoordiantesContainer = this.elContent.find('.coordinates_table_container');
 		elCoordiantesContainer.empty();
 		elCoordiantesContainer.append(this.createCoordinatesTable([this.measurement.position]));
 
 		{
-			let angles = this.measurement.rotation.toVector3();
+			let euler= this.measurement.rotation;
+
+			let angles =new THREE.Vector3(euler.x, euler.y, euler.z);
 			angles = angles.toArray();
 			//angles = [angles.z, angles.x, angles.y];
 			angles = angles.map(v => 180 * v / Math.PI);

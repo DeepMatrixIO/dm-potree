@@ -625,6 +625,8 @@ export class InputHandler extends EventDispatcher {
 
 		e.preventDefault();
 
+		let noMovement = this.getNormalizedDrag().length() === 0;//plain potree code
+
 		//// code added from ClusterTool
 		if (this.mouseHasMovedSinceMouseDown) {
 			this.mouseHasMovedSinceMouseDown = false;//reset the flag
@@ -751,9 +753,55 @@ export class InputHandler extends EventDispatcher {
 					});
 				}
 			}
-			if (!['DRAG', 'PAN'].includes(this.viewer.orbitControls.mode))
-				this.drag = null;
+			//ADDED FROM CLUSTER TOOL, but  sets drag as null, dischargind other drag tools
+			// if (!['DRAG', 'PAN'].includes(this.viewer.orbitControls.mode))
+			// 	this.drag = null;
+
+			//ALSO FROM ORIGINAL POTREECODE
+			// check for a click
+			let clicked = this.hoveredElements.map(h => h.object).find(v => v === this.drag.object) !== undefined;
+			if (clicked) {
+				if (this.logMessages) console.log(`${this.constructor.name}: click ${this.drag.object.name}`);
+				this.drag.object.dispatchEvent({
+					type: 'click',
+					viewer: this.viewer,
+					consume: consume,
+				});
+			}
+			//FROM ORIGNAL TOO
+			this.drag = null;
+
 		}
+
+
+		//TAKEN BACK FROM ORIGINAL CODE
+		if (!consumed) {
+			if (e.button === THREE.MOUSE.LEFT) {
+				if (noMovement) {
+					let selectable = this.hoveredElements
+						.find(el => el.object._listeners && el.object._listeners['select']);
+
+					if (selectable) {
+						selectable = selectable.object;
+
+						if (this.isSelected(selectable)) {
+							this.selection
+								.filter(e => e !== selectable)
+								.forEach(e => this.toggleSelection(e));
+						} else {
+							this.deselectAll();
+							this.toggleSelection(selectable);
+						}
+					} else {
+						this.deselectAll();
+					}
+				}
+			} else if ((e.button === THREE.MOUSE.RIGHT) && noMovement) {
+				this.deselectAll();
+			}
+		}
+
+
 	}
 
 
