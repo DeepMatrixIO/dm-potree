@@ -90,7 +90,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			seg_cluster_id: {type: 'fv', value: []},
 		};
 
-		//we may move this to the corresponding tool as this is
+		//we may move this to the corresponding tool as this is 
 		//if (Potree.segmentsAttributeKey) {
 		//	this.attributes[Potree.segmentsAattributeKey] = {type: 'fv', value: []};
 		//}
@@ -207,22 +207,15 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		let fs = Shaders['pointcloud.fs'];
 		let definesString = this.getDefines();
 
-		if(extraDefines){
-		definesString += this.getExtraDefines();
-		}
-		// additional defines are set here
-		// uniforms should be set as well somewhere else
-
-
 		let vsVersionIndex = vs.indexOf('#version ');
 		let fsVersionIndex = fs.indexOf('#version ');
-		//vertex shaded defines set
+
 		if (vsVersionIndex >= 0) {
 			vs = vs.replace(/(#version .*)/, `$1\n${definesString}`);
 		} else {
 			vs = `${definesString}\n${vs}`;
 		}
-		//fragment shader defines set
+
 		if (fsVersionIndex >= 0) {
 			fs = fs.replace(/(#version .*)/, `$1\n${definesString}`);
 		} else {
@@ -256,19 +249,6 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.needsUpdate = true;
 	}
 
-
-
-//this should come from somewhere
-	getExtraDefines(){
-		let extraDefines=[];
-
-		extraDefines.push('#define distance_to_point');//enables the function
-		extraDefines.push('#define num_ranges 2');//enables the function
-
-
-	}
-
-	//set defines based on the current state
 	getDefines() {
 		let defines = [];
 

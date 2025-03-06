@@ -55,6 +55,15 @@ uniform int clipTasks[num_clipboxes];
 uniform vec3 boxColors[num_clipboxes];
 #endif
 
+//distance rendering requires a position and an array of min max ranges
+#if defined(distance_to_point) && defined(num_ranges) && num_ranges > 0
+uniform vec3 positionRef;
+uniform float rangeValues[num_ranges]//uniform mat4 clipBoxes[num_clipboxes];
+//textures leave for the moment, using selected range
+#endif
+
+
+
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
 uniform float clusteredpointsegments[num_clusteredpointsegments];
 uniform int segmentClipTasks[num_clusteredpointsegments];
@@ -715,8 +724,64 @@ vec3 getMatcap()
 }
 #endif
 
+
+// Testing to feed additional parameters to the shader to have multiple rendering options
+// Proposed parameters are
+
+// positionRefValues:[xref,yref,zref]: reference values for further visualization
+// isoValues:[priIso,secIso,refIso]: primary and secondary isosurface values plus start reference
+// uExtraRange[x,y]: range of the extra parameter based on attribute
+// uExtraScale: scaling factor for the extra parameter
+// uExtraOffset: offset for the extra parameter
+
+//in terms of functions, allowed functions include
+//distance_rendering
+//iso_rendering
+//ramp_rendering
+
+
+//requires positionRefValues, rangeValues
+//  In allows to show objects based on their distance to a reference point
+//  The reference point is defined by positionRefValues
+//  The range of the distance is defined by rangeValues
+//  The color is defined by the gradient texture
+
+//semantics are, from a given distance, the color is defined by different clors and gradients
+// within Radius, the color is defined by the gradient texture1 and min ma
+// within 2*Radius, the color is defined by the gradient texture2
+
+
+#if defined(distance_to_point) && defined(num_ranges) && num_ranges > 0
+
+vec3 distanceRendering(){
+
+	 float distance = length(position - positionRef);
+
+	//using the first max value as the reference
+	if( rangeValues[0] <= distance && distance < rangeValues[1]){
+		float w = (distance - rangeValues[0]) / (rangeValues[1] - rangeValues[0]);
+		w = clamp(w, 0.0, 1.0);
+		vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+		return color;
+	}
+	else{
+		return vec3(0.0, 0.0, 0.0);
+
+	}
+
+}
+#endif
+
+
+
 vec3 getExtra()
 {
+
+#ifdef distance_to_point
+	return distanceRendering();
+#endif
+
+
 
 	float w = (aExtra + uExtraOffset) * uExtraScale;
 	// w = clamp(w, 0.0, 1.0);
