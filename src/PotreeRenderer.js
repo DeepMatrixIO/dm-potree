@@ -1576,6 +1576,9 @@ export class Renderer {
 		gl.activeTexture(gl.TEXTURE0);
 	}
 
+	//called from main loop
+	//1) this.traverses nodes
+	//2) this.renderOctree render each node
 	render(scene, camera, target = null, params = {}) {
 
 		const gl = this.gl;
