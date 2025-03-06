@@ -58,7 +58,7 @@
 
 		viewer.setDescription(`
 		This example shows various ways to use annotations.
-		They can be used to bookmark and describe locations, 
+		They can be used to bookmark and describe locations,
 		move the camera to a predefined point of view on click,
 		and to provide programmable buttons at specific locations.
 		`);
@@ -73,6 +73,8 @@
 
 		//Potree.loadPointCloud("../pointclouds/vegetation_zone_ROW_75_20_1_64930dd1.las_converted/metadata.json", "inegi", function (e) {
 		Potree.loadPointCloud("../pointclouds/dense_cloud_crop2_out_a6ac0ecb.las_converted/metadata.json", "inegi", function (e) {
+
+//		Potree.loadPointCloud("../pointclouds/dense_cloud_crop2_out_a6ac0ecb.las_converted/metadata.json", "inegi", function (e) {
 			sceneSG.addPointCloud(e.pointcloud);
 			//sceneSG.view.position.set(590030, 231767, 1007);
 			viewer.zoomTo(e.pointcloud)
