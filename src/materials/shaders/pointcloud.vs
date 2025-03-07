@@ -58,7 +58,15 @@ uniform vec3 boxColors[num_clipboxes];
 //distance rendering requires a position and an array of min max ranges
 #if defined(distance_to_point) && defined(num_ranges) && num_ranges > 0
 uniform vec3 positionRef;
-uniform float rangeValues[num_ranges]//uniform mat4 clipBoxes[num_clipboxes];
+uniform float rangeValues[num_ranges];//uniform mat4 clipBoxes[num_clipboxes];
+
+//textures leave for the moment, using selected range
+#endif
+
+
+#if defined(draw_isolines)
+
+uniform float isoValues[3];
 //textures leave for the moment, using selected range
 #endif
 
@@ -773,6 +781,31 @@ vec3 distanceRendering(){
 #endif
 
 
+#if defined(draw_isolines)
+
+vec3 isolinesRendering(){
+
+	vec3 color;
+	bool none = true;
+	if( abs(mod( position.z,isoValues[1] )) < isoValues[2]){
+		color = vec3(0.0, 1.0, 0.0);
+		none=false;
+	}
+	if( abs(mod( position.z,isoValues[0] )) < isoValues[2]){
+		color = vec3(1.0, 0.0, 0.0);
+		none=false;
+	}
+	if(none){
+			color = vec3(0.0, 0.0, 0.0);
+	}
+
+
+	return color;
+}
+#endif
+
+
+
 
 vec3 getExtra()
 {
@@ -780,6 +813,18 @@ vec3 getExtra()
 #ifdef distance_to_point
 	return distanceRendering();
 #endif
+
+#ifdef draw_isolines
+	return isolinesRendering();
+#endif
+
+
+#ifdef draw_isolines
+	return isolinesRendering();
+#endif
+
+
+
 
 
 

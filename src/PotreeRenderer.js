@@ -150,8 +150,9 @@ let attributeLocations = {
 	"normal": {name: "normal", location: 8},
 	"spacing": {name: "spacing", location: 9},
 	"gps-time": {name: "gpsTime", location: 10},
-	"aExtra": {name: "aExtra", location: 11},
-	"seg_cluster_id": {name: 'seg_cluster_id', location: 12},
+	"seg_cluster_id": {name: 'seg_cluster_id', location: 11},
+	"aExtra": {name: "aExtra", location: 12},
+
 	//"aExtra": {name: "aExtra", location: 7},//due to input size differences, set to 7 for testing
 
 
@@ -949,15 +950,17 @@ export class Renderer {
 
 			gl.bindVertexArray(webglBuffer.vao);
 
-			//for all other attributes
+			//for all other attributes, based on material definitions
 			let isExtraAttribute =
 				attributeLocations[material.activeAttributeName] === undefined
 				&& Object.keys(geometry.attributes).includes(material.activeAttributeName);
 
-			if (isExtraAttribute) {
+			if (isExtraAttribute) {//for attributes other than those defined for LiDAR ASPRS
+
+				//testing  ustom shader functions
 
 				const attributeLocation = attributeLocations["aExtra"].location;
-
+				//clearing previous stuff
 				for (const attributeName in geometry.attributes) {//disables all other attributes
 					//const bufferAttribute = geometry.attributes[attributeName];
 					const vbo = webglBuffer.vbos.get(attributeName);
@@ -970,6 +973,7 @@ export class Renderer {
 				const bufferAttribute = geometry.attributes[attName];//get the buffer
 				const vbo = webglBuffer.vbos.get(attName);
 
+				//sett ing attribute in aextra Location
 				if (bufferAttribute !== undefined && vbo !== undefined) {
 					let type = this.glTypeMapping.get(bufferAttribute.array.constructor);
 					let normalized = bufferAttribute.normalized;
@@ -982,7 +986,7 @@ export class Renderer {
 
 
 
-				{
+				{//setting uniforms for the extra attribute
 					const attExtra = octree.pcoGeometry.pointAttributes.attributes
 						.find(a => a.name === attName);
 
@@ -1030,9 +1034,80 @@ export class Renderer {
 						//console.log(bufferData)
 
 					}
+				}
+
+
+				///////////adding additional defines and setting uniforms from material
+
+				if (material.customRenderer) {
+
+					let customUniforms = material.getCustomUniforms();//retrieving definitions
+
+					//this.uniforms = {
+					//level: {type: 'f', value: 0.0},
+					//vnStart: {type: 'f', value: 0.0},
+					//spacing: {type: 'f', value: 1.0},
+					//....
+					for (let uniformName in customUniforms)  {
+
+						let uType  = customUniforms[uniformName].type;
+						let uValue = customUniforms[uniformName].value;
+
+
+						const customLocation =
+						shader.uniformLocations[`${uniformName}[0]`];
+						gl.uniform1fv(customLocation, uValue);//directly setting
+
+
+
+						// if (uType === "f") {
+						// 	shader.setUniform1f(uniform, uValue);
+						// 	return;
+						// }
+						// if (uType === "t") {
+						// 	shader.setUniformTexture(uniform, uValue);
+						// 	return;
+						// }
+
+						// if (uType === "1f") {
+						// 	shader.setUniform1f(uniform, uValue);
+						// 	return;
+						// }
+						// if (uType === "2f") {
+						// 	shader.setUniform2f(uniform, uValue);
+						// 	return;
+						// }
+
+						// if (uType === "3f") {
+						// 	shader.setUniform3f(uniform, uValue);
+						// 	return;
+						// }
+						// if (uType === "1i") {
+						// 	shader.setUniform1i(uniform, uValue);
+						// 	return;
+						// }
+						// if (uType === "b") {
+						// 	shader.setUniformBoolean(uniform, uValue);
+						// 	return;
+						// }
+						// if (uType === "m4") {
+						// 	shader.setUniformMatrix4(uniform, uValue);
+						// 	return;
+						// }
+
+
+
+
+
+					}
+
 
 
 				}
+
+
+
+
 
 			} else {
 

@@ -171,6 +171,9 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			uFilterPointSourceIDClipRange: {type: 'fv', value: [0, 65535]},
 			matcapTextureUniform: {type: 't', value: this.matcapTexture},
 			backfaceCulling: {type: 'b', value: false},
+
+
+
 		};
 
 		this.classification = ClassificationScheme.DEFAULT;
@@ -184,8 +187,78 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		//this.vertexColors = false;
 
+
+		/////////////////custom renderinf info
+		this.defines = new Map();
+
+		this.customUniforms = {
+			//  Added for custom rendering on aExtra attributes
+			isoValues: {type: 'fv', value: [1, 0.5, 0, 0]},//iso rendering as array
+			positionRef: {type: '3fv', value: [0, 0, 0]},//distance rendering as 3d array
+			rangeValues: {type: 'fv', value: [0, 10]},//distance rendering as array
+		}
+
+
+
+
+
 		this.updateShaderSource();
 	}
+
+	//custom render function applicable to extra attributes
+	// A custom render implies three steps
+	// 1 set custom  defines for the shader
+	// 2 provide functions to populate shader uniform values
+	// 3 functions to commit the uniforms and values to the shader
+
+	customRenderer = true;//an object
+
+
+
+	//set custom renderer items to apend
+	setCustomRenderer(defines, uniforms, values) {
+		this.customDefines = defines;//set as constants , name values
+		this.customUniforms = uniforms;//variable name, type and values
+
+
+
+	}
+
+	getCustomDefines() {
+		let customDefines = [];
+
+		for (let [key, value] of this.customDefines) {
+			customDefines.push(value);
+		}
+
+		return customDefines.join('\n');
+
+	}
+
+
+	setCustomUniforms() {
+		this.customUniforms = uniforms;
+
+	}
+
+	getCustomUniforms() {
+		return this.customUniforms;
+	}
+
+	//this should come from somewhere else,
+	getExtraDefines() {
+		let extraDefines = [];
+
+		extraDefines.push('#define distance_to_point 1');//enables the function
+		extraDefines.push('#define num_ranges 2');//enables the function
+		extraDefines.push('#define draw_isolines 1');//enables the function
+
+
+		return extraDefines;;
+
+	}
+
+
 
 	setDefine(key, value) {
 		if (value !== undefined && value !== null) {
@@ -207,8 +280,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		let fs = Shaders['pointcloud.fs'];
 		let definesString = this.getDefines();
 
-		if(extraDefines){
-		definesString += this.getExtraDefines();
+		if (this.customDefines) {//also a map
+			definesString += this.getExtraDefines();
 		}
 		// additional defines are set here
 		// uniforms should be set as well somewhere else
@@ -258,15 +331,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 
 
-//this should come from somewhere
-	getExtraDefines(){
-		let extraDefines=[];
 
-		extraDefines.push('#define distance_to_point');//enables the function
-		extraDefines.push('#define num_ranges 2');//enables the function
-
-
-	}
 
 	//set defines based on the current state
 	getDefines() {
@@ -314,7 +379,10 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		for (let [key, value] of this.defines) {
 			defines.push(value);
 		}
-
+		//{//custom defines are added
+			let extras = this.getExtraDefines();//custom defines
+			defines = defines.concat(extras);
+		//}
 		return defines.join('\n');
 	}
 
@@ -338,13 +406,13 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.clipBoxes.length * 16
 		);
 
-		for (let i = 0; i < this.clipBoxes.length; i++) {
+		for (let i = 0;i < this.clipBoxes.length;i++) {
 			let box = clipBoxes[i];
 
 			this.uniforms.clipBoxes.value.set(box.inverse.elements, 16 * i);
 		}
 
-		for (let i = 0; i < this.uniforms.clipBoxes.value.length; i++) {
+		for (let i = 0;i < this.uniforms.clipBoxes.value.length;i++) {
 			if (Number.isNaN(this.uniforms.clipBoxes.value[i])) {
 				this.uniforms.clipBoxes.value[i] = Infinity;
 			}
@@ -433,7 +501,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		let valuesChanged = false;
 
-		for (let i = 0; i < width; i++) {
+		for (let i = 0;i < width;i++) {
 			let color;
 			let visible = true;
 
@@ -1159,7 +1227,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		context.rect(0, 0, size, size);
 		let ctxGradient = context.createLinearGradient(0, 0, size, size);
 
-		for (let i = 0; i < gradient.length; i++) {
+		for (let i = 0;i < gradient.length;i++) {
 			let step = gradient[i];
 
 			ctxGradient.addColorStop(step[0], '#' + step[1].getHexString());
