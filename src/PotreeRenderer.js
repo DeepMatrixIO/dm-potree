@@ -950,6 +950,11 @@ export class Renderer {
 
 			gl.bindVertexArray(webglBuffer.vao);
 
+			//binding extra uniforms
+
+
+
+
 			//for all other attributes, based on material definitions
 			let isExtraAttribute =
 				attributeLocations[material.activeAttributeName] === undefined

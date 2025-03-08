@@ -194,7 +194,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.customUniforms = {
 			//  Added for custom rendering on aExtra attributes
 			isoValues: {type: 'fv', value: [1, 0.5, 0, 0]},//iso rendering as array
-			positionRef: {type: '3fv', value: [0, 0, 0]},//distance rendering as 3d array
+			positionRef: {type: '3fv', value: [701414.3400000763,  3144096.5100004575,  234.61000000834466]},//distance rendering as 3d array
 			rangeValues: {type: 'fv', value: [0, 10]},//distance rendering as array
 		}
 

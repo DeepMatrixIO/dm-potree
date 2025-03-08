@@ -57,7 +57,7 @@ uniform vec3 boxColors[num_clipboxes];
 
 //distance rendering requires a position and an array of min max ranges
 #if defined(distance_to_point) && defined(num_ranges) && num_ranges > 0
-uniform vec3 positionRef;
+uniform float positionRef[3];
 uniform float rangeValues[num_ranges];//uniform mat4 clipBoxes[num_clipboxes];
 
 //textures leave for the moment, using selected range
@@ -763,11 +763,19 @@ vec3 getMatcap()
 
 vec3 distanceRendering(){
 
-	 float distance = length(position - positionRef);
+	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+
+	vec3 ppos=worldPosition.xyz;
+	vec3 pref= vec3(positionRef[0],  positionRef[1], positionRef[2]);
+	float dist = distance( ppos,pref);
 
 	//using the first max value as the reference
-	if( rangeValues[0] <= distance && distance < rangeValues[1]){
-		float w = (distance - rangeValues[0]) / (rangeValues[1] - rangeValues[0]);
+
+
+
+
+	if( rangeValues[0] <= dist && dist < rangeValues[1]){
+		float w = (dist - rangeValues[0]) / (rangeValues[1] - rangeValues[0]);
 		w = clamp(w, 0.0, 1.0);
 		vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
 		return color;
@@ -784,14 +792,15 @@ vec3 distanceRendering(){
 #if defined(draw_isolines)
 
 vec3 isolinesRendering(){
-
+	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+	vec3 ppos=worldPosition.xyz;
 	vec3 color;
 	bool none = true;
-	if( abs(mod( position.z,isoValues[1] )) < isoValues[2]){
+	if( abs(mod( ppos.z,isoValues[1] )) < isoValues[2]){
 		color = vec3(0.0, 1.0, 0.0);
 		none=false;
 	}
-	if( abs(mod( position.z,isoValues[0] )) < isoValues[2]){
+	if( abs(mod( ppos.z,isoValues[0] )) < isoValues[2]){
 		color = vec3(1.0, 0.0, 0.0);
 		none=false;
 	}
