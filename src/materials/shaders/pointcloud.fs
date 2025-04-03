@@ -31,7 +31,8 @@ in vec3	vViewPosition;
 in float	vRadius;
 in float 	vPointSize;
 in vec3 	vPosition;
-
+//in float	vOpacity;//from vertex shader customRangeRendering or others to make points transparent or transslucent
+flat in int isVisible;
 out vec4 fragColor;
 
 
@@ -44,24 +45,25 @@ void main() {
 	vec3 color = vColor;
 	float depth = gl_FragCoord.z;
 
-	#if defined(circle_point_shape) || defined(paraboloid_point_shape) 
+	#if defined(circle_point_shape) || defined(paraboloid_point_shape)
 		float u = 2.0 * gl_PointCoord.x - 1.0;
 		float v = 2.0 * gl_PointCoord.y - 1.0;
 	#endif
-	
-	#if defined(circle_point_shape) 
+
+	#if defined(circle_point_shape)
 		float cc = u*u + v*v;
 		if(cc > 1.0){
 			discard;
 		}
 	#endif
-		
+
 	#if defined color_type_indices
 		// gl_FragColor = vec4(color, uPCIndex / 255.0);
 		fragColor = vec4(color, uPCIndex / 255.0);
 	#else
-		// gl_FragColor = vec4(color, uOpacity);
-		fragColor = vec4(color, uOpacity);
+		//gl_FragColor = vec4(color, uOpacity);
+		//fragColor = vec4(color, vOpacity);//
+		fragColor = vec4(color, 1.0);//
 	#endif
 
 	#if defined paraboloid_point_shape
@@ -75,17 +77,17 @@ void main() {
 		depth = (pos.z + 1.0) / 2.0;
 		// gl_FragDepthEXT = depth;
 		gl_FragDepth = depth;
-		
+
 		#if defined(color_type_depth)
 			color.r = linearDepth;
 			color.g = expDepth;
 		#endif
-		
+
 		#if defined(use_edl)
 			// gl_FragColor.a = log2(linearDepth);
 			fragColor.a = log2(linearDepth);
 		#endif
-		
+
 	#else
 		#if defined(use_edl)
 			// gl_FragColor.a = vLogDepth;
@@ -117,7 +119,11 @@ void main() {
 	// #endif
 
 	//gl_FragColor = vec4(0.0, 0.7, 0.0, 1.0);
-	
+	if (isVisible == 1) {
+		// gl_FragColor = vec4(0.0, 0.7, 0.0, 1.0);
+		fragColor = vec4(fragColor.xyz, fragColor.a);
+	//fragColor = vec4(fragColor.xyz, fragColor.a*vOpacity);
+	} else {	discard;	}
 }
 
 

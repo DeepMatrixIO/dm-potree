@@ -191,11 +191,21 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		/////////////////custom renderinf info
 		this.defines = new Map();
 
+
+
+		//every custom viosualization will have a custom uniform to commit data
 		this.customUniforms = {
 			//  Added for custom rendering on aExtra attributes
-			isoValues: {type: 'fv', value: [1, 0.5, 0, 0]},//iso rendering as array
+
 			positionRef: {type: '3fv', value: [701414.3400000763,  3144096.5100004575,  234.61000000834466]},//distance rendering as 3d array
 			rangeValues: {type: 'fv', value: [0, 10]},//distance rendering as array
+
+			visibleRange: {type: 'fv', value: [0.1, 0.9]},//a visible subset ot gradient to be displayed
+
+
+			nonVisibleColorMin: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
+			nonVisibleColorMax: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
+			allVisible: {type: 'fv', value: [1.0,1.0]},//a boolean to set if all points are visible or not
 		}
 
 
@@ -249,10 +259,10 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	getExtraDefines() {
 		let extraDefines = [];
 
-		extraDefines.push('#define distance_to_point 1');//enables the function
-		extraDefines.push('#define num_ranges 2');//enables the function
-		extraDefines.push('#define draw_isolines 1');//enables the function
-
+		extraDefines.push('#define distance_to_point 0');//enables the function
+		extraDefines.push('#define num_ranges 0');//enables the function
+		extraDefines.push('#define draw_isolines 0');//enables the function
+		extraDefines.push('#define custom_range 1');//enables the function
 
 		return extraDefines;;
 
@@ -1101,7 +1111,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			});
 		}
 	}
-
+	//instead of checking attribute ranges, an additional range is established and used as consecuence
 	get extraRange() {
 		return this.uniforms.uExtraRange.value;
 	}

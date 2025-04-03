@@ -552,7 +552,7 @@ export class Viewer extends EventDispatcher {
 		// Convert the WGS84 coordinates to ECEF
 		//const [x, y, z] = proj4(this.wgs84, this.ecef, [lon, lat, alt]);
 
-		const [x, y, z] = proj4('pointcloud', this.ecef, [vector3.x, vector3.y, vector3.z]);
+		const [x, y, z] = proj4(sourceProj, this.ecef, [vector3.x, vector3.y, vector3.z]);
 
 
 		//return { x, y, z };

@@ -67,8 +67,17 @@ uniform float rangeValues[num_ranges];//uniform mat4 clipBoxes[num_clipboxes];
 #if defined(draw_isolines)
 
 uniform float isoValues[3];
-//textures leave for the moment, using selected range
+//textures left for the moment, using selected range
 #endif
+
+#if defined(custom_range)
+uniform float visibleRange[2];//visible min max values. They should be within uExtraRange
+uniform float allVisible[2];//color for the min value
+uniform float nonVisibleColorMin[3];//color for the min value
+uniform float nonVisibleColorMax[3];//color for the max value
+
+#endif
+
 
 
 
@@ -158,6 +167,10 @@ out float vLogDepth;
 out vec3 vViewPosition;
 out float vRadius;
 out float vPointSize;
+// out to ignorecolor by making transparent
+
+//out float vOpacity;
+flat out int isVisible;
 
 float roundDeprecated(float number)
 {
@@ -813,31 +826,33 @@ vec3 isolinesRendering(){
 }
 #endif
 
+// maps a set of values to a given gradient and
+// Instead of using the min max values only, adds cuttof values to the gradient, so only part of the gradient is used
 
+// this becomes  uExtraRange[0] <= visRange[0] <= visRange[1] <= uExtraRange[1]
 
+//a extra value does not have to be inside the values. Is a value is outside of visRange, then its not shown
+//
 
-vec3 getExtra()
-{
+#if defined(custom_range) && custom_range > 0
 
-#ifdef distance_to_point
-	return distanceRendering();
-#endif
+vec3 customRangeRendering(){
+	//vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+	//vec3 ppos=worldPosition.xyz;
 
-#ifdef draw_isolines
-	return isolinesRendering();
-#endif
+	vec3 color;
+	bool none = true;
+	//float w = (aExtra + uExtraOffset) * uExtraScale;
+	float w=aExtra;
+	// w = clamp(w, 0.0, 1.0);
+	// vec3 color = texture(gradient, vec2(w,1.0-w)).rgb;
 
+	// vec2 r = uExtraNormalizedRange;
 
-#ifdef draw_isolines
-	return isolinesRendering();
-#endif
+	// float w = aExtra * (r.y - r.x) + r.x;
 
-
-
-
-
-
-	float w = (aExtra + uExtraOffset) * uExtraScale;
+	//scale to the whole color range between 0 and 1
+	//float w = (aExtra + uExtraOffset) * uExtraScale;
 	// w = clamp(w, 0.0, 1.0);
 
 	// vec3 color = texture(gradient, vec2(w,1.0-w)).rgb;
@@ -846,11 +861,91 @@ vec3 getExtra()
 
 	// float w = aExtra * (r.y - r.x) + r.x;
 
+
+
+
+
+	//if (visibleRange[0] < w  &&  w < visibleRange[1]){
+		//w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
+		//w = clamp(w, 0.0, 1.0);//redundant
+
+		//color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+		//return color
+//	}else{
+
+	if (w > visibleRange[1] ){
+		w = visibleRange[1];
+		if(allVisible[1] == 0.0){
+			isVisible = 0;
+		}
+		// vOpacity=0.0;//set somewhere else
+		color = vec3(nonVisibleColorMax[0], nonVisibleColorMax[1], nonVisibleColorMax[2]);
+		return color;
+	}
+
+
+	if (w < visibleRange[0] ){
+		w = visibleRange[0];
+		if(allVisible[0] == 0.0){
+			isVisible = 0;
+		}
+
+			//color = vec3(allVisible[0], allVisible[1], allVisible[2]);
+		//vOpacity=0.0;//set somewhere else
+		color = vec3(nonVisibleColorMin[0], nonVisibleColorMin[1], nonVisibleColorMin[2]);
+		return color;
+		//return vec3(0.0, 0.0, 0.0);
+		//color = vec3(0.0, 0.0, 0.0);
+		//none=false;
+		//return color;
+
+	}
+
+
+	w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
+	w = clamp(w, 0.0, 1.0);//redundant
+
+	color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	return color;
+
+
+}
+#endif
+
+
+
+
+vec3 getExtra()
+{
+
+#if defined(distance_to_point) &&  distance_to_point > 0
+	return distanceRendering();//considers only position
+#endif
+
+#if defined(draw_isolines) && draw_isolines > 0
+	return isolinesRendering();//considers only z position
+#endif
+
+// initial implementation for habing uExtraRange and uExtraScale, uExtraOffset
+ #if defined(custom_range) &&  custom_range > 0
+ 	return customRangeRendering();//considers oExtra value and min max data_range
+ #endif
+
+
+// 	return isolinesRendering();
+// #endif
+
+	float w = (aExtra + uExtraOffset) * uExtraScale;
+
+	// vec2 r = uExtraNormalizedRange;
+	// float w = aExtra * (r.y - r.x) + r.x;
+
 	w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
 
 	w = clamp(w, 0.0, 1.0);
 
-	vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	//vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;//remove once test is done
+	vec3 color = vec3(0.0,0.0,1.0);//black for testing, comment once done
 
 	return color;
 }
@@ -858,6 +953,7 @@ vec3 getExtra()
 vec3 getColor()
 {
 	vec3 color;
+	//do not make transparent by default, only to ignore it, multypli with the uOpacity
 
 #ifdef color_type_rgba
 	color = getRGB();
@@ -1321,7 +1417,19 @@ void main()
 	gl_PointSize = pointSize;
 	vPointSize = pointSize;
 
+	isVisible=1;
+
+	// #if defined(custom_range)
+	// if(allVisible[0] == 0.0)	{
+	// 	isVisible=0;
+	// } //color for the min value
+	// #endif
+
+
 	// COLOR
+	//vOpacity = 1.0;
+
+
 	vColor = getColor();
 
 	// gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
