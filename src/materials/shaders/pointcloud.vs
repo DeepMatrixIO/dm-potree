@@ -67,6 +67,8 @@ uniform float rangeValues[num_ranges];//uniform mat4 clipBoxes[num_clipboxes];
 #if defined(draw_isolines)
 
 uniform float isoValues[3];
+uniform float isoColorA[3];
+uniform float isoColorB[3];
 //textures left for the moment, using selected range
 #endif
 
@@ -520,6 +522,25 @@ vec3 getElevation()
 	vec4 world = modelMatrix * vec4(position, 1.0);
 	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);
 	vec3 cElevation = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	//vec3 iso = vec3(0.0, 0.0, 0.0);
+	//override the color at a given heights and tolerance
+	#if defined(draw_isolines) && draw_isolines > 0
+	//	cElevation=isolinesRendering(cElevation).xyz;//considers only z position
+		//vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+		float ppos=world.z;
+		//vec3 color=vec3(0.0, 0.0, 0.0);
+		bool none = true;
+		if( abs(mod( ppos,isoValues[1] )) < isoValues[2]){
+			cElevation = vec3(isoColorB[0], isoColorB[1], isoColorB[2]);
+			//color = vec3(0.0, 1.0, 0.0);
+			//none=false;
+		}
+		if( abs(mod( ppos,isoValues[0] )) < isoValues[2]){
+			//color = vec3(1.0, 0.0, 0.0);
+			cElevation = vec3(isoColorA[0], isoColorA[1], isoColorA[2]);
+		}
+
+	#endif
 
 	return cElevation;
 }
@@ -802,25 +823,21 @@ vec3 distanceRendering(){
 #endif
 
 
-#if defined(draw_isolines)
+#if defined(draw_isolines) && draw_isolines > 0
 
-vec3 isolinesRendering(){
+vec3 isolinesRendering(vec3 color){
 	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
 	vec3 ppos=worldPosition.xyz;
-	vec3 color;
+	//vec3 color=vec3(0.0, 0.0, 0.0);
 	bool none = true;
 	if( abs(mod( ppos.z,isoValues[1] )) < isoValues[2]){
 		color = vec3(0.0, 1.0, 0.0);
-		none=false;
+		//none=false;
 	}
 	if( abs(mod( ppos.z,isoValues[0] )) < isoValues[2]){
 		color = vec3(1.0, 0.0, 0.0);
-		none=false;
+		//none=false;
 	}
-	if(none){
-			color = vec3(0.0, 0.0, 0.0);
-	}
-
 
 	return color;
 }
@@ -922,9 +939,7 @@ vec3 getExtra()
 	return distanceRendering();//considers only position
 #endif
 
-#if defined(draw_isolines) && draw_isolines > 0
-	return isolinesRendering();//considers only z position
-#endif
+
 
 // initial implementation for habing uExtraRange and uExtraScale, uExtraOffset
  #if defined(custom_range) &&  custom_range > 0
@@ -932,8 +947,6 @@ vec3 getExtra()
  #endif
 
 
-// 	return isolinesRendering();
-// #endif
 
 	float w = (aExtra + uExtraOffset) * uExtraScale;
 

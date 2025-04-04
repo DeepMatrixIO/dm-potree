@@ -197,15 +197,20 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.customUniforms = {
 			//  Added for custom rendering on aExtra attributes
 
-			positionRef: {type: '3fv', value: [701414.3400000763,  3144096.5100004575,  234.61000000834466]},//distance rendering as 3d array
+			positionRef: {type: '3fv', value: [701414.3400000763, 3144096.5100004575, 234.61000000834466]},//distance rendering as 3d array
 			rangeValues: {type: 'fv', value: [0, 10]},//distance rendering as array
 
 			visibleRange: {type: 'fv', value: [0.1, 0.9]},//a visible subset ot gradient to be displayed
 
+			isoValues: {type: 'fv', value: [2.0, 0.5, 0.1]},//a color to be used for non visible points
+
+			isoColorA: {type: 'fv', value: [1.0, 0.1, 0.1]},//master line
+			isoColorB: {type: 'fv', value: [0.1, 1.0, 0.1]},//secondary line
 
 			nonVisibleColorMin: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
 			nonVisibleColorMax: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
-			allVisible: {type: 'fv', value: [1.0,1.0]},//a boolean to set if all points are visible or not
+			allVisible: {type: 'fv', value: [1.0, 1.0]},//a boolean to set if all points are visible or not
+
 		}
 
 
@@ -255,14 +260,21 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		return this.customUniforms;
 	}
 
-	//this should come from somewhere else,
+	//this should come from somewhere else and stored as variable
+
+
+	//static definition
+	//should come from current state
 	getExtraDefines() {
 		let extraDefines = [];
 
 		extraDefines.push('#define distance_to_point 0');//enables the function
 		extraDefines.push('#define num_ranges 0');//enables the function
-		extraDefines.push('#define draw_isolines 0');//enables the function
+		extraDefines.push('#define draw_isolines 1');//enables the function
 		extraDefines.push('#define custom_range 1');//enables the function
+
+
+
 
 		return extraDefines;;
 
@@ -285,14 +297,36 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.defines.delete(key);
 	}
 
+
+
+	//just added
+	setExtraDefine(key, value) {
+		if (value !== undefined && value !== null) {
+			if (this.extraDefines.get(key) !== value) {
+				this.extraDefines.set(key, value);
+				this.updateShaderSource();
+			}
+		} else {
+			this.removeExtraDefine(key);
+		}
+	}
+
+	removeExtraDefine(key) {
+		this.defines.delete(key);
+	}
+
+
 	updateShaderSource() {
 		let vs = Shaders['pointcloud.vs'];
 		let fs = Shaders['pointcloud.fs'];
 		let definesString = this.getDefines();
 
+
+		//already added in getDEfines, removed for test
 		if (this.customDefines) {//also a map
 			definesString += this.getExtraDefines();
 		}
+
 		// additional defines are set here
 		// uniforms should be set as well somewhere else
 
@@ -389,9 +423,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		for (let [key, value] of this.defines) {
 			defines.push(value);
 		}
+
+
 		//{//custom defines are added
-			let extras = this.getExtraDefines();//custom defines
-			defines = defines.concat(extras);
+		let extras = this.getExtraDefines();//static custom defines
+		defines = defines.concat(extras);
 		//}
 		return defines.join('\n');
 	}
