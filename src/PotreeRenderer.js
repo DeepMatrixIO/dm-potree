@@ -953,7 +953,71 @@ export class Renderer {
 			//binding extra uniforms
 
 
+			if (material.customRenderer) {
 
+				let customUniforms = material.getCustomUniforms();//retrieving definitions
+
+				//this.uniforms = {
+				//level: {type: 'f', value: 0.0},
+				//vnStart: {type: 'f', value: 0.0},
+				//spacing: {type: 'f', value: 1.0},
+				//....
+				for (let uniformName in customUniforms) {
+
+					let uType = customUniforms[uniformName].type;
+					let uValue = customUniforms[uniformName].value;
+
+
+					const customLocation =
+						shader.uniformLocations[`${uniformName}[0]`];
+					gl.uniform1fv(customLocation, uValue);//directly setting
+
+
+
+					// if (uType === "f") {
+					// 	shader.setUniform1f(uniform, uValue);
+					// 	return;
+					// }
+					// if (uType === "t") {
+					// 	shader.setUniformTexture(uniform, uValue);
+					// 	return;
+					// }
+
+					// if (uType === "1f") {
+					// 	shader.setUniform1f(uniform, uValue);
+					// 	return;
+					// }
+					// if (uType === "2f") {
+					// 	shader.setUniform2f(uniform, uValue);
+					// 	return;
+					// }
+
+					// if (uType === "3f") {
+					// 	shader.setUniform3f(uniform, uValue);
+					// 	return;
+					// }
+					// if (uType === "1i") {
+					// 	shader.setUniform1i(uniform, uValue);
+					// 	return;
+					// }
+					// if (uType === "b") {
+					// 	shader.setUniformBoolean(uniform, uValue);
+					// 	return;
+					// }
+					// if (uType === "m4") {
+					// 	shader.setUniformMatrix4(uniform, uValue);
+					// 	return;
+					// }
+
+
+
+
+
+				}
+
+
+
+			}
 
 			//for all other attributes, based on material definitions
 			let isExtraAttribute =
@@ -1044,71 +1108,7 @@ export class Renderer {
 
 				///////////adding additional defines and setting uniforms from material
 
-				if (material.customRenderer) {
 
-					let customUniforms = material.getCustomUniforms();//retrieving definitions
-
-					//this.uniforms = {
-					//level: {type: 'f', value: 0.0},
-					//vnStart: {type: 'f', value: 0.0},
-					//spacing: {type: 'f', value: 1.0},
-					//....
-					for (let uniformName in customUniforms)  {
-
-						let uType  = customUniforms[uniformName].type;
-						let uValue = customUniforms[uniformName].value;
-
-
-						const customLocation =
-						shader.uniformLocations[`${uniformName}[0]`];
-						gl.uniform1fv(customLocation, uValue);//directly setting
-
-
-
-						// if (uType === "f") {
-						// 	shader.setUniform1f(uniform, uValue);
-						// 	return;
-						// }
-						// if (uType === "t") {
-						// 	shader.setUniformTexture(uniform, uValue);
-						// 	return;
-						// }
-
-						// if (uType === "1f") {
-						// 	shader.setUniform1f(uniform, uValue);
-						// 	return;
-						// }
-						// if (uType === "2f") {
-						// 	shader.setUniform2f(uniform, uValue);
-						// 	return;
-						// }
-
-						// if (uType === "3f") {
-						// 	shader.setUniform3f(uniform, uValue);
-						// 	return;
-						// }
-						// if (uType === "1i") {
-						// 	shader.setUniform1i(uniform, uValue);
-						// 	return;
-						// }
-						// if (uType === "b") {
-						// 	shader.setUniformBoolean(uniform, uValue);
-						// 	return;
-						// }
-						// if (uType === "m4") {
-						// 	shader.setUniformMatrix4(uniform, uValue);
-						// 	return;
-						// }
-
-
-
-
-
-					}
-
-
-
-				}
 
 
 
