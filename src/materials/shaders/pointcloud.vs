@@ -72,6 +72,8 @@ uniform float isoColorB[3];
 //textures left for the moment, using selected range
 #endif
 
+//added to make difference between the min max  color ramp range and values subset
+//  minValue = colorRampBegin <= minVisibleColor <= maxVisibleColor, maxValue = colorRampEnd
 #if defined(custom_range)
 uniform float visibleRange[2];//visible min max values. They should be within uExtraRange
 uniform float allVisible[2];//color for the min value
