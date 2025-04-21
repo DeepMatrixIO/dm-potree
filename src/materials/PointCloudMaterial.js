@@ -200,16 +200,16 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			positionRef: {type: '3fv', value: [701414.3400000763, 3144096.5100004575, 234.61000000834466]},//distance rendering as 3d array
 			rangeValues: {type: 'fv', value: [0, 10]},//distance rendering as array
 
-			visibleRange: {type: 'fv', value: [0.1, 0.9]},//a visible subset ot gradient to be displayed
-
 			isoValues: {type: 'fv', value: [2.0, 0.5, 0.1]},//a color to be used for non visible points
-
 			isoColorA: {type: 'fv', value: [1.0, 0.1, 0.1]},//master line
-			isoColorB: {type: 'fv', value: [0.1, 1.0, 0.1]},//secondary line
+			isoColorB: {type: 'fv', value: [0.1, 1.0, 0.1]},//secondary l
 
+			visibleRange: {type: 'fv', value: [0.1, 0.9]},//a visible subset ot gradient to be displayed
 			nonVisibleColorMin: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
 			nonVisibleColorMax: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
 			allVisible: {type: 'fv', value: [1.0, 1.0]},//a boolean to set if all points are visible or not
+			minMaxRange:{type: 'fv', value: [0.0, 1.0]},//Custom Min mac
+			//min max range
 
 		}
 
@@ -268,10 +268,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	getExtraDefines() {
 		let extraDefines = [];
 
-		extraDefines.push('#define distance_to_point 0');//enables the function
-		extraDefines.push('#define num_ranges 0');//enables the function
-		extraDefines.push('#define draw_isolines 1');//enables the function
-		extraDefines.push('#define custom_range 1');//enables the function
+		//extraDefines.push('#define distance_to_point 0');//renders based on distance to a given point position, requires the pointRef[x,y,z]  uniform
+		//extraDefines.push('#define num_ranges 0');//Isolines
+
+		//extraDefines.push('#define draw_isolines 1');//enables the function
+
+		extraDefines.push('#define custom_range 1');//custom rendering of extra attributes on custom range other than data range
 
 
 

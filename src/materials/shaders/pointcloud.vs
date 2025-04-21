@@ -74,6 +74,7 @@ uniform float isoColorB[3];
 
 #if defined(custom_range)
 uniform float visibleRange[2];//visible min max values. They should be within uExtraRange
+uniform float maxRange[2];//sets the min max range for the gradient texture
 uniform float allVisible[2];//color for the min value
 uniform float nonVisibleColorMin[3];//color for the min value
 uniform float nonVisibleColorMax[3];//color for the max value
@@ -918,7 +919,7 @@ vec3 customRangeRendering(){
 
 	}
 
-
+	
 	w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
 	w = clamp(w, 0.0, 1.0);//redundant
 
