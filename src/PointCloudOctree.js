@@ -366,7 +366,7 @@ export class PointCloudOctree extends PointCloudTree {
 			}
 
 			let density = node.geometryNode.density;
-			
+
 			if(typeof density === "number" && !Number.isNaN(density)){
 				let lodOffset = Math.log2(density) / 2 - 1.5;
 
@@ -413,7 +413,7 @@ export class PointCloudOctree extends PointCloudTree {
 	}
 
 	deepestNodeAt(position){
-		
+
 		const toObjectSpace = this.matrixWorld.clone().invert();
 
 		const objPos = position.clone().applyMatrix4(toObjectSpace);
@@ -901,11 +901,11 @@ export class PointCloudOctree extends PointCloudTree {
 			}
 		}
 
-		
+
 		// { // DEBUG: show panel with pick image
 		// 	let img = Utils.pixelsArrayToImage(buffer, w, h);
 		// 	let screenshot = img.src;
-		
+
 		// 	if(!this.debugDIV){
 		// 		this.debugDIV = $(`
 		// 			<div id="pickDebug"
@@ -916,7 +916,7 @@ export class PointCloudOctree extends PointCloudTree {
 		// 			"></div>`);
 		// 		$(document.body).append(this.debugDIV);
 		// 	}
-		
+
 		// 	this.debugDIV.empty();
 		// 	this.debugDIV.append($(`<img src="${screenshot}"
 		// 		style="transform: scaleY(-1); width: 300px"/>`));
@@ -935,6 +935,13 @@ export class PointCloudOctree extends PointCloudTree {
 			let node = nodes[hit.pcIndex];
 			let pc = node.sceneNode;
 			let geometry = node.geometryNode.geometry;
+
+			//jguerrer
+			//adding for each point, its root name as index and point if
+			point['name']= node.geometryNode.name;
+			point['pIndex'] = hit.pIndex;
+			point['pcIndex'] = hit.pcIndex;
+
 
 			for(let attributeName in geometry.attributes){
 				let attribute = geometry.attributes[attributeName];
