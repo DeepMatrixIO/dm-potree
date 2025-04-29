@@ -372,7 +372,7 @@ export class Viewer extends EventDispatcher {
 
 			//this.projection=this.getProjection()
 			//proj4.defs("pointcloud",this.projection )
-			if (this.projection != null && this.projection != '') {
+			if (this.projection !== null && this.projection !== '') {
 
 				let pos = this.scene.getActiveCamera().position.clone();
 
