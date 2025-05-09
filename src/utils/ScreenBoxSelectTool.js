@@ -29,23 +29,58 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 		let volume = new BoxVolume();
 		volume.position.set(12345, 12345, 12345);
 		volume.showVolumeLabel = false;
-		volume.visible = false;
+		volume.visible = true;
 		volume.update();
+
 		this.viewer.scene.addVolume(volume);
 
 		this.importance = 10;
 
-		let selectionBox = $(`<div style="position: absolute; border: 2px solid white; pointer-events: none; border-style:dashed"></div>`);
+		let selectionBox = $(`<div style="position: absolute; border: 2px solid white; pointer-events: none; border-style:dashed"></div>`);// selection box style
 		$(domElement.parentElement).append(selectionBox);
 		selectionBox.css("right", "10px");
 		selectionBox.css("bottom", "10px");
 
-		let drag = e =>{
 
+
+		// Regular mouseToRay does not work properly on orthographic cameras, so we need to create a custom function
+
+		// //Orthographic Camera:
+		// Ray origin is the unprojected screen coordinate.
+		// Ray direction is constant and aligned with the camera's forward vector.
+		// Perspective Camera:
+		// Ray origin is the camera's position.
+		// Ray direction varies based on the screen coordinate.
+		// If you're switching to an orthographic camera, ensure the m
+
+		let mouseToRayOrtho = (mouse, camera, width, height) => {
+			// Normalize mouse coordinates
+			let normalizedMouse = {
+				x: (mouse.x / width) * 2 - 1,
+				y: -(mouse.y / height) * 2 + 1
+			};
+
+			// Create a vector in normalized device coordinates
+			//let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
+			let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
+			vector.unproject(camera); // Convert to world space
+
+			// For orthographic camera, the ray origin is the unprojected vector
+			let origin = vector.clone();
+
+			// Ray direction is the camera's forward vector
+			let direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+
+			return new THREE.Ray(origin, direction);
+		};
+		let drag = e =>{
+			// console.log("dragging....................................................................");
 			volume.visible = true;
 
 			let mStart = e.drag.start;
 			let mEnd = e.drag.end;
+
+			// console.log("drag start: ", mStart.x, mStart.y, "drag end: ", mEnd.x, mEnd.y);
 
 			let box2D = new THREE.Box2();
 			box2D.expandByPoint(mStart);
@@ -57,17 +92,27 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 			selectionBox.css("height", `${box2D.max.y - box2D.min.y}px`);
 
 			let camera = e.viewer.scene.getActiveCamera();
-			let size = e.viewer.renderer.getSize(new THREE.Vector2());
+			let size = e.viewer.renderer.getSize(new THREE.Vector2());//size of the canvas
+			// console.log("CANVAS SIZE: ",size.width, size.height);
 			let frustumSize = new THREE.Vector2(
-				camera.right - camera.left, 
+				camera.right - camera.left,
 				camera.top - camera.bottom);
+			// console.log("FRUSTUM SIZE: ",frustumSize.x, frustumSize.y);
 
 			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
-			let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
+			// console.log("BOX CENTROID: ",screenCentroid.x, screenCentroid.y);
+			//let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
+			let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
+			// console.log("RAY ORIGIN: ",ray.origin.x, ray.origin.y, ray.origin.z);
+			// console.log("RAY DIRECTION: ",ray.direction.x, ray.direction.y, ray.direction.z);
+
+
+
+
 
 			let diff = new THREE.Vector2().subVectors(e.drag.end, e.drag.start);
 			diff.divide(size).multiply(frustumSize);
-			
+
 			volume.position.copy(ray.origin);
 			volume.up.copy(camera.up);
 			volume.rotation.copy(camera.rotation);
@@ -76,20 +121,99 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 			e.consume();
 		};
 
+
+
+
+
+
 		let drop = e => {
+
+			// console.log("drop....................................................................");
 			this.importance = 0;
 
 			$(selectionBox).remove();
 
 			this.viewer.inputHandler.deselectAll();
 			this.viewer.inputHandler.toggleSelection(volume);
-
+			//
+			// camera.updateMatrixWorld();
+			// camera.updateProjectionMatrix();
+			//
 			let camera = e.viewer.scene.getActiveCamera();
 			let size = e.viewer.renderer.getSize(new THREE.Vector2());
 			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
-			let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
+			let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
 
 			let line = new THREE.Line3(ray.origin, new THREE.Vector3().addVectors(ray.origin, ray.direction));
+
+
+			/////////////////////////////////////////////////////////////////
+			//DRAWIING AN ARROW HELPER TO UNDERSTAND THE DIRECTION
+
+			// console.log("RAY ORIGIN: ",ray.origin.x, ray.origin.y, ray.origin.z);
+			// console.log("RAY DIRECTION: ",ray.direction.x, ray.direction.y, ray.direction.z);
+
+			// const arrowHelper = new THREE.ArrowHelper(ray.direction.clone().normalize(), ray.origin, 40, 0xffff00, 3, 2);
+			// this.viewer.scene.scene.add(arrowHelper);
+
+
+
+			// this.viewer.arrowHelper = arrowHelper;
+
+
+
+			// const planeGeometry = new THREE.PlaneGeometry(128, 128, 8, 8);
+			// const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+			// planeMaterial.wireframe= true;
+			// const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+
+			// plane.position.copy(  ray.origin.add(ray.direction.clone().multiplyScalar(10)) );
+			// const up = new THREE.Vector3(0, 0, 1); // Plane's default normal
+			// const quaternion = new THREE.Quaternion().setFromUnitVectors(up, ray.direction.clone().normalize());
+			// plane.quaternion.copy(quaternion);
+			// this.viewer.plane = plane;
+			// this.viewer.scene.scene.add(plane);
+
+
+
+
+			//console.log("DROP: ",e.drag.start.x, e.drag.start.y, e.drag.end.x, e.drag.end.y);
+			//console.log("DROP: ",e.drop.x, e.drop.y, e.drop.width, e.drop.height);
+
+			/////////////////////////////////////////////
+
+			// let rayStart = mouseToRayOrtho(e.drag.start, camera, size.width, size.height);
+			// let rayEnd = mouseToRayOrtho(e.drag.end, camera, size.width, size.height);
+
+			// console.log("RAY START: ",rayStart.origin.x, rayStart.origin.y, rayStart.origin.z);
+			// console.log("RAY START DIR: ",rayStart.direction.x, rayStart.direction.y, rayStart.direction.z);
+
+			// console.log("RAY STOP: ",rayEnd.origin.x,  rayEnd.origin.y, rayEnd.origin.z);
+			// console.log("RAY STOP DIR : ",rayEnd.direction.x, rayEnd.direction.y, rayEnd.direction.z);
+
+
+			// const arrowHelperStart = new THREE.ArrowHelper(rayStart.direction.clone().normalize(), rayStart.origin, 50, 0xff0000, 3, 2);
+			// this.viewer.scene.scene.add(arrowHelperStart);
+			// const arrowHelperEnd = new THREE.ArrowHelper( rayEnd.direction.clone().normalize(), rayEnd.origin, 60, 0x0000ff, 3, 2);
+			// this.viewer.scene.scene.add(arrowHelperEnd);
+
+
+
+			// let caster1=new THREE.Raycaster(rayStart.origin, rayStart.direction.clone().normalize(), 0, 10000);
+			// let caster2=new THREE.Raycaster(rayEnd.origin, rayEnd.direction.clone().normalize(), 0, 10000);
+
+			// let intersections=[]
+			// intersections=caster1.intersectObjects(plane);
+
+
+
+
+
+
+			/////////////////////////////////////////////////////////////////
+
+
+
 
 			this.removeEventListener("drag", drag);
 			this.removeEventListener("drop", drop);
@@ -98,6 +222,7 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 			let allPointsFar = [];
 
 			// TODO support more than one point cloud
+			//iterate over all pointclouds and raycast them
 			for(let pointcloud of this.viewer.scene.pointclouds){
 
 				if(!pointcloud.visible){
@@ -105,7 +230,7 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 				}
 
 				let volCam = camera.clone();
-				volCam.left = -volume.scale.x / 2; 
+				volCam.left = -volume.scale.x / 2;
 				volCam.right = +volume.scale.x / 2;
 				volCam.top = +volume.scale.y / 2;
 				volCam.bottom = -volume.scale.y / 2;
@@ -119,19 +244,25 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 				volCam.updateProjectionMatrix();
 				volCam.matrixWorldInverse.copy(volCam.matrixWorld).invert();
 
-				let ray = new THREE.Ray(volCam.getWorldPosition(new THREE.Vector3()), volCam.getWorldDirection(new THREE.Vector3()));
+				let volpos=volCam.getWorldPosition(new THREE.Vector3())
+				let voldir=volCam.getWorldDirection(new THREE.Vector3())
+				let ray = new THREE.Ray(volpos, voldir);
+
+				//computes inverse ray
 				let rayInverse = new THREE.Ray(
 					ray.origin.clone().add(ray.direction.clone().multiplyScalar(volume.scale.z)),
 					ray.direction.clone().multiplyScalar(-1));
 
+
 				let pickerSettings = {
-					width: 8, 
-					height: 8, 
-					pickWindowSize: 8, 
+					width: 8,
+					height: 8,
+					pickWindowSize: 8,
 					all: true,
 					pickClipped: true,
 					pointSizeType: PointSizeType.FIXED,
 					pointSize: 1};
+
 				let pointsNear = pointcloud.pick(viewer, volCam, ray, pickerSettings);
 
 				volCam.rotateX(Math.PI);
@@ -145,6 +276,12 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 				allPointsFar.push(...pointsFar);
 			}
 
+			//near points appear at the back while far points appear at the front, check it twice
+
+			//debugging
+			console.log("Total points raycasted:" , allPointsNear.length, allPointsFar.length);
+
+			//adds all points
 			if(allPointsNear.length > 0 && allPointsFar.length > 0){
 				let viewLine = new THREE.Line3(ray.origin, new THREE.Vector3().addVectors(ray.origin, ray.direction));
 
