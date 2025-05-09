@@ -4,6 +4,7 @@ import {BoxVolume} from "./Volume.js";
 import {Utils} from "../utils.js";
 import {PointSizeType} from "../defines.js";
 import { EventDispatcher } from "../EventDispatcher.js";
+import {plane} from "three/examples/jsm/Addons.js";
 
 
 export class ScreenBoxSelectTool extends EventDispatcher{
@@ -40,8 +41,24 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 		selectionBox.css("right", "10px");
 		selectionBox.css("bottom", "10px");
 
-		let drag = e =>{
+		let planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+		let planeMaterial = new THREE.MeshBasicMaterial({
+			color: 0x00ff00,
+			transparent: true,
+			opacity: 0.3,
+			depthTest: true,
+			depthWrite: false
+		});
+		planeMaterial.wireframe	= true;
+		const drawingPlane = new THREE.Mesh(planeGeometry, planeMaterial);
 
+
+		let camera = this.viewer.scene.getActiveCamera();
+		drawingPlane.position.copy(camera.position);
+
+
+		let drag = e =>{
+			console.log("dragging ----------------------------------------------------");
 			volume.visible = true;
 
 			let mStart = e.drag.start;
@@ -59,7 +76,7 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 			let camera = e.viewer.scene.getActiveCamera();
 			let size = e.viewer.renderer.getSize(new THREE.Vector2());
 			let frustumSize = new THREE.Vector2(
-				camera.right - camera.left, 
+				camera.right - camera.left,
 				camera.top - camera.bottom);
 
 			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
@@ -67,7 +84,7 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 
 			let diff = new THREE.Vector2().subVectors(e.drag.end, e.drag.start);
 			diff.divide(size).multiply(frustumSize);
-			
+
 			volume.position.copy(ray.origin);
 			volume.up.copy(camera.up);
 			volume.rotation.copy(camera.rotation);
@@ -76,7 +93,16 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 			e.consume();
 		};
 
+
+		// example here is to draw an object over the mesh  instes of drawing at the camera position
+
+
 		let drop = e => {
+
+			//extracting the box2D from the event and placing geometries in the plane
+
+			console.log("DROP ----------------------------------------------------");
+
 			this.importance = 0;
 
 			$(selectionBox).remove();
@@ -86,10 +112,24 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 
 			let camera = e.viewer.scene.getActiveCamera();
 			let size = e.viewer.renderer.getSize(new THREE.Vector2());
-			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
+			// let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
+			let screenCentroid = new THREE.Vector2().addVectors(box2D.min, box2D.max).multiplyScalar(0.5);
+
 			let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
 
 			let line = new THREE.Line3(ray.origin, new THREE.Vector3().addVectors(ray.origin, ray.direction));
+
+			///////////////////////////////////
+
+				//plaacing the plane in the camera position and rotation
+
+					drawingPlane.position.copy(camera.position);
+					drawingPlane.quaternion.copy(camera.quaternion);
+
+
+			////////////////////////////////////
+
+
 
 			this.removeEventListener("drag", drag);
 			this.removeEventListener("drop", drop);
@@ -105,7 +145,7 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 				}
 
 				let volCam = camera.clone();
-				volCam.left = -volume.scale.x / 2; 
+				volCam.left = -volume.scale.x / 2;
 				volCam.right = +volume.scale.x / 2;
 				volCam.top = +volume.scale.y / 2;
 				volCam.bottom = -volume.scale.y / 2;
@@ -125,9 +165,9 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 					ray.direction.clone().multiplyScalar(-1));
 
 				let pickerSettings = {
-					width: 8, 
-					height: 8, 
-					pickWindowSize: 8, 
+					width: 8,
+					height: 8,
+					pickWindowSize: 8,
 					all: true,
 					pickClipped: true,
 					pointSizeType: PointSizeType.FIXED,
@@ -162,6 +202,13 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 
 			volume.clip = true;
 		};
+
+
+		//create a mesh the size of the screen,
+	//start by creating  a plane to the scene anchored to the camera and orthogonal to the camera direction
+
+
+
 
 		this.addEventListener("drag", drag);
 		this.addEventListener("drop", drop);
