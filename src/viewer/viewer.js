@@ -492,12 +492,28 @@ export class Viewer extends EventDispatcher {
 				//   //window.cesiumViewer.camera.frustum.fov = fovx;
 				// }
 
-				this.ecefCamera.fov = camera.fov; //required?
-				//this.camera.fov=camera.fov;//required?
-				this.ecefCamera.aspect = aspect;
-				this.ecefCamera.setFocalLength(camera.getFocalLength());
-				this.ecefCamera.width = window.innerWidth;//to remove warnings
-				this.ecefCamera.height = window.innerHeight;
+				if (camera instanceof THREE.PerspectiveCamera) {
+           			 this.ecefCamera.fov = camera.fov;
+
+				//	this.ecefCamera.aspect = aspect;
+					// this.ecefCamera.setFocalLength(camera.getFocalLength());
+					// this.ecefCamera.width = window.innerWidth;//to remove warnings
+					// this.ecefCamera.height = window.innerHeight;
+
+
+        		} else if (camera instanceof THREE.OrthographicCamera) {
+					let frustumHeight = camera.top - camera.bottom;
+					let frustumWidth = camera.right - camera.left;
+					this.ecefCamera.zoom = camera.zoom;
+					this.ecefCamera.left = -frustumWidth / 2;
+					this.ecefCamera.right = frustumWidth / 2;
+					this.ecefCamera.top = frustumHeight / 2;
+					this.ecefCamera.bottom = -frustumHeight / 2;
+				}
+
+   				this.ecefCamera.aspect = aspect;
+        		this.ecefCamera.updateProjectionMatrix();
+
 				//rendering here only occurs if no errors
 
 				return;
