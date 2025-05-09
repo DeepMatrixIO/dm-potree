@@ -5,6 +5,20 @@ import {updateFetchToken} from "../../../tokenUpdater.js"; //added by jguerrer
 import {OctreeGeometry, OctreeGeometryNode} from "./OctreeGeometry.js";
 // let loadedNodes = new Set();
 
+
+/** For a given OctreeGeometryNode , it loads its content from an url with load()
+ * Nodes require
+ * 		root.level = 0;
+		root.nodeType = 2;
+		root.hierarchyByteOffset = 0n;
+		root.hierarchyByteSize = BigInt(metadata.hierarchy.firstChunkSize);
+		root.hasChildren = false;
+		root.spacing = octree.spacing;
+
+		root.byteOffset = 0;//required
+ *
+ */
+
 export class NodeLoader {
 
 	constructor(url) {
@@ -198,7 +212,19 @@ export class NodeLoader {
 		nodes[0] = node;
 		let nodePos = 1;
 
+		//console.log("NodeLoader.parseHierarchy Chunk Size numNodes: " + numNodes  );
+
+		function byteToBitMask(byte) {
+    		return byte.toString(2).padStart(8, '0');
+		}
+
+
+
+
+
 		for (let i = 0; i < numNodes; i++) {
+			// console.log("---------------------------------------------" );
+			// console.log("Processing node: " + i + " of " + numNodes);
 			let current = nodes[i];
 
 			let type = view.getUint8(i * bytesPerNode + 0);
@@ -211,22 +237,61 @@ export class NodeLoader {
 			// 	// debugger;
 			// }
 
+			current.idx=i;
+
+			let mask=
+
+			//console.log(`IDX: ${i}  Name: ${current.name} Type: ${type} childMask: ${childMask} mask ${byteToBitMask(childMask)}  numPoints: ${numPoints}  byteOffset: ${byteOffset}  byteSize: ${byteSize}`);
+
+
 
 			if (current.nodeType === 2) {
 				// replace proxy with real node
+
+
 				current.byteOffset = byteOffset;
 				current.byteSize = byteSize;
 				current.numPoints = numPoints;
-			} else if (type === 2) {
+				// console.log("<< << << NodeLoader.parseHierarchy Replacing Prox with real Node Data. "
+
+				// + " node.name: " + current.name
+				// + " node.idx: " + current.idx
+				// + " node.childmask " + childMask
+				// + " node.numPoints: " + current.numPoints
+				// + " byteOffset: " + current.byteOffset
+				// + " byteSize: " + current.byteSize);
+
+			} else if (type === 2) {//proxy node,  points to a jump in hierarchy.bin rather than to octree.bin
 				// load proxy
 				current.hierarchyByteOffset = byteOffset;
 				current.hierarchyByteSize = byteSize;
 				current.numPoints = numPoints;
-			} else {
-				// load real node 
+				// console.log(">>>>>>>> NodeLoader.parseHierarchy. Setting Proxy Node.  "
+				// + " name: " + current.name
+				// + " node.idx " + current.idx
+				// + " type: " + type
+				// + " node.childmask " + childMask
+				// + " node.numPoints: " + current.numPoints
+				// + " hierarchyByteOffset: " + current.hierarchyByteOffset
+				// + " hierarchyByteSize: " + current.hierarchyByteSize);
+
+
+			} else {//
+				// load real node
 				current.byteOffset = byteOffset;
 				current.byteSize = byteSize;
 				current.numPoints = numPoints;
+
+
+				// console.log("+++ +++ NodeLoader.parseHierarchy Loading Real Node Data. "
+
+				// + " node.name: " + current.name
+				// + " node.type: " + current.type
+				// + " node.idx: " + current.idx
+				// + " node.childmask " + childMask//not set here
+				// + " node.numPoints: " + current.numPoints
+				// + " byteOffset: " + current.byteOffset
+				// + " byteSize: " + current.byteSize);
 			}
 
 			if (current.byteSize === 0n) {
@@ -277,6 +342,34 @@ export class NodeLoader {
 		// 	console.log(msg);
 		// }
 	}
+
+/**
+ * Hierarchy is a binary file that contains the hierarchy of the octree.
+ * Each node is one of the following types:
+
+		enum TYPE {
+		NORMAL = 0,
+		LEAF   = 1,
+		PROXY  = 2,
+	};
+
+
+Each Hierarchy node is 22 bytes long
+
+ * 1 byte: type (0, 1, 2)
+ * 1 byte: childMask (0-255) (8 bits, 1 for each child)
+ * 4 bytes: numPoints (0-2^32-1)
+ * 8 bytes: byteOffset (0-2^64-1)
+ * 8 bytes: byteSize (0-2^64-1)
+ *
+
+ * Leaf nodes have a no children, and are the ones that have a byteOffset and byteSize
+
+ Proxy nodes (pseudo-leaf in one chunk pointing to root of a child-chunk)
+
+ * Proxy nodes have a byteOffset and byteSize, but no children. They point to a jump in the hierarchy.bin file, rather than to the octree.bin file.
+
+*/
 
 	async loadHierarchy(node) {
 
