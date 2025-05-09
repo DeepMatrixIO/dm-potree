@@ -239,7 +239,7 @@ export class NodeLoader {
 
 			current.idx=i;
 
-			let mask=
+			let mask= byteToBitMask(childMask);
 
 			//console.log(`IDX: ${i}  Name: ${current.name} Type: ${type} childMask: ${childMask} mask ${byteToBitMask(childMask)}  numPoints: ${numPoints}  byteOffset: ${byteOffset}  byteSize: ${byteSize}`);
 
