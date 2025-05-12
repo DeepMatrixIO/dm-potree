@@ -114,7 +114,7 @@ export class Utils {
 		let geometry = new THREE.BufferGeometry();
 
 		let n = 32;
-		for (let i = 0; i <= n; i++) {
+		for (let i = 0;i <= n;i++) {
 			let u0 = 2 * Math.PI * (i / n);
 			let u1 = 2 * Math.PI * (i + 1) / n;
 
@@ -305,7 +305,7 @@ export class Utils {
 
 		let materialArray = [];
 		{
-			for (let i = 0; i < 6; i++) {
+			for (let i = 0;i < 6;i++) {
 				let material = new THREE.MeshBasicMaterial({
 					map: null,
 					side: THREE.BackSide,
@@ -355,12 +355,12 @@ export class Utils {
 
 		//let geometry = new THREE.Geometry();
 		let geometry = new THREE.BufferGeometry();
-		for (let i = 0; i <= length; i++) {
+		for (let i = 0;i <= length;i++) {
 			geometry.vertices.push(new THREE.Vector3(-(spacing * width) / 2, i * spacing - (spacing * length) / 2, 0));
 			geometry.vertices.push(new THREE.Vector3(+(spacing * width) / 2, i * spacing - (spacing * length) / 2, 0));
 		}
 
-		for (let i = 0; i <= width; i++) {
+		for (let i = 0;i <= width;i++) {
 			geometry.vertices.push(new THREE.Vector3(i * spacing - (spacing * width) / 2, -(spacing * length) / 2, 0));
 			geometry.vertices.push(new THREE.Vector3(i * spacing - (spacing * width) / 2, +(spacing * length) / 2, 0));
 		}
@@ -383,8 +383,8 @@ export class Utils {
 		let chroma = [1, 1.5, 1.7];
 		let max = gauss(0, 0);
 
-		for (let x = 0; x < width; x++) {
-			for (let y = 0; y < height; y++) {
+		for (let x = 0;x < width;x++) {
+			for (let y = 0;y < height;y++) {
 				let u = 2 * (x / width) - 1;
 				let v = 2 * (y / height) - 1;
 
@@ -473,7 +473,7 @@ export class Utils {
 
 		pixels = new pixels.constructor(pixels);
 
-		for (let i = 0; i < pixels.length; i++) {
+		for (let i = 0;i < pixels.length;i++) {
 			pixels[i * 4 + 3] = 255;
 		}
 
@@ -497,7 +497,7 @@ export class Utils {
 
 		pixels = new pixels.constructor(pixels);
 
-		for (let i = 0; i < pixels.length; i++) {
+		for (let i = 0;i < pixels.length;i++) {
 			pixels[i * 4 + 3] = 255;
 		}
 
@@ -525,7 +525,7 @@ export class Utils {
 
 		// flip vertically
 		let bytesPerLine = width * 4;
-		for (let i = 0; i < parseInt(height / 2); i++) {
+		for (let i = 0;i < parseInt(height / 2);i++) {
 			let j = height - i - 1;
 
 			let lineI = pixels.slice(i * bytesPerLine, i * bytesPerLine + bytesPerLine);
@@ -551,21 +551,53 @@ export class Utils {
 		}
 	}
 
-	static mouseToRay(mouse, camera, width, height) {
-
+	static mouseToRayOrtho(mouse, camera, width, height) {
+		// Normalize mouse coordinates
 		let normalizedMouse = {
 			x: (mouse.x / width) * 2 - 1,
 			y: -(mouse.y / height) * 2 + 1
 		};
 
-		let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, 0.5);
-		let origin = camera.position.clone();
-		vector.unproject(camera);
-		let direction = new THREE.Vector3().subVectors(vector, origin).normalize();
+		// Create a vector in normalized device coordinates
+		//let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
+		let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
+		vector.unproject(camera); // Convert to world space
 
-		let ray = new THREE.Ray(origin, direction);
+		// For orthographic camera, the ray origin is the unprojected vector
+		let origin = vector.clone();
 
-		return ray;
+		// Ray direction is the camera's forward vector
+		let direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+
+		return new THREE.Ray(origin, direction);
+	};
+
+	static mouseToRay(mouse, camera, width, height) {
+
+		if (camera instanceof THREE.OrthographicCamera) {
+			return Utils.mouseToRayOrtho(mouse, camera, width, height);//what changes is the direction vector,
+
+		} else {
+
+
+			let normalizedMouse = {
+				x: (mouse.x / width) * 2 - 1,
+				y: -(mouse.y / height) * 2 + 1
+			};
+
+			let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, 0.5);
+			let origin = camera.position.clone();
+			vector.unproject(camera);
+			let direction = new THREE.Vector3().subVectors(vector, origin).normalize();
+
+			let ray = new THREE.Ray(origin, direction);
+
+			return ray;
+
+
+
+
+		}
 	}
 
 	static projectedRadius(radius, camera, distance, screenWidth, screenHeight) {
@@ -659,7 +691,7 @@ export class Utils {
 			let gpsTime = geometry.attributes["gps-time"];
 			let range = gpsTime.potree.range;
 
-			for (let i = 0; i < gpsTime.array.length; i++) {
+			for (let i = 0;i < gpsTime.array.length;i++) {
 				let value = gpsTime.array[i];
 				value = value * (range[1] - range[0]) + range[0];
 				const distance = Math.abs(target - value);
@@ -707,7 +739,7 @@ export class Utils {
 
 		let minDistance = Number.MAX_VALUE;
 
-		for (let i = 0; i < 6; i++) {
+		for (let i = 0;i < 6;i++) {
 			let distance = planes[i].distanceToPoint(center);
 
 			if (distance < negRadius) {
@@ -730,7 +762,7 @@ export class Utils {
 		let g = Math.floor(color.g * 255);
 		let b = Math.floor(color.b * 255);
 
-		for (let i = 0; i < size; i++) {
+		for (let i = 0;i < size;i++) {
 			data[i * 3] = r;
 			data[i * 3 + 1] = g;
 			data[i * 3 + 2] = b;
@@ -1027,7 +1059,7 @@ export class Utils {
 		//		<stop offset="100%"  stop-color="rgb(157, 0, 65)" />
 		//		</linearGradient>
 		//	</defs>
-		//	
+		//
 		//	<rect width="100%" height="100%" fill="url('#myGradient')" stroke="black" stroke-width="0.1em"/>
 		//</svg>
 
@@ -1046,7 +1078,7 @@ export class Utils {
 			linearGradient.setAttributeNS(null, "id", gradientId);
 			linearGradient.setAttributeNS(null, "gradientTransform", "rotate(90)");
 
-			for (let i = scheme.length - 1; i >= 0; i--) {
+			for (let i = scheme.length - 1;i >= 0;i--) {
 				const stopVal = scheme[i];
 				const percent = parseInt(100 - stopVal[0] * 100);
 				const [r, g, b] = stopVal[1].toArray().map(v => parseInt(v * 255));
