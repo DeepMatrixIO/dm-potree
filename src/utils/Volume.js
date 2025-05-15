@@ -166,14 +166,17 @@ export class BoxVolume extends Volume {
 		}
 
 		this.material = new THREE.MeshBasicMaterial({
-			color: 0x00ff00,
+			color: 0x0000ff,
 			transparent: true,
-			opacity: 0.3,
+			opacity: 0.9,
 			depthTest: true,
 			depthWrite: false
 		});
 		this.box = new THREE.Mesh(boxGeometry, this.material);
 		this.box.geometry.computeBoundingBox();
+
+		this.box.color = new THREE.Color(0x0000ff);
+
 		this.boundingBox = this.box.geometry.boundingBox;
 		this.add(this.box);
 

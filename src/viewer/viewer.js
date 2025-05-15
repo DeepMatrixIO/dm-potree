@@ -2243,6 +2243,78 @@ export class Viewer extends EventDispatcher {
 			}
 		}
 
+
+		//custom BOXES have different behaviour
+		{ // update clip boxes made outside the potree code. Instance is not checked
+			let boxes = [];
+
+			// volumes with clipping enabled
+			//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
+			boxes.push(...this.scene.volumes.filter(v => (v.clip && !(v instanceof BoxVolume))));
+
+			//may skip them
+			// profile segments
+			for (let profile of this.scene.profiles) {
+				boxes.push(...profile.boxes);
+			}
+
+			// Needed for .getInverse(), pre-empt a determinant of 0, see #815 / #816
+			let degenerate = (box) => box.matrixWorld.determinant() !== 0;
+
+			let clipBoxes = boxes.filter(degenerate).map(box => {
+				box.updateMatrixWorld();
+
+				let boxInverse = box.matrixWorld.clone().invert();
+				let boxPosition = box.getWorldPosition(new THREE.Vector3());
+
+				return {box: box, inverse: boxInverse, position: boxPosition};
+			});
+
+			let clipPolygons = this.scene.polygonClipVolumes.filter(vol => vol.initialized);
+
+			//to do update clipPlanes from pointorama for planeTools
+			/////////////////////////////
+			/**
+			let planes = [];
+			// Add planes with clipTasks
+			planes.push(...this.scene.planes.filter(p => p.clipTask !== ClipTask.NONE));
+			let planeDegenerate = plane => plane.matrixWorld.determinant() !== 0;
+			let clipPlanes = planes.filter(planeDegenerate).map(plane => {
+			  plane.updateMatrixWorld();
+			  let planeInverse = plane.matrixWorld.clone().invert();
+			  let planePosition = plane.getWorldPosition(new Vector3());
+			  return {plane: plane, inverse: planeInverse, position: planePosition};
+			});
+				*/
+
+
+
+			// set clip volumes in material
+			for (let pointcloud of visiblePointClouds) {//custom boxes will require custom  actions
+
+				//will require clipBoxesColors
+				pointcloud.material.setClipBoxes(clipBoxes);
+				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);
+				pointcloud.material.clipTask = this.clipTask;
+				pointcloud.material.clipMethod = this.clipMethod;
+
+				//added for classification and segmentation
+				//const pointCloudPointClusters = this.scene.pointClusters.map(cluster => cluster.filterSegmentsByPointCloud(pointcloud.identifier));
+
+				const pointCloudPointClusters = this.scene.pointClusters.map(//TODO take identifier from some other place or default it
+					cluster => {
+						let identifier = pointcloud.dataId || pointcloud.identifier || pointcloud.id || 0;
+						return cluster.filterSegmentsByPointCloud(identifier);
+					}
+				);
+
+				pointcloud.material.setPointClusters(pointCloudPointClusters);
+				//pointcloud.material.setClipPlanes(clipPlanes);
+
+			}
+		}
+
+
 		{
 			for (let pointcloud of visiblePointClouds) {
 				pointcloud.material.elevationGradientRepeat = this.elevationGradientRepeat;

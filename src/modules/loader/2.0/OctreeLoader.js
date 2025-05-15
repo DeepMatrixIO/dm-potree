@@ -161,6 +161,10 @@ export class NodeLoader {
 				node.loaded = true;
 				node.loading = false;
 				Potree.numNodesLoading--;
+
+				node.byteOffset = byteOffset;//are not being set by the worker
+				node.byteSize = byteSize;
+
 			};
 
 			let pointAttributes = node.octreeGeometry.pointAttributes;
