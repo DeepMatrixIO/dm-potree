@@ -53,26 +53,7 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 		// Ray direction varies based on the screen coordinate.
 		// If you're switching to an orthographic camera, ensure the m
 
-		let mouseToRayOrtho = (mouse, camera, width, height) => {
-			// Normalize mouse coordinates
-			let normalizedMouse = {
-				x: (mouse.x / width) * 2 - 1,
-				y: -(mouse.y / height) * 2 + 1
-			};
 
-			// Create a vector in normalized device coordinates
-			//let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
-			let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
-			vector.unproject(camera); // Convert to world space
-
-			// For orthographic camera, the ray origin is the unprojected vector
-			let origin = vector.clone();
-
-			// Ray direction is the camera's forward vector
-			let direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
-
-			return new THREE.Ray(origin, direction);
-		};
 		let drag = e =>{
 			// console.log("dragging....................................................................");
 			volume.visible = true;
@@ -101,10 +82,9 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 
 			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
 			// console.log("BOX CENTROID: ",screenCentroid.x, screenCentroid.y);
-			//let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
-			let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
-			// console.log("RAY ORIGIN: ",ray.origin.x, ray.origin.y, ray.origin.z);
-			// console.log("RAY DIRECTION: ",ray.direction.x, ray.direction.y, ray.direction.z);
+			let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);//use the fixed mouseToRay function
+			//let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
+
 
 
 
@@ -142,7 +122,8 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 			let camera = e.viewer.scene.getActiveCamera();
 			let size = e.viewer.renderer.getSize(new THREE.Vector2());
 			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
-			let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
+			//let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
+			let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
 
 			let line = new THREE.Line3(ray.origin, new THREE.Vector3().addVectors(ray.origin, ray.direction));
 

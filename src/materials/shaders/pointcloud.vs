@@ -52,7 +52,9 @@ uniform int clipMethod;
 #if defined(num_clipboxes) && num_clipboxes > 0
 uniform mat4 clipBoxes[num_clipboxes];
 uniform int clipTasks[num_clipboxes];
+uniform int selectionClipTasks;
 uniform vec3 boxColors[num_clipboxes];
+uniform vec3 selectionBoxColors;
 #endif
 
 //distance rendering requires a position and an array of min max ranges
@@ -100,9 +102,9 @@ uniform mat4 uClipSpheres[num_clipspheres];
 #endif
 
 #if defined(num_clippolygons) && num_clippolygons > 0
-uniform int uClipPolygonVCount[num_clippolygons];
-uniform vec3 uClipPolygonVertices[num_clippolygons * 8];
-uniform mat4 uClipPolygonWVP[num_clippolygons];
+uniform int uClipPolygonVCount[num_clippolygons];//number of vertices for a given polygon
+uniform vec3 uClipPolygonVertices[num_clippolygons * 8];//flattened array of vertices
+uniform mat4 uClipPolygonWVP[num_clippolygons];//flattened matrices world projected matrices
 #endif
 
 uniform float size;
@@ -921,7 +923,7 @@ vec3 customRangeRendering(){
 
 	}
 
-	
+
 	w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
 	w = clamp(w, 0.0, 1.0);//redundant
 
@@ -1080,21 +1082,65 @@ float getPointSize()
 	return pointSize;
 }
 
+
+// Step-by-step explanation
+// Transform the point to polygon's clip space:
+
+// wvp = uClipPolygonWVP[polyIdx] is the World-View-Projection matrix for the polygon.
+// The point is transformed and projected to normalized device coordinates (NDC):
+// pointNDC = wvp * vec4(point, 1.0);
+// The x and y are divided by w to get 2D coordinates:
+// pointNDC.xy = pointNDC.xy / pointNDC.w;
+// Polygon vertices:
+
+// The polygon can have up to 8 vertices (hence the loop and array size).
+// uClipPolygonVCount[polyIdx] gives the number of vertices for this polygon.
+// Vertices are fetched from uClipPolygonVertices.
+// Ray-casting algorithm (even-odd rule):
+
+// The function uses the classic ray-casting algorithm to determine if the point is inside the polygon.
+// For each edge of the polygon, it checks if a horizontal ray from the point crosses the edge.
+// If the number of crossings is odd, the point is inside; if even, it's outside.
+// The variable c toggles each time the ray crosses an edge.
+// Return value:
+
+// Returns true if the point is inside the polygon, false otherwise.
+// Summary
+// Purpose: Checks if a point is inside a 2D polygon (after projecting from 3D).
+// How: Projects the point and polygon vertices to 2D, then uses the ray-casting algorithm.
+// Why: Used for clipping points in a point cloud renderer, so only points inside (or outside) user-defined polygons are rendered.
+
 #if defined(num_clippolygons) && num_clippolygons > 0
 bool pointInClipPolygon(vec3 point, int polyIdx)
 {
 
-	mat4 wvp = uClipPolygonWVP[polyIdx];
+	mat4 wvp = uClipPolygonWVP[polyIdx];//world view projection
 	// vec4 screenClipPos = uClipPolygonVP[polyIdx] * modelMatrix * vec4(point, 1.0);
 	// screenClipPos.xy = screenClipPos.xy / screenClipPos.w * 0.5 + 0.5;
 
-	vec4 pointNDC = wvp * vec4(point, 1.0);
+	vec4 pointNDC = wvp * vec4(point, 1.0);//normalized device coordinates
 	pointNDC.xy = pointNDC.xy / pointNDC.w;
 
 	int j = uClipPolygonVCount[polyIdx] - 1;
-	bool c = false;
-	for (int i = 0; i < 8; i++)
+	bool c = false;//by default point is even, means outside the polygon, even means inside
+
+	//checking each edge of the polygon from the, j = last vertex, from j=i-1  to i m i.e.
+	//for (int i = 0; i < 8; i++)//this version works with at most 8 vertices
+	for (int i = 0; i < max_clip_polygons; i++)// moved to use the max_clip_polygons, default set to 8
 	{
+		// j = i - 1;
+		// j = (i + 1) % uClipPolygonVCount[polyIdx];
+		// j = (i + 1) % 8;
+
+		// if (i == 0)
+		// {
+		// 	j = uClipPolygonVCount[polyIdx] - 1;
+		// }
+		// else
+		// {
+		// 	j = i - 1;
+		// }
+	//{
 		if (i == uClipPolygonVCount[polyIdx])
 		{
 			break;
@@ -1111,11 +1157,13 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 
 		vec3 verti = uClipPolygonVertices[polyIdx * 8 + i];
 		vec3 vertj = uClipPolygonVertices[polyIdx * 8 + j];
-
+		//horitonzal line check
+		//if point  crosses the edge y coords, proceed
+		//line equation  xm + b
 		if (((verti.y > pointNDC.y) != (vertj.y > pointNDC.y)) &&
-			(pointNDC.x < (vertj.x - verti.x) * (pointNDC.y - verti.y) / (vertj.y - verti.y) + verti.x))
+			(pointNDC.x < (vertj.x - verti.x) * ((pointNDC.y - verti.y) / (vertj.y - verti.y)) + verti.x))
 		{
-			c = !c;
+			c = !c;//toggles for every line crossing within the polygon
 		}
 		j = i;
 	}
@@ -1220,7 +1268,7 @@ void doClipping()
 	bool highlight = false;
 	bool active_ = false;
 	bool visible = true;
-	vec3 highlightColor = vec3(0.0, 0.0, 0.0);
+	vec3 highlightColor = vec3(1.0, 1.0, 1.0);//white
 
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
 	for (int i = 0; i < num_clusteredpointsegments; i++)
@@ -1230,7 +1278,7 @@ void doClipping()
 			active_ = activeStates[i];
 			highlight = selectedStates[i];
 			visible = visibleStates[i];
-			highlightColor = vec3(1, 0, 0);
+			highlightColor = vec3(0, 0, 1);
 			if (segmentClipTasks[i] == CLIPTASK_SHOW_OUTSIDE || !visible)
 			{
 				clip = true;
@@ -1263,6 +1311,10 @@ void doClipping()
 	int clipVolumesCount = 0;
 	int insideCount = 0;
 
+//this just assigns the hightlight value and color but seems not to be working the inside check
+
+//cliptasks[0] is a name, not an array
+
 #if defined(num_clipboxes) && num_clipboxes > 0
 	for (int i = 0; i < num_clipboxes; i++)
 	{
@@ -1275,9 +1327,21 @@ void doClipping()
 		insideCount = insideCount + (inside ? 1 : 0);
 		clipVolumesCount++;
 
+		//adding highlight color
+		highlightColor = vec3(0, 0, 0);//setting to green
+
+
+
 		// CLUSTERING TOOLS CODE
 		if (inside)
 		{
+
+
+			{//testing on all insides, so cliptasks[0] is not correct, is not an array
+			highlightColor = vec3(0, 1, 1);//should be overriden
+			highlight= true;
+			}
+
 			if (clipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
 			{
 				clip = true;
@@ -1296,13 +1360,38 @@ void doClipping()
 			{
 				highlight = true;
 				highlightColor = boxColors[i];
+				//highlightColor = vec3(0.0, 1.0, 0.0);
 			}
 			else if (clipTasks[i] == CLIPTASK_ACTIVE)
 			{
 				active_ = true;
 			}
+
+			//////////// adding code for cliptasks as variable
+			if (selectionClipTasks == CLIPTASK_HIGHLIGHT){
+				highlight = true;
+				highlightColor = selectionBoxColors;			//no esta entrando
+				}
+			else if (selectionClipTasks == CLIPTASK_ACTIVE)
+			{
+				active_ = true;
+			}
+			else if (selectionClipTasks == CLIPTASK_GRAYSCALE)
+			{
+				grayscaleThis = true;
+			}
+			else if (selectionClipTasks == CLIPTASK_SHOW_INSIDE)
+			{
+				isolateThis = true;
+			}
+			else if (selectionClipTasks == CLIPTASK_SHOW_OUTSIDE)
+			{
+				isolateThis = false;
+			}
+
+
 		}
-		else
+		else//outside
 		{
 			if (clipTasks[i] == CLIPTASK_SHOW_INSIDE)
 			{
@@ -1312,6 +1401,12 @@ void doClipping()
 			{
 				grayscaleAnything = true;
 			}
+
+			//testing to set a variable to show the color
+			//points outside are set to a color
+			//means are not being found inside
+			// highlightColor = vec3(0.0, 1.0, 1.0);//outside cyan
+			// highlight = true;
 		}
 	}
 #endif
@@ -1328,7 +1423,7 @@ void doClipping()
 	}
 #endif
 
-	// previous code
+	// here, the actual color is assigned on clasycal cluistering code
 	{
 		bool insideAny = insideCount > 0;
 		bool insideAll = (clipVolumesCount > 0) && (clipVolumesCount == insideCount);
@@ -1337,18 +1432,38 @@ void doClipping()
 		{
 			if (insideAny && clipTask == CLIPTASK_HIGHLIGHT)
 			{
+
 				vColor.r += 0.5;//default
+				#if defined(num_clipboxes) && num_clipboxes > 0
+				if(highlight){
 
-
-				//vColor.r += 0.5;//some constant
-				//vColor.g = 0.1;//some constant
-				//vColor.b = 0.1;//some constant
+					vColor.r=highlightColor.x;
+					vColor.g=highlightColor.y;
+					vColor.b=highlightColor.z;
+				// vColor.r = 1.0 -  vColor.r;
+				// vColor.g = 1.0 -  vColor.g;
+				// vColor.b = 1.0 -  vColor.b;
+					// vColor.r=highlightColor.r;
+					// vColor.g=highlightColor.g;
+					// vColor.b=highlightColor.b;
+				}
 
 				// {//inverted color
 				// vColor.r = 1.0 -  vColor.r;
 				// vColor.g = 1.0 -  vColor.g;
 				// vColor.b = 1.0 -  vColor.b;
 				// }
+
+				#endif
+
+
+
+				//this was tested but
+				//vColor.r += 0.5;//some constant
+				//vColor.g = 0.1;//some constant
+				//vColor.b = 0.1;//some constant
+
+
 
 			}
 			else if (!insideAny && clipTask == CLIPTASK_SHOW_INSIDE)
@@ -1364,7 +1479,29 @@ void doClipping()
 		{
 			if (insideAll && clipTask == CLIPTASK_HIGHLIGHT)
 			{
-				vColor.r += 0.5;
+				vColor.r += 0.5;//default highlight color,
+				#if defined(num_clipboxes) && num_clipboxes > 0
+				if(highlight){
+
+					vColor.r=highlightColor.x;
+					vColor.g=highlightColor.y;
+					vColor.b=highlightColor.z;
+				// vColor.r = 1.0 -  vColor.r;
+				// vColor.g = 1.0 -  vColor.g;
+				// vColor.b = 1.0 -  vColor.b;
+					// vColor.r=highlightColor.r;
+					// vColor.g=highlightColor.g;
+					// vColor.b=highlightColor.b;
+				}
+
+				// {//inverted color
+				// vColor.r = 1.0 -  vColor.r;
+				// vColor.g = 1.0 -  vColor.g;
+				// vColor.b = 1.0 -  vColor.b;
+				// }
+
+				#endif
+
 			}
 			else if (!insideAll && clipTask == CLIPTASK_SHOW_INSIDE)
 			{
@@ -1396,6 +1533,14 @@ void doClipping()
 			vColor.r = grayScale75p + highlightColor.r / 2.0;
 			vColor.g = grayScale75p + highlightColor.g / 2.0;
 			vColor.b = grayScale75p + highlightColor.b / 2.0;
+
+
+			// vColor.r = 0.0;
+			// vColor.g = 1.0;
+			// vColor.b =  0.0;
+
+
+
 		}
 		else if (grayscaleAnything && grayscaleThis)
 		{
@@ -1405,6 +1550,12 @@ void doClipping()
 			vColor.b = grayScale;
 		}
 	}
+	//hightlight never arived, triying boxColor
+	// #if defined(num_clipboxes) && num_clipboxes > 0
+	// vColor.r = boxColors[0].x;
+	// vColor.g = boxColors[0].y;
+	// vColor.b =  boxColors[0].z;
+	// #endif
 }
 
 //

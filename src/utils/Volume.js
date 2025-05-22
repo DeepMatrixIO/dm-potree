@@ -168,14 +168,20 @@ export class BoxVolume extends Volume {
 		this.material = new THREE.MeshBasicMaterial({
 			color: 0x0000ff,
 			transparent: true,
-			opacity: 0.9,
+			opacity: 0.3,
 			depthTest: true,
 			depthWrite: false
 		});
 		this.box = new THREE.Mesh(boxGeometry, this.material);
 		this.box.geometry.computeBoundingBox();
 
-		this.box.color = new THREE.Color(0x0000ff);
+		//may use a blend or opacity to make selection transparent
+		//next two lines assign the highlight color  of the box
+		this.color = new THREE.Color(1.0,0.0,1.0);//this is the
+		this.actualClipTask=1;//testing,  the highlighting color was never applied because the task was not set
+		//now need to set the boxcolor array to handle multiple boxes
+		//
+
 
 		this.boundingBox = this.box.geometry.boundingBox;
 		this.add(this.box);

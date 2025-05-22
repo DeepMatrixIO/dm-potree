@@ -773,10 +773,13 @@ export class Renderer {
 			}
 			gl.uniformMatrix4fv(lModelView, false, mat4holder);
 
-			{ // Clip Polygons
-				if (material.clipPolygons && material.clipPolygons.length > 0) {
+			///////////////////////////////////////
+			// clip polygons are created
 
-					let clipPolygonVCount = [];
+			{ // Clip Polygons
+				if (material.clipPolygons && material.clipPolygons.length > 0) {//for every clip polygon
+
+					let clipPolygonVCount = [];//vertices per polygon or vertex count
 					let worldViewProjMatrices = [];
 
 					for (let clipPolygon of material.clipPolygons) {
@@ -792,6 +795,7 @@ export class Renderer {
 
 					let flattenedMatrices = [].concat(...worldViewProjMatrices.map(m => m.elements));
 
+					//flattened vertices are limited to 8 vertices max per polygon, so they are 8x3 = 24 floats
 					let flattenedVertices = new Array(8 * 3 * material.clipPolygons.length);
 					for (let i = 0;i < material.clipPolygons.length;i++) {
 						let clipPolygon = material.clipPolygons[i];
@@ -802,9 +806,10 @@ export class Renderer {
 						}
 					}
 
+					// number of vertices per polygon
 					const lClipPolygonVCount = shader.uniformLocations["uClipPolygonVCount[0]"];
 					gl.uniform1iv(lClipPolygonVCount, clipPolygonVCount);
-
+					//projection matrix per clip polygon, all flattened, so 4x4 = 16 floats per matrix times num clipPolygons
 					const lClipPolygonVP = shader.uniformLocations["uClipPolygonWVP[0]"];
 					gl.uniformMatrix4fv(lClipPolygonVP, false, flattenedMatrices);
 
@@ -813,6 +818,7 @@ export class Renderer {
 
 				}
 			}
+			///////////////////////////////////////
 
 
 			//shader.setUniformMatrix4("modelMatrix", world);
@@ -1390,7 +1396,9 @@ export class Renderer {
 							(clipbox) => clipbox.box.actualClipTask
 						);
 						const lClipTasks = shader.uniformLocations['clipTasks[0]'];
+
 						gl.uniform1iv(lClipTasks, clipTasks);
+
 
 						const boxColors = material.clipBoxes
 							.map((clipbox) => {
@@ -1412,6 +1420,50 @@ export class Renderer {
 						console.log("PotreeRenderer.js Error in in ClusterTool clipBoxes added code");
 					}
 				}//ignore until implemented
+
+				//added for selection tool
+
+				let clipBoxSelectionHighlight = true;
+				if (clipBoxSelectionHighlight) {//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes
+					//basically it adds colors from the clipboxes to the shader, as it was not present before within the
+					//uniform clipboxes location boxColors[0] and clipTask[0]
+
+					//of course it crashes within the existing profile as it is made of clipboxes
+					//a proper if wuilf
+					try {
+						const clipTask = material.clipBoxes.map(
+							(clipbox) => clipbox.box.actualClipTask
+						);
+						const lClipTask = shader.uniformLocations['selectionClipTasks'];
+
+						gl.uniform1iv(lClipTask, clipTask);
+
+
+						const boxColors = material.clipBoxes
+							.map((clipbox) => {
+
+								if (clipbox.box.color !== undefined) {//this is the code added
+									return [clipbox.box.color.r, clipbox.box.color.g, clipbox.box.color.b]//check why they store materials in such way when using cluster tool
+								} else {
+									return [clipbox.box.material.color.r, clipbox.box.material.color.g, clipbox.box.material.color.b]
+								}
+
+							})
+							.flat();
+
+						const lBoxColors = shader.uniformLocations['selectionBoxColors'];
+						gl.uniform3fv(lBoxColors, boxColors);
+
+
+					} catch (error) {
+						console.log("PotreeRenderer.js Error in in BoxSelectionClusterTool clipBoxes added code");
+					}
+				}//ignore until implemented
+
+
+
+
+
 
 			}
 
