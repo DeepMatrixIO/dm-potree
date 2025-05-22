@@ -145,7 +145,7 @@ export class ClippingTool extends EventDispatcher{
 			svg.remove();
 
 			if(polyClipVol.markers.length > 3) {
-				if(polyClipVol.markers.length >= this.maxPolygonVertices){
+				if(polyClipVol.markers.length >= this.maxPolygonVertices){//bounded to 8
 					polyClipVol.removeLastMarker();
 				}
 				//polyClipVol.removeLastMarker();//las marker was removed with no reason
