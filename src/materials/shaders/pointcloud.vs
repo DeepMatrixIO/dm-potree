@@ -1128,32 +1128,12 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 	//for (int i = 0; i < 8; i++)//this version works with at most 8 vertices
 	for (int i = 0; i < max_clip_polygons; i++)// moved to use the max_clip_polygons, default set to 8
 	{
-		// j = i - 1;
-		// j = (i + 1) % uClipPolygonVCount[polyIdx];
-		// j = (i + 1) % 8;
 
-		// if (i == 0)
-		// {
-		// 	j = uClipPolygonVCount[polyIdx] - 1;
-		// }
-		// else
-		// {
-		// 	j = i - 1;
-		// }
-	//{
 		if (i == uClipPolygonVCount[polyIdx])
 		{
 			break;
 		}
 
-		// vec4 verti = wvp * vec4(uClipPolygonVertices[polyIdx * 8 + i], 1);
-		// vec4 vertj = wvp * vec4(uClipPolygonVertices[polyIdx * 8 + j], 1);
-
-		// verti.xy = verti.xy / verti.w;
-		// vertj.xy = vertj.xy / vertj.w;
-
-		// verti.xy = verti.xy / verti.w * 0.5 + 0.5;
-		// vertj.xy = vertj.xy / vertj.w * 0.5 + 0.5;
 
 		vec3 verti = uClipPolygonVertices[polyIdx * 8 + i];
 		vec3 vertj = uClipPolygonVertices[polyIdx * 8 + j];
