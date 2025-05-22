@@ -54,7 +54,7 @@ export class Viewer extends EventDispatcher {
 
 		this.projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
 
-		this.ecefCamera=new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
+		this.ecefCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 
 
 
@@ -423,7 +423,7 @@ export class Viewer extends EventDispatcher {
 		const groundOffset = 0;
 
 		try {
-			if ( !this.scene || !this.scene.getActiveCamera()) {
+			if (!this.scene || !this.scene.getActiveCamera()) {
 				return;
 			}
 
@@ -493,15 +493,15 @@ export class Viewer extends EventDispatcher {
 				// }
 
 				if (camera instanceof THREE.PerspectiveCamera) {
-           			 this.ecefCamera.fov = camera.fov;
+					this.ecefCamera.fov = camera.fov;
 
-				//	this.ecefCamera.aspect = aspect;
+					//	this.ecefCamera.aspect = aspect;
 					// this.ecefCamera.setFocalLength(camera.getFocalLength());
 					// this.ecefCamera.width = window.innerWidth;//to remove warnings
 					// this.ecefCamera.height = window.innerHeight;
 
 
-        		} else if (camera instanceof THREE.OrthographicCamera) {
+				} else if (camera instanceof THREE.OrthographicCamera) {
 					let frustumHeight = camera.top - camera.bottom;
 					let frustumWidth = camera.right - camera.left;
 					this.ecefCamera.zoom = camera.zoom;
@@ -511,8 +511,8 @@ export class Viewer extends EventDispatcher {
 					this.ecefCamera.bottom = -frustumHeight / 2;
 				}
 
-   				this.ecefCamera.aspect = aspect;
-        		this.ecefCamera.updateProjectionMatrix();
+				this.ecefCamera.aspect = aspect;
+				this.ecefCamera.updateProjectionMatrix();
 
 				//rendering here only occurs if no errors
 
@@ -2245,74 +2245,75 @@ export class Viewer extends EventDispatcher {
 
 
 		//custom BOXES have different behaviour
-		{ // update clip boxes made outside the potree code. Instance is not checked
-			let boxes = [];
+		// { // update clip boxes made outside the potree code. Instance is not checked
+		// 	let boxes = [];
 
-			// volumes with clipping enabled
-			//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
-			boxes.push(...this.scene.volumes.filter(v => (v.clip && !(v instanceof BoxVolume))));
+		// 	// volumes with clipping enabled
+		// 	//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
+		// 	boxes.push(...this.scene.volumes.filter(v => (v.clip && !(v instanceof BoxVolume))));
+		// 	if (boxes.length > 0) {
+		// 		//may skip them
+		// 		// profile segments
+		// 		for (let profile of this.scene.profiles) {
+		// 			boxes.push(...profile.boxes);
+		// 		}
 
-			//may skip them
-			// profile segments
-			for (let profile of this.scene.profiles) {
-				boxes.push(...profile.boxes);
-			}
+		// 		// Needed for .getInverse(), pre-empt a determinant of 0, see #815 / #816
+		// 		let degenerate = (box) => box.matrixWorld.determinant() !== 0;
 
-			// Needed for .getInverse(), pre-empt a determinant of 0, see #815 / #816
-			let degenerate = (box) => box.matrixWorld.determinant() !== 0;
+		// 		let clipBoxes = boxes.filter(degenerate).map(box => {
+		// 			box.updateMatrixWorld();
 
-			let clipBoxes = boxes.filter(degenerate).map(box => {
-				box.updateMatrixWorld();
+		// 			let boxInverse = box.matrixWorld.clone().invert();
+		// 			let boxPosition = box.getWorldPosition(new THREE.Vector3());
 
-				let boxInverse = box.matrixWorld.clone().invert();
-				let boxPosition = box.getWorldPosition(new THREE.Vector3());
+		// 			return {box: box, inverse: boxInverse, position: boxPosition};
+		// 		});
 
-				return {box: box, inverse: boxInverse, position: boxPosition};
-			});
+		// 		let clipPolygons = this.scene.polygonClipVolumes.filter(vol => vol.initialized);
 
-			let clipPolygons = this.scene.polygonClipVolumes.filter(vol => vol.initialized);
-
-			//to do update clipPlanes from pointorama for planeTools
-			/////////////////////////////
-			/**
-			let planes = [];
-			// Add planes with clipTasks
-			planes.push(...this.scene.planes.filter(p => p.clipTask !== ClipTask.NONE));
-			let planeDegenerate = plane => plane.matrixWorld.determinant() !== 0;
-			let clipPlanes = planes.filter(planeDegenerate).map(plane => {
-			  plane.updateMatrixWorld();
-			  let planeInverse = plane.matrixWorld.clone().invert();
-			  let planePosition = plane.getWorldPosition(new Vector3());
-			  return {plane: plane, inverse: planeInverse, position: planePosition};
-			});
-				*/
+		// 		//to do update clipPlanes from pointorama for planeTools
+		// 		/////////////////////////////
+		// 		/**
+		// 		let planes = [];
+		// 		// Add planes with clipTasks
+		// 		planes.push(...this.scene.planes.filter(p => p.clipTask !== ClipTask.NONE));
+		// 		let planeDegenerate = plane => plane.matrixWorld.determinant() !== 0;
+		// 		let clipPlanes = planes.filter(planeDegenerate).map(plane => {
+		// 		  plane.updateMatrixWorld();
+		// 		  let planeInverse = plane.matrixWorld.clone().invert();
+		// 		  let planePosition = plane.getWorldPosition(new Vector3());
+		// 		  return {plane: plane, inverse: planeInverse, position: planePosition};
+		// 		});
+		// 			*/
 
 
 
-			// set clip volumes in material
-			for (let pointcloud of visiblePointClouds) {//custom boxes will require custom  actions
+		// 		// set clip volumes in material
+		// 		for (let pointcloud of visiblePointClouds) {//custom boxes will require custom  actions
 
-				//will require clipBoxesColors
-				pointcloud.material.setClipBoxes(clipBoxes);
-				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);
-				pointcloud.material.clipTask = this.clipTask;
-				pointcloud.material.clipMethod = this.clipMethod;
+		// 			//will require clipBoxesColors
+		// 			pointcloud.material.setClipBoxes(clipBoxes);
+		// 			pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);
+		// 			pointcloud.material.clipTask = this.clipTask;
+		// 			pointcloud.material.clipMethod = this.clipMethod;
 
-				//added for classification and segmentation
-				//const pointCloudPointClusters = this.scene.pointClusters.map(cluster => cluster.filterSegmentsByPointCloud(pointcloud.identifier));
+		// 			//added for classification and segmentation
+		// 			//const pointCloudPointClusters = this.scene.pointClusters.map(cluster => cluster.filterSegmentsByPointCloud(pointcloud.identifier));
 
-				const pointCloudPointClusters = this.scene.pointClusters.map(//TODO take identifier from some other place or default it
-					cluster => {
-						let identifier = pointcloud.dataId || pointcloud.identifier || pointcloud.id || 0;
-						return cluster.filterSegmentsByPointCloud(identifier);
-					}
-				);
+		// 			const pointCloudPointClusters = this.scene.pointClusters.map(//TODO take identifier from some other place or default it
+		// 				cluster => {
+		// 					let identifier = pointcloud.dataId || pointcloud.identifier || pointcloud.id || 0;
+		// 					return cluster.filterSegmentsByPointCloud(identifier);
+		// 				}
+		// 			);
 
-				pointcloud.material.setPointClusters(pointCloudPointClusters);
-				//pointcloud.material.setClipPlanes(clipPlanes);
+		// 			pointcloud.material.setPointClusters(pointCloudPointClusters);
+		// 			//pointcloud.material.setClipPlanes(clipPlanes);
 
-			}
-		}
+		// 		}
+		// 	}
+		// }//end of custom boxes, i.e. custom value changes
 
 
 		{
