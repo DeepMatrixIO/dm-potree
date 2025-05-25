@@ -2,7 +2,8 @@
 precision highp float;
 precision highp int;
 
-#define max_clip_polygons 8
+//#define max_clip_polygons 8
+#define max_clip_polygons 16
 #define PI 3.141592653589793
 
 in vec3 position;
@@ -103,7 +104,8 @@ uniform mat4 uClipSpheres[num_clipspheres];
 
 #if defined(num_clippolygons) && num_clippolygons > 0
 uniform int uClipPolygonVCount[num_clippolygons];//number of vertices for a given polygon
-uniform vec3 uClipPolygonVertices[num_clippolygons * 8];//flattened array of vertices
+//uniform vec3 uClipPolygonVertices[num_clippolygons * 8];//flattened array of vertices
+uniform vec3 uClipPolygonVertices[num_clippolygons * max_clip_polygons];//flattened array of vertices, but is not max_clip_polygons
 uniform mat4 uClipPolygonWVP[num_clippolygons];//flattened matrices world projected matrices
 #endif
 
@@ -1135,8 +1137,12 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 		}
 
 
-		vec3 verti = uClipPolygonVertices[polyIdx * 8 + i];
-		vec3 vertj = uClipPolygonVertices[polyIdx * 8 + j];
+		// vec3 verti = uClipPolygonVertices[polyIdx * 8 + i];//
+		// vec3 vertj = uClipPolygonVertices[polyIdx * 8 + j];//8 becuase is flattened
+
+		vec3 verti = uClipPolygonVertices[polyIdx * max_clip_polygons + i];
+		vec3 vertj = uClipPolygonVertices[polyIdx * max_clip_polygons + j];
+
 		//horitonzal line check
 		//if point  crosses the edge y coords, proceed
 		//line equation  xm + b
@@ -1399,7 +1405,14 @@ void doClipping()
 		{ // code PREVIOUS TO CLUSTERING TOOL
 			insideCount = insideCount + (inside ? 1 : 0);
 			clipVolumesCount++;
+
+		//TODO, if inside, continue or break
+
+			//must set the color to the polygon color
+
 		}
+
+
 	}
 #endif
 

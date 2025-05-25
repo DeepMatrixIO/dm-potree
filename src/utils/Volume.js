@@ -178,8 +178,8 @@ export class BoxVolume extends Volume {
 		//may use a blend or opacity to make selection transparent
 		//add next in custom volume class
 		//next two lines assign the highlight color  of the box
-		//this.color = new THREE.Color(1.0,0.0,1.0);//this is the
-		//this.actualClipTask=1;//testing,  the highlighting color was never applied because the task was not set
+		this.color = new THREE.Color(1.0,0.0,1.0);//this is the
+		this.actualClipTask=1;//testing,  the highlighting color was never applied because the task was not set
 		//now need to set the boxcolor array to handle multiple boxes
 		//
 

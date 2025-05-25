@@ -12,7 +12,8 @@ export class ClippingTool extends EventDispatcher{
 
 		this.viewer = viewer;
 
-		this.maxPolygonVertices = 8;
+		//this.maxPolygonVertices = 8;
+		this.maxPolygonVertices = 16;
 
 		this.addEventListener("start_inserting_clipping_volume", e => {
 			this.viewer.dispatchEvent({
@@ -145,7 +146,7 @@ export class ClippingTool extends EventDispatcher{
 			svg.remove();
 
 			if(polyClipVol.markers.length > 3) {
-				if(polyClipVol.markers.length >= this.maxPolygonVertices){//bounded to 8
+				if(polyClipVol.markers.length == this.maxPolygonVertices){//bounded to 8
 					polyClipVol.removeLastMarker();
 				}
 				//polyClipVol.removeLastMarker();//las marker was removed with no reason

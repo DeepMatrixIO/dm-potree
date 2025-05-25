@@ -1,4 +1,5 @@
 
+import {max} from "three/tsl";
 import * as THREE from "../libs/three.js/build/three.module.js";
 import {PointCloudTree} from "./PointCloudTree.js";
 import {ClipTask, ElevationGradientRepeat, PointSizeType} from "./defines.js";
@@ -782,6 +783,7 @@ export class Renderer {
 					let clipPolygonVCount = [];//vertices per polygon or vertex count
 					let worldViewProjMatrices = [];
 
+					let maxPolygonVertices = 16;//ut overwritten
 					for (let clipPolygon of material.clipPolygons) {
 
 						let view = clipPolygon.viewMatrix;
@@ -791,18 +793,27 @@ export class Renderer {
 
 						clipPolygonVCount.push(clipPolygon.markers.length);
 						worldViewProjMatrices.push(worldViewProj);
+
+						maxPolygonVertices = clipPolygon.maxPolygonVertices;//setting from clipPolygon
 					}
 
 					let flattenedMatrices = [].concat(...worldViewProjMatrices.map(m => m.elements));
 
+
 					//flattened vertices are limited to 8 vertices max per polygon, so they are 8x3 = 24 floats
-					let flattenedVertices = new Array(8 * 3 * material.clipPolygons.length);
+					//let flattenedVertices = new Array(8 * 3 * material.clipPolygons.length);
+					let flattenedVertices = new Array(maxPolygonVertices * 3 * material.clipPolygons.length);
 					for (let i = 0;i < material.clipPolygons.length;i++) {
 						let clipPolygon = material.clipPolygons[i];
 						for (let j = 0;j < clipPolygon.markers.length;j++) {
-							flattenedVertices[i * 24 + (j * 3 + 0)] = clipPolygon.markers[j].position.x;
-							flattenedVertices[i * 24 + (j * 3 + 1)] = clipPolygon.markers[j].position.y;
-							flattenedVertices[i * 24 + (j * 3 + 2)] = clipPolygon.markers[j].position.z;
+							flattenedVertices[i * (maxPolygonVertices*3) + (j * 3 + 0)] = clipPolygon.markers[j].position.x;
+							flattenedVertices[i * (maxPolygonVertices*3) + (j * 3 + 1)] = clipPolygon.markers[j].position.y;
+							flattenedVertices[i * (maxPolygonVertices*3) + (j * 3 + 2)] = clipPolygon.markers[j].position.z;
+							// flattenedVertices[i * 24 + (j * 3 + 0)] = clipPolygon.markers[j].position.x;
+							// flattenedVertices[i * 24 + (j * 3 + 1)] = clipPolygon.markers[j].position.y;
+							// flattenedVertices[i * 24 + (j * 3 + 2)] = clipPolygon.markers[j].position.z;
+
+
 						}
 					}
 

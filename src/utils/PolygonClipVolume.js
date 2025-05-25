@@ -22,6 +22,8 @@ export class PolygonClipVolume extends THREE.Object3D {
 		// projected markers
 		this.markers = [];
 		this.initialized = false;
+
+		this.maxPolygonVertices = 16;//also in Clipping Tool.js, update in potreeRenderer
 	}
 
 	addMarker() {
