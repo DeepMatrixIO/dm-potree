@@ -1433,7 +1433,7 @@ export class Renderer {
 				}//ignore until implemented
 
 				//added for selection tool
-
+				//
 				let clipBoxSelectionHighlight = true;
 				if (clipBoxSelectionHighlight) {//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes
 					//basically it adds colors from the clipboxes to the shader, as it was not present before within the
@@ -1445,7 +1445,7 @@ export class Renderer {
 						const clipTask = material.clipBoxes.map(
 							(clipbox) => clipbox.box.actualClipTask
 						);
-						const lClipTask = shader.uniformLocations['selectionClipTasks'];
+						const lClipTask = shader.uniformLocations['selectionClipTasks[0]'];
 
 						gl.uniform1iv(lClipTask, clipTask);
 
@@ -1462,7 +1462,7 @@ export class Renderer {
 							})
 							.flat();
 
-						const lBoxColors = shader.uniformLocations['selectionBoxColors'];
+						const lBoxColors = shader.uniformLocations['selectionBoxColors[0]'];
 						gl.uniform3fv(lBoxColors, boxColors);
 
 

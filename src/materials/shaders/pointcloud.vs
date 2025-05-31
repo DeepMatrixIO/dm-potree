@@ -53,9 +53,9 @@ uniform int clipMethod;
 #if defined(num_clipboxes) && num_clipboxes > 0
 uniform mat4 clipBoxes[num_clipboxes];
 uniform int clipTasks[num_clipboxes];
-uniform int selectionClipTasks;
+uniform int selectionClipTasks[num_clipboxes];
 uniform vec3 boxColors[num_clipboxes];
-uniform vec3 selectionBoxColors;
+uniform vec3 selectionBoxColors[num_clipboxes];
 #endif
 
 //distance rendering requires a position and an array of min max ranges
@@ -1314,7 +1314,8 @@ void doClipping()
 		clipVolumesCount++;
 
 		//adding highlight color
-		highlightColor = vec3(0, 0, 0);//setting to green
+		//highlightColor = vec3(0, 0, 1.0);//setting to blue at the beginning, so
+		//highlightColor = boxColors[i];//setting to blue at the beginning, so
 
 
 
@@ -1323,9 +1324,10 @@ void doClipping()
 		{
 
 
-			{//testing on all insides, so cliptasks[0] is not correct, is not an array
-			highlightColor = vec3(0, 1, 1);//should be overriden
-			highlight= true;
+			{//if inside but nos a clip tasks,highlight as cyan
+			// useful for debugging
+		//	highlightColor = vec3(1, 1, 1);//cyan should not appear as is overwritten
+			//highlight= true;
 			}
 
 			if (clipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
@@ -1346,31 +1348,32 @@ void doClipping()
 			{
 				highlight = true;
 				highlightColor = boxColors[i];
-				//highlightColor = vec3(0.0, 1.0, 0.0);
+				//highlightColor = vec3(0.5, 1.0, 0.0);
 			}
 			else if (clipTasks[i] == CLIPTASK_ACTIVE)
 			{
 				active_ = true;
 			}
 
-			//////////// adding code for cliptasks as variable
-			if (selectionClipTasks == CLIPTASK_HIGHLIGHT){
+			//////////// adding code for cliptasks as variable, but is seems duplicated
+			if (selectionClipTasks[i] == CLIPTASK_HIGHLIGHT){
 				highlight = true;
-				highlightColor = selectionBoxColors;			//no esta entrando
+				highlightColor = selectionBoxColors[i];			//no esta entrando
+				//highlightColor = boxColors[i];//color per clipbox
 				}
-			else if (selectionClipTasks == CLIPTASK_ACTIVE)
+			else if (selectionClipTasks[i] == CLIPTASK_ACTIVE)
 			{
 				active_ = true;
 			}
-			else if (selectionClipTasks == CLIPTASK_GRAYSCALE)
+			else if (selectionClipTasks[i] == CLIPTASK_GRAYSCALE)
 			{
 				grayscaleThis = true;
 			}
-			else if (selectionClipTasks == CLIPTASK_SHOW_INSIDE)
+			else if (selectionClipTasks[i] == CLIPTASK_SHOW_INSIDE)
 			{
 				isolateThis = true;
 			}
-			else if (selectionClipTasks == CLIPTASK_SHOW_OUTSIDE)
+			else if (selectionClipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
 			{
 				isolateThis = false;
 			}
@@ -1391,8 +1394,7 @@ void doClipping()
 			//testing to set a variable to show the color
 			//points outside are set to a color
 			//means are not being found inside
-			// highlightColor = vec3(0.0, 1.0, 1.0);//outside cyan
-			// highlight = true;
+
 		}
 	}
 #endif
