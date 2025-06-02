@@ -774,13 +774,15 @@ export class Renderer {
 			}
 			gl.uniformMatrix4fv(lModelView, false, mat4holder);
 
-			///////////////////////////////////////
-			// clip polygons are created
+
+			/////////////////////////////////////////////////////////////////////////////////////
+			// clip polygons
+			// the projectino matrix is commited and the polygon vertices are flattened
 
 			{ // Clip Polygons
 				if (material.clipPolygons && material.clipPolygons.length > 0) {//for every clip polygon
 
-					let clipPolygonVCount = [];//vertices per polygon or vertex count
+					let clipPolygonVCount = [];//vertices per polygon or vertex count  [4,6,8,etc]
 					let worldViewProjMatrices = [];
 
 					let maxPolygonVertices = 16;//ut overwritten
@@ -817,6 +819,22 @@ export class Renderer {
 						}
 					}
 
+					////colors
+					let flattenedColors = [].concat(...material.clipPolygons.map(poly => [poly.color.r, poly.color.g, poly.color.b] ))
+					const lClipPolygonColor = shader.uniformLocations["uClipPolygonColor[0]"];
+					gl.uniform3fv(lClipPolygonColor,flattenedColors);
+					///end colors
+
+					////polygon task
+					let polygonTasks = [].concat(...material.clipPolygons.map(poly => [poly.task] ))
+					const lClipPolygonTask = shader.uniformLocations["uClipPolygonTask[0]"];
+					gl.uniform3fv(lClipPolygonColor,flattenedColors);
+					///end colors
+
+
+
+
+
 					// number of vertices per polygon
 					const lClipPolygonVCount = shader.uniformLocations["uClipPolygonVCount[0]"];
 					gl.uniform1iv(lClipPolygonVCount, clipPolygonVCount);
@@ -827,8 +845,10 @@ export class Renderer {
 					const lClipPolygons = shader.uniformLocations["uClipPolygonVertices[0]"];
 					gl.uniform3fv(lClipPolygons, flattenedVertices);
 
+
 				}
 			}
+			//end of clipPolygons
 			///////////////////////////////////////
 
 
@@ -1382,6 +1402,8 @@ export class Renderer {
 
 			shader.setUniform1i("clipMethod", material.clipMethod);
 
+			/////////////////////////////////////////////////////////////////
+			//clipboxes ,may appear on different contexts
 			if (material.clipBoxes && material.clipBoxes.length > 0) {
 				//let flattenedMatrices = [].concat(...material.clipBoxes.map(c => c.inverse.elements));
 
@@ -1431,9 +1453,8 @@ export class Renderer {
 						console.log("PotreeRenderer.js Error in in ClusterTool clipBoxes added code");
 					}
 				}//ignore until implemented
-
-				//added for selection tool
-				//
+				//////////////////////////////////////////////////////////
+				//added for selection tool, values added to selectionClipTasks and selectionBoxColors but may be removed
 				let clipBoxSelectionHighlight = true;
 				if (clipBoxSelectionHighlight) {//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes
 					//basically it adds colors from the clipboxes to the shader, as it was not present before within the
@@ -1469,19 +1490,12 @@ export class Renderer {
 					} catch (error) {
 						console.log("PotreeRenderer.js Error in in BoxSelectionClusterTool clipBoxes added code");
 					}
-				}//ignore until implemented
-
-
-
-
-
+				}
 
 			}
 
-			// added for pointclusters
+			// CODE for CLUSTERING ()
 			if (material.pointClusters && material.pointClusters.length > 0) {//nned to
-
-
 
 
 				const clusteredPointSegments = material.pointClusters

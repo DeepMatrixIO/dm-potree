@@ -84,7 +84,7 @@ export class ClippingTool extends EventDispatcher{
 
 				style="stroke:rgb(0, 0, 0);
 				fill-opacity:0.5;
-				polygon-fill="rgba(0,128,255,0.5)"
+				polygon-fill="rgba(200,0,0,0.5)"
 				stroke-width:6;"
 				stroke-dasharray="9, 6"
 				stroke-dashoffset="2"

@@ -2,8 +2,9 @@
 precision highp float;
 precision highp int;
 
-//#define max_clip_polygons 8
+// #define max_clip_polygons 8
 #define max_clip_polygons 16
+#define max_clip_vertices 16
 #define PI 3.141592653589793
 
 in vec3 position;
@@ -58,36 +59,32 @@ uniform vec3 boxColors[num_clipboxes];
 uniform vec3 selectionBoxColors[num_clipboxes];
 #endif
 
-//distance rendering requires a position and an array of min max ranges
+// distance rendering requires a position and an array of min max ranges
 #if defined(distance_to_point) && defined(num_ranges) && num_ranges > 0
 uniform float positionRef[3];
-uniform float rangeValues[num_ranges];//uniform mat4 clipBoxes[num_clipboxes];
+uniform float rangeValues[num_ranges]; // uniform mat4 clipBoxes[num_clipboxes];
 
-//textures leave for the moment, using selected range
+// textures leave for the moment, using selected range
 #endif
-
 
 #if defined(draw_isolines)
 
 uniform float isoValues[3];
 uniform float isoColorA[3];
 uniform float isoColorB[3];
-//textures left for the moment, using selected range
+// textures left for the moment, using selected range
 #endif
 
-//added to make difference between the min max  color ramp range and values subset
-//  minValue = colorRampBegin <= minVisibleColor <= maxVisibleColor, maxValue = colorRampEnd
+// added to make difference between the min max  color ramp range and values subset
+//   minValue = colorRampBegin <= minVisibleColor <= maxVisibleColor, maxValue = colorRampEnd
 #if defined(custom_range)
-uniform float visibleRange[2];//visible min max values. They should be within uExtraRange
-uniform float maxRange[2];//sets the min max range for the gradient texture
-uniform float allVisible[2];//color for the min value
-uniform float nonVisibleColorMin[3];//color for the min value
-uniform float nonVisibleColorMax[3];//color for the max value
+uniform float visibleRange[2];		 // visible min max values. They should be within uExtraRange
+uniform float maxRange[2];			 // sets the min max range for the gradient texture
+uniform float allVisible[2];		 // color for the min value
+uniform float nonVisibleColorMin[3]; // color for the min value
+uniform float nonVisibleColorMax[3]; // color for the max value
 
 #endif
-
-
-
 
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
 uniform float clusteredpointsegments[num_clusteredpointsegments];
@@ -103,10 +100,13 @@ uniform mat4 uClipSpheres[num_clipspheres];
 #endif
 
 #if defined(num_clippolygons) && num_clippolygons > 0
-uniform int uClipPolygonVCount[num_clippolygons];//number of vertices for a given polygon
-//uniform vec3 uClipPolygonVertices[num_clippolygons * 8];//flattened array of vertices
-uniform vec3 uClipPolygonVertices[num_clippolygons * max_clip_polygons];//flattened array of vertices, but is not max_clip_polygons
-uniform mat4 uClipPolygonWVP[num_clippolygons];//flattened matrices world projected matrices
+uniform int uClipPolygonVCount[num_clippolygons]; // number of vertices for a given polygon
+// uniform vec3 uClipPolygonVertices[num_clippolygons * 8];//flattened array of vertices
+//uniform vec3 uClipPolygonVertices[num_clippolygons * max_clip_polygons]; // flattened array of vertices, but is not max_clip_polygons
+uniform vec3 uClipPolygonVertices[num_clippolygons * max_clip_vertices]; // flattened array of vertices, but is not max_clip_polygons
+uniform mat4 uClipPolygonWVP[num_clippolygons];							 // flattened matrices world projected matrices
+uniform vec3 uClipPolygonColor[num_clippolygons];						 // flattened matrices world projected matrices
+
 #endif
 
 uniform float size;
@@ -178,7 +178,7 @@ out float vRadius;
 out float vPointSize;
 // out to ignorecolor by making transparent
 
-//out float vOpacity;
+// out float vOpacity;
 flat out int isVisible;
 
 float roundDeprecated(float number)
@@ -529,25 +529,27 @@ vec3 getElevation()
 	vec4 world = modelMatrix * vec4(position, 1.0);
 	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);
 	vec3 cElevation = texture(gradient, vec2(w, 1.0 - w)).rgb;
-	//vec3 iso = vec3(0.0, 0.0, 0.0);
-	//override the color at a given heights and tolerance
-	#if defined(draw_isolines) && draw_isolines > 0
+// vec3 iso = vec3(0.0, 0.0, 0.0);
+// override the color at a given heights and tolerance
+#if defined(draw_isolines) && draw_isolines > 0
 	//	cElevation=isolinesRendering(cElevation).xyz;//considers only z position
-		//vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-		float ppos=world.z;
-		//vec3 color=vec3(0.0, 0.0, 0.0);
-		bool none = true;
-		if( abs(mod( ppos,isoValues[1] )) < isoValues[2]){
-			cElevation = vec3(isoColorB[0], isoColorB[1], isoColorB[2]);
-			//color = vec3(0.0, 1.0, 0.0);
-			//none=false;
-		}
-		if( abs(mod( ppos,isoValues[0] )) < isoValues[2]){
-			//color = vec3(1.0, 0.0, 0.0);
-			cElevation = vec3(isoColorA[0], isoColorA[1], isoColorA[2]);
-		}
+	// vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+	float ppos = world.z;
+	// vec3 color=vec3(0.0, 0.0, 0.0);
+	bool none = true;
+	if (abs(mod(ppos, isoValues[1])) < isoValues[2])
+	{
+		cElevation = vec3(isoColorB[0], isoColorB[1], isoColorB[2]);
+		// color = vec3(0.0, 1.0, 0.0);
+		// none=false;
+	}
+	if (abs(mod(ppos, isoValues[0])) < isoValues[2])
+	{
+		// color = vec3(1.0, 0.0, 0.0);
+		cElevation = vec3(isoColorA[0], isoColorA[1], isoColorA[2]);
+	}
 
-	#endif
+#endif
 
 	return cElevation;
 }
@@ -773,7 +775,6 @@ vec3 getMatcap()
 }
 #endif
 
-
 // Testing to feed additional parameters to the shader to have multiple rendering options
 // Proposed parameters are
 
@@ -783,67 +784,65 @@ vec3 getMatcap()
 // uExtraScale: scaling factor for the extra parameter
 // uExtraOffset: offset for the extra parameter
 
-//in terms of functions, allowed functions include
-//distance_rendering
-//iso_rendering
-//ramp_rendering
+// in terms of functions, allowed functions include
+// distance_rendering
+// iso_rendering
+// ramp_rendering
 
+// requires positionRefValues, rangeValues
+//   In allows to show objects based on their distance to a reference point
+//   The reference point is defined by positionRefValues
+//   The range of the distance is defined by rangeValues
+//   The color is defined by the gradient texture
 
-//requires positionRefValues, rangeValues
-//  In allows to show objects based on their distance to a reference point
-//  The reference point is defined by positionRefValues
-//  The range of the distance is defined by rangeValues
-//  The color is defined by the gradient texture
-
-//semantics are, from a given distance, the color is defined by different clors and gradients
-// within Radius, the color is defined by the gradient texture1 and min ma
-// within 2*Radius, the color is defined by the gradient texture2
-
+// semantics are, from a given distance, the color is defined by different clors and gradients
+//  within Radius, the color is defined by the gradient texture1 and min ma
+//  within 2*Radius, the color is defined by the gradient texture2
 
 #if defined(distance_to_point) && defined(num_ranges) && num_ranges > 0
 
-vec3 distanceRendering(){
+vec3 distanceRendering()
+{
 
 	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
 
-	vec3 ppos=worldPosition.xyz;
-	vec3 pref= vec3(positionRef[0],  positionRef[1], positionRef[2]);
-	float dist = distance( ppos,pref);
+	vec3 ppos = worldPosition.xyz;
+	vec3 pref = vec3(positionRef[0], positionRef[1], positionRef[2]);
+	float dist = distance(ppos, pref);
 
-	//using the first max value as the reference
+	// using the first max value as the reference
 
-
-
-
-	if( rangeValues[0] <= dist && dist < rangeValues[1]){
+	if (rangeValues[0] <= dist && dist < rangeValues[1])
+	{
 		float w = (dist - rangeValues[0]) / (rangeValues[1] - rangeValues[0]);
 		w = clamp(w, 0.0, 1.0);
 		vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
 		return color;
 	}
-	else{
+	else
+	{
 		return vec3(0.0, 0.0, 0.0);
-
 	}
-
 }
 #endif
 
-
 #if defined(draw_isolines) && draw_isolines > 0
 
-vec3 isolinesRendering(vec3 color){
+vec3 isolinesRendering(vec3 color)
+{
 	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-	vec3 ppos=worldPosition.xyz;
-	//vec3 color=vec3(0.0, 0.0, 0.0);
+	vec3 ppos = worldPosition.xyz;
+	// vec3 color=vec3(0.0, 0.0, 0.0);
 	bool none = true;
-	if( abs(mod( ppos.z,isoValues[1] )) < isoValues[2]){
+	if (abs(mod(ppos.z, isoValues[1])) < isoValues[2])
+	{
 		color = vec3(0.0, 1.0, 0.0);
-		//none=false;
+		// none=false;
 	}
-	if( abs(mod( ppos.z,isoValues[0] )) < isoValues[2]){
+	if (abs(mod(ppos.z, isoValues[0])) < isoValues[2])
+	{
 		color = vec3(1.0, 0.0, 0.0);
-		//none=false;
+		// none=false;
 	}
 
 	return color;
@@ -855,19 +854,20 @@ vec3 isolinesRendering(vec3 color){
 
 // this becomes  uExtraRange[0] <= visRange[0] <= visRange[1] <= uExtraRange[1]
 
-//a extra value does not have to be inside the values. Is a value is outside of visRange, then its not shown
+// a extra value does not have to be inside the values. Is a value is outside of visRange, then its not shown
 //
 
 #if defined(custom_range) && custom_range > 0
 
-vec3 customRangeRendering(){
-	//vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-	//vec3 ppos=worldPosition.xyz;
+vec3 customRangeRendering()
+{
+	// vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+	// vec3 ppos=worldPosition.xyz;
 
 	vec3 color;
 	bool none = true;
-	//float w = (aExtra + uExtraOffset) * uExtraScale;
-	float w=aExtra;
+	// float w = (aExtra + uExtraOffset) * uExtraScale;
+	float w = aExtra;
 	// w = clamp(w, 0.0, 1.0);
 	// vec3 color = texture(gradient, vec2(w,1.0-w)).rgb;
 
@@ -875,9 +875,9 @@ vec3 customRangeRendering(){
 
 	// float w = aExtra * (r.y - r.x) + r.x;
 
-	//scale to the whole color range between 0 and 1
-	//float w = (aExtra + uExtraOffset) * uExtraScale;
-	// w = clamp(w, 0.0, 1.0);
+	// scale to the whole color range between 0 and 1
+	// float w = (aExtra + uExtraOffset) * uExtraScale;
+	//  w = clamp(w, 0.0, 1.0);
 
 	// vec3 color = texture(gradient, vec2(w,1.0-w)).rgb;
 
@@ -885,21 +885,19 @@ vec3 customRangeRendering(){
 
 	// float w = aExtra * (r.y - r.x) + r.x;
 
+	// if (visibleRange[0] < w  &&  w < visibleRange[1]){
+	// w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
+	// w = clamp(w, 0.0, 1.0);//redundant
 
+	// color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	// return color
+	//	}else{
 
-
-
-	//if (visibleRange[0] < w  &&  w < visibleRange[1]){
-		//w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
-		//w = clamp(w, 0.0, 1.0);//redundant
-
-		//color = texture(gradient, vec2(w, 1.0 - w)).rgb;
-		//return color
-//	}else{
-
-	if (w > visibleRange[1] ){
+	if (w > visibleRange[1])
+	{
 		w = visibleRange[1];
-		if(allVisible[1] == 0.0){
+		if (allVisible[1] == 0.0)
+		{
 			isVisible = 0;
 		}
 		// vOpacity=0.0;//set somewhere else
@@ -907,53 +905,43 @@ vec3 customRangeRendering(){
 		return color;
 	}
 
-
-	if (w < visibleRange[0] ){
+	if (w < visibleRange[0])
+	{
 		w = visibleRange[0];
-		if(allVisible[0] == 0.0){
+		if (allVisible[0] == 0.0)
+		{
 			isVisible = 0;
 		}
 
-			//color = vec3(allVisible[0], allVisible[1], allVisible[2]);
-		//vOpacity=0.0;//set somewhere else
+		// color = vec3(allVisible[0], allVisible[1], allVisible[2]);
+		// vOpacity=0.0;//set somewhere else
 		color = vec3(nonVisibleColorMin[0], nonVisibleColorMin[1], nonVisibleColorMin[2]);
 		return color;
-		//return vec3(0.0, 0.0, 0.0);
-		//color = vec3(0.0, 0.0, 0.0);
-		//none=false;
-		//return color;
-
+		// return vec3(0.0, 0.0, 0.0);
+		// color = vec3(0.0, 0.0, 0.0);
+		// none=false;
+		// return color;
 	}
 
-
 	w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
-	w = clamp(w, 0.0, 1.0);//redundant
+	w = clamp(w, 0.0, 1.0); // redundant
 
 	color = texture(gradient, vec2(w, 1.0 - w)).rgb;
 	return color;
-
-
 }
 #endif
-
-
-
 
 vec3 getExtra()
 {
 
-#if defined(distance_to_point) &&  distance_to_point > 0
-	return distanceRendering();//considers only position
+#if defined(distance_to_point) && distance_to_point > 0
+	return distanceRendering(); // considers only position
 #endif
 
-
-
-// initial implementation for habing uExtraRange and uExtraScale, uExtraOffset
- #if defined(custom_range) &&  custom_range > 0
- 	return customRangeRendering();//considers oExtra value and min max data_range
- #endif
-
-
+	// initial implementation for habing uExtraRange and uExtraScale, uExtraOffset
+#if defined(custom_range) && custom_range > 0
+	return customRangeRendering(); // considers oExtra value and min max data_range
+#endif
 
 	float w = (aExtra + uExtraOffset) * uExtraScale;
 
@@ -964,8 +952,8 @@ vec3 getExtra()
 
 	w = clamp(w, 0.0, 1.0);
 
-	//vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;//remove once test is done
-	vec3 color = vec3(0.0,0.0,1.0);//black for testing, comment once done
+	// vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;//remove once test is done
+	vec3 color = vec3(0.0, 0.0, 1.0); // black for testing, comment once done
 
 	return color;
 }
@@ -973,7 +961,7 @@ vec3 getExtra()
 vec3 getColor()
 {
 	vec3 color;
-	//do not make transparent by default, only to ignore it, multypli with the uOpacity
+	// do not make transparent by default, only to ignore it, multypli with the uOpacity
 
 #ifdef color_type_rgba
 	color = getRGB();
@@ -1084,7 +1072,6 @@ float getPointSize()
 	return pointSize;
 }
 
-
 // Step-by-step explanation
 // Transform the point to polygon's clip space:
 
@@ -1116,19 +1103,19 @@ float getPointSize()
 bool pointInClipPolygon(vec3 point, int polyIdx)
 {
 
-	mat4 wvp = uClipPolygonWVP[polyIdx];//world view projection
+	mat4 wvp = uClipPolygonWVP[polyIdx]; // world view projection
 	// vec4 screenClipPos = uClipPolygonVP[polyIdx] * modelMatrix * vec4(point, 1.0);
 	// screenClipPos.xy = screenClipPos.xy / screenClipPos.w * 0.5 + 0.5;
 
-	vec4 pointNDC = wvp * vec4(point, 1.0);//normalized device coordinates
+	vec4 pointNDC = wvp * vec4(point, 1.0); // normalized device coordinates
 	pointNDC.xy = pointNDC.xy / pointNDC.w;
 
 	int j = uClipPolygonVCount[polyIdx] - 1;
-	bool c = false;//by default point is even, means outside the polygon, even means inside
+	bool c = false; // by default point is even, means outside the polygon, even means inside
 
-	//checking each edge of the polygon from the, j = last vertex, from j=i-1  to i m i.e.
-	//for (int i = 0; i < 8; i++)//this version works with at most 8 vertices
-	for (int i = 0; i < max_clip_polygons; i++)// moved to use the max_clip_polygons, default set to 8
+	// checking each edge of the polygon from the, j = last vertex, from j=i-1  to i m i.e.
+	// for (int i = 0; i < 8; i++)//this version works with at most 8 vertices
+	for (int i = 0; i < max_clip_vertices; i++) // moved to use the max_clip_polygons, default set to 8
 	{
 
 		if (i == uClipPolygonVCount[polyIdx])
@@ -1136,20 +1123,19 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 			break;
 		}
 
-
 		// vec3 verti = uClipPolygonVertices[polyIdx * 8 + i];//
 		// vec3 vertj = uClipPolygonVertices[polyIdx * 8 + j];//8 becuase is flattened
 
-		vec3 verti = uClipPolygonVertices[polyIdx * max_clip_polygons + i];
-		vec3 vertj = uClipPolygonVertices[polyIdx * max_clip_polygons + j];
+		vec3 verti = uClipPolygonVertices[polyIdx * max_clip_vertices + i];
+		vec3 vertj = uClipPolygonVertices[polyIdx * max_clip_vertices + j];
 
-		//horitonzal line check
-		//if point  crosses the edge y coords, proceed
-		//line equation  xm + b
+		// horitonzal line check
+		// if point  crosses the edge y coords, proceed
+		// line equation  xm + b
 		if (((verti.y > pointNDC.y) != (vertj.y > pointNDC.y)) &&
 			(pointNDC.x < (vertj.x - verti.x) * ((pointNDC.y - verti.y) / (vertj.y - verti.y)) + verti.x))
 		{
-			c = !c;//toggles for every line crossing within the polygon
+			c = !c; // toggles for every line crossing within the polygon
 		}
 		j = i;
 	}
@@ -1161,30 +1147,7 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 void doClipping()
 {
 
-	// Pythagoras begin
-	// {
-	// 	vec4 world = modelMatrix * vec4(position, 1.0);
-	// 	if (!(elevationRange.x == 0.0 && elevationRange.y == 0.0))
-	// 	{
-	// 		if (world.z < elevationRange.x || world.z > elevationRange.y)
-	// 		{
-	// 			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
-	// 			return;
-	// 		}
-	// 	}
-	// }
 
-	// {
-	// 	if (!(intensityRange.x == 0.0 && intensityRange.y == 0.0))
-	// 	{
-	// 		if (intensity < intensityRange.x || intensity > intensityRange.y)
-	// 		{
-	// 			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
-	// 			return;
-	// 		}
-	// 	}
-	// }
-	// Pythagoras end
 
 	{
 		vec4 cl = getClassification();
@@ -1196,55 +1159,55 @@ void doClipping()
 		}
 	}
 
-#if defined(clip_return_number_enabled)
-	{ // return number filter
-		vec2 range = uFilterReturnNumberRange;
-		if (returnNumber < range.x || returnNumber > range.y)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+	#if defined(clip_return_number_enabled)
+		{ // return number filter
+			vec2 range = uFilterReturnNumberRange;
+			if (returnNumber < range.x || returnNumber > range.y)
+			{
+				gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 
-			return;
+				return;
+			}
 		}
-	}
-#endif
+	#endif
 
-#if defined(clip_number_of_returns_enabled)
-	{ // number of return filter
-		vec2 range = uFilterNumberOfReturnsRange;
-		if (numberOfReturns < range.x || numberOfReturns > range.y)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+	#if defined(clip_number_of_returns_enabled)
+		{ // number of return filter
+			vec2 range = uFilterNumberOfReturnsRange;
+			if (numberOfReturns < range.x || numberOfReturns > range.y)
+			{
+				gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 
-			return;
+				return;
+			}
 		}
-	}
-#endif
+	#endif
 
-#if defined(clip_gps_enabled)
-	{ // GPS time filter
-		float time = (gpsTime + uGpsOffset) * uGpsScale;
-		vec2 range = uFilterGPSTimeClipRange;
+	#if defined(clip_gps_enabled)
+		{ // GPS time filter
+			float time = (gpsTime + uGpsOffset) * uGpsScale;
+			vec2 range = uFilterGPSTimeClipRange;
 
-		if (time < range.x || time > range.y)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+			if (time < range.x || time > range.y)
+			{
+				gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 
-			return;
+				return;
+			}
 		}
-	}
-#endif
+	#endif
 
-#if defined(clip_point_source_id_enabled)
-	{ // point source id filter
-		vec2 range = uFilterPointSourceIDClipRange;
-		if (pointSourceID < range.x || pointSourceID > range.y)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+	#if defined(clip_point_source_id_enabled)
+		{ // point source id filter
+			vec2 range = uFilterPointSourceIDClipRange;
+			if (pointSourceID < range.x || pointSourceID > range.y)
+			{
+				gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 
-			return;
+				return;
+			}
 		}
-	}
-#endif
+	#endif
 
 	bool clip = false;
 	bool isolateAnything = false;
@@ -1254,172 +1217,182 @@ void doClipping()
 	bool highlight = false;
 	bool active_ = false;
 	bool visible = true;
-	vec3 highlightColor = vec3(1.0, 1.0, 1.0);//white
+	vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
 
-#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-	for (int i = 0; i < num_clusteredpointsegments; i++)
-	{
-		if (clusteredpointsegments[i] == seg_cluster_id)
+	#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
+		for (int i = 0; i < num_clusteredpointsegments; i++)
 		{
-			active_ = activeStates[i];
-			highlight = selectedStates[i];
-			visible = visibleStates[i];
-			highlightColor = vec3(0, 0, 1);
-			if (segmentClipTasks[i] == CLIPTASK_SHOW_OUTSIDE || !visible)
+			if (clusteredpointsegments[i] == seg_cluster_id)
 			{
-				clip = true;
+				active_ = activeStates[i];
+				highlight = selectedStates[i];
+				visible = visibleStates[i];
+				highlightColor = vec3(0, 0, 1);
+				if (segmentClipTasks[i] == CLIPTASK_SHOW_OUTSIDE || !visible)
+				{
+					clip = true;
+				}
+				else if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
+				{
+					isolateAnything = true;
+					isolateThis = true;
+				}
+				else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
+				{
+					grayscaleAnything = true;
+					grayscaleThis = false;
+				}
 			}
-			else if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
+			else
 			{
-				isolateAnything = true;
-				isolateThis = true;
-			}
-			else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
-			{
-				grayscaleAnything = true;
-				grayscaleThis = false;
+				if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
+				{
+					isolateAnything = true;
+				}
+				else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
+				{
+					grayscaleAnything = true;
+				}
 			}
 		}
-		else
-		{
-			if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
-			{
-				isolateAnything = true;
-			}
-			else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
-			{
-				grayscaleAnything = true;
-			}
-		}
-	}
-#endif
+	#endif
 
 	int clipVolumesCount = 0;
 	int insideCount = 0;
 
-//this just assigns the hightlight value and color but seems not to be working the inside check
+	// this just assigns the hightlight value and color but seems not to be working the inside check
 
-//cliptasks[0] is a name, not an array
+	// cliptasks[0] is a name, not an array
 
-#if defined(num_clipboxes) && num_clipboxes > 0
-	for (int i = 0; i < num_clipboxes; i++)
+	// CLIPbOXES CODE
 	{
-		vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
-		bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
-		inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
-		inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
-
-		//old code not present
-		insideCount = insideCount + (inside ? 1 : 0);
-		clipVolumesCount++;
-
-		//adding highlight color
-		//highlightColor = vec3(0, 0, 1.0);//setting to blue at the beginning, so
-		//highlightColor = boxColors[i];//setting to blue at the beginning, so
-
-
-
-		// CLUSTERING TOOLS CODE
-		if (inside)
+	#if defined(num_clipboxes) && num_clipboxes > 0
+		for (int i = 0; i < num_clipboxes; i++)
 		{
+			vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
+			bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
+			inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
+			inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
 
-
-			{//if inside but nos a clip tasks,highlight as cyan
-			// useful for debugging
-		//	highlightColor = vec3(1, 1, 1);//cyan should not appear as is overwritten
-			//highlight= true;
-			}
-
-			if (clipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
-			{
-				clip = true;
-			}
-			else if (clipTasks[i] == CLIPTASK_SHOW_INSIDE)
-			{
-				isolateAnything = true;
-				isolateThis = true;
-			}
-			else if (clipTasks[i] == CLIPTASK_GRAYSCALE)
-			{
-				grayscaleAnything = true;
-				grayscaleThis = false;
-			}
-			else if (clipTasks[i] == CLIPTASK_HIGHLIGHT)
-			{
-				highlight = true;
-				highlightColor = boxColors[i];
-				//highlightColor = vec3(0.5, 1.0, 0.0);
-			}
-			else if (clipTasks[i] == CLIPTASK_ACTIVE)
-			{
-				active_ = true;
-			}
-
-			//////////// adding code for cliptasks as variable, but is seems duplicated
-			if (selectionClipTasks[i] == CLIPTASK_HIGHLIGHT){
-				highlight = true;
-				highlightColor = selectionBoxColors[i];			//no esta entrando
-				//highlightColor = boxColors[i];//color per clipbox
-				}
-			else if (selectionClipTasks[i] == CLIPTASK_ACTIVE)
-			{
-				active_ = true;
-			}
-			else if (selectionClipTasks[i] == CLIPTASK_GRAYSCALE)
-			{
-				grayscaleThis = true;
-			}
-			else if (selectionClipTasks[i] == CLIPTASK_SHOW_INSIDE)
-			{
-				isolateThis = true;
-			}
-			else if (selectionClipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
-			{
-				isolateThis = false;
-			}
-
-
-		}
-		else//outside
-		{
-			if (clipTasks[i] == CLIPTASK_SHOW_INSIDE)
-			{
-				isolateAnything = true;
-			}
-			else if (clipTasks[i] == CLIPTASK_GRAYSCALE)
-			{
-				grayscaleAnything = true;
-			}
-
-			//testing to set a variable to show the color
-			//points outside are set to a color
-			//means are not being found inside
-
-		}
-	}
-#endif
-
-#if defined(num_clippolygons) && num_clippolygons > 0
-	for (int i = 0; i < num_clippolygons; i++)
-	{
-		bool inside = pointInClipPolygon(position, i);
-
-		{ // code PREVIOUS TO CLUSTERING TOOL
+			// old code not present
 			insideCount = insideCount + (inside ? 1 : 0);
 			clipVolumesCount++;
 
-		//TODO, if inside, continue or break
+			// adding highlight color
+			// highlightColor = vec3(0, 0, 1.0);//setting to blue at the beginning, so
+			// highlightColor = boxColors[i];//setting to blue at the beginning, so
 
-			//must set the color to the polygon color
+			// CLUSTERING TOOLS CODE
+			if (inside)
+			{
 
+				{ // if inside but nos a clip tasks,highlight as cyan
+					// useful for debugging
+					//	highlightColor = vec3(1, 1, 1);//cyan should not appear as is overwritten
+					// highlight= true;
+				}
+
+				if (clipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
+				{
+					clip = true;
+				}
+				else if (clipTasks[i] == CLIPTASK_SHOW_INSIDE)
+				{
+					isolateAnything = true;
+					isolateThis = true;
+				}
+				else if (clipTasks[i] == CLIPTASK_GRAYSCALE)
+				{
+					grayscaleAnything = true;
+					grayscaleThis = false;
+				}
+				else if (clipTasks[i] == CLIPTASK_HIGHLIGHT)
+				{
+					highlight = true;
+					highlightColor = boxColors[i];
+					// highlightColor = vec3(0.5, 1.0, 0.0);
+				}
+				else if (clipTasks[i] == CLIPTASK_ACTIVE)
+				{
+					active_ = true;
+				}
+
+				//////////// adding code for cliptasks as variable, but is seems duplicated
+				if (selectionClipTasks[i] == CLIPTASK_HIGHLIGHT)
+				{
+					highlight = true;
+					highlightColor = selectionBoxColors[i]; // no esta entrando
+					// highlightColor = boxColors[i];//color per clipbox
+				}
+				else if (selectionClipTasks[i] == CLIPTASK_ACTIVE)
+				{
+					active_ = true;
+				}
+				else if (selectionClipTasks[i] == CLIPTASK_GRAYSCALE)
+				{
+					grayscaleThis = true;
+				}
+				else if (selectionClipTasks[i] == CLIPTASK_SHOW_INSIDE)
+				{
+					isolateThis = true;
+				}
+				else if (selectionClipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
+				{
+					isolateThis = false;
+				}
+			}
+			else // outside
+			{
+				if (clipTasks[i] == CLIPTASK_SHOW_INSIDE)
+				{
+					isolateAnything = true;
+				}
+				else if (clipTasks[i] == CLIPTASK_GRAYSCALE)
+				{
+					grayscaleAnything = true;
+				}
+
+				// testing to set a variable to show the color
+				// points outside are set to a color
+				// means are not being found inside
+			}
 		}
-
-
+	#endif
 	}
-#endif
 
-	// here, the actual color is assigned on clasycal cluistering code
-	{
+	{// polygonClipVolume section,
+	#if defined(num_clippolygons) && num_clippolygons > 0
+
+		for (int i = 0; i < num_clippolygons; i++)
+		{
+			bool inside = pointInClipPolygon(position, i);
+
+			{ // code PREVIOUS TO CLUSTERING TOOL
+				insideCount = insideCount + (inside ? 1 : 0);
+				clipVolumesCount++;
+
+				// TODO, if inside, continue or break to skip  testing other polygons
+				// must set the color to the polygon color but
+
+				if(inside  ){//applies the corresponding color
+						vColor.r = uClipPolygonColor[i].x;
+						vColor.g = uClipPolygonColor[i].y;
+						vColor.b = uClipPolygonColor[i].z;
+						// vColor.r = 0.0;
+						// vColor.g = 1.0;
+						// vColor.b = 1.0;
+
+
+				}
+
+
+			}
+		}
+	#endif
+	}
+
+
+	{// clipVolume section   , uses  clipMethod and clipTask
 		bool insideAny = insideCount > 0;
 		bool insideAll = (clipVolumesCount > 0) && (clipVolumesCount == insideCount);
 
@@ -1428,38 +1401,34 @@ void doClipping()
 			if (insideAny && clipTask == CLIPTASK_HIGHLIGHT)
 			{
 
-				vColor.r += 0.5;//default
+				vColor.r += 0.5; // default
 				#if defined(num_clipboxes) && num_clipboxes > 0
-				if(highlight){
+					if (highlight)
+					{
 
-					vColor.r=highlightColor.x;
-					vColor.g=highlightColor.y;
-					vColor.b=highlightColor.z;
-				// vColor.r = 1.0 -  vColor.r;
-				// vColor.g = 1.0 -  vColor.g;
-				// vColor.b = 1.0 -  vColor.b;
-					// vColor.r=highlightColor.r;
-					// vColor.g=highlightColor.g;
-					// vColor.b=highlightColor.b;
-				}
+						vColor.r = highlightColor.x;
+						vColor.g = highlightColor.y;
+						vColor.b = highlightColor.z;
+						// vColor.r = 1.0 -  vColor.r;
+						// vColor.g = 1.0 -  vColor.g;
+						// vColor.b = 1.0 -  vColor.b;
+						// vColor.r=highlightColor.r;
+						// vColor.g=highlightColor.g;
+						// vColor.b=highlightColor.b;
+					}
 
-				// {//inverted color
-				// vColor.r = 1.0 -  vColor.r;
-				// vColor.g = 1.0 -  vColor.g;
-				// vColor.b = 1.0 -  vColor.b;
-				// }
+					// {//inverted color
+					// vColor.r = 1.0 -  vColor.r;
+					// vColor.g = 1.0 -  vColor.g;
+					// vColor.b = 1.0 -  vColor.b;
+					// }
 
 				#endif
 
-
-
-				//this was tested but
-				//vColor.r += 0.5;//some constant
-				//vColor.g = 0.1;//some constant
-				//vColor.b = 0.1;//some constant
-
-
-
+				// this was tested but
+				// vColor.r += 0.5;//some constant
+				// vColor.g = 0.1;//some constant
+				// vColor.b = 0.1;//some constant
 			}
 			else if (!insideAny && clipTask == CLIPTASK_SHOW_INSIDE)
 			{
@@ -1474,29 +1443,29 @@ void doClipping()
 		{
 			if (insideAll && clipTask == CLIPTASK_HIGHLIGHT)
 			{
-				vColor.r += 0.5;//default highlight color,
+				vColor.r += 0.5; // default highlight color,
 				#if defined(num_clipboxes) && num_clipboxes > 0
-				if(highlight){
+								if (highlight)
+								{
 
-					vColor.r=highlightColor.x;
-					vColor.g=highlightColor.y;
-					vColor.b=highlightColor.z;
-				// vColor.r = 1.0 -  vColor.r;
-				// vColor.g = 1.0 -  vColor.g;
-				// vColor.b = 1.0 -  vColor.b;
-					// vColor.r=highlightColor.r;
-					// vColor.g=highlightColor.g;
-					// vColor.b=highlightColor.b;
-				}
+									vColor.r = highlightColor.x;
+									vColor.g = highlightColor.y;
+									vColor.b = highlightColor.z;
+									// vColor.r = 1.0 -  vColor.r;
+									// vColor.g = 1.0 -  vColor.g;
+									// vColor.b = 1.0 -  vColor.b;
+									// vColor.r=highlightColor.r;
+									// vColor.g=highlightColor.g;
+									// vColor.b=highlightColor.b;
+								}
 
-				// {//inverted color
-				// vColor.r = 1.0 -  vColor.r;
-				// vColor.g = 1.0 -  vColor.g;
-				// vColor.b = 1.0 -  vColor.b;
-				// }
+								// {//inverted color
+								// vColor.r = 1.0 -  vColor.r;
+								// vColor.g = 1.0 -  vColor.g;
+								// vColor.b = 1.0 -  vColor.b;
+								// }
 
 				#endif
-
 			}
 			else if (!insideAll && clipTask == CLIPTASK_SHOW_INSIDE)
 			{
@@ -1509,7 +1478,7 @@ void doClipping()
 		}
 	}
 
-	{ // CLUSTERING TOOL CODE
+	{ // CLUSTERING TOOL CODE  , uses active_, grayscaleAnything, grayscaleThis, highlight, clip, isolateAnything, isolateThis
 
 		if ((isolateAnything && !isolateThis) || clip)
 		{
@@ -1529,13 +1498,9 @@ void doClipping()
 			vColor.g = grayScale75p + highlightColor.g / 2.0;
 			vColor.b = grayScale75p + highlightColor.b / 2.0;
 
-
-			// vColor.r = 0.0;
-			// vColor.g = 1.0;
-			// vColor.b =  0.0;
-
-
-
+			vColor.r = 0.0;
+			vColor.g = 1.0;
+			vColor.b =  0.0;
 		}
 		else if (grayscaleAnything && grayscaleThis)
 		{
@@ -1545,12 +1510,14 @@ void doClipping()
 			vColor.b = grayScale;
 		}
 	}
-	//hightlight never arived, triying boxColor
-	// #if defined(num_clipboxes) && num_clipboxes > 0
-	// vColor.r = boxColors[0].x;
-	// vColor.g = boxColors[0].y;
-	// vColor.b =  boxColors[0].z;
-	// #endif
+
+
+	// hightlight never arived, triying boxColor
+	//  #if defined(num_clipboxes) && num_clipboxes > 0
+	//  vColor.r = boxColors[0].x;
+	//  vColor.g = boxColors[0].y;
+	//  vColor.b =  boxColors[0].z;
+	//  #endif
 }
 
 //
@@ -1579,7 +1546,7 @@ void main()
 	gl_PointSize = pointSize;
 	vPointSize = pointSize;
 
-	isVisible=1;
+	isVisible = 1;
 
 	// #if defined(custom_range)
 	// if(allVisible[0] == 0.0)	{
@@ -1587,10 +1554,8 @@ void main()
 	// } //color for the min value
 	// #endif
 
-
 	// COLOR
-	//vOpacity = 1.0;
-
+	// vOpacity = 1.0;
 
 	vColor = getColor();
 

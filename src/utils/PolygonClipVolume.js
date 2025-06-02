@@ -1,7 +1,16 @@
 
 import * as THREE from "../../libs/three.js/build/three.module.js";
 
+
+
+
 export class PolygonClipVolume extends THREE.Object3D {
+
+	NONE_TASK=0;
+	SELECTION_TASK = 1; // default task
+	CLASSIFICATION_TASK = 2;
+	DELETION_TASK = 3;
+
 
 	constructor(camera) {
 		super();
@@ -24,6 +33,12 @@ export class PolygonClipVolume extends THREE.Object3D {
 		this.initialized = false;
 
 		this.maxPolygonVertices = 16;//also in Clipping Tool.js, update in potreeRenderer
+
+		//adding color per PolygonClipVolume
+		this.color = new THREE.Color(0xff0000); // default color
+
+		this.task = this.SELECTION_TASK; // default task, selection, used for subcode
+
 	}
 
 	addMarker() {
