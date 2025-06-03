@@ -1279,8 +1279,8 @@ void doClipping()
 			clipVolumesCount++;
 
 			// adding highlight color
-			// highlightColor = vec3(0, 0, 1.0);//setting to blue at the beginning, so
-			// highlightColor = boxColors[i];//setting to blue at the beginning, so
+			//highlightColor = vec3(0, 0, 1.0);//setting to blue at the beginning, so
+			//highlightColor = boxColors[i];//setting to blue at the beginning, so
 
 			// CLUSTERING TOOLS CODE
 			if (inside)
@@ -1310,19 +1310,19 @@ void doClipping()
 				{
 					highlight = true;
 					highlightColor = boxColors[i];
-					// highlightColor = vec3(0.5, 1.0, 0.0);
+					//highlightColor = vec3(0.5, 1.0, 0.0);
 				}
 				else if (clipTasks[i] == CLIPTASK_ACTIVE)
 				{
 					active_ = true;
 				}
 
-				//////////// adding code for cliptasks as variable, but is seems duplicated
+				//////////// adding code for custom boxvolume  , writing to selectionClipTasks
 				if (selectionClipTasks[i] == CLIPTASK_HIGHLIGHT)
 				{
 					highlight = true;
-					highlightColor = selectionBoxColors[i]; // no esta entrando
-					// highlightColor = boxColors[i];//color per clipbox
+					//highlightColor = selectionBoxColors[i]; // no esta entrando
+					highlightColor = boxColors[i];//color per clipbox
 				}
 				else if (selectionClipTasks[i] == CLIPTASK_ACTIVE)
 				{
@@ -1498,9 +1498,11 @@ void doClipping()
 			vColor.g = grayScale75p + highlightColor.g / 2.0;
 			vColor.b = grayScale75p + highlightColor.b / 2.0;
 
-			vColor.r = 0.0;
-			vColor.g = 1.0;
-			vColor.b =  0.0;
+
+
+			// vColor.r = 0.0;
+			// vColor.g = 1.0;
+			// vColor.b =  0.0;
 		}
 		else if (grayscaleAnything && grayscaleThis)
 		{
