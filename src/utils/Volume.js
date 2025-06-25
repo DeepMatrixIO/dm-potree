@@ -45,7 +45,7 @@ export class Volume extends THREE.Object3D {
 		};
 
 		{ // event listeners
-			this.addEventListener('select', e => {});
+			this.addEventListener('select', e => {});//dummy method to trigger InputHandle selectable.
 			this.addEventListener('deselect', e => {});
 		}
 

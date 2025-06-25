@@ -228,7 +228,7 @@ export class TransformationTool {
 			});
 
 			//let outlineMaterial = new THREE.MeshBasicMaterial({
-			//	color: 0x000000, 
+			//	color: 0x000000,
 			//	side: THREE.BackSide,
 			//	opacity: 0,
 			//	transparent: true});
@@ -747,7 +747,10 @@ export class TransformationTool {
 
 	update() {
 
-		if (this.selection.length === 1) {
+		if (this.selection.length === 1
+		&& this.selection.at(0).modifieable !== undefined
+		&& this.selection.at(0).modifieable
+		){
 
 			this.scene.visible = true;
 
@@ -864,7 +867,7 @@ export class TransformationTool {
 					}
 				}
 
-				// 
+				//
 				for (let handleName of Object.keys(this.scaleHandles)) {
 					let handle = this.handles[handleName];
 					let node = handle.node;
