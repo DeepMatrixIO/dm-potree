@@ -275,7 +275,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		extraDefines.push('#define custom_range 1');//custom rendering of extra attributes on custom range other than data range
 
-
+		extraDefines.push('#define filter_pc 1');//eNABLES POINTCLOUD FILTERING FOR SELECTION
 
 
 		return extraDefines;;

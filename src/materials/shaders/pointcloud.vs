@@ -21,6 +21,9 @@ in vec3 normal;
 in float aExtra;
 in float seg_cluster_id;
 
+// in float filterAttribute[3];//Filtering  Attributes Indexed by number from browser side. Total number limited by webgl to 16, so trying with 3
+
+
 uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -108,6 +111,17 @@ uniform mat4 uClipPolygonWVP[num_clippolygons];							 // flattened matrices wor
 uniform vec3 uClipPolygonColor[num_clippolygons];						 // flattened matrices world projected matrices
 
 #endif
+
+//list of dynamic filters for selection clips box or polygon
+#if defined(filter_pc) && defined(num_op_attributes) && filter_pc > 0 && num_op_attributes > 0 && defined(num_filters) && num_filters > 0 && defined(num_filter_values) && num_filter_values > 0
+
+op_attribute float op_attribute[num_op_attributes];//attribute values are packed and indexed for filters
+uniform ivec4 filters_list[num_filters];  //list of filters encoded with indices
+uniform float float_filter_values[num_filter_values];
+uniform int int_filter_values[num_list_values];
+//calls doFiltering
+#endif
+
 
 uniform float size;
 uniform float minSize;

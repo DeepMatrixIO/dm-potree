@@ -156,6 +156,9 @@ let attributeLocations = {
 
 	//"aExtra": {name: "aExtra", location: 7},//due to input size differences, set to 7 for testing
 
+	//filtering attributes array
+	"filterAttributes": {name: "filterAttributes", location: 13},
+
 
 };
 
@@ -808,9 +811,9 @@ export class Renderer {
 					for (let i = 0;i < material.clipPolygons.length;i++) {
 						let clipPolygon = material.clipPolygons[i];
 						for (let j = 0;j < clipPolygon.markers.length;j++) {
-							flattenedVertices[i * (maxPolygonVertices*3) + (j * 3 + 0)] = clipPolygon.markers[j].position.x;
-							flattenedVertices[i * (maxPolygonVertices*3) + (j * 3 + 1)] = clipPolygon.markers[j].position.y;
-							flattenedVertices[i * (maxPolygonVertices*3) + (j * 3 + 2)] = clipPolygon.markers[j].position.z;
+							flattenedVertices[i * (maxPolygonVertices * 3) + (j * 3 + 0)] = clipPolygon.markers[j].position.x;
+							flattenedVertices[i * (maxPolygonVertices * 3) + (j * 3 + 1)] = clipPolygon.markers[j].position.y;
+							flattenedVertices[i * (maxPolygonVertices * 3) + (j * 3 + 2)] = clipPolygon.markers[j].position.z;
 							// flattenedVertices[i * 24 + (j * 3 + 0)] = clipPolygon.markers[j].position.x;
 							// flattenedVertices[i * 24 + (j * 3 + 1)] = clipPolygon.markers[j].position.y;
 							// flattenedVertices[i * 24 + (j * 3 + 2)] = clipPolygon.markers[j].position.z;
@@ -820,15 +823,15 @@ export class Renderer {
 					}
 
 					////colors
-					let flattenedColors = [].concat(...material.clipPolygons.map(poly => [poly.color.r, poly.color.g, poly.color.b] ))
+					let flattenedColors = [].concat(...material.clipPolygons.map(poly => [poly.color.r, poly.color.g, poly.color.b]))
 					const lClipPolygonColor = shader.uniformLocations["uClipPolygonColor[0]"];
-					gl.uniform3fv(lClipPolygonColor,flattenedColors);
+					gl.uniform3fv(lClipPolygonColor, flattenedColors);
 					///end colors
 
 					////polygon task
-					let polygonTasks = [].concat(...material.clipPolygons.map(poly => [poly.task] ))
+					let polygonTasks = [].concat(...material.clipPolygons.map(poly => [poly.task]))
 					const lClipPolygonTask = shader.uniformLocations["uClipPolygonTask[0]"];
-					gl.uniform3fv(lClipPolygonColor,flattenedColors);
+					gl.uniform3fv(lClipPolygonColor, flattenedColors);
 					///end colors
 
 
@@ -987,8 +990,7 @@ export class Renderer {
 
 			gl.bindVertexArray(webglBuffer.vao);
 
-			//binding extra uniforms
-
+			//binding extra uniforms as float arrays
 
 			if (material.customRenderer) {
 
@@ -1171,6 +1173,67 @@ export class Renderer {
 					}
 				}
 			}
+
+			//////////////////////////
+			//adding filter attribute and locations
+			//a mapping is required between filter names and indices
+
+			//list to be set somewhere else, here is just for testing
+
+
+			let selectedAttributeNames = ["classification", "vegetation_distance", "vegetation_zone"]// index 0 is first name
+			let filterAttributeKeys = {"classification": 0, "vegetation_distance": 1, "vegetation_zone": 2}// index 0 is first name
+
+			let filterAttributeName = "filterAttributes";//name of the attribute to be used for filtering
+
+			if (false) {//todo, not working
+				for (currentAttributeName of selectedAttributeNames) {
+
+					//1) GET THE POINTCLOUD ATTRIBUTE BY NAME
+					const bufferAttribute = geometry.attributes[currentAttributeName];//retrieving the buffer by name
+					//2) GET THE KEY FOR THE POINTCLOUD ATTRIBUTE
+					let attributeIndex = filterAttributeKeys[currentAttributeName];
+					//3) GET THE VERTES BUFFER OBJECT (VBO) FOR THE ATTRIBUTE FOR RECYCLING
+
+					const vbo = webglBuffer.vbos.get(filterAttributeName);//get the complete packed attributes array
+
+					//GET THE ATRIBUTE LOCATION
+					if (attributeLocations[filterAttributeName] !== undefined) {//if the attribute location is defined
+
+						const attributeLocation = attributeLocations[filterAttributeName].location;//an index
+
+						let type = this.glTypeMapping.get(bufferAttribute.array.constructor);
+						let normalized = bufferAttribute.normalized;
+
+						// gl.bindBuffer(gl.ARRAY_BUFFER, vbo.handle);
+						// gl.vertexAttribPointer(attributeLocation, bufferAttribute.itemSize, type, normalized, 0, 0);
+						// gl.enableVertexAttribArray(attributeLocation);
+
+
+						const loc = gl.getAttribLocation(program, `${filterAttributeName}[${attributeIndex}]`);
+						gl.enableVertexAttribArray(loc);
+						let index;
+						let size;
+						let vtype;
+
+						gl.vertexAttribPointer(loc, 1, gl.FLOAT, false, stride, offset + i * 4);
+
+
+
+					}
+					else//attributeLocation  not set, add it? or not?
+					{
+
+					}
+
+				}
+
+			}
+
+
+
+			//////////////////////////
+
 
 			let numPoints = webglBuffer.numElements;
 			gl.drawArrays(gl.POINTS, 0, numPoints);
@@ -1453,10 +1516,14 @@ export class Renderer {
 						console.log("PotreeRenderer.js Error in in ClusterTool clipBoxes added code");
 					}
 				}//ignore until implemented
+
+
+
 				//////////////////////////////////////////////////////////
 				//added for selection tool, values added to selectionClipTasks and selectionBoxColors but may be removed
 				let clipBoxSelectionHighlight = true;
-				if (clipBoxSelectionHighlight) {//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes
+				if (clipBoxSelectionHighlight) {
+					//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes
 					//basically it adds colors from the clipboxes to the shader, as it was not present before within the
 					//uniform clipboxes location boxColors[0] and clipTask[0]
 
@@ -1495,7 +1562,7 @@ export class Renderer {
 			}
 
 			// CODE for CLUSTERING ()
-			if (material.pointClusters && material.pointClusters.length > 0) {//nned to
+			if (material.pointClusters && material.pointClusters.length > 0) {//
 
 
 				const clusteredPointSegments = material.pointClusters
@@ -1571,6 +1638,120 @@ export class Renderer {
 				//const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
 				//gl.uniformMatrix4fv(lClipSpheres, false, material.uniforms.clipSpheres.value);
 			}
+
+
+			/////////////////////////////////////////////////////////////////////////////////////
+			//code for filters based on numerical expressions
+			// require to define indexed attribute values,
+			//a list of filters
+
+			// WIP as 24 jun 2025
+			let allowClipFilters = true;
+			if (allowClipFilters) {
+
+				//all enabled by FILTER_PC defines
+
+				//setting locations for filters
+				const lfilterAttributes = shader.uniformLocations['filter_attributes[0]'];//packed attributes per point, indexed
+				const lfilterList = shader.uniformLocations['filter_list[0]'];
+				const lfilterFloatConstants = shader.uniformLocations['filter_float_constants[0]'];
+				const lfilterIntConstants = shader.uniformLocations['filter_int_constants[0]'];
+
+				const lfilterBoxVolume = shader.uniformLocations['filter_string_constants[0]'];//list of filters indexed assigned to a  clip
+				const lfilterPolygon = shader.uniformLocations['filter_boolean_constants[0]'];
+
+
+				//setting filter arrays
+				//initially do not flat them
+				let filter_attributes = []//for the attributes, indexed by point
+
+				let filter_list = [];
+				let filter_float_constants = [];
+				let filter_int_constants = [];
+
+				let filter_constants = [];
+				let filter_box_volume = [];
+
+
+				//updating filter arrays
+
+				const OPERATORS = {
+					"EQUALS_CONST": 0,
+					"EQUALS_ATTR": 1,
+					"LESS_CONST": 2,
+					"LESS_ATTR": 3,
+					"LEQ_CONST": 4,
+					"LEQ_ATTR": 5,
+					"GREATER_CONST": 6,
+					"GREATER_ATTR": 7,
+					"GREATEREQ_CONST": 8,
+					"GREATEREQ_ATTR": 9,
+
+					"RANGE_[]": 10,
+					"RANGE_(]": 11,
+					"RANGE_[)": 12,
+					"RANGE_()": 13,
+
+					"IN": 14,
+					"NOT": 15,
+
+				}
+
+
+				let attribute_index_i = 0;
+				let attribute_index_j = 1;
+				let float_constant_index_a = 0;
+				let float_constant_index_b = 1;
+
+				let filter_equals_constant = [OPERATORS["EQUALS_CONST"], attribute_index_i, float_constant_index_a, -1];
+				let filter_equals_attribute = [OPERATORS["EQUALS_ATTR"], attribute_index_i, attribute_index_j, -1];
+
+				let filter_less_constant = [OPERATORS["LESS_CONST"], attribute_index_i, float_constant_index_a, -1]
+				let filter_less_attribute = [OPERATORS["LESS_ATTR"], attribute_index_i, attribute_index_j, -1]
+
+				let filter_leq_constant = [OPERATORS["LEQ_CONST"], attribute_index_i, float_constant_index_a, -1]
+				let filter_leq_attribute = [OPERATORS["LEQ_ATTR"], attribute_index_i, attribute_index_j, -1]
+
+				let filter_greater_constant = [OPERATORS["GREATER_CONST"], attribute_index_i, float_constant_index_a, -1]
+				let filter_greater_attribute = [OPERATORS["GREATER_ATTR"], attribute_index_i, attribute_index_j, -1]
+
+				let filter_greatereq_constant_constant = [OPERATORS["GREATEREQ_CONST"], attribute_index_i, float_constant_index_a, -1]
+				let filter_greatereq_attribute = [OPERATORS["GREATEREQ_ATTR"], attribute_index_i, attribute_index_j, -1]
+
+				let filter_range_incinc = [OPERATORS["RANGE_[]"], attribute_index_i, float_constant_index_a, float_constant_index_b] //values at  index a nd b, usually consecutive
+				let filter_range_exinc = [OPERATORS["RANGE_(]"], attribute_index_i, float_constant_index_a, float_constant_index_b]
+				let filter_range_incex = [OPERATORS["RANGE_[)"], attribute_index_i, float_constant_index_a, float_constant_index_b]
+				let filter_range_exex = [OPERATORS["RANGE_()"], attribute_index_i, float_constant_index_a, float_constant_index_b]
+
+				let filter_in = [OPERATORS["IN"], attribute_index_i, float_constant_index_a, float_constant_index_b]// values in list between indices a and b
+
+				//actual example of filter, just append one of the above
+				filter_list = filter_list.concat(filter_equals_constant);//testing only with a single filter
+
+				filter_float_constants = filter_float_constants.concat([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]);//empty for now, but can be used to store constants
+				filter_int_constants = filter_int_constants.concat([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);//empty for now, but can be used to store constants
+
+				//commiting filter uniforms
+
+				gl.uniform4iv(lfilterList, filter_list);
+				gl.uniform1fv(lfilterFloatConstants, filter_float_constants);
+				gl.uniform1iv(lfilterIntConstants, filter_int_constants);
+
+
+
+
+
+
+
+				//
+
+			}
+
+
+			//may introduce the clipPolygon code here and extract if from render nodes
+
+
+
 
 
 			shader.setUniform1f("size", material.size);
