@@ -31,6 +31,10 @@ export class Scene extends EventDispatcher {
 		this.profiles = [];
 		this.volumes = [];
 		this.polygonClipVolumes = [];
+
+		this.mixedVolumes = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
+		//this is  donde to override rendering order of polygon clip volumes, which are added to the scene after the pointclouds and volumes.
+
 		this.cameraAnimations = [];
 		this.orientedImages = [];
 		this.images360 = [];
@@ -54,7 +58,7 @@ export class Scene extends EventDispatcher {
 
 	}
 
-	//Added to support point clusters. 
+	//Added to support point clusters.
 	initializePointClusters() {
 		this.pointClusters = [];
 		/**
@@ -160,6 +164,7 @@ export class Scene extends EventDispatcher {
 	}
 
 	addVolume(volume) {
+		this.mixedVolumes.push(volume);//order is kept in this array
 		this.volumes.push(volume);
 		this.dispatchEvent({
 			'type': 'volume_added',
@@ -241,6 +246,13 @@ export class Scene extends EventDispatcher {
 	};
 
 	removeVolume(volume) {
+
+		let indexMixed = this.volumes.indexOf(volume);
+		if (indexMixed > -1) {
+			this.mixedVolumes.splice(indexMixed, 1);
+
+		}
+
 		let index = this.volumes.indexOf(volume);
 		if (index > -1) {
 			this.volumes.splice(index, 1);
@@ -251,6 +263,9 @@ export class Scene extends EventDispatcher {
 				'volume': volume
 			});
 		}
+		// removing mixed volumes
+
+
 	};
 
 	addCameraAnimation(animation) {
@@ -276,6 +291,8 @@ export class Scene extends EventDispatcher {
 	};
 
 	addPolygonClipVolume(volume) {
+		this.mixedVolumes.push(volume);//order is kept in this array
+
 		this.polygonClipVolumes.push(volume);
 		this.dispatchEvent({
 			"type": "polygon_clip_volume_added",
@@ -285,6 +302,16 @@ export class Scene extends EventDispatcher {
 	};
 
 	removePolygonClipVolume(volume) {
+
+		let indexMixed = this.mixedVolumes.indexOf(volume);
+		if (indexMixed > -1) {
+			this.mixedVolumes.splice(indexMixed, 1);
+			// this.dispatchEvent({
+			// 	"type": "polygon_clip_volume_removed",
+			// 	"scene": this,
+			// 	"volume": volume
+			// });
+		}
 		let index = this.polygonClipVolumes.indexOf(volume);
 		if (index > -1) {
 			this.polygonClipVolumes.splice(index, 1);
@@ -294,6 +321,7 @@ export class Scene extends EventDispatcher {
 				"volume": volume
 			});
 		}
+
 	};
 
 	addMeasurement(measurement) {

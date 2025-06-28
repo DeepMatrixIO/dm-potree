@@ -35,8 +35,8 @@ export class ClippingTool extends EventDispatcher{
 		};
 
 		this.viewer.inputHandler.addEventListener("delete", e => {
-			let volumes = e.selection.filter(e => (e instanceof ClipVolume));
-			volumes.forEach(e => this.viewer.scene.removeClipVolume(e));
+			// let volumes = e.selection.filter(e => (e instanceof ClipVolume));//apparentrly is not in use
+			// volumes.forEach(e => this.viewer.scene.removeClipVolume(e));//aparently not in use
 			let polyVolumes = e.selection.filter(e => (e instanceof PolygonClipVolume));
 			polyVolumes.forEach(e => this.viewer.scene.removePolygonClipVolume(e));
 		});

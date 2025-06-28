@@ -1,4 +1,5 @@
 
+//import {modelWorldMatrix} from "three/tsl";
 import * as THREE from "../../libs/three.js/build/three.module.js";
 
 
@@ -6,7 +7,7 @@ import * as THREE from "../../libs/three.js/build/three.module.js";
 
 export class PolygonClipVolume extends THREE.Object3D {
 
-	NONE_TASK=0;
+	NONE_TASK = 0;
 	SELECTION_TASK = 1; // default task
 	CLASSIFICATION_TASK = 2;
 	DELETION_TASK = 3;
@@ -75,18 +76,130 @@ export class PolygonClipVolume extends THREE.Object3D {
 
 
 		//marker.dispatchEvent({type: "drag", viewer: viewer});//this is added to complete the drag event
-		 drag({
-		 	viewer: viewer,
-		 	drag: {
-		 		end: viewer.inputHandler.mouse
-		 	}
-		 })
+		drag({
+			viewer: viewer,
+			drag: {
+				end: viewer.inputHandler.mouse
+			}
+		})
 	}
 
 	removeLastMarker() {
 		if (this.markers.length > 0) {
 			this.markers.splice(this.markers.length - 1, 1);
 		}
+	}
+
+
+	//basically, a polygonClipPolygon is  created from a camera and markers
+	//items to be stored?  camera?? too much
+	// rotation
+	//rotation order
+	//camera.matrixWorld
+
+	toJSON() {
+
+		const cameraData = {
+			// Camera type
+			type: this.camera.type,
+
+			// Basic properties
+			fov: this.camera.fov,
+			aspect: this.camera.aspect,
+			near: this.camera.near,
+			far: this.camera.far,
+			zoom: this.camera.zoom,
+
+			// Transform
+			position: this.camera.position.toArray(),
+			rotation: this.camera.rotation.toArray(),
+			quaternion: this.camera.quaternion.toArray(),
+			scale: this.camera.scale.toArray(),
+			rotationOrder: this.camera.rotation.order,
+
+			// Optional matrices if needed
+			matrix: this.camera.matrix.toArray(),
+			matrixWorld: this.camera.matrixWorld.toArray(),
+			projectionMatrix: this.camera.projectionMatrix.toArray()
+		};
+
+		let data = {
+			uuid: this.uuid,//ok
+			name: this.name,//ok
+			markers: this.markers.map(m => m.position.toArray()),//ok
+			color: this.color.getHex(),//ok
+			task: this.task,//ok
+			camera: cameraData,//ok, but not used in potreeRenderer
+			initialized: this.initialized,//ok???
+			//maxPolygonVertices: this.maxPolygonVertices,//internal static???
+			//modelWorldMatrix: this.modelWorldMatrix.toArray(),
+
+			// viewMatrix: this.viewMatrix.toArray(),//created during construction
+			// projMatrix: this.projMatrix.toArray(),
+
+		};
+
+		return data;
+	}
+
+	fromJSON(data) {
+		let newCamera = null;
+		if (data.camera.type === "PerspectiveCamera") {
+			newCamera = new THREE.PerspectiveCamera(
+				data.camera.fov,
+				data.camera.aspect,
+				data.camera.near,
+				data.camera.far
+			);
+		} else if (data.camera.type == "OrthographicCamera") {
+			// Ortho cameras need different parameters
+			newCamera = new THREE.OrthographicCamera(
+				data.camera.left,
+				data.camera.right,
+				data.camera.top,
+				data.camera.bottom,
+				data.camera.near,
+				data.camera.far
+			);
+		}
+		if (data.camera.position) {
+			newCamera.position.fromArray(data.camera.position);
+		}
+
+		// Apply rotation
+		if (data.camera.rotation) {
+			newCamera.rotation.fromArray(data.camera.rotation);
+			if (data.camera.rotationOrder) {
+				newCamera.rotation.order = data.camera.rotationOrder;
+			}
+		}
+
+		// Update matrices
+		newCamera.updateMatrix();
+		newCamera.updateMatrixWorld(true);
+		newCamera.updateProjectionMatrix();
+
+
+
+		let tmp = new PolygonClipVolume(newCamera);
+
+
+		tmp.uuid = data.uuid;
+		tmp.name = data.name;
+		tmp.color.setHex(data.color);
+		tmp.task = data.task;
+		tmp.initialized = data.initialized || false; // default to false if not provided
+
+
+		tmp.markers = [];
+		for (let markerData of data.markers) {
+			let marker = new THREE.Mesh();
+			marker.position.fromArray(markerData);
+			tmp.markers.push(marker);
+			console.log(marker)
+		}
+
+		return tmp;
 	}
 
 };

@@ -106,6 +106,15 @@ export class Volume extends THREE.Object3D {
 };
 
 
+//BoxVolume isd always unitary centered at zero, but its definition is set by a transformation matrix
+// It can be set by
+//	volume.uuid = data.uuid;
+// volume.name = data.name;
+// volume.position.set(...data.position);
+// volume.rotation.set(...data.rotation);
+// volume.scale.set(...data.scale);
+// volume.visible = data.visible;
+// volume.clip = data.clip;
 export class BoxVolume extends Volume {
 
 	constructor(args = {}) {
@@ -223,6 +232,41 @@ export class BoxVolume extends Volume {
 
 	getVolume() {
 		return Math.abs(this.scale.x * this.scale.y * this.scale.z);
+	}
+
+
+	toJSON() {
+		let data = super.toJSON();
+		data.uuid = this.uuid;
+		data.type = this.constructor.name;
+		data.clip = this._clip;
+		data.modifiable = this._modifiable;
+		data.name = this.name;
+		data.visible = this.visible;
+		data.modifiable = this.modifiable;
+
+
+		data.matrix = this.matrix.toArray();
+		return data;
+	}
+
+	fromJSON(data) {
+		let volume = new BoxVolume({
+			clip: data.clip,
+			modifiable: data.modifiable
+		});
+
+		volume.uuid = data.uuid;
+		volume.name = data.name;
+
+		volume.matrix.fromArray(data.matrix);
+		volume.matrix.decompose(volume.position, volume.quaternion, volume.scale);
+
+
+		volume.visible = data.visible;
+		volume.modifiable	 = data.modifiable;
+
+		return volume;
 	}
 
 };
