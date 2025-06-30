@@ -32,7 +32,19 @@ export class Scene extends EventDispatcher {
 		this.volumes = [];
 		this.polygonClipVolumes = [];
 
+
+		///////////////////////////
 		this.mixedVolumes = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
+		//this.filters = []; //logical filters
+		this.mixedFilters = []; //mixed volumes and logical filters
+		//
+		// this.integerFilterValues = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
+		// this.floatFilterValues = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
+		// //attributes are still missing
+		// this.attributeFilterList=["classification"];
+		///////////////////////////
+
+		//each volume
 		//this is  donde to override rendering order of polygon clip volumes, which are added to the scene after the pointclouds and volumes.
 
 		this.cameraAnimations = [];
@@ -165,6 +177,7 @@ export class Scene extends EventDispatcher {
 
 	addVolume(volume) {
 		this.mixedVolumes.push(volume);//order is kept in this array
+		this.mixedFilters.push(volume);//order is kept in this array
 		this.volumes.push(volume);
 		this.dispatchEvent({
 			'type': 'volume_added',
@@ -172,6 +185,19 @@ export class Scene extends EventDispatcher {
 			'volume': volume
 		});
 	}
+
+	addFilter(filter) {//filter i set of objects containing all items, making easier to manage items
+		//to avoid issues, is just a JSON definition
+		this.filters.push(filter);//order is kept in this array
+		this.mixedFilters.push(filter);//order is kept in this array
+		// this.volumes.push(volume);
+		this.dispatchEvent({
+			'type': 'filter_added',
+			'scene': this,
+			'filter': filter
+		});
+	}
+
 
 	addOrientedImages(images) {
 		this.orientedImages.push(images);
@@ -247,9 +273,16 @@ export class Scene extends EventDispatcher {
 
 	removeVolume(volume) {
 
-		let indexMixed = this.volumes.indexOf(volume);
-		if (indexMixed > -1) {
-			this.mixedVolumes.splice(indexMixed, 1);
+		//may get discarded
+		let indexMixedVol = this.mixedVolumes.indexOf(volume);
+		if (indexMixedVol > -1) {
+			this.mixedVolumes.splice(indexMixedVol, 1);
+
+		}
+
+		let indexMixedFilter = this.mixedFilters.indexOf(volume);
+		if (indexMixedFilter > -1) {
+			this.mixedFilters.splice(indexMixedFilter, 1);
 
 		}
 
@@ -267,6 +300,36 @@ export class Scene extends EventDispatcher {
 
 
 	};
+
+
+	removeFilter(filter) {
+
+		//will get removed
+		let indexFilter = this.filters.indexOf(filter);
+		if (indexFilter > -1) {
+			this.filters.splice(indexFilter, 1);
+		}
+
+		let indexMixedFilter = this.mixedFilters.indexOf(filter);
+		if (indexMixedFilter > -1) {
+			this.mixedFilters.splice(indexMixedFilter, 1);
+		}
+
+
+
+
+		this.dispatchEvent({
+			'type': 'filter_removed',
+			'scene': this,
+			'filter': filter
+		});
+	}
+	// removing mixed volumes
+
+
+
+
+
 
 	addCameraAnimation(animation) {
 		this.cameraAnimations.push(animation);
@@ -292,7 +355,7 @@ export class Scene extends EventDispatcher {
 
 	addPolygonClipVolume(volume) {
 		this.mixedVolumes.push(volume);//order is kept in this array
-
+		this.mixedFilters.push(volume);//order is kept in this array
 		this.polygonClipVolumes.push(volume);
 		this.dispatchEvent({
 			"type": "polygon_clip_volume_added",
@@ -312,6 +375,12 @@ export class Scene extends EventDispatcher {
 			// 	"volume": volume
 			// });
 		}
+
+		let indexMixedFilter = this.mixedFilters.indexOf(volume);
+		if (indexMixedFilter > -1) {
+			this.mixedFilters.splice(indexMixedFilter, 1);
+		}
+
 		let index = this.polygonClipVolumes.indexOf(volume);
 		if (index > -1) {
 			this.polygonClipVolumes.splice(index, 1);

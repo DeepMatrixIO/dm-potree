@@ -276,9 +276,13 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 				let centroid = new THREE.Vector3().addVectors(closest, farthest).multiplyScalar(0.5);
 				volume.scale.z = distance * 1.1;
 				volume.position.copy(centroid);
+
+				volume.initialized = true;
+				volume.visible = true;
 			}
 
 			volume.clip = true;
+
 		};
 
 		this.addEventListener("drag", drag);

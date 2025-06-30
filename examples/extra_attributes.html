@@ -58,7 +58,7 @@
 
 		viewer.setDescription(`
 		This example shows various ways to use annotations.
-		They can be used to bookmark and describe locations, 
+		They can be used to bookmark and describe locations,
 		move the camera to a predefined point of view on click,
 		and to provide programmable buttons at specific locations.
 		`);
@@ -77,9 +77,14 @@
 			//sceneSG.view.position.set(590030, 231767, 1007);
 			viewer.zoomTo(e.pointcloud)
 
+			e.pointcloud.material.activeAttributeName = "classification";
 
 			//material.size = 1;
 			//material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+
+			// let clip= new PolygonClipVolume(viewer.getCamera());
+			// viewer.scene.addClipVolume(clip);
+			//viewer.scene.polygonClipVolumes[0].markers.map(marker => [marker.position.x,marker.position.y,marker.position.z]).toString()
 
 		}
 

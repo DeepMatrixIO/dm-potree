@@ -1,6 +1,7 @@
 
 //import {modelWorldMatrix} from "three/tsl";
 import * as THREE from "../../libs/three.js/build/three.module.js";
+import {FilterIntType} from "./FilterConsts.js";
 
 
 
@@ -15,7 +16,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 
 	constructor(camera) {
 		super();
-
+		this.intType = FilterIntType.POLYGON; // PolygonClipVolume type, can be set by user
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = "polygon_clip_volume_" + this.constructor.counter;
 
@@ -200,6 +201,11 @@ export class PolygonClipVolume extends THREE.Object3D {
 		}
 
 		return tmp;
+	}
+
+
+	getIntType() {
+		return this.intType;
 	}
 
 };

@@ -113,14 +113,26 @@ uniform vec3 uClipPolygonColor[num_clippolygons];						 // flattened matrices wo
 #endif
 
 //list of dynamic filters for selection clips box or polygon
-#if defined(filter_pc) && defined(num_op_attributes) && filter_pc > 0 && num_op_attributes > 0 && defined(num_filters) && num_filters > 0 && defined(num_filter_values) && num_filter_values > 0
+#if defined(mixed_volumes) &&  mixed_volumes > 0 && defined(num_mixed_volumes) && num_mixed_volumes > 0
+//&& defined(num_op_attributes)  && num_op_attributes > 0 && defined(num_filters) && num_filters > 0 && defined(num_filter_values) && num_filter_values > 0
 
-op_attribute float op_attribute[num_op_attributes];//attribute values are packed and indexed for filters
-uniform ivec4 filters_list[num_filters];  //list of filters encoded with indices
-uniform float float_filter_values[num_filter_values];
-uniform int int_filter_values[num_list_values];
+uniform int uMixedVolumes[num_mixed_volumes]; // number of attributes used for filtering
+
+// uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
+// uniform float uFilterList[num_filters];  //list of filters encoded with indices
+// uniform float uFloatFilterValues[num_filter_values];
+// uniform int uIntegerFilterValues[num_list_values];
 //calls doFiltering
 #endif
+
+#if defined(mixed_filters) && mixed_filters > 0 //means something is commited to filtering
+uniform int uMixedFilters[mixed_filters];  //list of filters encoded with indices, extra variables are checked independently
+// uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
+// uniform float uFloatFilterValues[num_filter_values];//arrays cant be set to zero, so setting dummy values
+// uniform int uIntegerFilterValues[num_list_values];
+//calls doFiltering
+#endif
+
 
 
 uniform float size;
@@ -1158,9 +1170,28 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 }
 #endif
 
+//given an inverse clipBoxMatrix  of a clipBox, taking world to local, checks if a point is inside the clipBox
+//by transforming a world position to local position wrt clip transformation
+//point is not strictly required to be passed as parameter
+//point is defined in local positino, but transformed to world position, and taken back to local position wrt cube
+bool pointInClipBox(mat4 clipBoxInvMat , vec3 point ){
+	// every clipBox is defined as an inverse matrix taking from world to local space
+	// so checking in within -0.5 and 0.5 in all axes.
+	// point in local coords, not worls
+
+	vec4 clipPosition = clipBoxInvMat * modelMatrix * vec4(point, 1.0);
+	bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
+	inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
+	inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+	return inside;
+}
+
+
+
+//requires
+	//#if defined(num_clippolygons) && num_clippolygons > 0
 void doClipping()
 {
-
 
 
 	{
@@ -1278,15 +1309,24 @@ void doClipping()
 
 	// cliptasks[0] is a name, not an array
 
-	// CLIPbOXES CODE
+
+
+
+
+	// CLIPbOXES
+	//every clipBox is defined as an inverse matrix taking from world to local space
+	//so checcking in within -0.5 and 0.5 in all axes.
+	//IF INSIDE, CHECK CLIP TASK AND CHANGE COLOR ACCORDINGLY
 	{
 	#if defined(num_clipboxes) && num_clipboxes > 0
 		for (int i = 0; i < num_clipboxes; i++)
 		{
-			vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
-			bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
-			inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
-			inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+			// vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
+			// bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
+			// inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
+			// inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+
+			bool inside= pointInClipBox(clipBoxes[i], position);//replacing code above
 
 			// old code not present
 			insideCount = insideCount + (inside ? 1 : 0);
@@ -1374,6 +1414,8 @@ void doClipping()
 	#endif
 	}
 
+
+	//POLYGON CODE
 	{// polygonClipVolume section,
 	#if defined(num_clippolygons) && num_clippolygons > 0
 
@@ -1406,6 +1448,7 @@ void doClipping()
 	}
 
 
+	//IF INSIDE, CHECK COLOR AND TASK
 	{// clipVolume section   , uses  clipMethod and clipTask
 		bool insideAny = insideCount > 0;
 		bool insideAll = (clipVolumesCount > 0) && (clipVolumesCount == insideCount);
@@ -1536,6 +1579,155 @@ void doClipping()
 	//  #endif
 }
 
+
+// Filtering is set appart from  clipping by passing through a set of spatial an logical filters
+// the general worlkflow is a cascade  of  spatial  and logical filters, so resulting poing gets a true or false value
+// post actions after filtering are can be highlight, color replacement as value replacement or show/hide
+
+//   [ FILTERtype1, FILTERType2, ..., STOP, FILTERTypeN, STOP, FILTERTypeN+1, ...]
+
+//works differently from clipping, as it does not take in or out directly points, just signals them with true or false
+
+
+#define FILTER_VOID  1
+#define FILTER_POLYGON_SP  1
+#define FILTER_BOX_SP  2
+#define FILTER_LOGIC  2
+
+//#define num_clipboxes 22//added outside, while defining the uniform list
+// check all the required variables are defined
+
+
+
+// #define num_mixed_filters 22//come from outside
+// uniform int uMixedFilters[num_mixed_filters]; // mixed filters list, each entry is an action in sequence
+
+// PLACES TO LOOK AT
+// scene ???  After adding a Volume or  polygonClipVolume, an event is dispatched
+// polygon_volume_clip_added and volume_added
+//and the corresponding items are added to the arrays
+
+
+
+
+//places to look at
+
+// 1) ui feeds scene data
+// 2) actual data is stored in scene.js
+// 3) viewer.js   @ update()  sET THE CORRESPONDING POINTCLOUD MATERIAL UNIFORMS automatically from material
+// 4) pointcloudmaterial.js  @ update()  SET THE CORRESPONDING POINTCLOUD MATERIAL UNIFORMS and defines
+
+
+// 5) POTREERENDERER.JS    add or update DEFINES FOR CONSTANTS IN renderOctree()
+//					SET UNIFORMS FOR REQUIRED ARRAYS LIKE CLIPBOXES, POLYGONcLIPBOXES, CLIPBOXES,
+//  MIXEDFILTERS IS SPECIFICALLY ADDED TO HAVE THIS METHOD WORKING
+
+//This place is easier to work as here directly things are added
+
+
+
+
+bool doFiltering()
+{
+
+
+	bool clip = false;
+	bool isolateAnything = false;
+	bool isolateThis = false;
+	bool grayscaleAnything = false;
+	bool grayscaleThis = true;
+	bool highlight = false;
+	bool active_ = false;
+	bool visible = true;
+	vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
+	int clipVolumesCount = 0;
+	int insideCount = 0;
+	bool inside=true;
+	//code for complex spatial and logical filtering. depends on a filter list
+	//[ filterType1, filterType2, ..., stop,filterTypeN, stop, filterTypeN+1, ...]
+	// where stop is a value that indicates the end of the filter and compute output values
+	//at the end all data is cascaded
+
+	{
+		//all objects must be defined
+	#if defined(num_mixed_filters) &&  num_mixed_filters > 0  && defined(num_clipboxes) && num_clipboxes >0 &&  defined(num_clippolygons) && num_clippolygons > 0
+
+//dont check other variables as they were required to reach this state, but are still commited
+
+		int filterIndex= 0;
+		int polygonFilterIndex = 0;
+		int boxFilterIndex = 0;
+		int logicFilterIndex = 0;
+
+		vec3 current_xyz = position;//oroginal data
+		float current_value = aExtra;//move this attribute
+		bool inside = true;
+		bool currentInside=true;
+
+		for (int i = 0; i < num_mixed_filters; i++){
+		// each entry in the filter list points to a filter type or an stop value
+			int filterType = uMixedFilters[i];
+
+			if(filterType == FILTER_BOX_SP){
+				//check if point ins inside box
+				currentInside =  pointInClipBox(clipBoxes[boxFilterIndex], position);
+				continue;//continue to next
+			}
+
+
+			if(filterType == FILTER_POLYGON_SP){
+				//check if point ins inside box
+				currentInside= pointInClipPolygon(position, polygonFilterIndex);
+				continue;//continue to next
+			}
+
+			if(filterType == FILTER_LOGIC){
+				//check if point ins inside box
+				currentInside= true;//
+				continue;//continue to next
+			}
+
+			//other filters
+
+			if(filterType == FILTER_VOID){
+				//check if point ins inside box
+				currentInside= true;//
+				continue;//continue to next
+			}
+
+
+
+
+
+
+
+		}
+
+
+
+
+		// 	vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
+		// 	bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
+		// 	inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
+		// 	inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+
+		// 	bool inside= pointInClipBox(clipBoxes[i], position);//replacing code above
+
+		// 	insideCount = insideCount + (inside ? 1 : 0);
+		// 	clipVolumesCount++;
+
+	#endif
+	}
+
+
+
+
+
+	return inside;
+
+}
+
+
 //
 // ##     ##    ###    #### ##    ##
 // ###   ###   ## ##    ##  ###   ##
@@ -1597,6 +1789,13 @@ void main()
 
 	// CLIPPING
 	doClipping();
+
+#if defined(mixed_filters) && mixed_filters > 0
+	int tmp2=uMixedFilters[0];
+	tmp2= tmp2 + 1;
+#endif
+
+
 
 #if defined(num_clipspheres) && num_clipspheres > 0
 	for (int i = 0; i < num_clipspheres; i++)

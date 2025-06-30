@@ -40,9 +40,26 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this._pointSizeType = PointSizeType.FIXED;
 		this._shape = PointShape.SQUARE;
 		this._useClipBox = false;
+
 		this.clipBoxes = [];
 		this.clipPolygons = [];
 		this.pointClusters = [];
+
+
+
+		// adding all extra arrays for filtering and custom  rendering order for clips
+		this.mixedFilters = [];//arbitrary array to store either box clips, polygon clips or even filters to be applied in order, each returns true false
+
+
+		//adding the custom filter
+		//////////////////////////////  added in viewer.update and retrieved in potreeRenderer
+		this.filterAttributes = [];//array to store array  indexes to be filtered
+		this.filterList = [];//array to store filter functions to be applied in order, each returns true false
+		this.integerFilterValues = [];//array to store integer values to be used for filtering
+		this.floatFilterValues = [];//array to store float values to be used for filtering
+
+		//////////////////////////////
+
 		this._weighted = false;
 		this._gradientName = 'SPECTRAL';
 		this._gradient = Gradients.SPECTRAL;
@@ -58,6 +75,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this._treeType = treeType;
 		this._useEDL = false;
 		this.defines = new Map();
+		this.customDefines = new Map(); //non std defines
+
+
+		this.setCustomDefine("custom_range", '1');//custom rendering of extra attributes on custom range other than data range
+		//		this.customDefines.set("filter_pc", '1');//filtering and custom clip rendering
 
 		this.ranges = new Map();
 
@@ -189,27 +211,33 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 
 		/////////////////custom renderinf info
-		this.defines = new Map();
 
 
 
-		//every custom viosualization will have a custom uniform to commit data
+		//every custom visualization will have a custom uniform to commit data, either single values or arrays
+		//for the selection clips, they can be set here and automatically added or
 		this.customUniforms = {
 			//  Added for custom rendering on aExtra attributes
 
+			//used for distance rendering
 			positionRef: {type: '3fv', value: [701414.3400000763, 3144096.5100004575, 234.61000000834466]},//distance rendering as 3d array
 			rangeValues: {type: 'fv', value: [0, 10]},//distance rendering as array
 
+			//isonlines simulation
 			isoValues: {type: 'fv', value: [2.0, 0.5, 0.1]},//a color to be used for non visible points
 			isoColorA: {type: 'fv', value: [1.0, 0.1, 0.1]},//master line
 			isoColorB: {type: 'fv', value: [0.1, 1.0, 0.1]},//secondary l
 
+
+			//custom range visualziation for aExtra
 			visibleRange: {type: 'fv', value: [0.1, 0.9]},//a visible subset ot gradient to be displayed
 			nonVisibleColorMin: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
 			nonVisibleColorMax: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
 			allVisible: {type: 'fv', value: [1.0, 1.0]},//a boolean to set if all points are visible or not
-			minMaxRange:{type: 'fv', value: [0.0, 1.0]},//Custom Min mac
+			minMaxRange: {type: 'fv', value: [0.0, 1.0]},//Custom Min mac
 			//min max range
+
+			//add filter defines
 
 		}
 
@@ -231,19 +259,18 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 
 	//set custom renderer items to apend
-	setCustomRenderer(defines, uniforms, values) {
-		this.customDefines = defines;//set as constants , name values
-		this.customUniforms = uniforms;//variable name, type and values
+	// setCustomRenderer(defines, uniforms, values) {
+	// 	this.customDefines = defines;//set as constants , name values
+	// 	this.customUniforms = uniforms;//variable name, type and values
 
 
-
-	}
+	// }
 
 	getCustomDefines() {
 		let customDefines = [];
 
 		for (let [key, value] of this.customDefines) {
-			customDefines.push(value);
+			customDefines.push("#define " + key + " " + value);
 		}
 
 		return customDefines.join('\n');
@@ -263,8 +290,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	//this should come from somewhere else and stored as variable
 
 
-	//static definition
-	//should come from current state
+	//static list of defines
+	//they trigger most shader code and additional capabilities as on off switches
 	getExtraDefines() {
 		let extraDefines = [];
 
@@ -295,38 +322,55 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		}
 	}
 
+	//populates the customDefine Map with key value pairs
+	setCustomDefine(key, value) {
+		if (value !== undefined && value !== null) {
+			if (this.customDefines.get(key) !== value) {
+				this.customDefines.set(key, value);
+				//this.updateShaderSource();
+			}
+		} else {
+			this.removeCustomDefine(key);
+		}
+	}
+
 	removeDefine(key) {
 		this.defines.delete(key);
 	}
 
-
-
-	//just added
-	setExtraDefine(key, value) {
-		if (value !== undefined && value !== null) {
-			if (this.extraDefines.get(key) !== value) {
-				this.extraDefines.set(key, value);
-				this.updateShaderSource();
-			}
-		} else {
-			this.removeExtraDefine(key);
-		}
+	removeCustomDefine(key) {
+		this.customDefines.delete(key);
 	}
 
-	removeExtraDefine(key) {
-		this.defines.delete(key);
-	}
+
+
+	// //just added
+	// setExtraDefine(key, value) {
+	// 	if (value !== undefined && value !== null) {
+	// 		if (this.extraDefines.get(key) !== value) {
+	// 			this.extraDefines.set(key, value);
+	// 			this.updateShaderSource();
+	// 		}
+	// 	} else {
+	// 		this.removeExtraDefine(key);
+	// 	}
+	// }
+
+	// removeExtraDefine(key) {
+	// 	this.defines.delete(key);
+	// }
 
 
 	updateShaderSource() {
 		let vs = Shaders['pointcloud.vs'];
 		let fs = Shaders['pointcloud.fs'];
-		let definesString = this.getDefines();
+		let definesString = this.getDefines();//already called getExtraDefines
 
 
 		//already added in getDEfines, removed for test
 		if (this.customDefines) {//also a map
-			definesString += this.getExtraDefines();
+			//definesString += this.getExtraDefines();//add static definitions for custom defines
+			definesString += "\n" + this.getCustomDefines();//get them dinamically  from map
 		}
 
 		// additional defines are set here
@@ -428,9 +472,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 
 		//{//custom defines are added
-		let extras = this.getExtraDefines();//static custom defines
-		defines = defines.concat(extras);
+		// let extras = this.getExtraDefines();//static custom defines
+		// defines = defines.concat(extras);
 		//}
+
+
 		return defines.join('\n');
 	}
 
@@ -484,6 +530,56 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.updateShaderSource();
 		}
 	}
+
+	// keeping the different clip volumes order in a single array
+	//if it changes, update shader code and defines as well
+
+	//it sets  the internal uniforms and populates values
+
+	setMixedVolumes(mixedVolumes) {
+		if (mixedVolumes === undefined || mixedVolumes === null) {
+			return;//do nothing
+		}
+		let prevMixedVolumeSize = this.mixedVolumes.length;
+		this.mixedVolumes = mixedVolumes;//sets the array
+
+		//check length as simple update Shader strategy
+
+		let doUpdate = prevMixedVolumeSize !== mixedVolumes.length;
+
+		if (doUpdate) {
+			this.setCustomDefine("num_mixed_volumes", this.mixedVolumes.length);//set the define for filtering
+			this.updateShaderSource();//check code here
+		}
+
+	}
+
+
+	//always set define variables before updating the shader code, but can be set here
+
+	//here filters set as both spatial an logical filters
+	//filters are encoded as integer values
+	setMixedFilters(filters) {
+		if (filters	 === undefined || filters === null) {
+			return;//do nothing
+		}
+		let prevMixedFilterSize=this.mixedFilters.length
+
+		this.mixedFilters = filters;//sets the array
+
+		//check length as simple update Shader strategy
+
+
+
+		let doUpdate = (prevMixedFilterSize !== filters.length);
+		if (doUpdate) {
+			this.setCustomDefine("mixed_filters", this.mixedFilters.length);//set the define for filtering, 0 non
+
+			this.updateShaderSource();//defines shuld be set before but can be updated here as well
+		}
+
+	}
+
 
 	get gradient() {
 		return this._gradient;

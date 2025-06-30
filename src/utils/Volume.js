@@ -4,10 +4,12 @@
 import * as THREE from "../../libs/three.js/build/three.module.js";
 
 import {TextSprite} from "../TextSprite.js";
+import {FilterIntType} from "./FilterConsts.js";
 
 export class Volume extends THREE.Object3D {
 	constructor(args = {}) {
 		super();
+		this.intType = FilterIntType.NONE; //default value, can be set by user
 
 		if (this.constructor.name === "Volume") {
 			console.warn("Can't create object of class Volume directly. Use classes BoxVolume or SphereVolume instead.");
@@ -39,7 +41,7 @@ export class Volume extends THREE.Object3D {
 			this.label.matrixWorld.copy(this.label.matrix);
 			this.label.matrixWorldNeedsUpdate = false;
 
-			for (let i = 0, l = this.label.children.length; i < l; i++) {
+			for (let i = 0, l = this.label.children.length;i < l;i++) {
 				this.label.children[i].updateMatrixWorld(true);
 			}
 		};
@@ -62,6 +64,20 @@ export class Volume extends THREE.Object3D {
 			this.dispatchEvent({type: "visibility_changed", object: this});
 		}
 	}
+
+
+	get initialized() {
+		return this._initialized;
+	}
+
+	set initialized(value) {
+		if (this._initialized !== value) {
+			this._initialized = value;
+
+			//this.dispatchEvent({type: "visibility_changed", object: this});//create a proper event for this
+		}
+	}
+
 
 	getVolume() {
 		console.warn("override this in subclass");
@@ -103,6 +119,11 @@ export class Volume extends THREE.Object3D {
 
 		this.update();
 	}
+
+	getIntType() {
+		return this.intType;
+	}
+
 };
 
 
@@ -119,6 +140,8 @@ export class BoxVolume extends Volume {
 
 	constructor(args = {}) {
 		super(args);
+
+		this.intType = FilterIntType.BOXVOLUME; //default value, can be set by user
 
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = 'box_' + this.constructor.counter;
@@ -162,7 +185,7 @@ export class BoxVolume extends Volume {
 				new Vector3(-0.5, 0.5, -0.5),
 			]
 			const positions = new Float32Array(vertices.length * 3);
-			for (let i = 0; i < vertices.length; i++) {
+			for (let i = 0;i < vertices.length;i++) {
 				positions[i * 3] = vertices[i].x;
 				positions[i * 3 + 1] = vertices[i].y;
 				positions[i * 3 + 2] = vertices[i].z;
@@ -187,8 +210,8 @@ export class BoxVolume extends Volume {
 		//may use a blend or opacity to make selection transparent
 		//add next in custom volume class
 		//next two lines assign the highlight color  of the box
-		this.color = new THREE.Color(1.0,0.0,1.0);//this is the
-		this.actualClipTask=1;//testing,  the highlighting color was never applied because the task was not set
+		this.color = new THREE.Color(1.0, 0.0, 1.0);//this is the
+		this.actualClipTask = 1;//testing,  the highlighting color was never applied because the task was not set
 		//now need to set the boxcolor array to handle multiple boxes
 		//
 
@@ -264,9 +287,13 @@ export class BoxVolume extends Volume {
 
 
 		volume.visible = data.visible;
-		volume.modifiable	 = data.modifiable;
+		volume.modifiable = data.modifiable;
 
 		return volume;
+	}
+
+	getIntType() {
+		return this.intType;
 	}
 
 };
@@ -307,13 +334,13 @@ export class SphereVolume extends Volume {
 			let vSegments = 5;
 			let r = 1;
 
-			for (let uSegment = 0; uSegment < uSegments; uSegment++) {
+			for (let uSegment = 0;uSegment < uSegments;uSegment++) {
 
 				let alpha = (uSegment / uSegments) * Math.PI * 2;
 				let dirx = Math.cos(alpha);
 				let diry = Math.sin(alpha);
 
-				for (let i = 0; i <= steps; i++) {
+				for (let i = 0;i <= steps;i++) {
 					let v = (i / steps) * Math.PI * 2;
 					let vNext = v + 2 * Math.PI / steps;
 
@@ -332,7 +359,7 @@ export class SphereVolume extends Volume {
 			}
 
 			// creates rings at poles, just because it's easier to implement
-			for (let vSegment = 0; vSegment <= vSegments + 1; vSegment++) {
+			for (let vSegment = 0;vSegment <= vSegments + 1;vSegment++) {
 
 				//let height = (vSegment / (vSegments + 1)) * 2 - 1; // -1 to 1
 				let uh = (vSegment / (vSegments + 1)); // -1 to 1
@@ -341,7 +368,7 @@ export class SphereVolume extends Volume {
 
 				console.log(uh, height);
 
-				for (let i = 0; i <= steps; i++) {
+				for (let i = 0;i <= steps;i++) {
 					let u = (i / steps) * Math.PI * 2;
 					let uNext = u + 2 * Math.PI / steps;
 

@@ -1,5 +1,5 @@
 
-import {max} from "three/tsl";
+import {max, mix} from "three/tsl";
 import * as THREE from "../libs/three.js/build/three.module.js";
 import {PointCloudTree} from "./PointCloudTree.js";
 import {ClipTask, ElevationGradientRepeat, PointSizeType} from "./defines.js";
@@ -1465,6 +1465,8 @@ export class Renderer {
 
 			shader.setUniform1i("clipMethod", material.clipMethod);
 
+
+
 			/////////////////////////////////////////////////////////////////
 			//clipboxes ,may appear on different contexts
 			if (material.clipBoxes && material.clipBoxes.length > 0) {
@@ -1561,6 +1563,7 @@ export class Renderer {
 
 			}
 
+			/////////////////////////////////////////////////////////////////
 			// CODE for CLUSTERING ()
 			if (material.pointClusters && material.pointClusters.length > 0) {//
 
@@ -1610,6 +1613,7 @@ export class Renderer {
 				gl.uniform1iv(lVisible, visibleStates);
 			}
 
+			/////////////////////////////////////////////////////////////////
 			// TODO CLIPSPHERES
 			if (params.clipSpheres && params.clipSpheres.length > 0) {
 
@@ -1639,15 +1643,121 @@ export class Renderer {
 				//gl.uniformMatrix4fv(lClipSpheres, false, material.uniforms.clipSpheres.value);
 			}
 
+			/////////////////////////////////////////////////////////////////
+
+			/////////////////////////////////////////////////////////////////
+			// CODE for handling mixed selection clips for selection
+			// requires to commit the list of filter types
+			//  uniform int uMixedFilters[]
+			//  #define mixed_filters_size
+
+			// for spatial filters, they are clipPolygons and boxVolumes, plus its different sizes and accesories, but already dealt with
+
+			// for logical filter, is a little bit more complex and requries
+			// the array with filter definitions size multiple of 5
+			// array of  integer values
+			// array of float values
+			// packed attributes indexed by name, but converted here to integer
+
+			// in float packedAttributes[k];
+			// #define num_packed_attributes k
+
+
+			// uniform int uFilterAttributes[]  // index of packed attributes
+			// #define filter_attributes_size k
+
+			// uniform int uFilterList[]
+			// #define  filters_list_size k
+
+			// uniform int integer_filter_values[]
+			// #define integer_filter_values_size k
+
+			// uniform float float_filter_values[]
+			// #define float_filter_values_size k
+
+
+
+
+			let mixedVolumes = false;
+			//defines should be defined before updating shader, i.e. begininng of method
+			//locations and material.uniform.values set per node and material
+			if (mixedVolumes && material.mixedVolumes && material.mixedVolumes.length > 0) {
+
+				const lMixedVolumes = shader.uniformLocations["uMixedVolumes[0]"];//location for mixed volumes
+
+				//podria  poner la lista directamente
+				//gl.uniform1iv(lMixedVolumes, false, material.uniforms.lMixedVolumes.value);//setting the mixed volumes
+
+				let mixvol = material.mixedVolumes.map((vol) => vol.getIntType());
+				if (mixvol.length > 0) {
+					// console.log(mixvol)
+					gl.uniform1iv(lMixedVolumes,  mixvol)
+				}
+				// //mixed list
+				// const lMixedFilters = shader.uniformLocations["uMixedFilters[0]"];//variable location name
+				// gl.uniform1iv(lMixedFilters, material.uniforms.uMixedFilters.value);//setting the mixed filters
+
+
+				// const lFilterAttributes = shader.uniformLocations["uFilterAttributes[0]"];//packed attributes per point, indexed
+				// const lFilterList = shader.uniformLocations["uFilterList[0]"];
+				// const lIntegerFilterValues = shader.uniformLocations["uIntegerFilterValues[0]"];
+				// const lFloatFilterValues = shader.uniformLocations["uFloatFilterValues[0]"];
+
+				// gl.uniform1fv(lFilterAttributes, material.uniforms.filterAttributes.value);//attribute index for packed values
+				// gl.uniform1iv(lFilterList, material.uniforms.uFilterList.value);//setting the filter list
+				// gl.uniform1iv(lIntegerFilterValues, material.uniforms.integer_filter_values.value);//setting the integer filter values
+				// gl.uniform1fv(lFloatFilterValues, material.uniforms.float_filter_values.value);//setting the float filter values
+
+
+			}
+
+		let mixedFilters = true;
+			//defines should be defined before updating shader, i.e. begininng of method
+			//locations and material.uniform.values set per node and material
+			if (mixedFilters && material.mixedFilters && material.mixedFilters.length > 0) {
+
+				// const lMixedVolumes = shader.uniformLocations["uMixedVolumes[0]"];//location for mixed volumes
+				const lMixedFilters = shader.uniformLocations["uMixedFilters[0]"];//location for mixed volumes
+
+				//podria  poner la lista directamente
+				//gl.uniform1iv(lMixedVolumes, false, material.uniforms.lMixedVolumes.value);//setting the mixed volumes
+
+				let mixFilt = material.mixedFilters.map((filt) => filt.getIntType());
+				if (mixFilt.length > 0) {
+					// console.log(mixvol)
+					gl.uniform1iv(lMixedFilters,  mixFilt)
+				}
+				// //mixed list
+				// const lMixedFilters = shader.uniformLocations["uMixedFilters[0]"];//variable location name
+				// gl.uniform1iv(lMixedFilters, material.uniforms.uMixedFilters.value);//setting the mixed filters
+
+
+				// const lFilterAttributes = shader.uniformLocations["uFilterAttributes[0]"];//packed attributes per point, indexed
+				// const lFilterList = shader.uniformLocations["uFilterList[0]"];
+				// const lIntegerFilterValues = shader.uniformLocations["uIntegerFilterValues[0]"];
+				// const lFloatFilterValues = shader.uniformLocations["uFloatFilterValues[0]"];
+
+				// gl.uniform1fv(lFilterAttributes, material.uniforms.filterAttributes.value);//attribute index for packed values
+				// gl.uniform1iv(lFilterList, material.uniforms.uFilterList.value);//setting the filter list
+				// gl.uniform1iv(lIntegerFilterValues, material.uniforms.integer_filter_values.value);//setting the integer filter values
+				// gl.uniform1fv(lFloatFilterValues, material.uniforms.float_filter_values.value);//setting the float filter values
+
+
+			}
+
+
+
 
 			/////////////////////////////////////////////////////////////////////////////////////
 			//code for filters based on numerical expressions
 			// require to define indexed attribute values,
 			//a list of filters
 
+
+
 			// WIP as 24 jun 2025
-			let allowClipFilters = true;
-			if (allowClipFilters) {
+			let customFiltering = true;
+			if (customFiltering) {
 
 				//all enabled by FILTER_PC defines
 
