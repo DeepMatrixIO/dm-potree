@@ -1746,12 +1746,14 @@ export class Renderer {
 					let flat = pcfilterlist.flatten();
 
 
-					if (flat.filterList.length > 0) {
-						gl.uniform1iv(lFilterList, flat.filterList);//set into the meterial uniform list
-					}
 					if (flat.integer_filter_values.length > 0) {
 						gl.uniform1iv(lIntegerFilterValues, flat.integer_filter_values);//setting the integer filter values
 					}
+
+					if (flat.filterList.length > 0) {
+						gl.uniform1iv(lFilterList, flat.filterList);//set into the material uniform list
+					}
+
 					if (flat.float_filter_values.length > 0) {
 						gl.uniform1fv(lFloatFilterValues, flat.float_filter_values);//setting
 					}

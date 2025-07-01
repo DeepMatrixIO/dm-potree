@@ -184,7 +184,7 @@ export class Scene extends EventDispatcher {
 			'type': 'volume_added',
 			'scene': this,
 			'volume': volume
-		});add
+		});
 	}
 
 	addFilter(filter) {//filter i set of objects containing all items, making easier to manage items

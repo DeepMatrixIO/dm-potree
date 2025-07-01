@@ -162,7 +162,7 @@ uniform int uMixedVolumes[num_mixed_volumes]; // number of attributes used for f
 
 #if defined(num_logical_filters) && num_logical_filters > 0
 
-uniform int uFilterList[num_logical_filters];  //list of filters encoded with indices
+uniform int uFilterList[num_logical_filters*5];  //list of filters encoded with indices
 // uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
 #endif
 
@@ -1822,9 +1822,8 @@ bool doFiltering()
 				int index2 = uFilterList[logicFilterIndex++];
 				int listType = uFilterList[logicFilterIndex++];
 				float currAttVal=classification;
-				if(listType==0){
-				//	currentInside = (currentInside && doLogicalEval( currentOperator, currattVal, uIntegerFilterValues[integerIndex++] )); //
-				}else{
+				if(listType==1){
+
 					currentInside = (currentInside && doLogicalEval( currentOperator, currAttVal, uFloatFilterValues[floatIndex++] )); //
 				}
 				//currentInside = true; //
@@ -1929,7 +1928,7 @@ void main()
 #if defined(mixed_filters) && mixed_filters > 0
 	bool res = doFiltering() ;
 
-	res = (res && doLogicalEval( OP_GREATER_THAN_CONST, classification, 1.0)); //just for testing, remove
+	//res = (res && doLogicalEval( OP_GREATER_THAN_CONST, classification, 1.0)); //just for testing, remove
 
 	if (res)
 	{
