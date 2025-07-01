@@ -2261,7 +2261,7 @@ export class Viewer extends EventDispatcher {
 		{
 			//1) retrieve mixed filter list
 			//let mixedVolumes = this.scene.mixedVolumes.filter(vol => vol.visible && vol.initialized);//checking visilibity to avoid/ignore it
-//			let mixedVolumes = this.scene.mixedVolumes.filter(vol => vol.visible && vol.initialized);//checking visilibity to avoid/ignore it
+			//			let mixedVolumes = this.scene.mixedVolumes.filter(vol => vol.visible && vol.initialized);//checking visilibity to avoid/ignore it
 			let mixedFilters = this.scene.mixedFilters.filter(filt => filt.visible && filt.initialized);//checking visilibity to avoid/ignore it
 
 			// console.log("mixedVolumes", mixedVolumes);
@@ -2280,46 +2280,43 @@ export class Viewer extends EventDispatcher {
 			//all data is commited to pointcloudMAterial, to be rendered in potreeRenderer
 
 
+			if (mixedFilters.length > 0) {
+				for (let pointcloud of visiblePointClouds) {
+					//custom defines can be set as well
+					//pointcloud.material.setCustomDefine("custom_range","1");
 
-			for (let pointcloud of visiblePointClouds) {
-				//custom defines can be set as well
-				//pointcloud.material.setCustomDefine("custom_range","1");
-
-				// pointcloud.material.setMixedVolumes(mixedVolumes);//passing list to material
-				pointcloud.material.setMixedFilters(mixedFilters);//joint list of filters, spatial and logical, and others. Set defines them properly. Taken care in potreerenderer
-
-
+					// pointcloud.material.setMixedVolumes(mixedVolumes);//passing list to material
+					pointcloud.material.setMixedFilters(mixedFilters);//joint list of filters, spatial and logical, and others. Set defines them properly. Taken care in potreerenderer
 
 
+					// if (pointcloud.material.customDefines.get("num_filters") !== mixedVolumes.length) {
+					// 	//need to update shader defines . Uniforms are updated in potreeRenderer and based on inner variables
+					// 	pointcloud.material.setCustomDefine("num_mixed_volumes", mixedVolumes.length);//enable filtering
+					// }
 
-
-				// if (pointcloud.material.customDefines.get("num_filters") !== mixedVolumes.length) {
-				// 	//need to update shader defines . Uniforms are updated in potreeRenderer and based on inner variables
-				// 	pointcloud.material.setCustomDefine("num_mixed_volumes", mixedVolumes.length);//enable filtering
-				// }
-
-				//size  checks done internally withthin pointcloud material setMethods
+					//size  checks done internally withthin pointcloud material setMethods
 
 
 
 
-				// pointcloud.material.setCustomDefine("filter_pc", "1");//enable filtering, can be set somewhere else
-				// //pointcloud.material.setCustomDefine("num_filters", filterList.length);//enable filtering, can be set somewhere else
-				// pointcloud.material.setFilters(filterList);//passing filter list objects to material, internally it sets all variables
+					// pointcloud.material.setCustomDefine("filter_pc", "1");//enable filtering, can be set somewhere else
+					// //pointcloud.material.setCustomDefine("num_filters", filterList.length);//enable filtering, can be set somewhere else
+					// pointcloud.material.setFilters(filterList);//passing filter list objects to material, internally it sets all variables
 
-				// pointcloud.material.setIntegerFilterValues(integer_filter_values);//passing list to material
-				// pointcloud.material.setFloatFilterValues(float_filter_values);//passing list to material
+					// pointcloud.material.setIntegerFilterValues(integer_filter_values);//passing list to material
+					// pointcloud.material.setFloatFilterValues(float_filter_values);//passing list to material
 
-				// attribute list still missing, retrieve is as string
+					// attribute list still missing, retrieve is as string
 
-				// if (pointcloud.material.customDefines.get("num_filters") !== filterList.length) {
-				// 	//need to update shader defines . Uniforms are updated in potreeRenderer and based on inner variables
-				// 	//pointcloud.material.setCustomDefine("num_filters", filterList.length);//update filter number as well as filters
+					// if (pointcloud.material.customDefines.get("num_filters") !== filterList.length) {
+					// 	//need to update shader defines . Uniforms are updated in potreeRenderer and based on inner variables
+					// 	//pointcloud.material.setCustomDefine("num_filters", filterList.length);//update filter number as well as filters
 
-				// }
+					// }
 
-				pointcloud.material.updateShaderSource();
+					pointcloud.material.updateShaderSource();
 
+				}
 			}
 		}
 

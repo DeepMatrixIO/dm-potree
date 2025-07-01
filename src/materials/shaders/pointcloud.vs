@@ -23,7 +23,6 @@ in float seg_cluster_id;
 
 // in float filterAttribute[3];//Filtering  Attributes Indexed by number from browser side. Total number limited by webgl to 16, so trying with 3
 
-
 uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -51,6 +50,45 @@ uniform float uOrthoHeight;
 
 #define CLIPMETHOD_INSIDE_ANY 0
 #define CLIPMETHOD_INSIDE_ALL 1
+
+
+#define OP_EQUALS_CONST 0
+#define OP_EQUALS_ATTRIBUTE 1
+
+#define OP_LESS_THAN_CONST 2
+#define OP_LESS_THAN_ATTRIBUTE 3
+#define OP_LESS_THAN_EQ_CONST 4
+#define OP_LESS_THAN_EQ_ATTRIBUTE 5
+#define OP_GREATER_THAN_CONST 6
+#define OP_GREATER_THAN_ATTRIBUTE 7
+#define OP_GREATER_THAN_EQ_CONST 8
+#define OP_GREATER_THAN_EQ_ATTRIBUTE 9
+
+#define OP_RANGE_INCINC 10
+#define OP_RANGE_INCEXC 11
+#define OP_RANGE_EXCINC 12
+#define OP_RANGE_EXCEXC 13
+
+#define OP_IN	14
+#define OP_NOT_IN 15
+
+#define OP_DISTINCT_CONST 16
+#define OP_DISTINCT_ATTRIBUTE 17
+
+#define OP_OUTSIDE_RANGE_INCINC 18
+#define OP_OUTSIDE_RANGE_INCEXC 19
+#define OP_OUTSIDE_RANGE_EXCINC 20
+#define OP_OUTSIDE_RANGE_EXCEXC 21
+
+#define OP_AND 22
+#define OP_OR 23
+#define OP_NOT 24
+#define OP_XOR 25
+
+#define OP_ALL	255
+
+
+
 
 uniform int clipTask;
 uniform int clipMethod;
@@ -105,35 +143,46 @@ uniform mat4 uClipSpheres[num_clipspheres];
 #if defined(num_clippolygons) && num_clippolygons > 0
 uniform int uClipPolygonVCount[num_clippolygons]; // number of vertices for a given polygon
 // uniform vec3 uClipPolygonVertices[num_clippolygons * 8];//flattened array of vertices
-//uniform vec3 uClipPolygonVertices[num_clippolygons * max_clip_polygons]; // flattened array of vertices, but is not max_clip_polygons
+// uniform vec3 uClipPolygonVertices[num_clippolygons * max_clip_polygons]; // flattened array of vertices, but is not max_clip_polygons
 uniform vec3 uClipPolygonVertices[num_clippolygons * max_clip_vertices]; // flattened array of vertices, but is not max_clip_polygons
 uniform mat4 uClipPolygonWVP[num_clippolygons];							 // flattened matrices world projected matrices
 uniform vec3 uClipPolygonColor[num_clippolygons];						 // flattened matrices world projected matrices
 
 #endif
 
-//list of dynamic filters for selection clips box or polygon
-#if defined(mixed_volumes) &&  mixed_volumes > 0 && defined(num_mixed_volumes) && num_mixed_volumes > 0
+// list of dynamic filters for selection clips box or polygon
+#if defined(mixed_volumes) && mixed_volumes > 0 && defined(num_mixed_volumes) && num_mixed_volumes > 0
 //&& defined(num_op_attributes)  && num_op_attributes > 0 && defined(num_filters) && num_filters > 0 && defined(num_filter_values) && num_filter_values > 0
 
 uniform int uMixedVolumes[num_mixed_volumes]; // number of attributes used for filtering
 
-// uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
-// uniform float uFilterList[num_filters];  //list of filters encoded with indices
-// uniform float uFloatFilterValues[num_filter_values];
-// uniform int uIntegerFilterValues[num_list_values];
-//calls doFiltering
+
+// calls doFiltering
 #endif
 
-#if defined(mixed_filters) && mixed_filters > 0 //means something is commited to filtering
-uniform int uMixedFilters[mixed_filters];  //list of filters encoded with indices, extra variables are checked independently
+#if defined(num_logical_filters) && num_logical_filters > 0
+
+uniform int uFilterList[num_logical_filters];  //list of filters encoded with indices
+// uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
+#endif
+
+#if defined(num_float_values) && num_float_values > 0
+uniform float uFloatFilterValues[num_float_values];
+
+#endif
+
+#if defined(num_int_values) && num_int_values > 0
+uniform int uIntegerFilterValues[num_int_values];
+#endif
+
+
+#if defined(mixed_filters) && mixed_filters > 0 // means something is commited to filtering
+uniform int uMixedFilters[mixed_filters];		// list of filters encoded with indices, extra variables are checked independently
 // uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
 // uniform float uFloatFilterValues[num_filter_values];//arrays cant be set to zero, so setting dummy values
 // uniform int uIntegerFilterValues[num_list_values];
-//calls doFiltering
+// calls doFiltering
 #endif
-
-
 
 uniform float size;
 uniform float minSize;
@@ -1170,11 +1219,12 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 }
 #endif
 
-//given an inverse clipBoxMatrix  of a clipBox, taking world to local, checks if a point is inside the clipBox
-//by transforming a world position to local position wrt clip transformation
-//point is not strictly required to be passed as parameter
-//point is defined in local positino, but transformed to world position, and taken back to local position wrt cube
-bool pointInClipBox(mat4 clipBoxInvMat , vec3 point ){
+// given an inverse clipBoxMatrix  of a clipBox, taking world to local, checks if a point is inside the clipBox
+// by transforming a world position to local position wrt clip transformation
+// point is not strictly required to be passed as parameter
+// point is defined in local positino, but transformed to world position, and taken back to local position wrt cube
+bool pointInClipBox(mat4 clipBoxInvMat, vec3 point)
+{
 	// every clipBox is defined as an inverse matrix taking from world to local space
 	// so checking in within -0.5 and 0.5 in all axes.
 	// point in local coords, not worls
@@ -1187,12 +1237,104 @@ bool pointInClipBox(mat4 clipBoxInvMat , vec3 point ){
 }
 
 
+/** Takes an attribute, which for the time being is classification, but mostly a packed attribute index
+ * and compares it against another value, either attribute or contant value
+ *
+ * HAve two options, one is to directly extract a filter from all arrays. other is to explicitely receive the values
+*/
 
-//requires
-	//#if defined(num_clippolygons) && num_clippolygons > 0
+bool doLogicalEval(int operator  , float attributeValue, float compareValue ){
+
+
+	bool result= false;
+
+	if (operator == OP_EQUALS_CONST)
+	{
+		result = attributeValue == compareValue;
+	}
+	else if (operator == OP_EQUALS_ATTRIBUTE)
+	{
+		result = attributeValue == attributeValue;
+	}
+	else if (operator == OP_LESS_THAN_CONST)
+	{
+		result = attributeValue < compareValue;
+	}
+	else if (operator == OP_LESS_THAN_ATTRIBUTE)
+	{
+		result = attributeValue < attributeValue;
+	}
+	else if (operator == OP_LESS_THAN_EQ_CONST)
+	{
+		result = attributeValue <= compareValue;
+	}
+	else if (operator == OP_LESS_THAN_EQ_ATTRIBUTE)
+	{
+		result = attributeValue <= attributeValue;
+	}
+	else if (operator == OP_GREATER_THAN_CONST)
+	{
+		result = attributeValue > compareValue;
+	}
+	else if (operator == OP_GREATER_THAN_ATTRIBUTE)
+	{
+		result = attributeValue > attributeValue;
+	}
+	else if (operator == OP_GREATER_THAN_EQ_CONST)
+	{
+		result = attributeValue >= compareValue;
+	}
+	else if (operator == OP_GREATER_THAN_EQ_ATTRIBUTE)
+	{
+		result = attributeValue >= attributeValue;
+	}
+	else if (operator == OP_RANGE_INCINC)
+	{
+		result = attributeValue >= compareValue && attributeValue <= attributeValue;
+	}
+	else if (operator == OP_RANGE_INCEXC)
+	{
+		result = attributeValue >= compareValue && attributeValue < attributeValue;
+	}
+	else if (operator == OP_RANGE_EXCINC)
+	{
+		result = attributeValue > compareValue && attributeValue <= attributeValue;
+	}
+	else if (operator == OP_RANGE_EXCEXC)
+	{
+		result = attributeValue > compareValue && attributeValue < attributeValue;
+	}
+	else if (operator == OP_IN)
+	{
+		return true;//todo implement this
+	}
+	else if (operator == OP_NOT_IN)
+	{
+		return false;//todo implement this
+	}
+	else if (operator == OP_DISTINCT_CONST)
+	{
+		result = attributeValue != compareValue;
+	}
+	else if (operator == OP_DISTINCT_ATTRIBUTE)
+	{
+		result = attributeValue != compareValue;//todo fix it
+	}
+	else
+	{
+		result = false; // default case, not defined
+	}
+
+	return result;
+
+}
+
+
+
+// requires
+// #if defined(num_clippolygons) && num_clippolygons > 0
 void doClipping()
 {
-
 
 	{
 		vec4 cl = getClassification();
@@ -1204,55 +1346,55 @@ void doClipping()
 		}
 	}
 
-	#if defined(clip_return_number_enabled)
-		{ // return number filter
-			vec2 range = uFilterReturnNumberRange;
-			if (returnNumber < range.x || returnNumber > range.y)
-			{
-				gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+#if defined(clip_return_number_enabled)
+	{ // return number filter
+		vec2 range = uFilterReturnNumberRange;
+		if (returnNumber < range.x || returnNumber > range.y)
+		{
+			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 
-				return;
-			}
+			return;
 		}
-	#endif
+	}
+#endif
 
-	#if defined(clip_number_of_returns_enabled)
-		{ // number of return filter
-			vec2 range = uFilterNumberOfReturnsRange;
-			if (numberOfReturns < range.x || numberOfReturns > range.y)
-			{
-				gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+#if defined(clip_number_of_returns_enabled)
+	{ // number of return filter
+		vec2 range = uFilterNumberOfReturnsRange;
+		if (numberOfReturns < range.x || numberOfReturns > range.y)
+		{
+			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 
-				return;
-			}
+			return;
 		}
-	#endif
+	}
+#endif
 
-	#if defined(clip_gps_enabled)
-		{ // GPS time filter
-			float time = (gpsTime + uGpsOffset) * uGpsScale;
-			vec2 range = uFilterGPSTimeClipRange;
+#if defined(clip_gps_enabled)
+	{ // GPS time filter
+		float time = (gpsTime + uGpsOffset) * uGpsScale;
+		vec2 range = uFilterGPSTimeClipRange;
 
-			if (time < range.x || time > range.y)
-			{
-				gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+		if (time < range.x || time > range.y)
+		{
+			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 
-				return;
-			}
+			return;
 		}
-	#endif
+	}
+#endif
 
-	#if defined(clip_point_source_id_enabled)
-		{ // point source id filter
-			vec2 range = uFilterPointSourceIDClipRange;
-			if (pointSourceID < range.x || pointSourceID > range.y)
-			{
-				gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+#if defined(clip_point_source_id_enabled)
+	{ // point source id filter
+		vec2 range = uFilterPointSourceIDClipRange;
+		if (pointSourceID < range.x || pointSourceID > range.y)
+		{
+			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 
-				return;
-			}
+			return;
 		}
-	#endif
+	}
+#endif
 
 	bool clip = false;
 	bool isolateAnything = false;
@@ -1264,43 +1406,43 @@ void doClipping()
 	bool visible = true;
 	vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
 
-	#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-		for (int i = 0; i < num_clusteredpointsegments; i++)
+#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
+	for (int i = 0; i < num_clusteredpointsegments; i++)
+	{
+		if (clusteredpointsegments[i] == seg_cluster_id)
 		{
-			if (clusteredpointsegments[i] == seg_cluster_id)
+			active_ = activeStates[i];
+			highlight = selectedStates[i];
+			visible = visibleStates[i];
+			highlightColor = vec3(0, 0, 1);
+			if (segmentClipTasks[i] == CLIPTASK_SHOW_OUTSIDE || !visible)
 			{
-				active_ = activeStates[i];
-				highlight = selectedStates[i];
-				visible = visibleStates[i];
-				highlightColor = vec3(0, 0, 1);
-				if (segmentClipTasks[i] == CLIPTASK_SHOW_OUTSIDE || !visible)
-				{
-					clip = true;
-				}
-				else if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
-				{
-					isolateAnything = true;
-					isolateThis = true;
-				}
-				else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
-				{
-					grayscaleAnything = true;
-					grayscaleThis = false;
-				}
+				clip = true;
 			}
-			else
+			else if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
 			{
-				if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
-				{
-					isolateAnything = true;
-				}
-				else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
-				{
-					grayscaleAnything = true;
-				}
+				isolateAnything = true;
+				isolateThis = true;
+			}
+			else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
+			{
+				grayscaleAnything = true;
+				grayscaleThis = false;
 			}
 		}
-	#endif
+		else
+		{
+			if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
+			{
+				isolateAnything = true;
+			}
+			else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
+			{
+				grayscaleAnything = true;
+			}
+		}
+	}
+#endif
 
 	int clipVolumesCount = 0;
 	int insideCount = 0;
@@ -1309,16 +1451,12 @@ void doClipping()
 
 	// cliptasks[0] is a name, not an array
 
-
-
-
-
 	// CLIPbOXES
-	//every clipBox is defined as an inverse matrix taking from world to local space
-	//so checcking in within -0.5 and 0.5 in all axes.
-	//IF INSIDE, CHECK CLIP TASK AND CHANGE COLOR ACCORDINGLY
+	// every clipBox is defined as an inverse matrix taking from world to local space
+	// so checcking in within -0.5 and 0.5 in all axes.
+	// IF INSIDE, CHECK CLIP TASK AND CHANGE COLOR ACCORDINGLY
 	{
-	#if defined(num_clipboxes) && num_clipboxes > 0
+#if defined(num_clipboxes) && num_clipboxes > 0
 		for (int i = 0; i < num_clipboxes; i++)
 		{
 			// vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
@@ -1326,24 +1464,24 @@ void doClipping()
 			// inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
 			// inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
 
-			bool inside= pointInClipBox(clipBoxes[i], position);//replacing code above
+			bool inside = pointInClipBox(clipBoxes[i], position); // replacing code above
 
 			// old code not present
 			insideCount = insideCount + (inside ? 1 : 0);
 			clipVolumesCount++;
 
 			// adding highlight color
-			//highlightColor = vec3(0, 0, 1.0);//setting to blue at the beginning, so
-			//highlightColor = boxColors[i];//setting to blue at the beginning, so
+			// highlightColor = vec3(0, 0, 1.0);//setting to blue at the beginning, so
+			// highlightColor = boxColors[i];//setting to blue at the beginning, so
 
 			// CLUSTERING TOOLS CODE
 			if (inside)
 			{
 
 				{ // if inside but nos a clip tasks,highlight as cyan
-					// useful for debugging
-					//	highlightColor = vec3(1, 1, 1);//cyan should not appear as is overwritten
-					// highlight= true;
+				  // useful for debugging
+				  //	highlightColor = vec3(1, 1, 1);//cyan should not appear as is overwritten
+				  // highlight= true;
 				}
 
 				if (clipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
@@ -1364,7 +1502,7 @@ void doClipping()
 				{
 					highlight = true;
 					highlightColor = boxColors[i];
-					//highlightColor = vec3(0.5, 1.0, 0.0);
+					// highlightColor = vec3(0.5, 1.0, 0.0);
 				}
 				else if (clipTasks[i] == CLIPTASK_ACTIVE)
 				{
@@ -1375,8 +1513,8 @@ void doClipping()
 				if (selectionClipTasks[i] == CLIPTASK_HIGHLIGHT)
 				{
 					highlight = true;
-					//highlightColor = selectionBoxColors[i]; // no esta entrando
-					highlightColor = boxColors[i];//color per clipbox
+					// highlightColor = selectionBoxColors[i]; // no esta entrando
+					highlightColor = boxColors[i]; // color per clipbox
 				}
 				else if (selectionClipTasks[i] == CLIPTASK_ACTIVE)
 				{
@@ -1411,13 +1549,12 @@ void doClipping()
 				// means are not being found inside
 			}
 		}
-	#endif
+#endif
 	}
 
-
-	//POLYGON CODE
-	{// polygonClipVolume section,
-	#if defined(num_clippolygons) && num_clippolygons > 0
+	// POLYGON CODE
+	{ // polygonClipVolume section,
+#if defined(num_clippolygons) && num_clippolygons > 0
 
 		for (int i = 0; i < num_clippolygons; i++)
 		{
@@ -1430,26 +1567,22 @@ void doClipping()
 				// TODO, if inside, continue or break to skip  testing other polygons
 				// must set the color to the polygon color but
 
-				if(inside  ){//applies the corresponding color
-						vColor.r = uClipPolygonColor[i].x;
-						vColor.g = uClipPolygonColor[i].y;
-						vColor.b = uClipPolygonColor[i].z;
-						// vColor.r = 0.0;
-						// vColor.g = 1.0;
-						// vColor.b = 1.0;
-
-
+				if (inside)
+				{ // applies the corresponding color
+					vColor.r = uClipPolygonColor[i].x;
+					vColor.g = uClipPolygonColor[i].y;
+					vColor.b = uClipPolygonColor[i].z;
+					// vColor.r = 0.0;
+					// vColor.g = 1.0;
+					// vColor.b = 1.0;
 				}
-
-
 			}
 		}
-	#endif
+#endif
 	}
 
-
-	//IF INSIDE, CHECK COLOR AND TASK
-	{// clipVolume section   , uses  clipMethod and clipTask
+	// IF INSIDE, CHECK COLOR AND TASK
+	{ // clipVolume section   , uses  clipMethod and clipTask
 		bool insideAny = insideCount > 0;
 		bool insideAll = (clipVolumesCount > 0) && (clipVolumesCount == insideCount);
 
@@ -1459,28 +1592,28 @@ void doClipping()
 			{
 
 				vColor.r += 0.5; // default
-				#if defined(num_clipboxes) && num_clipboxes > 0
-					if (highlight)
-					{
+#if defined(num_clipboxes) && num_clipboxes > 0
+				if (highlight)
+				{
 
-						vColor.r = highlightColor.x;
-						vColor.g = highlightColor.y;
-						vColor.b = highlightColor.z;
-						// vColor.r = 1.0 -  vColor.r;
-						// vColor.g = 1.0 -  vColor.g;
-						// vColor.b = 1.0 -  vColor.b;
-						// vColor.r=highlightColor.r;
-						// vColor.g=highlightColor.g;
-						// vColor.b=highlightColor.b;
-					}
-
-					// {//inverted color
+					vColor.r = highlightColor.x;
+					vColor.g = highlightColor.y;
+					vColor.b = highlightColor.z;
 					// vColor.r = 1.0 -  vColor.r;
 					// vColor.g = 1.0 -  vColor.g;
 					// vColor.b = 1.0 -  vColor.b;
-					// }
+					// vColor.r=highlightColor.r;
+					// vColor.g=highlightColor.g;
+					// vColor.b=highlightColor.b;
+				}
 
-				#endif
+				// {//inverted color
+				// vColor.r = 1.0 -  vColor.r;
+				// vColor.g = 1.0 -  vColor.g;
+				// vColor.b = 1.0 -  vColor.b;
+				// }
+
+#endif
 
 				// this was tested but
 				// vColor.r += 0.5;//some constant
@@ -1501,28 +1634,28 @@ void doClipping()
 			if (insideAll && clipTask == CLIPTASK_HIGHLIGHT)
 			{
 				vColor.r += 0.5; // default highlight color,
-				#if defined(num_clipboxes) && num_clipboxes > 0
-								if (highlight)
-								{
+#if defined(num_clipboxes) && num_clipboxes > 0
+				if (highlight)
+				{
 
-									vColor.r = highlightColor.x;
-									vColor.g = highlightColor.y;
-									vColor.b = highlightColor.z;
-									// vColor.r = 1.0 -  vColor.r;
-									// vColor.g = 1.0 -  vColor.g;
-									// vColor.b = 1.0 -  vColor.b;
-									// vColor.r=highlightColor.r;
-									// vColor.g=highlightColor.g;
-									// vColor.b=highlightColor.b;
-								}
+					vColor.r = highlightColor.x;
+					vColor.g = highlightColor.y;
+					vColor.b = highlightColor.z;
+					// vColor.r = 1.0 -  vColor.r;
+					// vColor.g = 1.0 -  vColor.g;
+					// vColor.b = 1.0 -  vColor.b;
+					// vColor.r=highlightColor.r;
+					// vColor.g=highlightColor.g;
+					// vColor.b=highlightColor.b;
+				}
 
-								// {//inverted color
-								// vColor.r = 1.0 -  vColor.r;
-								// vColor.g = 1.0 -  vColor.g;
-								// vColor.b = 1.0 -  vColor.b;
-								// }
+				// {//inverted color
+				// vColor.r = 1.0 -  vColor.r;
+				// vColor.g = 1.0 -  vColor.g;
+				// vColor.b = 1.0 -  vColor.b;
+				// }
 
-				#endif
+#endif
 			}
 			else if (!insideAll && clipTask == CLIPTASK_SHOW_INSIDE)
 			{
@@ -1555,8 +1688,6 @@ void doClipping()
 			vColor.g = grayScale75p + highlightColor.g / 2.0;
 			vColor.b = grayScale75p + highlightColor.b / 2.0;
 
-
-
 			// vColor.r = 0.0;
 			// vColor.g = 1.0;
 			// vColor.b =  0.0;
@@ -1570,7 +1701,6 @@ void doClipping()
 		}
 	}
 
-
 	// hightlight never arived, triying boxColor
 	//  #if defined(num_clipboxes) && num_clipboxes > 0
 	//  vColor.r = boxColors[0].x;
@@ -1579,25 +1709,22 @@ void doClipping()
 	//  #endif
 }
 
-
 // Filtering is set appart from  clipping by passing through a set of spatial an logical filters
 // the general worlkflow is a cascade  of  spatial  and logical filters, so resulting poing gets a true or false value
 // post actions after filtering are can be highlight, color replacement as value replacement or show/hide
 
 //   [ FILTERtype1, FILTERType2, ..., STOP, FILTERTypeN, STOP, FILTERTypeN+1, ...]
 
-//works differently from clipping, as it does not take in or out directly points, just signals them with true or false
+// works differently from clipping, as it does not take in or out directly points, just signals them with true or false
 
+#define FILTER_NONE 0
+#define FILTER_BOXVOLUME 1
+#define FILTER_POLYGON 4
+#define FILTER_POLYGONVOLUME 5
+#define FILTER_LOGIC 10
 
-#define FILTER_VOID  1
-#define FILTER_POLYGON_SP  1
-#define FILTER_BOX_SP  2
-#define FILTER_LOGIC  2
-
-//#define num_clipboxes 22//added outside, while defining the uniform list
-// check all the required variables are defined
-
-
+// #define num_clipboxes 22//added outside, while defining the uniform list
+//  check all the required variables are defined
 
 // #define num_mixed_filters 22//come from outside
 // uniform int uMixedFilters[num_mixed_filters]; // mixed filters list, each entry is an action in sequence
@@ -1605,31 +1732,23 @@ void doClipping()
 // PLACES TO LOOK AT
 // scene ???  After adding a Volume or  polygonClipVolume, an event is dispatched
 // polygon_volume_clip_added and volume_added
-//and the corresponding items are added to the arrays
+// and the corresponding items are added to the arrays
 
-
-
-
-//places to look at
+// places to look at
 
 // 1) ui feeds scene data
 // 2) actual data is stored in scene.js
 // 3) viewer.js   @ update()  sET THE CORRESPONDING POINTCLOUD MATERIAL UNIFORMS automatically from material
 // 4) pointcloudmaterial.js  @ update()  SET THE CORRESPONDING POINTCLOUD MATERIAL UNIFORMS and defines
 
-
 // 5) POTREERENDERER.JS    add or update DEFINES FOR CONSTANTS IN renderOctree()
 //					SET UNIFORMS FOR REQUIRED ARRAYS LIKE CLIPBOXES, POLYGONcLIPBOXES, CLIPBOXES,
 //  MIXEDFILTERS IS SPECIFICALLY ADDED TO HAVE THIS METHOD WORKING
 
-//This place is easier to work as here directly things are added
-
-
-
+// This place is easier to work as here directly things are added
 
 bool doFiltering()
 {
-
 
 	bool clip = false;
 	bool isolateAnything = false;
@@ -1642,69 +1761,86 @@ bool doFiltering()
 	vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
 	int clipVolumesCount = 0;
 	int insideCount = 0;
-	bool inside=true;
-	//code for complex spatial and logical filtering. depends on a filter list
+	bool inside = true;
+	bool currentInside = false;
+	vec3 current_xyz = position; // oroginal data
+
+	// code for complex spatial and logical filtering. depends on a filter list
 	//[ filterType1, filterType2, ..., stop,filterTypeN, stop, filterTypeN+1, ...]
-	// where stop is a value that indicates the end of the filter and compute output values
-	//at the end all data is cascaded
+	//  where stop is a value that indicates the end of the filter and compute output values
+	// at the end all data is cascaded
 
 	{
-		//all objects must be defined
-	#if defined(num_mixed_filters) &&  num_mixed_filters > 0  && defined(num_clipboxes) && num_clipboxes >0 &&  defined(num_clippolygons) && num_clippolygons > 0
+		// all objects must be defined
+#if defined(mixed_filters) && mixed_filters > 0
 
-//dont check other variables as they were required to reach this state, but are still commited
+		// dont check other variables as they were required to reach this state, but are still commited
 
-		int filterIndex= 0;
+		int filterIndex = 0;
 		int polygonFilterIndex = 0;
 		int boxFilterIndex = 0;
 		int logicFilterIndex = 0;
+		int integerIndex = 0;
+		int floatIndex = 0;
+		float current_value = aExtra; // move this attribute
 
-		vec3 current_xyz = position;//oroginal data
-		float current_value = aExtra;//move this attribute
-		bool inside = true;
-		bool currentInside=true;
-
-		for (int i = 0; i < num_mixed_filters; i++){
-		// each entry in the filter list points to a filter type or an stop value
+		for (int i = 0; i < mixed_filters; i++)
+		{
+			// each entry in the filter list points to a filter type or an stop value
 			int filterType = uMixedFilters[i];
 
-			if(filterType == FILTER_BOX_SP){
-				//check if point ins inside box
-				currentInside =  pointInClipBox(clipBoxes[boxFilterIndex], position);
-				continue;//continue to next
+
+			#if defined(num_clipboxes) && num_clipboxes > 0
+			if (filterType == FILTER_BOXVOLUME)
+			{
+				// check if point ins inside box
+				currentInside = currentInside || pointInClipBox(clipBoxes[boxFilterIndex], position);
+				boxFilterIndex++;
+				continue; // continue to next
 			}
+			#endif
 
-
-			if(filterType == FILTER_POLYGON_SP){
-				//check if point ins inside box
-				currentInside= pointInClipPolygon(position, polygonFilterIndex);
-				continue;//continue to next
+			#if defined(num_clippolygons) && num_clippolygons > 0
+			if (filterType == FILTER_POLYGONVOLUME)
+			{
+				// check if point ins inside box
+				currentInside =  currentInside || pointInClipPolygon(position, polygonFilterIndex);
+				polygonFilterIndex++;
+				continue; // continue to next
 			}
+			#endif
 
-			if(filterType == FILTER_LOGIC){
-				//check if point ins inside box
-				currentInside= true;//
-				continue;//continue to next
+
+			#if defined(num_logical_filters) && num_logical_filters > 0
+
+			if (filterType == FILTER_LOGIC)
+			{
+
+				int currentOperator = uFilterList[logicFilterIndex++];
+				int attribIdx = uFilterList[logicFilterIndex++];
+				int index1 = uFilterList[logicFilterIndex++];
+				int index2 = uFilterList[logicFilterIndex++];
+				int listType = uFilterList[logicFilterIndex++];
+				float currAttVal=classification;
+				if(listType==0){
+				//	currentInside = (currentInside && doLogicalEval( currentOperator, currattVal, uIntegerFilterValues[integerIndex++] )); //
+				}else{
+					currentInside = (currentInside && doLogicalEval( currentOperator, currAttVal, uFloatFilterValues[floatIndex++] )); //
+				}
+				//currentInside = true; //
+				// logicFilterIndex++;
+				continue;			  // continue to next
 			}
+			#endif
+			// other filters
 
-			//other filters
-
-			if(filterType == FILTER_VOID){
-				//check if point ins inside box
-				currentInside= true;//
-				continue;//continue to next
+			if (filterType == FILTER_NONE)
+			{
+				// check if point ins inside box
+				currentInside = true; //
+				continue;			  // continue to next
 			}
-
-
-
-
-
-
-
 		}
-
-
-
 
 		// 	vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
 		// 	bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
@@ -1719,13 +1855,13 @@ bool doFiltering()
 	#endif
 	}
 
-
-
-
-
-	return inside;
-
+	return currentInside;
 }
+
+
+
+
+
 
 
 //
@@ -1791,11 +1927,15 @@ void main()
 	doClipping();
 
 #if defined(mixed_filters) && mixed_filters > 0
-	int tmp2=uMixedFilters[0];
-	tmp2= tmp2 + 1;
+	bool res = doFiltering() ;
+
+	res = (res && doLogicalEval( OP_GREATER_THAN_CONST, classification, 1.0)); //just for testing, remove
+
+	if (res)
+	{
+		vColor = vec3(1.0, 1.0, 0.0);
+	}
 #endif
-
-
 
 #if defined(num_clipspheres) && num_clipspheres > 0
 	for (int i = 0; i < num_clipspheres; i++)

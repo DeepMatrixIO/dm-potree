@@ -6,6 +6,8 @@ import {
 } from "../../libs/three.js/build/three.core.js";
 import {ElevationGradientRepeat, PointShape, PointSizeType, TreeType} from "../defines.js";
 import {Utils} from "../utils.js";
+import {PointCloudFilterList} from "../utils/Filter.js";
+import {FilterConstListType, FilterIntType} from "../utils/FilterConsts.js";
 import {ClassificationScheme} from "./ClassificationScheme.js";
 import {Gradients} from "./Gradients.js";
 
@@ -536,23 +538,23 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 	//it sets  the internal uniforms and populates values
 
-	setMixedVolumes(mixedVolumes) {
-		if (mixedVolumes === undefined || mixedVolumes === null) {
-			return;//do nothing
-		}
-		let prevMixedVolumeSize = this.mixedVolumes.length;
-		this.mixedVolumes = mixedVolumes;//sets the array
+	// setMixedVolumes(mixedVolumes) {
+	// 	if (mixedVolumes === undefined || mixedVolumes === null) {
+	// 		return;//do nothing
+	// 	}
+	// 	let prevMixedVolumeSize = this.mixedVolumes.length;
+	// 	this.mixedVolumes = mixedVolumes;//sets the array
 
-		//check length as simple update Shader strategy
+	// 	//check length as simple update Shader strategy
 
-		let doUpdate = prevMixedVolumeSize !== mixedVolumes.length;
+	// 	let doUpdate = prevMixedVolumeSize !== mixedVolumes.length;
 
-		if (doUpdate) {
-			this.setCustomDefine("num_mixed_volumes", this.mixedVolumes.length);//set the define for filtering
-			this.updateShaderSource();//check code here
-		}
+	// 	if (doUpdate) {
+	// 		this.setCustomDefine("num_mixed_volumes", this.mixedVolumes.length);//set the define for filtering
+	// 		this.updateShaderSource();//check code here
+	// 	}
 
-	}
+	// }
 
 
 	//always set define variables before updating the shader code, but can be set here
@@ -560,22 +562,35 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	//here filters set as both spatial an logical filters
 	//filters are encoded as integer values
 	setMixedFilters(filters) {
-		if (filters	 === undefined || filters === null) {
+		if (filters === undefined || filters === null) {
 			return;//do nothing
 		}
-		let prevMixedFilterSize=this.mixedFilters.length
+		let prevMixedFilterSize = this.mixedFilters.length
 
 		this.mixedFilters = filters;//sets the array
 
 		//check length as simple update Shader strategy
 
-
+		let logicalFilters = this.mixedFilters.filter((filter) => filter.getIntType() == FilterIntType.LOGICAL);
+		let pcfilterlist = new PointCloudFilterList()
+		logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
+		let flat = pcfilterlist.flatten();
 
 		let doUpdate = (prevMixedFilterSize !== filters.length);
 		if (doUpdate) {
 			this.setCustomDefine("mixed_filters", this.mixedFilters.length);//set the define for filtering, 0 non
+			this.setCustomDefine("num_logical_filters", logicalFilters.length );//set the define for filtering, 0 non
+			this.setCustomDefine("num_int_values", flat.integer_filter_values.length);//set the define for filtering, 0 non
+			this.setCustomDefine("num_float_values", flat.float_filter_values.length);//set the define for filtering, 0 non
 
-			this.updateShaderSource();//defines shuld be set before but can be updated here as well
+			// this.setCustomDefine("num_filter_attributes", logicalFilters.length);//set the define for filtering, 0 non
+
+			//int and float lists
+
+
+
+
+			// this.updateShaderSource();//defines shuld be set before but can be updated here as well
 		}
 
 	}

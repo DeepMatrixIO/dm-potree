@@ -1,7 +1,7 @@
 //Initial proposal for filtering points at shader level.
 //contains all the requires methods
 
-import {FilterIntType, FilterOperationType} from "./FilterConsts";
+import {FilterConstListType, FilterIntType, FilterOperationType} from "./FilterConsts";
 
 
 //import {a} from '@react-spring/web';
@@ -11,38 +11,44 @@ import {FilterIntType, FilterOperationType} from "./FilterConsts";
 
 
 //each filter implements its own logic, for integer of float attributes selection, the last attribute indicates details always.
+//Single filter
 export class PointCloudFilter {
+		_intType = FilterIntType.LOGICAL;//
 
 	constructor(
 		operator = FilterOperationType.ALL,
-		attributeList = [],
-		filterList = [],
-		integer_filter_values = [],
-		float_filter_values = [],
+		//filter = [],
 
 		index1 = 0, //attr index
 		index2 = 0, // attr or constant index
 		index3 = -1, //optional constant index for dual value operations  or -1
-		list_type = 0 //0 integer list by default, 1 float
+		list_type = 0, //0 integer list by default, 1 float
+
+		attributeList = [],
+		integer_filter_values = [],
+		float_filter_values = [],
+
+
 
 	) {
-		this.intType  = FilterIntType.LOGICAL;//
+
 		//this.enabled = true; //filter is enabled by default
 		this.visible = true; // to make it compatible with checkups
 		this.initialized = true; // always initialized
 		this.enabled = this.visible; //same value as visible
 
 		this.attributeList = attributeList;
-		this.filterList = filterList;
+		this.filterList = []; //filter is a single array with all the values
 		this.integer_filter_values = integer_filter_values;
 		this.float_filter_values = float_filter_values;
 
+		// let operator=filter[0]; //first item is the operator, if not provided, it is set to ALL
 
 		if (
 			integer_filter_values.length === 0 &&
-			float_filter_values.length === 0 &&
-			operator !== FilterOperationType.ALL &&
-			operator !== FilterOperationType.NOT
+			float_filter_values.length === 0
+			// operator !== FilterOperationType.ALL &&
+			// operator !== FilterOperationType.NOT
 		) {
 			throw new Error(
 				'PCSelectionFilter: At least one integer or float value is required for the filter.'
@@ -187,8 +193,18 @@ export class PointCloudFilter {
 		}
 	}
 
-	get intType() {
+
+	getIntType() {
 		return this._intType;
+	}
+
+	setIntType(value) {
+		this._intType = value;
+		if (value !== FilterIntType.LOGICAL) {
+			throw new Error(
+				'PCSelectionFilter: Only LOGICAL filter type is supported for point cloud filters.'
+			);
+		}
 	}
 
 	set enabled(value) {

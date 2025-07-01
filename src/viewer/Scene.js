@@ -4,6 +4,7 @@ import {Annotation} from "../Annotation.js";
 import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
+import {PointCloudFilter} from "../utils/Filter.js";
 import {View} from "./View.js";
 
 
@@ -35,8 +36,8 @@ export class Scene extends EventDispatcher {
 
 		///////////////////////////
 		this.mixedVolumes = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
-		//this.filters = []; //logical filters
-		this.mixedFilters = []; //mixed volumes and logical filters
+		this.filters = []; //add filters
+		this.mixedFilters = []; //mixed volumes and add filters
 		//
 		// this.integerFilterValues = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
 		// this.floatFilterValues = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
@@ -183,7 +184,7 @@ export class Scene extends EventDispatcher {
 			'type': 'volume_added',
 			'scene': this,
 			'volume': volume
-		});
+		});add
 	}
 
 	addFilter(filter) {//filter i set of objects containing all items, making easier to manage items
@@ -197,6 +198,29 @@ export class Scene extends EventDispatcher {
 			'filter': filter
 		});
 	}
+
+	addStaticFilter(operator, attributeIndex , optIndex1, optIndex2, listType,  attributeList, integerList, floatList) {//filter i set of objects containing all items, making easier to manage items
+
+		let filter=new PointCloudFilter(
+			operator, attributeIndex, optIndex1, optIndex2, listType,
+			attributeList,
+			integerList,
+			floatList
+
+			);
+
+		//to avoid issues, is just a JSON definition
+		this.filters.push(filter);//order is kept in this array
+		this.mixedFilters.push(filter);//order is kept in this array
+		// this.volumes.push(volume);
+		this.dispatchEvent({
+			'type': 'filter_added',
+			'scene': this,
+			'filter': filter
+		});
+	}
+
+
 
 
 	addOrientedImages(images) {

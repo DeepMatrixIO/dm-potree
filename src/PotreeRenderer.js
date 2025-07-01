@@ -3,6 +3,8 @@ import {max, mix} from "three/tsl";
 import * as THREE from "../libs/three.js/build/three.module.js";
 import {PointCloudTree} from "./PointCloudTree.js";
 import {ClipTask, ElevationGradientRepeat, PointSizeType} from "./defines.js";
+import {FilterConstListType, FilterIntType} from "./utils/FilterConsts.js";
+import {PointCloudFilterList} from "./utils/Filter.js";
 
 // Copied from three.js: WebGLRenderer.js
 function paramThreeToGL(_gl, p) {
@@ -1691,7 +1693,7 @@ export class Renderer {
 				let mixvol = material.mixedVolumes.map((vol) => vol.getIntType());
 				if (mixvol.length > 0) {
 					// console.log(mixvol)
-					gl.uniform1iv(lMixedVolumes,  mixvol)
+					gl.uniform1iv(lMixedVolumes, mixvol)
 				}
 				// //mixed list
 				// const lMixedFilters = shader.uniformLocations["uMixedFilters[0]"];//variable location name
@@ -1711,7 +1713,7 @@ export class Renderer {
 
 			}
 
-		let mixedFilters = true;
+			let mixedFilters = true;
 			//defines should be defined before updating shader, i.e. begininng of method
 			//locations and material.uniform.values set per node and material
 			if (mixedFilters && material.mixedFilters && material.mixedFilters.length > 0) {
@@ -1725,8 +1727,37 @@ export class Renderer {
 				let mixFilt = material.mixedFilters.map((filt) => filt.getIntType());
 				if (mixFilt.length > 0) {
 					// console.log(mixvol)
-					gl.uniform1iv(lMixedFilters,  mixFilt)
+					gl.uniform1iv(lMixedFilters, mixFilt)
 				}
+
+				let filters = material.mixedFilters.filter((f) => f.getIntType() == FilterIntType.LOGICAL)
+				if (filters.length > 0) {//if there are logical filters, then commit the rest of items
+
+					const lFilterAttributes = shader.uniformLocations["uFilterAttributes[0]"];//packed attributes per point, indexed
+					const lFilterList = shader.uniformLocations["uFilterList[0]"];
+					const lIntegerFilterValues = shader.uniformLocations["uIntegerFilterValues[0]"];
+					const lFloatFilterValues = shader.uniformLocations["uFloatFilterValues[0]"];
+
+					//gl.uniform1fv(lFilterAttributes, material.uniforms.filterAttributes.value);//attribute index for packed values
+
+
+					let pcfilterlist = new PointCloudFilterList()
+					filters.forEach((filter) => {pcfilterlist.addFilter(filter)});
+					let flat = pcfilterlist.flatten();
+
+
+					if (flat.filterList.length > 0) {
+						gl.uniform1iv(lFilterList, flat.filterList);//set into the meterial uniform list
+					}
+					if (flat.integer_filter_values.length > 0) {
+						gl.uniform1iv(lIntegerFilterValues, flat.integer_filter_values);//setting the integer filter values
+					}
+					if (flat.float_filter_values.length > 0) {
+						gl.uniform1fv(lFloatFilterValues, flat.float_filter_values);//setting
+					}
+				}
+				//now commit the rest of items
+
 				// //mixed list
 				// const lMixedFilters = shader.uniformLocations["uMixedFilters[0]"];//variable location name
 				// gl.uniform1iv(lMixedFilters, material.uniforms.uMixedFilters.value);//setting the mixed filters
