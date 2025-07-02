@@ -16,7 +16,7 @@ export class PointCloudFilter {
 		_intType = FilterIntType.LOGICAL;//
 
 	constructor(
-		operator = FilterOperationType.ALL,
+		operator = FilterOperationType.NONE,
 		//filter = [],
 
 		index1 = 0, //attr index
@@ -46,13 +46,16 @@ export class PointCloudFilter {
 
 		if (
 			integer_filter_values.length === 0 &&
-			float_filter_values.length === 0
+			float_filter_values.length === 0 &&
+			attributeList.length === 0
 			// operator !== FilterOperationType.ALL &&
 			// operator !== FilterOperationType.NOT
 		) {
-			throw new Error(
-				'PCSelectionFilter: At least one integer or float value is required for the filter.'
-			);
+			// throw new Error(
+			// 	'PCSelectionFilter: At least one integer or float value is required for the filter.'
+			// );
+			this._intType = FilterIntType.STOP; //no filter, stop filter
+			return;
 		}
 
 		if (
@@ -380,6 +383,8 @@ export class PointCloudFilter {
 	}
 
 }
+
+
 
 
 

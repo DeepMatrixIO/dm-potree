@@ -1,5 +1,5 @@
 export class FilterIntType {
-	static NONE = 0; //no filter
+	static STOP = 0; //no filter
 	static BOXVOLUME = 1; //volume filter
 	// static SphereVolume = 2; //sphere filter
 	// static CylinderVolume = 3; //cylinder filter
@@ -7,6 +7,7 @@ export class FilterIntType {
 	static POLYGON = 5; //polygon filter
 
 	static LOGICAL= 10; //point cloud volume filter, i.e. a point cloud is used as a filter
+	static NONE = 255; //no filter
 }
 
 export class FilterConstListType {
@@ -17,6 +18,7 @@ export class FilterConstListType {
 
 //THE REAL ISSUE IS HOW TO ENCODE LOGIC OPERATIONS BETWEEN FILTERS TO BE APPLICABLE TO A POINTCLOUD
 export class FilterOperationType {
+
 
 	static EQUALS_CONST = 0;
 	static EQUALS_ATTR = 1;
@@ -51,5 +53,6 @@ export class FilterOperationType {
 	static NOT = 24;//logical NOT operation on a filter
 	static XOR = 25;//logical XOR operation between two filters
 
+	static NONE = 254;
 	static ALL = 255;
 }

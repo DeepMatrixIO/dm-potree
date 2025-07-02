@@ -51,7 +51,6 @@ uniform float uOrthoHeight;
 #define CLIPMETHOD_INSIDE_ANY 0
 #define CLIPMETHOD_INSIDE_ALL 1
 
-
 #define OP_EQUALS_CONST 0
 #define OP_EQUALS_ATTRIBUTE 1
 
@@ -69,7 +68,7 @@ uniform float uOrthoHeight;
 #define OP_RANGE_EXCINC 12
 #define OP_RANGE_EXCEXC 13
 
-#define OP_IN	14
+#define OP_IN 14
 #define OP_NOT_IN 15
 
 #define OP_DISTINCT_CONST 16
@@ -85,10 +84,7 @@ uniform float uOrthoHeight;
 #define OP_NOT 24
 #define OP_XOR 25
 
-#define OP_ALL	255
-
-
-
+#define OP_ALL 255
 
 uniform int clipTask;
 uniform int clipMethod;
@@ -156,13 +152,12 @@ uniform vec3 uClipPolygonColor[num_clippolygons];						 // flattened matrices wo
 
 uniform int uMixedVolumes[num_mixed_volumes]; // number of attributes used for filtering
 
-
 // calls doFiltering
 #endif
 
 #if defined(num_logical_filters) && num_logical_filters > 0
 
-uniform int uFilterList[num_logical_filters*5];  //list of filters encoded with indices
+uniform int uFilterList[num_logical_filters * 5]; // list of filters encoded with indices
 // uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
 #endif
 
@@ -174,7 +169,6 @@ uniform float uFloatFilterValues[num_float_values];
 #if defined(num_int_values) && num_int_values > 0
 uniform int uIntegerFilterValues[num_int_values];
 #endif
-
 
 #if defined(mixed_filters) && mixed_filters > 0 // means something is commited to filtering
 uniform int uMixedFilters[mixed_filters];		// list of filters encoded with indices, extra variables are checked independently
@@ -1236,89 +1230,89 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point)
 	return inside;
 }
 
-
 /** Takes an attribute, which for the time being is classification, but mostly a packed attribute index
  * and compares it against another value, either attribute or contant value
  *
  * HAve two options, one is to directly extract a filter from all arrays. other is to explicitely receive the values
-*/
+ */
 
-bool doLogicalEval(int operator  , float attributeValue, float compareValue ){
+bool doLogicalEval(int operator, float attributeValue, float compareValue)
+{
 
+	bool result = false;
 
-	bool result= false;
-
-	if (operator == OP_EQUALS_CONST)
+	if (operator== OP_EQUALS_CONST)
 	{
 		result = attributeValue == compareValue;
 	}
-	else if (operator == OP_EQUALS_ATTRIBUTE)
+	else if (operator== OP_EQUALS_ATTRIBUTE)
 	{
 		result = attributeValue == attributeValue;
 	}
-	else if (operator == OP_LESS_THAN_CONST)
+	else if (operator== OP_LESS_THAN_CONST)
 	{
 		result = attributeValue < compareValue;
 	}
-	else if (operator == OP_LESS_THAN_ATTRIBUTE)
+	else if (operator== OP_LESS_THAN_ATTRIBUTE)
 	{
 		result = attributeValue < attributeValue;
 	}
-	else if (operator == OP_LESS_THAN_EQ_CONST)
+	else if (operator== OP_LESS_THAN_EQ_CONST)
 	{
 		result = attributeValue <= compareValue;
 	}
-	else if (operator == OP_LESS_THAN_EQ_ATTRIBUTE)
+	else if (operator== OP_LESS_THAN_EQ_ATTRIBUTE)
 	{
 		result = attributeValue <= attributeValue;
 	}
-	else if (operator == OP_GREATER_THAN_CONST)
+	else if (operator== OP_GREATER_THAN_CONST)
 	{
 		result = attributeValue > compareValue;
 	}
-	else if (operator == OP_GREATER_THAN_ATTRIBUTE)
+	else if (operator== OP_GREATER_THAN_ATTRIBUTE)
 	{
 		result = attributeValue > attributeValue;
 	}
-	else if (operator == OP_GREATER_THAN_EQ_CONST)
+	else if (operator== OP_GREATER_THAN_EQ_CONST)
 	{
 		result = attributeValue >= compareValue;
 	}
-	else if (operator == OP_GREATER_THAN_EQ_ATTRIBUTE)
+	else if (operator== OP_GREATER_THAN_EQ_ATTRIBUTE)
 	{
 		result = attributeValue >= attributeValue;
 	}
-	else if (operator == OP_RANGE_INCINC)
+	else if (operator== OP_RANGE_INCINC)
 	{
+		//requires indices, keep to float
 		result = attributeValue >= compareValue && attributeValue <= attributeValue;
 	}
-	else if (operator == OP_RANGE_INCEXC)
+	else if (operator== OP_RANGE_INCEXC)
 	{
 		result = attributeValue >= compareValue && attributeValue < attributeValue;
 	}
-	else if (operator == OP_RANGE_EXCINC)
+	else if (operator== OP_RANGE_EXCINC)
 	{
 		result = attributeValue > compareValue && attributeValue <= attributeValue;
 	}
-	else if (operator == OP_RANGE_EXCEXC)
+	else if (operator== OP_RANGE_EXCEXC)
 	{
 		result = attributeValue > compareValue && attributeValue < attributeValue;
 	}
-	else if (operator == OP_IN)
+	else if (operator== OP_IN)
 	{
-		return true;//todo implement this
+		return true; // todo implement this
 	}
-	else if (operator == OP_NOT_IN)
+	else if (operator== OP_NOT_IN)
 	{
-		return false;//todo implement this
+		return false; // todo implement this
 	}
-	else if (operator == OP_DISTINCT_CONST)
+	else if (operator== OP_DISTINCT_CONST)
 	{
 		result = attributeValue != compareValue;
 	}
-	else if (operator == OP_DISTINCT_ATTRIBUTE)
+	else if (operator== OP_DISTINCT_ATTRIBUTE)
 	{
-		result = attributeValue != compareValue;//todo fix it
+		result = attributeValue != compareValue; // todo fix it
 	}
 	else
 	{
@@ -1326,10 +1320,7 @@ bool doLogicalEval(int operator  , float attributeValue, float compareValue ){
 	}
 
 	return result;
-
 }
-
-
 
 // requires
 // #if defined(num_clippolygons) && num_clippolygons > 0
@@ -1717,11 +1708,13 @@ void doClipping()
 
 // works differently from clipping, as it does not take in or out directly points, just signals them with true or false
 
-#define FILTER_NONE 0
+#define FILTER_STOP 0
 #define FILTER_BOXVOLUME 1
 #define FILTER_POLYGON 4
 #define FILTER_POLYGONVOLUME 5
 #define FILTER_LOGIC 10
+#define FILTER_NONE 255
+
 
 // #define num_clipboxes 22//added outside, while defining the uniform list
 //  check all the required variables are defined
@@ -1750,20 +1743,18 @@ void doClipping()
 bool doFiltering()
 {
 
-	bool clip = false;
-	bool isolateAnything = false;
-	bool isolateThis = false;
-	bool grayscaleAnything = false;
-	bool grayscaleThis = true;
-	bool highlight = false;
-	bool active_ = false;
-	bool visible = true;
-	vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
-	int clipVolumesCount = 0;
-	int insideCount = 0;
-	bool inside = true;
-	bool currentInside = false;
-	vec3 current_xyz = position; // oroginal data
+	// bool highlight = false;
+
+	// vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
+
+	// bool inside = true;
+	//
+	bool globalValue = false;		 // global value for all applied filters . all stacked filters are evaluated by OR
+	bool currentFilterValue = true; // Each filter list until STOP is evaluated by AND by default but some steps can be OR or XOR evaluated
+	vec3 current_xyz = position;	 // if some other positional filters applied
+
+	bool skip = false; // skip the rest of the filters, if one is not passed. Experimental
+	bool stopped = true;
 
 	// code for complex spatial and logical filtering. depends on a filter list
 	//[ filterType1, filterType2, ..., stop,filterTypeN, stop, filterTypeN+1, ...]
@@ -1782,36 +1773,64 @@ bool doFiltering()
 		int logicFilterIndex = 0;
 		int integerIndex = 0;
 		int floatIndex = 0;
+
 		float current_value = aExtra; // move this attribute
 
 		for (int i = 0; i < mixed_filters; i++)
 		{
+
 			// each entry in the filter list points to a filter type or an stop value
 			int filterType = uMixedFilters[i];
 
+			if (filterType == FILTER_STOP)
+			{
 
-			#if defined(num_clipboxes) && num_clipboxes > 0
+				// stop value, means end of the filter list
+				if (i== 0)
+				{
+					// if is the first filter, just return the false value
+					currentFilterValue=false; // return true or false, depending on the filters applied
+				}
+				globalValue = globalValue || currentFilterValue; // OR operation
+				currentFilterValue = true;						 // reset for next filter
+				skip = false;									 // reset skip for next filter
+				stopped = true;
+				continue; // continue to next
+			}
+			stopped = false;
+#if defined(num_clipboxes) && num_clipboxes > 0
 			if (filterType == FILTER_BOXVOLUME)
 			{
 				// check if point ins inside box
-				currentInside = currentInside || pointInClipBox(clipBoxes[boxFilterIndex], position);
+
+				if (!skip)
+				{
+					currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
+					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+				}
+				// currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
+
 				boxFilterIndex++;
 				continue; // continue to next
 			}
-			#endif
+#endif
 
-			#if defined(num_clippolygons) && num_clippolygons > 0
+#if defined(num_clippolygons) && num_clippolygons > 0
 			if (filterType == FILTER_POLYGONVOLUME)
 			{
+				if (!skip)
+				{
+					currentFilterValue = currentFilterValue && pointInClipPolygon(position, polygonFilterIndex);
+					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+				}
 				// check if point ins inside box
-				currentInside =  currentInside || pointInClipPolygon(position, polygonFilterIndex);
+
 				polygonFilterIndex++;
 				continue; // continue to next
 			}
-			#endif
+#endif
 
-
-			#if defined(num_logical_filters) && num_logical_filters > 0
+#if defined(num_logical_filters) && num_logical_filters > 0
 
 			if (filterType == FILTER_LOGIC)
 			{
@@ -1821,23 +1840,27 @@ bool doFiltering()
 				int index1 = uFilterList[logicFilterIndex++];
 				int index2 = uFilterList[logicFilterIndex++];
 				int listType = uFilterList[logicFilterIndex++];
-				float currAttVal=classification;
-				if(listType==1){
 
-					currentInside = (currentInside && doLogicalEval( currentOperator, currAttVal, uFloatFilterValues[floatIndex++] )); //
+				float currAttVal = classification; // TODO change it
+
+				if (listType == 1)
+				{
+
+					currentFilterValue = (currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[floatIndex++]));
 				}
-				//currentInside = true; //
-				// logicFilterIndex++;
-				continue;			  // continue to next
+				// currentInside = true; //
+				//  logicFilterIndex++;
+				continue; // continue to next
 			}
-			#endif
+#endif
+
 			// other filters
 
 			if (filterType == FILTER_NONE)
 			{
 				// check if point ins inside box
-				currentInside = true; //
-				continue;			  // continue to next
+				currentFilterValue = currentFilterValue && true; //
+				continue;										 // continue to next
 			}
 		}
 
@@ -1851,17 +1874,16 @@ bool doFiltering()
 		// 	insideCount = insideCount + (inside ? 1 : 0);
 		// 	clipVolumesCount++;
 
-	#endif
+#endif
+	}
+	if (!stopped)
+	{
+		globalValue = globalValue || currentFilterValue; // OR operation for the last filter
+														 // return false; // return false, point is not visible
 	}
 
-	return currentInside;
+	return globalValue; // return the global value, true or false, depending on the filters applied
 }
-
-
-
-
-
-
 
 //
 // ##     ##    ###    #### ##    ##
@@ -1926,9 +1948,9 @@ void main()
 	doClipping();
 
 #if defined(mixed_filters) && mixed_filters > 0
-	bool res = doFiltering() ;
+	bool res = doFiltering();
 
-	//res = (res && doLogicalEval( OP_GREATER_THAN_CONST, classification, 1.0)); //just for testing, remove
+	// res = (res && doLogicalEval( OP_GREATER_THAN_CONST, classification, 1.0)); //just for testing, remove
 
 	if (res)
 	{

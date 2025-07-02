@@ -5,6 +5,7 @@ import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
 import {PointCloudFilter} from "../utils/Filter.js";
+import {FilterOperationType} from "../utils/FilterConsts.js";
 import {View} from "./View.js";
 
 
@@ -219,6 +220,28 @@ export class Scene extends EventDispatcher {
 			'filter': filter
 		});
 	}
+
+	addStaticStopFilter() {//filter i set of objects containing all items, making easier to manage items
+
+		let filter=new PointCloudFilter(
+			FilterOperationType.NONE, -1, -1, -1, -1,
+			[],
+			[],
+			[]
+			);
+
+		filter._intType= FilterOperationType.STOP; //this is a stop filter, no filter applied
+		//to avoid issues, is just a JSON definition
+		this.filters.push(filter);//order is kept in this array
+		this.mixedFilters.push(filter);//order is kept in this array
+		// this.volumes.push(volume);
+		this.dispatchEvent({
+			'type': 'filter_added',
+			'scene': this,
+			'filter': filter
+		});
+	}
+
 
 
 
