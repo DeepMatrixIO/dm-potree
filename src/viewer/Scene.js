@@ -230,7 +230,7 @@ export class Scene extends EventDispatcher {
 			[]
 			);
 
-		filter._intType= FilterOperationType.STOP; //this is a stop filter, no filter applied
+		// filter._intType= FilterOperationType.STOP; //this is a stop filter, no filter applied
 		//to avoid issues, is just a JSON definition
 		this.filters.push(filter);//order is kept in this array
 		this.mixedFilters.push(filter);//order is kept in this array
