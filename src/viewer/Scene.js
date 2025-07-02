@@ -200,15 +200,15 @@ export class Scene extends EventDispatcher {
 		});
 	}
 
-	addStaticFilter(operator, attributeIndex , optIndex1, optIndex2, listType,  attributeList, integerList, floatList) {//filter i set of objects containing all items, making easier to manage items
+	addStaticFilter(operator, attributeIndex, optIndex1, optIndex2, listType, attributeList, integerList, floatList) {//filter i set of objects containing all items, making easier to manage items
 
-		let filter=new PointCloudFilter(
+		let filter = new PointCloudFilter(
 			operator, attributeIndex, optIndex1, optIndex2, listType,
 			attributeList,
 			integerList,
 			floatList
 
-			);
+		);
 
 		//to avoid issues, is just a JSON definition
 		this.filters.push(filter);//order is kept in this array
@@ -223,12 +223,12 @@ export class Scene extends EventDispatcher {
 
 	addStaticStopFilter() {//filter i set of objects containing all items, making easier to manage items
 
-		let filter=new PointCloudFilter(
+		let filter = new PointCloudFilter(
 			FilterOperationType.NONE, -1, -1, -1, -1,
 			[],
 			[],
 			[]
-			);
+		);
 
 		// filter._intType= FilterOperationType.STOP; //this is a stop filter, no filter applied
 		//to avoid issues, is just a JSON definition
@@ -506,6 +506,20 @@ export class Scene extends EventDispatcher {
 
 		while (this.polygonClipVolumes.length > 0) {
 			this.removePolygonClipVolume(this.polygonClipVolumes[0]);
+		}
+	}
+
+	removeAllMixedFilters() {
+
+		//remove all mixed filters, including polygon clip volumes and other mixed volumes
+		this.filters = [];
+		while (this.mixedFilters.length > 0) {
+			let filter = this.mixedFilters.pop()
+			this.removeVolume(filter);
+			this.removePolygonClipVolume(filter);
+
+
+
 		}
 	}
 

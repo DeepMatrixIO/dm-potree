@@ -1236,7 +1236,7 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point)
  * HAve two options, one is to directly extract a filter from all arrays. other is to explicitely receive the values
  */
 
-bool doLogicalEval(int operator, float attributeValue, float compareValue)
+bool doLogicalEval(int operator, float attributeValue, float compareValue, int startIndex, int endIndex)
 {
 
 	bool result = false;
@@ -1281,31 +1281,6 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue)
 	{
 		result = attributeValue >= attributeValue;
 	}
-	else if (operator== OP_RANGE_INCINC)
-	{
-		//requires indices, keep to float
-		result = attributeValue >= compareValue && attributeValue <= attributeValue;
-	}
-	else if (operator== OP_RANGE_INCEXC)
-	{
-		result = attributeValue >= compareValue && attributeValue < attributeValue;
-	}
-	else if (operator== OP_RANGE_EXCINC)
-	{
-		result = attributeValue > compareValue && attributeValue <= attributeValue;
-	}
-	else if (operator== OP_RANGE_EXCEXC)
-	{
-		result = attributeValue > compareValue && attributeValue < attributeValue;
-	}
-	else if (operator== OP_IN)
-	{
-		return true; // todo implement this
-	}
-	else if (operator== OP_NOT_IN)
-	{
-		return false; // todo implement this
-	}
 	else if (operator== OP_DISTINCT_CONST)
 	{
 		result = attributeValue != compareValue;
@@ -1315,6 +1290,58 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue)
 		result = attributeValue != compareValue; // todo fix it
 	}
 	else
+
+#if defined(num_float_values) && num_float_values > 0
+
+		if (operator== OP_RANGE_INCINC)
+	{
+		// requires indices, keep to float
+		result = (uFloatFilterValues[startIndex] <= attributeValue) && attributeValue <= uFloatFilterValues[endIndex];
+	}
+	else if (operator== OP_RANGE_INCEXC)
+	{
+		result = (uFloatFilterValues[startIndex] <= attributeValue) && attributeValue < uFloatFilterValues[endIndex];
+	}
+	else if (operator== OP_RANGE_EXCINC)
+	{
+		result = (uFloatFilterValues[startIndex] < attributeValue) && attributeValue <= uFloatFilterValues[endIndex];
+	}
+	else if (operator== OP_RANGE_EXCEXC)
+	{
+		result = (uFloatFilterValues[startIndex] < attributeValue) && attributeValue < uFloatFilterValues[endIndex];
+	}
+
+	else if (operator == OP_NOT_IN) // not working
+	{
+		result=true;
+		for (int i = startIndex; i <= endIndex; i++)
+		{
+			if (attributeValue == uFloatFilterValues[i])
+			{
+				result= false;
+
+			}
+		}
+	}
+
+	else if (operator== OP_IN)
+	{
+		result=false;
+		for (int i = startIndex; i <= endIndex; i++)
+		{
+			if (attributeValue == uFloatFilterValues[i])
+			{
+				result= true;
+				break;
+			}
+		}
+
+	} else
+
+#endif
+
+
+
 	{
 		result = false; // default case, not defined
 	}
@@ -1715,7 +1742,6 @@ void doClipping()
 #define FILTER_LOGIC 10
 #define FILTER_NONE 255
 
-
 // #define num_clipboxes 22//added outside, while defining the uniform list
 //  check all the required variables are defined
 
@@ -1749,9 +1775,9 @@ bool doFiltering()
 
 	// bool inside = true;
 	//
-	bool globalValue = false;		 // global value for all applied filters . all stacked filters are evaluated by OR
+	bool globalValue = false;		// global value for all applied filters . all stacked filters are evaluated by OR
 	bool currentFilterValue = true; // Each filter list until STOP is evaluated by AND by default but some steps can be OR or XOR evaluated
-	vec3 current_xyz = position;	 // if some other positional filters applied
+	vec3 current_xyz = position;	// if some other positional filters applied
 
 	bool skip = false; // skip the rest of the filters, if one is not passed. Experimental
 	bool stopped = true;
@@ -1786,10 +1812,10 @@ bool doFiltering()
 			{
 
 				// stop value, means end of the filter list
-				if (i== 0)
+				if (i == 0)
 				{
 					// if is the first filter, just return the false value
-					currentFilterValue=false; // return true or false, depending on the filters applied
+					currentFilterValue = false; // return true or false, depending on the filters applied
 				}
 				globalValue = globalValue || currentFilterValue; // OR operation
 				currentFilterValue = true;						 // reset for next filter
@@ -1846,7 +1872,7 @@ bool doFiltering()
 				if (listType == 1)
 				{
 
-					currentFilterValue = (currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[floatIndex++]));
+					currentFilterValue = (currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[floatIndex++], index1, index2));
 				}
 				// currentInside = true; //
 				//  logicFilterIndex++;
@@ -1950,11 +1976,9 @@ void main()
 #if defined(mixed_filters) && mixed_filters > 0
 	bool res = doFiltering();
 
-	// res = (res && doLogicalEval( OP_GREATER_THAN_CONST, classification, 1.0)); //just for testing, remove
-
 	if (res)
 	{
-		vColor = vec3(1.0, 1.0, 0.0);
+		vColor = vec3(1.0, 1.0, 0.0); // yellow highlight on selection
 	}
 #endif
 
