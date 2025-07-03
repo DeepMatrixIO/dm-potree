@@ -513,14 +513,20 @@ export class Scene extends EventDispatcher {
 
 		//remove all mixed filters, including polygon clip volumes and other mixed volumes
 		this.filters = [];
-		while (this.mixedFilters.length > 0) {
-			let filter = this.mixedFilters.pop()
-			this.removeVolume(filter);
-			this.removePolygonClipVolume(filter);
-
-
-
+		for (let filter of this.mixedFilters) {
+			this.removeFilter(filter);
 		}
+
+		for (let volume of this.volumes) {
+			this.removeVolume(volume);
+		}
+
+		for (let volume of this.polygonClipVolumes) {
+			this.removePolygonClipVolume(volume);
+		}
+
+
+
 	}
 
 	getActiveCamera() {
