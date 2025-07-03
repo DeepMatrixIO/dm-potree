@@ -16,7 +16,7 @@ export class PointCloudFilter {
 	_intType = FilterIntType.LOGICAL;//
 
 	constructor(
-		operator = FilterOperationType.NONE,
+		operator = FilterOperationType.STOP,
 		//filter = [],
 
 		index1 = 0, //attr index
@@ -44,6 +44,19 @@ export class PointCloudFilter {
 
 		// let operator=filter[0]; //first item is the operator, if not provided, it is set to ALL
 
+		if (operator === FilterOperationType.STOP	) {
+
+
+					this.filterList.push([
+						operator,
+						-1,
+						-1,
+						-1,
+						1])
+		return;
+		}
+
+
 		if (
 			integer_filter_values.length === 0 &&
 			float_filter_values.length === 0 &&
@@ -54,7 +67,7 @@ export class PointCloudFilter {
 			// throw new Error(
 			// 	'PCSelectionFilter: At least one integer or float value is required for the filter.'
 			// );
-			this._intType = FilterIntType.STOP; //no filter, stop filter
+			// this._intType = FilterIntType.NONE; //
 			return;
 		}
 
@@ -405,9 +418,6 @@ export class PointCloudFilter {
 // Takes a set to filters and mix them into a flattened version, so it can be serialized and sent to the GPU
 
 export class PointCloudFilterList {
-	offsetAttribute = 0; //offset for attribute indices, used to update indices when merging multiple filters
-	offsetInteger = 0; //offset for integer values, used to update indices when merging multiple filters
-	offsetFloat = 0; //offset for float values, used to update indices when merging multiple filters
 
 	filters = [];
 
@@ -430,6 +440,12 @@ export class PointCloudFilterList {
 	flatten() {
 
 
+		// int offsetAttribute = 0; //offset for attribute indices, used to update indices when merging multiple filters
+		let offsetInteger = 0; //offset for integer values, used to update indices when merging multiple filters
+		let offsetFloat = 0; //offset for float values, used to update indices when merging multiple filters
+
+
+
 		let attributeList = [];
 		let filterList = []; //filter operations are index dependant and as such, values are offsetted
 		let integer_filter_values = [];
@@ -441,10 +457,22 @@ export class PointCloudFilterList {
 
 			for (const filt of filter.filterList) {
 				//apply offsets to indices
-				let attrIndex = filt[1];
-				let constIndex = filt[2];
-				let optNumber = filt[3];
-				let listType = filt[4]; //
+				let attrIndex = filt[1]; //does not require offset
+				let constIndex = filt[2];//requires offset
+				let optNumber = filt[3];//requires offset
+				let listType = filt[4]; //does not require offset
+
+				let currOffset = 0;
+				if (listType === FilterConstListType.INTEGER_LIST) {
+					constIndex += offsetInteger;
+					optNumber += offsetInteger;
+					offsetInteger += filter.integer_filter_values.length;
+				} else if (listType === FilterConstListType.FLOAT_LIST) {
+					constIndex += offsetFloat;
+					optNumber += offsetFloat;
+					offsetFloat += filter.float_filter_values.length;
+				}
+
 
 				filterList = filterList.concat([
 					filt[0],
@@ -453,9 +481,9 @@ export class PointCloudFilterList {
 					optNumber,
 					listType,
 				]);
-				this.offsetAttribute += filter.attributeList.length;
-				this.offsetInteger += filter.integer_filter_values.length;
-				this.offsetFloat += filter.float_filter_values.length;
+				// this.offsetAttribute += filter.attributeList.length;
+				// this.offsetInteger += filter.integer_filter_values.length;
+				// this.offsetFloat += filter.float_filter_values.length;
 			} //this is where indices should be updated and offset applied
 			//pointCloudFilter.filterList.push(...filter.filterList);//this is where indices should be updated and offset applied
 

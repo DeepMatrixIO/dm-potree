@@ -1,5 +1,5 @@
 export class FilterIntType {
-	static STOP = 0; //no filter
+	// static STOP = 0; //no filter
 	static BOXVOLUME = 1; //volume filter
 	// static SphereVolume = 2; //sphere filter
 	// static CylinderVolume = 3; //cylinder filter
@@ -53,6 +53,6 @@ export class FilterOperationType {
 	static NOT = 24;//logical NOT operation on a filter  // TODO
 	static XOR = 25;//logical XOR operation between two filters  // TODO
 
-	static NONE = 254;
+	static STOP = 254;
 	static ALL = 255;
 }

@@ -69,8 +69,8 @@ uniform float uOrthoHeight;
 
 #define OP_RANGE_EXCEXC 13
 
-#define OP_IN 14  //WORKS
-#define OP_OUT 15  //SOMEHOW NOT WORKING
+#define OP_IN 14  // WORKS
+#define OP_OUT 15 // SOMEHOW NOT WORKING
 
 #define OP_DISTINCT_CONST 16
 #define OP_DISTINCT_ATTRIBUTE 17
@@ -85,6 +85,7 @@ uniform float uOrthoHeight;
 #define OP_NOT 24
 #define OP_XOR 25
 
+#define OP_STOP 254
 #define OP_ALL 255
 
 uniform int clipTask;
@@ -1241,10 +1242,11 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 {
 
 	bool result = false;
+#if defined(num_float_values) && num_float_values > 0
 
 	if (operator== OP_EQUALS_CONST)
 	{
-		result = attributeValue == compareValue;
+		result = attributeValue == uFloatFilterValues[startIndex];
 	}
 	else if (operator== OP_EQUALS_ATTRIBUTE)
 	{
@@ -1252,7 +1254,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	}
 	else if (operator== OP_LESS_THAN_CONST)
 	{
-		result = attributeValue < compareValue;
+		result = attributeValue < uFloatFilterValues[startIndex];
 	}
 	else if (operator== OP_LESS_THAN_ATTRIBUTE)
 	{
@@ -1260,7 +1262,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	}
 	else if (operator== OP_LESS_THAN_EQ_CONST)
 	{
-		result = attributeValue <= compareValue;
+		result = attributeValue <= uFloatFilterValues[startIndex];
 	}
 	else if (operator== OP_LESS_THAN_EQ_ATTRIBUTE)
 	{
@@ -1268,7 +1270,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	}
 	else if (operator== OP_GREATER_THAN_CONST)
 	{
-		result = attributeValue > compareValue;
+		result = attributeValue > uFloatFilterValues[startIndex];
 	}
 	else if (operator== OP_GREATER_THAN_ATTRIBUTE)
 	{
@@ -1276,7 +1278,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	}
 	else if (operator== OP_GREATER_THAN_EQ_CONST)
 	{
-		result = attributeValue >= compareValue;
+		result = attributeValue >= uFloatFilterValues[startIndex];
 	}
 	else if (operator== OP_GREATER_THAN_EQ_ATTRIBUTE)
 	{
@@ -1284,15 +1286,12 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	}
 	else if (operator== OP_DISTINCT_CONST)
 	{
-		result = attributeValue != compareValue;
+		result = attributeValue != uFloatFilterValues[startIndex];
 	}
 	else if (operator== OP_DISTINCT_ATTRIBUTE)
 	{
 		result = attributeValue != compareValue; // todo fix it
 	}
-
-
-#if defined(num_float_values) && num_float_values > 0
 
 	else if (operator== OP_RANGE_INCINC)
 	{
@@ -1311,7 +1310,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	{
 		result = (uFloatFilterValues[startIndex] < attributeValue) && attributeValue <= uFloatFilterValues[endIndex];
 	}
-		////////////////////////////////////////////////////
+	////////////////////////////////////////////////////
 
 	else if (operator== OP_RANGE_EXCEXC)
 	{
@@ -1320,64 +1319,55 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 
 	////////////////////////////////////////////////////
 
-
 	else if (operator== OP_IN)
 	{
-		result=false;
+		result = false;
 		for (int i = startIndex; i <= endIndex; i++)
 		{
 			if (attributeValue == uFloatFilterValues[i])
 			{
-				result= true;
+				result = true;
 				break;
 			}
 		}
-
 	}
 	////////////////////////////////////////////////////
-	else if (operator == OP_OUT ) // not working
+	else if (operator== OP_OUT) // not working
 	{
-		result=true;
+		result = true;
 		for (int i = startIndex; i <= endIndex; i++)
 		{
 			if (attributeValue == uFloatFilterValues[i])
 			{
-				result =  false;
+				result = false;
 				break;
-
 			}
 		}
 	}
 	///////////////////////////////////////////////////
-	else if (operator == OP_OUTSIDE_RANGE_INCINC ) // not working
+	else if (operator== OP_OUTSIDE_RANGE_INCINC) // not working
 	{
-		result= attributeValue <= uFloatFilterValues[startIndex]  ||  attributeValue >= uFloatFilterValues[endIndex] ;
-
+		result = attributeValue <= uFloatFilterValues[startIndex] || attributeValue >= uFloatFilterValues[endIndex];
 	}
-  	///////////////////////////////////////////////////
-	else if (operator == OP_OUTSIDE_RANGE_INCEXC ) // not working
+	///////////////////////////////////////////////////
+	else if (operator== OP_OUTSIDE_RANGE_INCEXC) // not working
 	{
-		result= attributeValue <= uFloatFilterValues[startIndex]  ||  attributeValue > uFloatFilterValues[endIndex] ;
+		result = attributeValue <= uFloatFilterValues[startIndex] || attributeValue > uFloatFilterValues[endIndex];
 
-	}	///////////////////////////////////////////////////
-	else if (operator == OP_OUTSIDE_RANGE_EXCINC ) // not working
+	} ///////////////////////////////////////////////////
+	else if (operator== OP_OUTSIDE_RANGE_EXCINC) // not working
 	{
-		result= attributeValue < uFloatFilterValues[startIndex]  ||  attributeValue >= uFloatFilterValues[endIndex] ;
+		result = attributeValue < uFloatFilterValues[startIndex] || attributeValue >= uFloatFilterValues[endIndex];
 
-	}	///////////////////////////////////////////////////
-	else if (operator == OP_OUTSIDE_RANGE_EXCEXC ) // not working
+	} ///////////////////////////////////////////////////
+	else if (operator== OP_OUTSIDE_RANGE_EXCEXC) // not working
 	{
-		result= attributeValue <= uFloatFilterValues[startIndex]  ||  attributeValue >= uFloatFilterValues[endIndex] ;
-
+		result = attributeValue <= uFloatFilterValues[startIndex] || attributeValue >= uFloatFilterValues[endIndex];
 	}
 
 #endif
 
 	///////////////////////////////////////////////////
-	else
-	{
-		result = false; // default case, not defined
-	}
 
 	return result;
 }
@@ -1820,20 +1810,23 @@ bool doFiltering()
 	//  where stop is a value that indicates the end of the filter and compute output values
 	// at the end all data is cascaded
 
+	// int filterIndex = 0;
+
+	int polygonFilterIndex = 0;
+	int boxFilterIndex = 0;
+
+	int logicFilterIndex = 0;
+
+	int integerIndex = 0;
+	int floatIndex = 0;
+
 	{
 		// all objects must be defined
 #if defined(mixed_filters) && mixed_filters > 0
 
 		// dont check other variables as they were required to reach this state, but are still commited
 
-		int filterIndex = 0;
-		int polygonFilterIndex = 0;
-		int boxFilterIndex = 0;
-		int logicFilterIndex = 0;
-		int integerIndex = 0;
-		int floatIndex = 0;
-
-		float current_value = aExtra; // move this attribute
+		// float current_value = aExtra; // move this attribute
 
 		for (int i = 0; i < mixed_filters; i++)
 		{
@@ -1841,22 +1834,6 @@ bool doFiltering()
 			// each entry in the filter list points to a filter type or an stop value
 			int filterType = uMixedFilters[i];
 
-			if (filterType == FILTER_STOP)
-			{
-
-				// stop value, means end of the filter list
-				if (i == 0)
-				{
-					// if is the first filter, just return the false value
-					currentFilterValue = false; // return true or false, depending on the filters applied
-				}
-				globalValue = globalValue || currentFilterValue; // OR operation
-				currentFilterValue = true;						 // reset for next filter
-				skip = false;									 // reset skip for next filter
-				stopped = true;
-				continue; // continue to next
-			}
-			stopped = false;
 #if defined(num_clipboxes) && num_clipboxes > 0
 			if (filterType == FILTER_BOXVOLUME)
 			{
@@ -1870,6 +1847,8 @@ bool doFiltering()
 				// currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
 
 				boxFilterIndex++;
+				stopped = false;
+
 				continue; // continue to next
 			}
 #endif
@@ -1885,6 +1864,8 @@ bool doFiltering()
 				// check if point ins inside box
 
 				polygonFilterIndex++;
+				stopped = false;
+
 				continue; // continue to next
 			}
 #endif
@@ -1894,44 +1875,81 @@ bool doFiltering()
 			if (filterType == FILTER_LOGIC)
 			{
 
-				int currentOperator = uFilterList[logicFilterIndex++];
-				int attribIdx = uFilterList[logicFilterIndex++];
-				int index1 = uFilterList[logicFilterIndex++];
-				int index2 = uFilterList[logicFilterIndex++];
-				int listType = uFilterList[logicFilterIndex++];
+				// if (logicFilterIndex == 5){
+				// 	return true;
+				// }
+				int currentOperator = uFilterList[logicFilterIndex];
+				int attribIdx = uFilterList[logicFilterIndex + 1];
+				int index1 = uFilterList[logicFilterIndex + 2];
+				int index2 = uFilterList[logicFilterIndex + 3];
+				int listType = uFilterList[logicFilterIndex + 4];
+				logicFilterIndex += 5;
 
 				float currAttVal = classification; // TODO change it
 
-				if (listType == 1)
+				// if (listType == 1)
+				// {
+
+				if (currentOperator == OP_STOP)
+				{
+					// stop value, means end of the filter list
+					if (i == 0)
+					{
+						// if is the first filter, just return the false value
+						currentFilterValue = false; // return true or false, depending on the filters applied
+					}
+
+					//two cases arise, if las currentFilterValue is false, means nothing was found
+					// is more filters arrise, then currentFilterValue must be set to true, so newer filters can be evaluated
+
+
+
+
+					globalValue = globalValue || currentFilterValue; // OR operation
+					currentFilterValue = true;						 // reset for next filter
+					skip = false;									 // reset skip for next filter
+					stopped = true;
+
+					continue; // continue to next
+				}
+				else
 				{
 
-					currentFilterValue = (currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[floatIndex++], index1, index2));
+					if (!skip)
+					{
+
+						currentFilterValue = (currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2)); // do not increase the float index
+						// currentFilterValue = doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+						// }
+						// currentInside = true; //
+
+						// else if (listType == 2)
+						// {
+						// 	currentFilterValue = (currentFilterValue && doLogicalEval(currentOperator, currAttVal, uIntegerFilterValues[index1], index1, index2));//do not increase the integer index
+						// }
+						//  logicFilterIndex++;
+						skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+						// logicFilterIndex = logicFilterIndex + 5;
+						stopped = false;
+
+						continue; // continue to next
+					}
 				}
-				// currentInside = true; //
-				//  logicFilterIndex++;
-				continue; // continue to next
 			}
 #endif
 
 			// other filters
 
-			if (filterType == FILTER_NONE)
-			{
-				// check if point ins inside box
-				currentFilterValue = currentFilterValue && true; //
-				continue;										 // continue to next
-			}
+			// if (filterType == FILTER_NONE)
+			// {
+			// 	// check if point ins inside box
+			// 	currentFilterValue = currentFilterValue && true; //
+			// 	logicFilterIndex += 5; // just increase the index, no need to check anything
+			// 				stopped = false;
+
+			// 	continue;										 // continue to next
+			// }
 		}
-
-		// 	vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
-		// 	bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
-		// 	inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
-		// 	inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
-
-		// 	bool inside= pointInClipBox(clipBoxes[i], position);//replacing code above
-
-		// 	insideCount = insideCount + (inside ? 1 : 0);
-		// 	clipVolumesCount++;
 
 #endif
 	}

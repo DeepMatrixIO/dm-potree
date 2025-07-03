@@ -571,7 +571,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		//check length as simple update Shader strategy
 
-		let logicalFilters = this.mixedFilters.filter((filter) => filter.getIntType() == FilterIntType.LOGICAL);
+		//stop not being added, so is not counted properl;y
+		let logicalFilters = this.mixedFilters.filter((filter) => (filter.getIntType() == FilterIntType.LOGICAL ));
 		let pcfilterlist = new PointCloudFilterList()
 		logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
 		let flat = pcfilterlist.flatten();

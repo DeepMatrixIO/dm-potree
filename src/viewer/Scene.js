@@ -224,7 +224,7 @@ export class Scene extends EventDispatcher {
 	addStaticStopFilter() {//filter i set of objects containing all items, making easier to manage items
 
 		let filter = new PointCloudFilter(
-			FilterOperationType.NONE, -1, -1, -1, -1,
+			FilterOperationType.STOP, -1, -1, -1, -1,
 			[],
 			[],
 			[]
