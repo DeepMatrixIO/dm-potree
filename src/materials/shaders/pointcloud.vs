@@ -1899,12 +1899,6 @@ bool doFiltering()
 						currentFilterValue = false; // return true or false, depending on the filters applied
 					}
 
-					//two cases arise, if las currentFilterValue is false, means nothing was found
-					// is more filters arrise, then currentFilterValue must be set to true, so newer filters can be evaluated
-
-
-
-
 					globalValue = globalValue || currentFilterValue; // OR operation
 					currentFilterValue = true;						 // reset for next filter
 					skip = false;									 // reset skip for next filter
@@ -1918,18 +1912,12 @@ bool doFiltering()
 					if (!skip)
 					{
 
-						currentFilterValue = (currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2)); // do not increase the float index
-						// currentFilterValue = doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
-						// }
-						// currentInside = true; //
+						#if defined(num_float_values) && num_float_values > 0
+							currentFilterValue = currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+						#endif
 
-						// else if (listType == 2)
-						// {
-						// 	currentFilterValue = (currentFilterValue && doLogicalEval(currentOperator, currAttVal, uIntegerFilterValues[index1], index1, index2));//do not increase the integer index
-						// }
-						//  logicFilterIndex++;
 						skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
-						// logicFilterIndex = logicFilterIndex + 5;
+
 						stopped = false;
 
 						continue; // continue to next
