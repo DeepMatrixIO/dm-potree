@@ -36,7 +36,7 @@ export class Scene extends EventDispatcher {
 
 
 		///////////////////////////
-		this.mixedVolumes = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
+		// this.mixedVolumes = []; //added to keep the insertion order of all volumes, including polygon clip volumes and other mixed volumes.
 		this.filters = []; //add filters
 		this.mixedFilters = []; //mixed volumes and add filters
 		//
@@ -178,7 +178,7 @@ export class Scene extends EventDispatcher {
 	}
 
 	addVolume(volume) {
-		this.mixedVolumes.push(volume);//order is kept in this array
+		// this.mixedVolumes.push(volume);//order is kept in this array
 		this.mixedFilters.push(volume);//order is kept in this array
 		this.volumes.push(volume);
 		this.dispatchEvent({
@@ -321,11 +321,11 @@ export class Scene extends EventDispatcher {
 	removeVolume(volume) {
 
 		//may get discarded
-		let indexMixedVol = this.mixedVolumes.indexOf(volume);
-		if (indexMixedVol > -1) {
-			this.mixedVolumes.splice(indexMixedVol, 1);
+		// let indexMixedVol = this.mixedVolumes.indexOf(volume);
+		// if (indexMixedVol > -1) {
+		// 	this.mixedVolumes.splice(indexMixedVol, 1);
 
-		}
+		// }
 
 		let indexMixedFilter = this.mixedFilters.indexOf(volume);
 		if (indexMixedFilter > -1) {
@@ -401,7 +401,7 @@ export class Scene extends EventDispatcher {
 	};
 
 	addPolygonClipVolume(volume) {
-		this.mixedVolumes.push(volume);//order is kept in this array
+		// this.mixedVolumes.push(volume);//order is kept in this array
 		this.mixedFilters.push(volume);//order is kept in this array
 		this.polygonClipVolumes.push(volume);
 		this.dispatchEvent({
@@ -413,15 +413,15 @@ export class Scene extends EventDispatcher {
 
 	removePolygonClipVolume(volume) {
 
-		let indexMixed = this.mixedVolumes.indexOf(volume);
-		if (indexMixed > -1) {
-			this.mixedVolumes.splice(indexMixed, 1);
-			// this.dispatchEvent({
-			// 	"type": "polygon_clip_volume_removed",
-			// 	"scene": this,
-			// 	"volume": volume
-			// });
-		}
+		// let indexMixed = this.mixedVolumes.indexOf(volume);
+		// if (indexMixed > -1) {
+		// 	this.mixedVolumes.splice(indexMixed, 1);
+		// 	// this.dispatchEvent({
+		// 	// 	"type": "polygon_clip_volume_removed",
+		// 	// 	"scene": this,
+		// 	// 	"volume": volume
+		// 	// });
+		// }
 
 		let indexMixedFilter = this.mixedFilters.indexOf(volume);
 		if (indexMixedFilter > -1) {

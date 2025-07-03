@@ -20,38 +20,38 @@ export class FilterConstListType {
 export class FilterOperationType {
 
 
-	static EQUALS_CONST = 0;
+	static EQUALS_CONST = 0; //TESTED OK
 	static EQUALS_ATTR = 1;
 
-	static LESS_CONST = 2;
+	static LESS_CONST = 2; //TESTED OK
 	static LESS_ATTR = 3;
-	static LEQ_CONST = 4;
+	static LEQ_CONST = 4; //TESTED OK
 	static LEQ_ATTR = 5;
-	static GREATER_CONST = 6;
+	static GREATER_CONST = 6; //TESTED OK
 	static GREATER_ATTR = 7;
-	static GREATEREQ_CONST = 8;
+	static GREATEREQ_CONST = 8; //TESTED OK
 	static GREATEREQ_ATTR = 9;
 
-	static RANGE_INCINC = 10;//  between
-	static RANGE_EXINC = 11;//
-	static RANGE_INCEX = 12;
-	static RANGE_EXEX = 13;
+	static RANGE_INCINC = 10;//  between //TESTED OK
+	static RANGE_EXINC = 11;// TESTED OK
+	static RANGE_INCEX = 12;// TESTED OK
+	static RANGE_EXEX = 13;// TESTED OK
 
-	static IN = 14;//list of discrete values
-	static NOT_IN = 15;// outside of a list of discrete values
+	static IN = 14;//list of discrete values // TESTED OK
+	static OUT = 15;// outside of a list of discrete values // TESTED OK
 
-	static DISTINCT_CONST = 16;//distinct values than a constant
+	static DISTINCT_CONST = 16;//distinct values than a constant // TESTED OK
 	static DISTINCT_ATTR = 17;//distinct values than an attribute
 
-	static OUTSIDE_RANGE_INCINC = 18;//outside of a range, exclusive  EQUALS TO NOT 10, EXCLUDING VALUES
-	static OUTSIDE_RANGE_EXINC = 19;//outside of a range, clusive exclusive, EQUALS NOT 11, INCLUDING LOWER VALUE, EXCLUDING HIGHER VALUE
-	static OUTSIDE_RANGE_INCEX = 20;//outside of a range, excluding lower value and  including higher value
-	static OUTSIDE_RANGE_EXEX = 21;//outside of a range, INCLUDING BITH LOWER AND HIGHER VALUES, EQUALS NOT 13
+	static OUTSIDE_RANGE_INCINC = 18;//outside of a range, exclusive  EQUALS TO NOT 10, EXCLUDING VALUES // TESTED OK
+	static OUTSIDE_RANGE_EXINC = 19;//outside of a range, clusive exclusive, EQUALS NOT 11, INCLUDING LOWER VALUE, EXCLUDING HIGHER VALUE // TESTED OK
+	static OUTSIDE_RANGE_INCEX = 20;//outside of a range, excluding lower value and  including higher value // TESTED OK
+	static OUTSIDE_RANGE_EXEX = 21;//outside of a range, INCLUDING BITH LOWER AND HIGHER VALUES, EQUALS NOT 13 // TESTED OK
 
-	static AND = 22;//logical AND operation between two filters
-	static OR = 23;//logical OR operation between two filters
-	static NOT = 24;//logical NOT operation on a filter
-	static XOR = 25;//logical XOR operation between two filters
+	static AND = 22;//logical AND operation between two filters // TODO  but is default behaviour for filtering
+	static OR = 23;//logical OR operation between two filters  // TODO  Means to signal  an OR operation with the next result
+	static NOT = 24;//logical NOT operation on a filter  // TODO
+	static XOR = 25;//logical XOR operation between two filters  // TODO
 
 	static NONE = 254;
 	static ALL = 255;

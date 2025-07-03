@@ -2260,11 +2260,8 @@ export class Viewer extends EventDispatcher {
 		// takes scene data into pointcloudmaterial, to be rendered in potreeRenderer
 		{
 			//1) retrieve mixed filter list
-			//let mixedVolumes = this.scene.mixedVolumes.filter(vol => vol.visible && vol.initialized);//checking visilibity to avoid/ignore it
-			//			let mixedVolumes = this.scene.mixedVolumes.filter(vol => vol.visible && vol.initialized);//checking visilibity to avoid/ignore it
 			let mixedFilters = this.scene.mixedFilters.filter(filt => filt.visible && filt.initialized);//checking visilibity to avoid/ignore it
 
-			// console.log("mixedVolumes", mixedVolumes);
 
 			// let filterList = this.scene.filters.filter(filter => vol.enabled);//checking visilibity to avoid/ignore it
 

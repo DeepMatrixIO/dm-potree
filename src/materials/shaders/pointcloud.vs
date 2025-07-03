@@ -64,12 +64,13 @@ uniform float uOrthoHeight;
 #define OP_GREATER_THAN_EQ_ATTRIBUTE 9
 
 #define OP_RANGE_INCINC 10
-#define OP_RANGE_INCEXC 11
-#define OP_RANGE_EXCINC 12
+#define OP_RANGE_EXCINC 11
+#define OP_RANGE_INCEXC 12
+
 #define OP_RANGE_EXCEXC 13
 
-#define OP_IN 14
-#define OP_NOT_IN 15
+#define OP_IN 14  //WORKS
+#define OP_OUT 15  //SOMEHOW NOT WORKING
 
 #define OP_DISTINCT_CONST 16
 #define OP_DISTINCT_ATTRIBUTE 17
@@ -1289,40 +1290,36 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	{
 		result = attributeValue != compareValue; // todo fix it
 	}
-	else
+
 
 #if defined(num_float_values) && num_float_values > 0
 
-		if (operator== OP_RANGE_INCINC)
+	else if (operator== OP_RANGE_INCINC)
 	{
 		// requires indices, keep to float
 		result = (uFloatFilterValues[startIndex] <= attributeValue) && attributeValue <= uFloatFilterValues[endIndex];
 	}
+	////////////////////////////////////////////////////
+
 	else if (operator== OP_RANGE_INCEXC)
 	{
 		result = (uFloatFilterValues[startIndex] <= attributeValue) && attributeValue < uFloatFilterValues[endIndex];
 	}
+	////////////////////////////////////////////////////
+
 	else if (operator== OP_RANGE_EXCINC)
 	{
 		result = (uFloatFilterValues[startIndex] < attributeValue) && attributeValue <= uFloatFilterValues[endIndex];
 	}
+		////////////////////////////////////////////////////
+
 	else if (operator== OP_RANGE_EXCEXC)
 	{
 		result = (uFloatFilterValues[startIndex] < attributeValue) && attributeValue < uFloatFilterValues[endIndex];
 	}
 
-	else if (operator == OP_NOT_IN) // not working
-	{
-		result=true;
-		for (int i = startIndex; i <= endIndex; i++)
-		{
-			if (attributeValue == uFloatFilterValues[i])
-			{
-				result= false;
+	////////////////////////////////////////////////////
 
-			}
-		}
-	}
 
 	else if (operator== OP_IN)
 	{
@@ -1336,12 +1333,48 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 			}
 		}
 
-	} else
+	}
+	////////////////////////////////////////////////////
+	else if (operator == OP_OUT ) // not working
+	{
+		result=true;
+		for (int i = startIndex; i <= endIndex; i++)
+		{
+			if (attributeValue == uFloatFilterValues[i])
+			{
+				result =  false;
+				break;
+
+			}
+		}
+	}
+	///////////////////////////////////////////////////
+	else if (operator == OP_OUTSIDE_RANGE_INCINC ) // not working
+	{
+		result= attributeValue <= uFloatFilterValues[startIndex]  ||  attributeValue >= uFloatFilterValues[endIndex] ;
+
+	}
+  	///////////////////////////////////////////////////
+	else if (operator == OP_OUTSIDE_RANGE_INCEXC ) // not working
+	{
+		result= attributeValue <= uFloatFilterValues[startIndex]  ||  attributeValue > uFloatFilterValues[endIndex] ;
+
+	}	///////////////////////////////////////////////////
+	else if (operator == OP_OUTSIDE_RANGE_EXCINC ) // not working
+	{
+		result= attributeValue < uFloatFilterValues[startIndex]  ||  attributeValue >= uFloatFilterValues[endIndex] ;
+
+	}	///////////////////////////////////////////////////
+	else if (operator == OP_OUTSIDE_RANGE_EXCEXC ) // not working
+	{
+		result= attributeValue <= uFloatFilterValues[startIndex]  ||  attributeValue >= uFloatFilterValues[endIndex] ;
+
+	}
 
 #endif
 
-
-
+	///////////////////////////////////////////////////
+	else
 	{
 		result = false; // default case, not defined
 	}

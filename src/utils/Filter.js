@@ -13,7 +13,7 @@ import {FilterConstListType, FilterIntType, FilterOperationType} from "./FilterC
 //each filter implements its own logic, for integer of float attributes selection, the last attribute indicates details always.
 //Single filter
 export class PointCloudFilter {
-		_intType = FilterIntType.LOGICAL;//
+	_intType = FilterIntType.LOGICAL;//
 
 	constructor(
 		operator = FilterOperationType.NONE,
@@ -63,7 +63,11 @@ export class PointCloudFilter {
 			operator === FilterOperationType.LESS_CONST ||
 			operator === FilterOperationType.LEQ_CONST ||
 			operator === FilterOperationType.GREATER_CONST ||
-			operator === FilterOperationType.GREATEREQ_CONST
+			operator === FilterOperationType.GREATEREQ_CONST ||
+
+			operator === FilterOperationType.DISTINCT_ATTR ||
+			operator === FilterOperationType.DISTINCT_CONST
+
 		) {
 			//  if(integer_filter_values.length === 0 && float_filter_values.length > 0){
 			//     optNumber = FilterConstListType.FLOAT_LIST; //if no integer values are provided, use float values
@@ -135,7 +139,10 @@ export class PointCloudFilter {
 			return;
 		}
 
-		if (operator === FilterOperationType.IN) {
+		if (operator === FilterOperationType.IN ||
+			operator === FilterOperationType.OUT
+
+		) {
 			//optnumber and other indices are not used for IN and NOT operations, so they are set to -1
 
 			//the actual comparison depends in the existence of integer or float values, so we check if at least one is provided
@@ -169,7 +176,14 @@ export class PointCloudFilter {
 			operator === FilterOperationType.RANGE_INCINC ||
 			operator === FilterOperationType.RANGE_EXINC ||
 			operator === FilterOperationType.RANGE_INCEX ||
-			operator === FilterOperationType.RANGE_EXEX
+			operator === FilterOperationType.RANGE_EXEX ||
+
+			operator === FilterOperationType.OUTSIDE_RANGE_INCINC ||
+			operator === FilterOperationType.OUTSIDE_RANGE_EXINC ||
+			operator === FilterOperationType.OUTSIDE_RANGE_INCEX ||
+			operator === FilterOperationType.OUTSIDE_RANGE_EXEX
+
+
 		) {
 			if (
 				attributeList.length < 1 ||
@@ -236,7 +250,7 @@ export class PointCloudFilter {
 	//evaluated the current filter in js . A set of fiters is logically applied and push into a stack so it can be evaluated.
 	//point contains all the information required to evaluate the filter, such as attributes and values.
 
-	eval(point)  {
+	eval(point) {
 		let results = [];
 		let lastOperations = []; //default operation is AND, as this is a selection filter
 
@@ -250,7 +264,7 @@ export class PointCloudFilter {
 
 			let attributeValue = point[this.attributeList[attrIndex]];
 			let attributeValue2 = null;
-			let constantValue  = 0;
+			let constantValue = 0;
 
 			let constantValue2 = 0; //used for range operations
 			if (listType === FilterConstListType.INTEGER_LIST) {
@@ -395,7 +409,7 @@ export class PointCloudFilterList {
 	offsetInteger = 0; //offset for integer values, used to update indices when merging multiple filters
 	offsetFloat = 0; //offset for float values, used to update indices when merging multiple filters
 
-	filters=[];
+	filters = [];
 
 	constructor() {
 		this.filters = [];
@@ -413,13 +427,13 @@ export class PointCloudFilterList {
 	}
 
 	//merges all filters within a list into single array, or better, into a single huge filter
-	flatten(){
+	flatten() {
 
 
-		let	attributeList = [];
-		let filterList= []; //filter operations are index dependant and as such, values are offsetted
-		let integer_filter_values= [];
-		let float_filter_values= [];
+		let attributeList = [];
+		let filterList = []; //filter operations are index dependant and as such, values are offsetted
+		let integer_filter_values = [];
+		let float_filter_values = [];
 
 
 		for (const filter of this.filters) {
