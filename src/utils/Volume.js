@@ -10,7 +10,7 @@ export class Volume extends THREE.Object3D {
 	constructor(args = {}) {
 		super();
 		this.intType = FilterIntType.NONE; //default value, can be set by user
-
+		this._initialized = false; //used to signal that the volume is initialized, i.e. geometry and material are set
 		if (this.constructor.name === "Volume") {
 			console.warn("Can't create object of class Volume directly. Use classes BoxVolume or SphereVolume instead.");
 		}

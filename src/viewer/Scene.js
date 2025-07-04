@@ -352,17 +352,17 @@ export class Scene extends EventDispatcher {
 	removeFilter(filter) {
 
 		//will get removed
-		let indexFilter = this.filters.indexOf(filter);
-		if (indexFilter > -1) {
-			this.filters.splice(indexFilter, 1);
-		}
+
 
 		let indexMixedFilter = this.mixedFilters.indexOf(filter);
 		if (indexMixedFilter > -1) {
 			this.mixedFilters.splice(indexMixedFilter, 1);
 		}
 
-
+		let indexFilter = this.filters.indexOf(filter);
+		if (indexFilter > -1) {
+			this.filters.splice(indexFilter, 1);
+		}
 
 
 		this.dispatchEvent({
@@ -513,9 +513,10 @@ export class Scene extends EventDispatcher {
 
 		//remove all mixed filters, including polygon clip volumes and other mixed volumes
 		this.filters = [];
-		for (let filter of this.mixedFilters) {
-			this.removeFilter(filter);
-		}
+		// for (let filter of this.mixedFilters) {
+		// 	this.removeFilter(filter);
+		// }
+		this.mixedFilters = [];
 
 		for (let volume of this.volumes) {
 			this.removeVolume(volume);

@@ -69,6 +69,7 @@ export class VolumeTool extends EventDispatcher{
 
 		volume.clip = args.clip || false;
 		volume.name = args.name || 'Volume';
+		volume.initialized=true;
 
 		this.dispatchEvent({
 			type: 'start_inserting_volume',
@@ -83,6 +84,8 @@ export class VolumeTool extends EventDispatcher{
 		};
 
 		let drag = e => {
+
+
 			let camera = this.viewer.scene.getActiveCamera();
 
 			let I = Utils.getMousePointCloudIntersection(
