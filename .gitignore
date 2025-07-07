@@ -35,3 +35,4 @@ libs/giro3d
 /pointclouds/inegi_point_cloud_cov_40cm.las_converted
 .vscode/settings.json
 .prettierrc
+.settings.json

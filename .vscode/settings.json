@@ -1,8 +1,8 @@
 {
 	"workbench.editor.enablePreview": false,
 	"files.associations": {
-		"*.vs": "cpp",
-		"*.fs": "cpp"
+		"*.vs": "glsl",
+		"*.fs": "glsl"
 	},
 	"files.trimTrailingWhitespace": true,
 	"editor.fontSize": 12,
