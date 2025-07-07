@@ -574,7 +574,7 @@ vec4 getClassification() {
 
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
 	for(int i = 0; i < num_clusteredpointsegments; i++) {
-		if(clusteredpointsegments[i] == seg_cluster_id) {
+		if(clusteredpointsegments[i] == seg_cluster_id) {  //33333391.1
 			float segmentClass = segmentClassifications[i];
 			if(segmentClass != -1.0f) {
 				uv = vec2(segmentClass / 255.0f, 0.5f);
@@ -1190,7 +1190,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 
 // requires
 // #if defined(num_clippolygons) && num_clippolygons > 0
-void doClipping() {
+void doClipping(bool inside) {
 
 	{
 		vec4 cl = getClassification();
@@ -1248,8 +1248,8 @@ void doClipping() {
 #endif
 
 	bool clip = false;
-	bool isolateAnything = false;
-	bool isolateThis = false;
+	// bool showAll = false;//?????
+	// bool showThis = false;//?????
 	bool grayscaleAnything = false;
 	bool grayscaleThis = true;
 	bool highlight = false;
@@ -1257,296 +1257,132 @@ void doClipping() {
 	bool visible = true;
 	vec3 highlightColor = vec3(0.0f, 0.0f, 0.0f); // white
 
-#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-	for(int i = 0; i < num_clusteredpointsegments; i++) {
-		//two cases,
-		// 1) if inside the clustering list
-		//2) outside the clustering list
+	//all points have to set a clip task
 
-		//  SHOW  OUTSIDE  or not Visible mens the point is clipped
+	if(clipTask == CLIPTASK_ACTIVE) {
+		// show points inside the clip box
+		//inside = true;
+		//isolateThis = true; // isolate this point
+		active_ = true;
 
-		//1) In List
-		if(clusteredpointsegments[i] == seg_cluster_id) {
-			active_ = activeStates[i];
-			highlight = selectedStates[i];
-			visible = visibleStates[i];
+	} else if(clipTask == CLIPTASK_SHOW_INSIDE) {
+		// show points inside the clip box
 
-			= vec3(0, 0, 1);
+		// showAll = false; // do not display points outside
+		// showThis = true; // display this point
+		visible = inside;
 
-			if(segmentClipTasks[i] == CLIPTASK_SHOW_OUTSIDE || !visible) {
-				clip = true;
-			} else if(segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE) {
-				isolateAnything = true;
-				isolateThis = true;
-			} else if(segmentClipTasks[i] == CLIPTASK_GRAYSCALE) {
-				grayscaleAnything = true;
-				grayscaleThis = false;
-			}
-		} else  //2) Not in list
+	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE) {
+		// show points outside the clip box
+		// showAll = true; // do not display points outside
+		// showThis = false; // display this point
+		visible = !inside;
+
+	} else if(clipTask == CLIPTASK_GRAYSCALE) {
+		grayscaleAnything = true;
+		grayscaleThis = true;
+		visible = true;
+
+	} else if(clipTask == CLIPTASK_HIGHLIGHT) {
+		highlight = true; // highlight current cluster
+		// showAll=true;
+		// showThis=true;
+		visible = true;
+
+	}
+
+		 //assigning color and cliptask action
+
+		// if((isolateAnything && !isolateThis) || clip)// if clipped or isolatedAnything, make it dissapear by moving it away
+		// {
+		// 	gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
+		// } else
+
+	if(inside) {
+		if(active_) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
-			if(segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE) {
-				isolateAnything = true;
-			} else if(segmentClipTasks[i] == CLIPTASK_GRAYSCALE) {
-				grayscaleAnything = true;
-			}
-		}
-	}
-#endif
-
-	int clipVolumesCount = 0;
-	int insideCount = 0;
-
-	// this just assigns the hightlight value and color but seems not to be working the inside check
-
-	// cliptasks[0] is a name, not an array
-
-	// CLIPbOXES
-	// every clipBox is defined as an inverse matrix taking from world to local space
-	// so checcking in within -0.5 and 0.5 in all axes.
-	// IF INSIDE, CHECK CLIP TASK AND CHANGE COLOR ACCORDINGLY
-	{
-#if defined(num_clipboxes) && num_clipboxes > 0
-		for(int i = 0; i < num_clipboxes; i++) {
-			// vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
-			// bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
-			// inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
-			// inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
-
-			bool inside = pointInClipBox(clipBoxes[i], position); // replacing code above
-
-			// old code not present
-			insideCount = insideCount + (inside ? 1 : 0);
-			clipVolumesCount++;
-
-			// adding highlight color
-			// highlightColor = vec3(0, 0, 1.0);//setting to blue at the beginning, so
-			// highlightColor = boxColors[i];//setting to blue at the beginning, so
-
-			// CLUSTERING TOOLS CODE
-			if(inside) {
-
-				{ // if inside but nos a clip tasks,highlight as cyan
-				  // useful for debugging
-				  //	highlightColor = vec3(1, 1, 1);//cyan should not appear as is overwritten
-				  // highlight= true;
-				}
-
-				if(clipTasks[i] == CLIPTASK_SHOW_OUTSIDE) {
-					clip = true;
-				} else if(clipTasks[i] == CLIPTASK_SHOW_INSIDE) {
-					isolateAnything = true;
-					isolateThis = true;
-				} else if(clipTasks[i] == CLIPTASK_GRAYSCALE) {
-					grayscaleAnything = true;
-					grayscaleThis = false;
-				} else if(clipTasks[i] == CLIPTASK_HIGHLIGHT) {
-					highlight = true;
-					highlightColor = boxColors[i];
-					// highlightColor = vec3(0.5, 1.0, 0.0);
-				} else if(clipTasks[i] == CLIPTASK_ACTIVE) {
-					active_ = true;
-				}
-
-				//////////// adding code for custom boxvolume  , writing to selectionClipTasks
-				//repeted but for selection. Can we clear them?? use the same?
-				//we must store instead in clipTasks[i]
-
-				//overriding values from selectionClipTasks
-
-				// if(selectionClipTasks[i] == CLIPTASK_SHOW_OUTSIDE) {
-				// 	isolateThis = false;
-				// } else if(selectionClipTasks[i] == CLIPTASK_SHOW_INSIDE) {
-				// 	isolateThis = true;
-				// } else if(selectionClipTasks[i] == CLIPTASK_GRAYSCALE) {
-				// 	grayscaleThis = true;
-				// } else if(selectionClipTasks[i] == CLIPTASK_HIGHLIGHT) {
-				// 	highlight = true;
-				// 	// highlightColor = selectionBoxColors[i]; // no esta entrando
-				// 	highlightColor = boxColors[i]; // color per clipbox
-				// } else if(selectionClipTasks[i] == CLIPTASK_ACTIVE) {
-				// 	active_ = true;
-				// }
-
-
-
-				//////////////////////////////////////////////
-			}
-			else // if point is  outside of the filter...
-			{
-				if(clipTasks[i] == CLIPTASK_SHOW_INSIDE) {
-					isolateAnything = true;
-				} else if(clipTasks[i] == CLIPTASK_GRAYSCALE) {
-					grayscaleAnything = true;
-				}
-
-				// testing to set a variable to show the color
-				// points outside are set to a color
-				// means are not being found inside
-			}
-		}
-#endif
-	}
-
-	// POLYGON CODE
-	{ // polygonClipVolume section,
-#if defined(num_clippolygons) && num_clippolygons > 0
-
-		for(int i = 0; i < num_clippolygons; i++) {
-			bool inside = pointInClipPolygon(position, i);
-
-			{ // code PREVIOUS TO CLUSTERING TOOL
-				insideCount = insideCount + (inside ? 1 : 0);
-				clipVolumesCount++;
-
-				// TODO, if inside, continue or break to skip  testing other polygons
-				// must set the color to the polygon color but
-
-				if(inside) { // applies the corresponding color
-					vColor.r = uClipPolygonColor[i].x;
-					vColor.g = uClipPolygonColor[i].y;
-					vColor.b = uClipPolygonColor[i].z;
-					// vColor.r = 0.0;
-					// vColor.g = 1.0;
-					// vColor.b = 1.0;
-				}
-			}
-		}
-#endif
-	}
-
-	//////////////////////////////////////////////////////////////////////
-
-	// IF INSIDE, CHECK COLOR AND TASK
-	{ // clipVolume section   , uses  clipMethod and clipTask	//clipMEthod uniform works as a global action
-
-		bool insideAny = insideCount > 0;
-		bool insideAll = (clipVolumesCount > 0) && (clipVolumesCount == insideCount);
-
-		if(clipMethod == CLIPMETHOD_INSIDE_ANY) {
-			if(insideAny && clipTask == CLIPTASK_HIGHLIGHT) {
-
-				vColor.r += 0.5f; // default
-
-#if defined(num_clipboxes) && num_clipboxes > 0
-				if(highlight) {
-
-					vColor.r = highlightColor.x;
-					vColor.g = highlightColor.y;
-					vColor.b = highlightColor.z;
-					// vColor.r = 1.0 -  vColor.r;
-					// vColor.g = 1.0 -  vColor.g;
-					// vColor.b = 1.0 -  vColor.b;
-					// vColor.r=highlightColor.r;
-					// vColor.g=highlightColor.g;
-					// vColor.b=highlightColor.b;
-				}
-
-				// {//inverted color
-				// vColor.r = 1.0 -  vColor.r;
-				// vColor.g = 1.0 -  vColor.g;
-				// vColor.b = 1.0 -  vColor.b;
-				// }
-
-#endif
-
-				// this was tested but
-				// vColor.r += 0.5;//some constant
-				// vColor.g = 0.1;//some constant
-				// vColor.b = 0.1;//some constant
-			} else if(!insideAny && clipTask == CLIPTASK_SHOW_INSIDE) {
-				gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
-			} else if(insideAny && clipTask == CLIPTASK_SHOW_OUTSIDE) {
-				gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
-			}
-		} else
-		////////////////////////////
-		if(clipMethod == CLIPMETHOD_INSIDE_ALL) {
-			if(insideAll && clipTask == CLIPTASK_HIGHLIGHT) {
-				vColor.r += 0.5f; // default highlight color is reddish for clip
-#if defined(num_clipboxes) && num_clipboxes > 0
-				if(highlight) {
-
-					vColor.r = highlightColor.x;
-					vColor.g = highlightColor.y;
-					vColor.b = highlightColor.z;
-					// vColor.r = 1.0 -  vColor.r;
-					// vColor.g = 1.0 -  vColor.g;
-					// vColor.b = 1.0 -  vColor.b;
-					// vColor.r=highlightColor.r;
-					// vColor.g=highlightColor.g;
-					// vColor.b=highlightColor.b;
-				}
-
-				// {//inverted color
-				// vColor.r = 1.0 -  vColor.r;
-				// vColor.g = 1.0 -  vColor.g;
-				// vColor.b = 1.0 -  vColor.b;
-				// }
-
-#endif
-			} else
-			if(!insideAll && clipTask == CLIPTASK_SHOW_INSIDE) {
-				gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
-			} else
-			if(insideAll && clipTask == CLIPTASK_SHOW_OUTSIDE) {
-				gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
-			}
-		}
-	}
-
-
-
-	//final coloring code for all cases with CLIP
-
-	{ // CLUSTERING TOOL CODE  , uses active_, grayscaleAnything, grayscaleThis, highlight, clip, isolateAnything, isolateThis
-
-		if((isolateAnything && !isolateThis) || clip)// if clipped or isolatedAnything, make it dissapear by moving it away
-		{
-			gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
-		} else if(active_) //current cluster under mouse, can be customized as nothing else uses it
-		{
+			//make it greyscale and add some color
+			vec3 activeColor = vec3(0.71f, 1.0f, 0.631f); // green
 			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
-			vColor.r = grayScale75p + 0.71f / 2.0f;
-			vColor.g = grayScale75p + 1.0f / 2.0f;
-			vColor.b = grayScale75p + 0.631f / 2.0f;
+			vColor.r = grayScale75p + activeColor.r / 2.0f;
+			vColor.g = grayScale75p + activeColor.g / 2.0f;
+			vColor.b = grayScale75p + activeColor.b / 2.0f;
 
-			vColor.r = 0.0f;
-			vColor.g = 1.0f;
-			vColor.b = 1.0f;
-
-		} else if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 1.0f;
+			return;
+		}
+		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
 		{
-			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
-			vColor.r = grayScale75p + highlightColor.r / 2.0f;
-			vColor.g = grayScale75p + highlightColor.g / 2.0f;
-			vColor.b = grayScale75p + highlightColor.b / 2.0f;
+			vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
 
-			vColor.r = 0.0f;
-			vColor.g = 1.0f;
-			vColor.b = 0.0f;
-		} else if(grayscaleAnything && grayscaleThis)//just ignores other coloring and turn into greyscale all but
+			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+			vColor.r = grayScale75p + hColor.r / 2.0f;
+			vColor.g = grayScale75p + hColor.g / 2.0f;
+			vColor.b = grayScale75p + hColor.b / 2.0f;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 0.0f;
+			return;
+		}
+		if(grayscaleAnything && grayscaleThis)//just ignores other coloring and turn into greyscale all but
 		// also points not inside filtered  are marked with greyscale under this asumption as they are not overriden by next filtering.
-
 		{
+			//can be done as lighter greyscale plus some color
 			float grayScale = 0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b;
-			vColor.r = grayScale;
-			vColor.g = grayScale;
-			vColor.b = grayScale;
+			vColor.r = grayScale + highlightColor.r / 2.0f;
+			vColor.g = grayScale + highlightColor.g / 2.0f;
+			vColor.b = grayScale + highlightColor.b / 2.0f;
 
 			//for testing magenta for greyscale
-			vColor.r = 0.0f;
-			vColor.g = 0.0f;
-			vColor.b = 1.0f;
-
+			// vColor.r = 0.0f;
+			// vColor.g = 0.0f;
+			// vColor.b = 1.0f;
+			return;
 		}
+
+	} else {//outside, do not apply color, or do not show, or show if required
+
+		if(active_) {//still highlights it but as greyscale??? think about it
+
+			//make it greyscale and add some color
+			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+			// vColor.r = grayScale75p + 0.71f / 2.0f;
+			// vColor.g = grayScale75p + 1.0f / 2.0f;
+			// vColor.b = grayScale75p + 0.631f / 2.0f;
+
+			vColor.r = grayScale75p + 0.0f;//casting?
+			vColor.g = grayScale75p + 0.0f;
+			vColor.b = grayScale75p + 0.0f;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 1.0f;
+			return;
+		}
+		if(clipTask == CLIPTASK_SHOW_OUTSIDE) {//render points outside normally or simply do nothing
+			//do not change its colour
+		}
+
+		if(grayscaleAnything && grayscaleThis) {
+			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+			// vColor.r = grayScale75p + 0.71f / 2.0f;
+			// vColor.g = grayScale75p + 1.0f / 2.0f;
+			// vColor.b = grayScale75p + 0.631f / 2.0f;
+
+			vColor.r = grayScale75p + 0.0f;//casting?
+			vColor.g = grayScale75p + 0.0f;
+			vColor.b = grayScale75p + 0.0f;
+		}
+		//no highlight outside selection
+		//cliptask_show_inside does not apply here
+
+		//
+
 	}
 
-	// hightlight never arived, triying boxColor
-	//  #if defined(num_clipboxes) && num_clipboxes > 0
-	//  vColor.r = boxColors[0].x;
-	//  vColor.g = boxColors[0].y;
-	//  vColor.b =  boxColors[0].z;
-	//  #endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1795,16 +1631,18 @@ void main() {
 	gl_Position = projectionMatrix * mvPosition;
 #endif
 
-	// CLIPPING
-	doClipping();
-
-#if defined(mixed_filters) && mixed_filters > 0
-	// bool res = doFiltering();
+	bool isInside = true;
+	//doFiltering
+	#if defined(mixed_filters) && mixed_filters > 0
+	isInside = doFiltering();
 
 	// if(res) {
 	// 	vColor = vec3(1.0f, 1.0f, 0.0f); // yellow highlight on selection
 	// }
-#endif
+	#endif
+
+	// CLIPPING
+	doClipping(isInside);//requires inside
 
 #if defined(num_clipspheres) && num_clipspheres > 0
 	for(int i = 0; i < num_clipspheres; i++) {

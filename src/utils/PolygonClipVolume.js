@@ -8,6 +8,7 @@ import {FilterIntType} from "./FilterConsts.js";
 
 export class PolygonClipVolume extends THREE.Object3D {
 
+	//may be removed
 	NONE_TASK = 0;
 	SELECTION_TASK = 1; // default task
 	CLASSIFICATION_TASK = 2;
