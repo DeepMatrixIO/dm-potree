@@ -1308,6 +1308,18 @@ export class Renderer {
 			let numClipBoxes = (material.clipBoxes && material.clipBoxes.length) ? material.clipBoxes.length : 0;
 			let numClipSpheres = (params.clipSpheres && params.clipSpheres.length) ? params.clipSpheres.length : 0;
 			let numClipPolygons = (material.clipPolygons && material.clipPolygons.length) ? material.clipPolygons.length : 0;
+
+
+
+			let defines = [
+				`#define num_shadowmaps ${shadowMaps.length}`,
+				`#define num_snapshots ${numSnapshots}`,
+				`#define num_clipboxes ${numClipBoxes}`,
+				`#define num_clipspheres ${numClipSpheres}`,
+				`#define num_clippolygons ${numClipPolygons}`,
+			];
+			////////////////////////////////////////////////////
+			//{//block for point clusters  DEFINES
 			const numClusteredPointSegments = material.pointClusters.reduce(
 				(segmentCount, cluster) => {
 					return segmentCount + cluster.segments.length;
@@ -1318,19 +1330,9 @@ export class Renderer {
 				? (Math.trunc(numClusteredPointSegments / 20) + 1) * 20
 				: 0;
 
-			let defines = [
-				`#define num_shadowmaps ${shadowMaps.length}`,
-				`#define num_snapshots ${numSnapshots}`,
-				`#define num_clipboxes ${numClipBoxes}`,
-				`#define num_clipspheres ${numClipSpheres}`,
-				`#define num_clippolygons ${numClipPolygons}`,
-			];
-			//{//block for point cluste
-
-
-
 			defines.push(`#define num_clusteredpointsegments ${roundedNumberOfSegments}`);
 			//}
+			////////////////////////////////////////////////////
 
 			if (octree.pcoGeometry.root.isLoaded()) {
 				let attributes = octree.pcoGeometry.root.geometry.attributes;
@@ -1372,7 +1374,9 @@ export class Renderer {
 
 
 			shader.update(vs, fs);
-
+			///////////////////////////////////////////////////////////////////////
+			//NO MORE DEFINE UPDATES, JUST UNIFORMS
+			///////////////////////////////////////////////////////////////////////
 			material.needsUpdate = false;
 			//}
 
@@ -1459,6 +1463,8 @@ export class Renderer {
 				shader.setUniform("uUseOrthographicCamera", false);
 			}
 
+			// GLOBAL CLIP TASK AND METHOD
+			//setting global clip method and task used in clipBoxes and clipPolygons, but als may be overriden
 			if (material.clipBoxes.length + material.clipPolygons.length === 0) {
 				shader.setUniform1i("clipTask", ClipTask.NONE);
 			} else {
@@ -1470,7 +1476,8 @@ export class Renderer {
 
 
 			/////////////////////////////////////////////////////////////////
-			//clipboxes ,may appear on different contexts
+			//CODE FOR CLIPBOXES
+			//  ,may appear on different contexts, but must be unified
 			if (material.clipBoxes && material.clipBoxes.length > 0) {
 				//let flattenedMatrices = [].concat(...material.clipBoxes.map(c => c.inverse.elements));
 
@@ -1524,15 +1531,10 @@ export class Renderer {
 
 
 				//////////////////////////////////////////////////////////
-				//added for selection tool, values added to selectionClipTasks and selectionBoxColors but may be removed
-				let clipBoxSelectionHighlight = true;
-				if (clipBoxSelectionHighlight) {
-					//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes
-					//basically it adds colors from the clipboxes to the shader, as it was not present before within the
-					//uniform clipboxes location boxColors[0] and clipTask[0]
+				//added for selection tool, values added to selectionClipTasks and selectionBoxColors but may be removed as it duplicates the above
 
-					//of course it crashes within the existing profile as it is made of clipboxes
-					//a proper if wuilf
+				let clipBoxSelectionHighlight = false;
+				if (clipBoxSelectionHighlight) {
 					try {
 						const clipTask = material.clipBoxes.map(
 							(clipbox) => clipbox.box.actualClipTask
@@ -1540,29 +1542,22 @@ export class Renderer {
 						const lClipTask = shader.uniformLocations['selectionClipTasks[0]'];
 
 						gl.uniform1iv(lClipTask, clipTask);
-
-
 						const boxColors = material.clipBoxes
 							.map((clipbox) => {
-
 								if (clipbox.box.color !== undefined) {//this is the code added
 									return [clipbox.box.color.r, clipbox.box.color.g, clipbox.box.color.b]//check why they store materials in such way when using cluster tool
 								} else {
 									return [clipbox.box.material.color.r, clipbox.box.material.color.g, clipbox.box.material.color.b]
 								}
-
 							})
 							.flat();
 
 						const lBoxColors = shader.uniformLocations['selectionBoxColors[0]'];
 						gl.uniform3fv(lBoxColors, boxColors);
-
-
 					} catch (error) {
 						console.log("PotreeRenderer.js Error in in BoxSelectionClusterTool clipBoxes added code");
 					}
 				}
-
 			}
 
 			/////////////////////////////////////////////////////////////////
@@ -1681,8 +1676,7 @@ export class Renderer {
 
 
 			let mixedVolumes = false;
-			//defines should be defined before updating shader, i.e. begininng of method
-			//locations and material.uniform.values set per node and material
+
 			if (mixedVolumes && material.mixedVolumes && material.mixedVolumes.length > 0) {
 
 				const lMixedVolumes = shader.uniformLocations["uMixedVolumes[0]"];//location for mixed volumes

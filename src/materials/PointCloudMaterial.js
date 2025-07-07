@@ -180,8 +180,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 				type: 'i',
 				value: ElevationGradientRepeat.CLAMP,
 			},
-			clipTask: {type: 'i', value: 1},
-			clipMethod: {type: 'i', value: 1},
+			clipTask: {type: 'i', value: 1},//global variable for all objects
+			clipMethod: {type: 'i', value: 1},//global variable for all objects
 			uShadowColor: {type: '3fv', value: [0, 0, 0]},
 
 			uExtraScale: {type: 'f', value: 1},

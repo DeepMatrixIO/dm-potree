@@ -90,12 +90,13 @@ uniform float uOrthoHeight;
 
 uniform int clipTask;
 uniform int clipMethod;
+
 #if defined(num_clipboxes) && num_clipboxes > 0
 uniform mat4 clipBoxes[num_clipboxes];
-uniform int clipTasks[num_clipboxes];
-uniform int selectionClipTasks[num_clipboxes];
+//uniform int selectionClipTasks[num_clipboxes];
 uniform vec3 boxColors[num_clipboxes];
-uniform vec3 selectionBoxColors[num_clipboxes];
+uniform int clipTasks[num_clipboxes];
+// uniform vec3 selectionBoxColors[num_clipboxes];
 #endif
 
 // distance rendering requires a position and an array of min max ranges
@@ -252,9 +253,8 @@ out float vPointSize;
 // out float vOpacity;
 flat out int isVisible;
 
-float roundDeprecated(float number)
-{
-	return floor(number + 0.5);
+float roundDeprecated(float number) {
+	return floor(number + 0.5f);
 }
 
 //
@@ -277,19 +277,15 @@ float roundDeprecated(float number)
  * number is treated as if it were an integer in the range 0-255
  *
  */
-int numberOfOnes(int number, int index)
-{
+int numberOfOnes(int number, int index) {
 	int numOnes = 0;
 	int tmp = 128;
-	for (int i = 7; i >= 0; i--)
-	{
+	for(int i = 7; i >= 0; i--) {
 
-		if (number >= tmp)
-		{
+		if(number >= tmp) {
 			number = number - tmp;
 
-			if (i <= index)
-			{
+			if(i <= index) {
 				numOnes++;
 			}
 		}
@@ -305,131 +301,104 @@ int numberOfOnes(int number, int index)
  * number is treated as if it were an integer in the range 0-255
  *
  */
-bool isBitSet(int number, int index)
-{
+bool isBitSet(int number, int index) {
 
 	// weird multi else if due to lack of proper array, int and bitwise support in WebGL 1.0
 	int powi = 1;
-	if (index == 0)
-	{
+	if(index == 0) {
 		powi = 1;
-	}
-	else if (index == 1)
-	{
+	} else if(index == 1) {
 		powi = 2;
-	}
-	else if (index == 2)
-	{
+	} else if(index == 2) {
 		powi = 4;
-	}
-	else if (index == 3)
-	{
+	} else if(index == 3) {
 		powi = 8;
-	}
-	else if (index == 4)
-	{
+	} else if(index == 4) {
 		powi = 16;
-	}
-	else if (index == 5)
-	{
+	} else if(index == 5) {
 		powi = 32;
-	}
-	else if (index == 6)
-	{
+	} else if(index == 6) {
 		powi = 64;
-	}
-	else if (index == 7)
-	{
+	} else if(index == 7) {
 		powi = 128;
-	}
-	else
-	{
+	} else {
 		return false;
 	}
 
 	int ndp = number / powi;
 
-	return mod(float(ndp), 2.0) != 0.0;
+	return mod(float(ndp), 2.0f) != 0.0f;
 }
 
 /**
  * find the LOD at the point position
  */
-float getLOD()
-{
+float getLOD() {
 
-	vec3 offset = vec3(0.0, 0.0, 0.0);
+	vec3 offset = vec3(0.0f, 0.0f, 0.0f);
 	int iOffset = int(uVNStart);
 	float depth = uLevel;
-	for (float i = 0.0; i <= 30.0; i++)
-	{
-		float nodeSizeAtLevel = uOctreeSize / pow(2.0, i + uLevel + 0.0);
+	for(float i = 0.0f; i <= 30.0f; i++) {
+		float nodeSizeAtLevel = uOctreeSize / pow(2.0f, i + uLevel + 0.0f);
 
 		vec3 index3d = (position - offset) / nodeSizeAtLevel;
-		index3d = floor(index3d + 0.5);
-		int index = int(round(4.0 * index3d.x + 2.0 * index3d.y + index3d.z));
+		index3d = floor(index3d + 0.5f);
+		int index = int(round(4.0f * index3d.x + 2.0f * index3d.y + index3d.z));
 
 		// vec4 value = texture(visibleNodes, vec2(iOffset / 2048.0, 0.0));
-		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0)); // cannot operate on different typesww
-		int mask = int(round(value.r * 255.0));
+		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0f, 0.0f)); // cannot operate on different typesww
+		int mask = int(round(value.r * 255.0f));
 
-		if (isBitSet(mask, index))
-		{
+		if(isBitSet(mask, index)) {
 			// there are more visible child nodes at this position
-			int advanceG = int(round(value.g * 255.0)) * 256;
-			int advanceB = int(round(value.b * 255.0));
+			int advanceG = int(round(value.g * 255.0f)) * 256;
+			int advanceB = int(round(value.b * 255.0f));
 			int advanceChild = numberOfOnes(mask, index - 1);
 			int advance = advanceG + advanceB + advanceChild;
 
 			iOffset = iOffset + advance;
 
 			depth++;
-		}
-		else
-		{
+		} else {
 			// no more visible child nodes at this position
 			// return value.a * 255.0;
 
-			float lodOffset = (255.0 * value.a) / 10.0 - 10.0;
+			float lodOffset = (255.0f * value.a) / 10.0f - 10.0f;
 
 			return depth + lodOffset;
 		}
 
-		offset = offset + (vec3(1.0, 1.0, 1.0) * nodeSizeAtLevel * 0.5) * index3d;
+		offset = offset + (vec3(1.0f, 1.0f, 1.0f) * nodeSizeAtLevel * 0.5f) * index3d;
 	}
 
 	return depth;
 }
 
-float getSpacing()
-{
-	vec3 offset = vec3(0.0, 0.0, 0.0);
+float getSpacing() {
+	vec3 offset = vec3(0.0f, 0.0f, 0.0f);
 	int iOffset = int(uVNStart);
 	float depth = uLevel;
 	float spacing = uNodeSpacing;
-	for (float i = 0.0; i <= 30.0; i++)
-	{
-		float nodeSizeAtLevel = uOctreeSize / pow(2.0, i + uLevel + 0.0);
+	for(float i = 0.0f; i <= 30.0f; i++) {
+		float nodeSizeAtLevel = uOctreeSize / pow(2.0f, i + uLevel + 0.0f);
 
 		vec3 index3d = (position - offset) / nodeSizeAtLevel;
-		index3d = floor(index3d + 0.5);
-		int index = int(round(4.0 * index3d.x + 2.0 * index3d.y + index3d.z));
+		index3d = floor(index3d + 0.5f);
+		int index = int(round(4.0f * index3d.x + 2.0f * index3d.y + index3d.z));
 
 		// vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));
-		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));
-		int mask = int(round(value.r * 255.0));
+		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0f, 0.0f));
+		int mask = int(round(value.r * 255.0f));
 		float spacingFactor = value.a;
 
-		if (i > 0.0)
-		{
-			spacing = spacing / (255.0 * spacingFactor);
+		if(i > 0.0f) {
+			spacing = spacing / (255.0f * spacingFactor);
 		}
 
-		if (isBitSet(mask, index))
-		{
+		if(isBitSet(mask, index)) {
 			// there are more visible child nodes at this position
-			int advanceG = int(round(value.g * 255.0)) * 256;
-			int advanceB = int(round(value.b * 255.0));
+			int advanceG = int(round(value.g * 255.0f)) * 256;
+			int advanceB = int(round(value.b * 255.0f));
 			int advanceChild = numberOfOnes(mask, index - 1);
 			int advance = advanceG + advanceB + advanceChild;
 
@@ -439,22 +408,19 @@ float getSpacing()
 			// spacing = spacing / 3.0;
 
 			depth++;
-		}
-		else
-		{
+		} else {
 			// no more visible child nodes at this position
 			return spacing;
 		}
 
-		offset = offset + (vec3(1.0, 1.0, 1.0) * nodeSizeAtLevel * 0.5) * index3d;
+		offset = offset + (vec3(1.0f, 1.0f, 1.0f) * nodeSizeAtLevel * 0.5f) * index3d;
 	}
 
 	return spacing;
 }
 
-float getPointSizeAttenuation()
-{
-	return pow(2.0, getLOD());
+float getPointSizeAttenuation() {
+	return pow(2.0f, getLOD());
 }
 
 #endif
@@ -465,68 +431,54 @@ float getPointSizeAttenuation()
 
 #if (defined(adaptive_point_size) || defined(color_type_level_of_detail)) && defined(tree_type_kdtree)
 
-float getLOD()
-{
-	vec3 offset = vec3(0.0, 0.0, 0.0);
-	float iOffset = 0.0;
-	float depth = 0.0;
+float getLOD() {
+	vec3 offset = vec3(0.0f, 0.0f, 0.0f);
+	float iOffset = 0.0f;
+	float depth = 0.0f;
 
 	vec3 size = uBBSize;
 	vec3 pos = position;
 
-	for (float i = 0.0; i <= 1000.0; i++)
-	{
+	for(float i = 0.0f; i <= 1000.0f; i++) {
 
-		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0, 0.0));
+		vec4 value = texture(visibleNodes, vec2(float(iOffset) / 2048.0f, 0.0f));
 
-		int children = int(value.r * 255.0);
-		float next = value.g * 255.0;
-		int split = int(value.b * 255.0);
+		int children = int(value.r * 255.0f);
+		float next = value.g * 255.0f;
+		int split = int(value.b * 255.0f);
 
-		if (next == 0.0)
-		{
+		if(next == 0.0f) {
 			return depth;
 		}
 
-		vec3 splitv = vec3(0.0, 0.0, 0.0);
-		if (split == 1)
-		{
-			splitv.x = 1.0;
-		}
-		else if (split == 2)
-		{
-			splitv.y = 1.0;
-		}
-		else if (split == 4)
-		{
-			splitv.z = 1.0;
+		vec3 splitv = vec3(0.0f, 0.0f, 0.0f);
+		if(split == 1) {
+			splitv.x = 1.0f;
+		} else if(split == 2) {
+			splitv.y = 1.0f;
+		} else if(split == 4) {
+			splitv.z = 1.0f;
 		}
 
 		iOffset = iOffset + next;
 
 		float factor = length(pos * splitv / size);
-		if (factor < 0.5)
-		{
+		if(factor < 0.5f) {
 			// left
-			if (children == 0 || children == 2)
-			{
+			if(children == 0 || children == 2) {
 				return depth;
 			}
-		}
-		else
-		{
+		} else {
 			// right
-			pos = pos - size * splitv * 0.5;
-			if (children == 0 || children == 1)
-			{
+			pos = pos - size * splitv * 0.5f;
+			if(children == 0 || children == 1) {
 				return depth;
 			}
-			if (children == 3)
-			{
-				iOffset = iOffset + 1.0;
+			if(children == 3) {
+				iOffset = iOffset + 1.0f;
 			}
 		}
-		size = size * ((1.0 - (splitv + 1.0) / 2.0) + 0.5);
+		size = size * ((1.0f - (splitv + 1.0f) / 2.0f) + 0.5f);
 
 		depth++;
 	}
@@ -534,9 +486,8 @@ float getLOD()
 	return depth;
 }
 
-float getPointSizeAttenuation()
-{
-	return 0.5 * pow(1.3, getLOD());
+float getPointSizeAttenuation() {
+	return 0.5f * pow(1.3f, getLOD());
 }
 
 #endif
@@ -552,40 +503,36 @@ float getPointSizeAttenuation()
 //
 
 // formula adapted from: http://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment/
-float getContrastFactor(float contrast)
-{
-	return (1.0158730158730156 * (contrast + 1.0)) / (1.0158730158730156 - contrast);
+float getContrastFactor(float contrast) {
+	return (1.0158730158730156f * (contrast + 1.0f)) / (1.0158730158730156f - contrast);
 }
 
-vec3 getRGB()
-{
+vec3 getRGB() {
 	vec3 rgb = color;
 
 	rgb = pow(rgb, vec3(uRGB_gbc.x));
 	rgb = rgb + uRGB_gbc.y;
-	rgb = (rgb - 0.5) * getContrastFactor(uRGB_gbc.z) + 0.5;
-	rgb = clamp(rgb, 0.0, 1.0);
+	rgb = (rgb - 0.5f) * getContrastFactor(uRGB_gbc.z) + 0.5f;
+	rgb = clamp(rgb, 0.0f, 1.0f);
 
 	return rgb;
 }
 
-float getIntensity()
-{
+float getIntensity() {
 	float w = (intensity - intensityRange.x) / (intensityRange.y - intensityRange.x);
 	w = pow(w, uIntensity_gbc.x);
 	w = w + uIntensity_gbc.y;
-	w = (w - 0.5) * getContrastFactor(uIntensity_gbc.z) + 0.5;
-	w = clamp(w, 0.0, 1.0);
+	w = (w - 0.5f) * getContrastFactor(uIntensity_gbc.z) + 0.5f;
+	w = clamp(w, 0.0f, 1.0f);
 
 	return w;
 }
 
-vec3 getGpsTime()
-{
+vec3 getGpsTime() {
 
 	float w = (gpsTime + uGpsOffset) * uGpsScale;
 
-	vec3 c = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	vec3 c = texture(gradient, vec2(w, 1.0f - w)).rgb;
 
 	// vec2 r = uNormalizedGpsBufferRange;
 	// float w = gpsTime * (r.y - r.x) + r.x;
@@ -595,11 +542,10 @@ vec3 getGpsTime()
 	return c;
 }
 
-vec3 getElevation()
-{
-	vec4 world = modelMatrix * vec4(position, 1.0);
+vec3 getElevation() {
+	vec4 world = modelMatrix * vec4(position, 1.0f);
 	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);
-	vec3 cElevation = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	vec3 cElevation = texture(gradient, vec2(w, 1.0f - w)).rgb;
 // vec3 iso = vec3(0.0, 0.0, 0.0);
 // override the color at a given heights and tolerance
 #if defined(draw_isolines) && draw_isolines > 0
@@ -608,14 +554,12 @@ vec3 getElevation()
 	float ppos = world.z;
 	// vec3 color=vec3(0.0, 0.0, 0.0);
 	bool none = true;
-	if (abs(mod(ppos, isoValues[1])) < isoValues[2])
-	{
+	if(abs(mod(ppos, isoValues[1])) < isoValues[2]) {
 		cElevation = vec3(isoColorB[0], isoColorB[1], isoColorB[2]);
 		// color = vec3(0.0, 1.0, 0.0);
 		// none=false;
 	}
-	if (abs(mod(ppos, isoValues[0])) < isoValues[2])
-	{
+	if(abs(mod(ppos, isoValues[0])) < isoValues[2]) {
 		// color = vec3(1.0, 0.0, 0.0);
 		cElevation = vec3(isoColorA[0], isoColorA[1], isoColorA[2]);
 	}
@@ -625,23 +569,17 @@ vec3 getElevation()
 	return cElevation;
 }
 
-vec4 getClassification()
-{
-	vec2 uv = vec2(classification / 255.0, 0.5);
+vec4 getClassification() {
+	vec2 uv = vec2(classification / 255.0f, 0.5f);
 
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-	for (int i = 0; i < num_clusteredpointsegments; i++)
-	{
-		if (clusteredpointsegments[i] == seg_cluster_id)
-		{
+	for(int i = 0; i < num_clusteredpointsegments; i++) {
+		if(clusteredpointsegments[i] == seg_cluster_id) {
 			float segmentClass = segmentClassifications[i];
-			if (segmentClass != -1.0)
-			{
-				uv = vec2(segmentClass / 255.0, 0.5);
-			}
-			else
-			{
-				uv = vec2(128.0 / 255.0, 0.5); // by default, assign a color different than gray, as it hides the results.
+			if(segmentClass != -1.0f) {
+				uv = vec2(segmentClass / 255.0f, 0.5f);
+			} else {
+				uv = vec2(128.0f / 255.0f, 0.5f); // by default, assign a color different than gray, as it hides the results.
 			}
 		}
 	}
@@ -653,57 +591,17 @@ vec4 getClassification()
 	return classColor;
 }
 
-vec4 getClassificationBak()
-{
-	vec2 uv = vec2(classification / 255.0, 0.5);
-
-#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-
-	if (seg_cluster_id < 57.0)
-	{
-		uv = vec2(32.0 / 255.0, 0.5); // just ingnore the segmentClassification mapping
-	}
-	else if (seg_cluster_id < 195.0)
-	{
-		uv = vec2(64.0 / 255.0, 0.5); // just ingnore the segmentClassification mapping
-	}
-	else if (seg_cluster_id < 200.0)
-	{
-		uv = vec2(128.0 / 255.0, 0.5); // just ingnore the segmentClassification mapping
-	}
-	else if (seg_cluster_id < 230.0)
-	{
-		uv = vec2(196.0 / 255.0, 0.5); // just ingnore the segmentClassification mapping
-	}
-	else
-	{
-		uv = vec2(255.0 / 255.0, 0.5); // just ingnore the segmentClassification mapping
-	}
-	//}
-	//}
-#endif
-
-	// vec4 classColor = texture(classificationLUT, uv);
-	vec4 classColor = texture(gradient, uv);
-
-	return classColor;
-}
-
-vec3 getReturns()
-{
+vec3 getReturns() {
 
 	// 0b 00_000_111
-	float rn = mod(returnNumber, 8.0);
+	float rn = mod(returnNumber, 8.0f);
 	// 0b 00_111_000
-	float nr = mod(returnNumber / 8.0, 8.0);
+	float nr = mod(returnNumber / 8.0f, 8.0f);
 
-	if (nr <= 1.0)
-	{
-		return vec3(1.0, 0.0, 0.0);
-	}
-	else
-	{
-		return vec3(0.0, 1.0, 0.0);
+	if(nr <= 1.0f) {
+		return vec3(1.0f, 0.0f, 0.0f);
+	} else {
+		return vec3(0.0f, 1.0f, 0.0f);
 	}
 
 	// return vec3(nr / 4.0, 0.0, 0.0);
@@ -733,55 +631,43 @@ vec3 getReturns()
 	// }
 }
 
-vec3 getReturnNumber()
-{
-	if (numberOfReturns == 1.0)
-	{
-		return vec3(1.0, 1.0, 0.0);
-	}
-	else
-	{
-		if (returnNumber == 1.0)
-		{
-			return vec3(1.0, 0.0, 0.0);
-		}
-		else if (returnNumber == numberOfReturns)
-		{
-			return vec3(0.0, 0.0, 1.0);
-		}
-		else
-		{
-			return vec3(0.0, 1.0, 0.0);
+vec3 getReturnNumber() {
+	if(numberOfReturns == 1.0f) {
+		return vec3(1.0f, 1.0f, 0.0f);
+	} else {
+		if(returnNumber == 1.0f) {
+			return vec3(1.0f, 0.0f, 0.0f);
+		} else if(returnNumber == numberOfReturns) {
+			return vec3(0.0f, 0.0f, 1.0f);
+		} else {
+			return vec3(0.0f, 1.0f, 0.0f);
 		}
 	}
 }
 
-vec3 getNumberOfReturns()
-{
+vec3 getNumberOfReturns() {
 	float value = numberOfReturns;
 
-	float w = value / 6.0;
+	float w = value / 6.0f;
 
-	vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	vec3 color = texture(gradient, vec2(w, 1.0f - w)).rgb;
 
 	return color;
 }
 
-vec3 getSourceID()
-{
-	float w = mod(pointSourceID, 10.0) / 10.0;
-	return texture(gradient, vec2(w, 1.0 - w)).rgb;
+vec3 getSourceID() {
+	float w = mod(pointSourceID, 10.0f) / 10.0f;
+	return texture(gradient, vec2(w, 1.0f - w)).rgb;
 }
 
-vec3 getCompositeColor()
-{
+vec3 getCompositeColor() {
 	vec3 c;
 	float w;
 
 	c += wRGB * getRGB();
 	w += wRGB;
 
-	c += wIntensity * getIntensity() * vec3(1.0, 1.0, 1.0);
+	c += wIntensity * getIntensity() * vec3(1.0f, 1.0f, 1.0f);
 	w += wIntensity;
 
 	c += wElevation * getElevation();
@@ -799,49 +685,41 @@ vec3 getCompositeColor()
 
 	c = c / w;
 
-	if (w == 0.0)
-	{
+	if(w == 0.0f) {
 		// c = color;
-		gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+		gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
 	}
 
 	return c;
 }
 
-vec3 getNormal()
-{
+vec3 getNormal() {
 	// vec3 n_hsv = vec3( modelMatrix * vec4( normal, 0.0 )) * 0.5 + 0.5; // (n_world.xyz + vec3(1.,1.,1.)) / 2.;
-	vec3 n_view = normalize(vec3(modelViewMatrix * vec4(normal, 0.0)));
+	vec3 n_view = normalize(vec3(modelViewMatrix * vec4(normal, 0.0f)));
 	return n_view;
 }
-bool applyBackfaceCulling()
-{
+bool applyBackfaceCulling() {
 	// Black not facing vertices / Backface culling
-	vec3 e = normalize(vec3(modelViewMatrix * vec4(position, 1.)));
+	vec3 e = normalize(vec3(modelViewMatrix * vec4(position, 1.f)));
 	vec3 n = getNormal(); // normalize( vec3(modelViewMatrix * vec4( normal, 0.0 )) );
 
-	if ((uUseOrthographicCamera && n.z <= 0.) || (!uUseOrthographicCamera && dot(n, e) >= 0.))
-	{
+	if((uUseOrthographicCamera && n.z <= 0.f) || (!uUseOrthographicCamera && dot(n, e) >= 0.f)) {
 		return true;
-	}
-	else
-	{
+	} else {
 		return false;
 	}
 }
 
 #if defined(color_type_matcap)
 // Matcap Material
-vec3 getMatcap()
-{
-	vec3 eye = normalize(vec3(modelViewMatrix * vec4(position, 1.)));
-	if (uUseOrthographicCamera)
-	{
-		eye = vec3(0., 0., -1.);
+vec3 getMatcap() {
+	vec3 eye = normalize(vec3(modelViewMatrix * vec4(position, 1.f)));
+	if(uUseOrthographicCamera) {
+		eye = vec3(0.f, 0.f, -1.f);
 	}
 	vec3 r_en = reflect(eye, getNormal()); // or r_en = e - 2. * dot( n, e ) * n;
-	float m = 2. * sqrt(pow(r_en.x, 2.) + pow(r_en.y, 2.) + pow(r_en.z + 1., 2.));
-	vec2 vN = r_en.xy / m + .5;
+	float m = 2.f * sqrt(pow(r_en.x, 2.f) + pow(r_en.y, 2.f) + pow(r_en.z + 1.f, 2.f));
+	vec2 vN = r_en.xy / m + .5f;
 	return texture(matcapTextureUniform, vN).rgb;
 }
 #endif
@@ -872,10 +750,9 @@ vec3 getMatcap()
 
 #if defined(distance_to_point) && defined(num_ranges) && num_ranges > 0
 
-vec3 distanceRendering()
-{
+vec3 distanceRendering() {
 
-	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+	vec4 worldPosition = modelMatrix * vec4(position, 1.0f);
 
 	vec3 ppos = worldPosition.xyz;
 	vec3 pref = vec3(positionRef[0], positionRef[1], positionRef[2]);
@@ -883,36 +760,30 @@ vec3 distanceRendering()
 
 	// using the first max value as the reference
 
-	if (rangeValues[0] <= dist && dist < rangeValues[1])
-	{
+	if(rangeValues[0] <= dist && dist < rangeValues[1]) {
 		float w = (dist - rangeValues[0]) / (rangeValues[1] - rangeValues[0]);
-		w = clamp(w, 0.0, 1.0);
-		vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+		w = clamp(w, 0.0f, 1.0f);
+		vec3 color = texture(gradient, vec2(w, 1.0f - w)).rgb;
 		return color;
-	}
-	else
-	{
-		return vec3(0.0, 0.0, 0.0);
+	} else {
+		return vec3(0.0f, 0.0f, 0.0f);
 	}
 }
 #endif
 
 #if defined(draw_isolines) && draw_isolines > 0
 
-vec3 isolinesRendering(vec3 color)
-{
-	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+vec3 isolinesRendering(vec3 color) {
+	vec4 worldPosition = modelMatrix * vec4(position, 1.0f);
 	vec3 ppos = worldPosition.xyz;
 	// vec3 color=vec3(0.0, 0.0, 0.0);
 	bool none = true;
-	if (abs(mod(ppos.z, isoValues[1])) < isoValues[2])
-	{
-		color = vec3(0.0, 1.0, 0.0);
+	if(abs(mod(ppos.z, isoValues[1])) < isoValues[2]) {
+		color = vec3(0.0f, 1.0f, 0.0f);
 		// none=false;
 	}
-	if (abs(mod(ppos.z, isoValues[0])) < isoValues[2])
-	{
-		color = vec3(1.0, 0.0, 0.0);
+	if(abs(mod(ppos.z, isoValues[0])) < isoValues[2]) {
+		color = vec3(1.0f, 0.0f, 0.0f);
 		// none=false;
 	}
 
@@ -930,8 +801,7 @@ vec3 isolinesRendering(vec3 color)
 
 #if defined(custom_range) && custom_range > 0
 
-vec3 customRangeRendering()
-{
+vec3 customRangeRendering() {
 	// vec4 worldPosition = modelMatrix * vec4(position, 1.0);
 	// vec3 ppos=worldPosition.xyz;
 
@@ -964,11 +834,9 @@ vec3 customRangeRendering()
 	// return color
 	//	}else{
 
-	if (w > visibleRange[1])
-	{
+	if(w > visibleRange[1]) {
 		w = visibleRange[1];
-		if (allVisible[1] == 0.0)
-		{
+		if(allVisible[1] == 0.0f) {
 			isVisible = 0;
 		}
 		// vOpacity=0.0;//set somewhere else
@@ -976,11 +844,9 @@ vec3 customRangeRendering()
 		return color;
 	}
 
-	if (w < visibleRange[0])
-	{
+	if(w < visibleRange[0]) {
 		w = visibleRange[0];
-		if (allVisible[0] == 0.0)
-		{
+		if(allVisible[0] == 0.0f) {
 			isVisible = 0;
 		}
 
@@ -995,15 +861,14 @@ vec3 customRangeRendering()
 	}
 
 	w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
-	w = clamp(w, 0.0, 1.0); // redundant
+	w = clamp(w, 0.0f, 1.0f); // redundant
 
-	color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	color = texture(gradient, vec2(w, 1.0f - w)).rgb;
 	return color;
 }
 #endif
 
-vec3 getExtra()
-{
+vec3 getExtra() {
 
 #if defined(distance_to_point) && distance_to_point > 0
 	return distanceRendering(); // considers only position
@@ -1021,16 +886,15 @@ vec3 getExtra()
 
 	w = (w - uExtraRange.x) / (uExtraRange.y - uExtraRange.x);
 
-	w = clamp(w, 0.0, 1.0);
+	w = clamp(w, 0.0f, 1.0f);
 
 	// vec3 color = texture(gradient, vec2(w, 1.0 - w)).rgb;//remove once test is done
-	vec3 color = vec3(0.0, 0.0, 1.0); // black for testing, comment once done
+	vec3 color = vec3(0.0f, 0.0f, 1.0f); // black for testing, comment once done
 
 	return color;
 }
 
-vec3 getColor()
-{
+vec3 getColor() {
 	vec3 color;
 	// do not make transparent by default, only to ignore it, multypli with the uOpacity
 
@@ -1040,11 +904,11 @@ vec3 getColor()
 	color = getElevation();
 #elif defined color_type_rgb_height
 	vec3 cHeight = getElevation();
-	color = (1.0 - uTransition) * getRGB() + uTransition * cHeight;
+	color = (1.0f - uTransition) * getRGB() + uTransition * cHeight;
 #elif defined color_type_depth
 	float linearDepth = gl_Position.w;
-	float expDepth = (gl_Position.z / gl_Position.w) * 0.5 + 0.5;
-	color = vec3(linearDepth, expDepth, 0.0);
+	float expDepth = (gl_Position.z / gl_Position.w) * 0.5f + 0.5f;
+	color = vec3(linearDepth, expDepth, 0.0f);
 	// color = vec3(1.0, 0.5, 0.3);
 #elif defined color_type_intensity
 	float w = getIntensity();
@@ -1053,13 +917,13 @@ vec3 getColor()
 	color = getGpsTime();
 #elif defined color_type_intensity_gradient
 	float w = getIntensity();
-	color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	color = texture(gradient, vec2(w, 1.0f - w)).rgb;
 #elif defined color_type_color
 	color = uColor;
 #elif defined color_type_level_of_detail
 	float depth = getLOD();
-	float w = depth / 10.0;
-	color = texture(gradient, vec2(w, 1.0 - w)).rgb;
+	float w = depth / 10.0f;
+	color = texture(gradient, vec2(w, 1.0f - w)).rgb;
 #elif defined color_type_indices
 	color = indices.rgb;
 #elif defined color_type_classification
@@ -1076,7 +940,7 @@ vec3 getColor()
 #elif defined color_type_point_source_id
 	color = getSourceID();
 #elif defined color_type_normal
-	color = (modelMatrix * vec4(normal, 0.0)).xyz;
+	color = (modelMatrix * vec4(normal, 0.0f)).xyz;
 #elif defined color_type_phong
 	color = color;
 #elif defined color_type_composite
@@ -1087,50 +951,41 @@ vec3 getColor()
 	color = getExtra();
 #endif
 
-	if (backfaceCulling && applyBackfaceCulling())
-	{
-		color = vec3(0.);
+	if(backfaceCulling && applyBackfaceCulling()) {
+		color = vec3(0.f);
 	}
 
 	return color;
 }
 
-float getPointSize()
-{
-	float pointSize = 1.0;
+float getPointSize() {
+	float pointSize = 1.0f;
 
-	float slope = tan(fov / 2.0);
-	float projFactor = -0.5 * uScreenHeight / (slope * vViewPosition.z);
+	float slope = tan(fov / 2.0f);
+	float projFactor = -0.5f * uScreenHeight / (slope * vViewPosition.z);
 
-	float scale = length(
-					  modelViewMatrix * vec4(0, 0, 0, 1) -
-					  modelViewMatrix * vec4(uOctreeSpacing, 0, 0, 1)) /
-				  uOctreeSpacing;
+	float scale = length(modelViewMatrix * vec4(0, 0, 0, 1) -
+		modelViewMatrix * vec4(uOctreeSpacing, 0, 0, 1)) /
+		uOctreeSpacing;
 	projFactor = projFactor * scale;
 
-	float r = uOctreeSpacing * 1.7;
+	float r = uOctreeSpacing * 1.7f;
 	vRadius = r;
 #if defined fixed_point_size
 	pointSize = size;
 #elif defined attenuated_point_size
-	if (uUseOrthographicCamera)
-	{
+	if(uUseOrthographicCamera) {
 		pointSize = size;
-	}
-	else
-	{
+	} else {
 		pointSize = size * spacing * projFactor;
 		// pointSize = pointSize * projFactor;
 	}
 #elif defined adaptive_point_size
-	if (uUseOrthographicCamera)
-	{
-		float worldSpaceSize = 1.0 * size * r / getPointSizeAttenuation();
+	if(uUseOrthographicCamera) {
+		float worldSpaceSize = 1.0f * size * r / getPointSizeAttenuation();
 		pointSize = (worldSpaceSize / uOrthoWidth) * uScreenWidth;
-	}
-	else
-	{
-		float worldSpaceSize = 1.0 * size * r / getPointSizeAttenuation();
+	} else {
+		float worldSpaceSize = 1.0f * size * r / getPointSizeAttenuation();
 		pointSize = worldSpaceSize * projFactor;
 	}
 #endif
@@ -1171,14 +1026,13 @@ float getPointSize()
 // Why: Used for clipping points in a point cloud renderer, so only points inside (or outside) user-defined polygons are rendered.
 
 #if defined(num_clippolygons) && num_clippolygons > 0
-bool pointInClipPolygon(vec3 point, int polyIdx)
-{
+bool pointInClipPolygon(vec3 point, int polyIdx) {
 
 	mat4 wvp = uClipPolygonWVP[polyIdx]; // world view projection
 	// vec4 screenClipPos = uClipPolygonVP[polyIdx] * modelMatrix * vec4(point, 1.0);
 	// screenClipPos.xy = screenClipPos.xy / screenClipPos.w * 0.5 + 0.5;
 
-	vec4 pointNDC = wvp * vec4(point, 1.0); // normalized device coordinates
+	vec4 pointNDC = wvp * vec4(point, 1.0f); // normalized device coordinates
 	pointNDC.xy = pointNDC.xy / pointNDC.w;
 
 	int j = uClipPolygonVCount[polyIdx] - 1;
@@ -1186,11 +1040,10 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 
 	// checking each edge of the polygon from the, j = last vertex, from j=i-1  to i m i.e.
 	// for (int i = 0; i < 8; i++)//this version works with at most 8 vertices
-	for (int i = 0; i < max_clip_vertices; i++) // moved to use the max_clip_polygons, default set to 8
+	for(int i = 0; i < max_clip_vertices; i++) // moved to use the max_clip_polygons, default set to 8
 	{
 
-		if (i == uClipPolygonVCount[polyIdx])
-		{
+		if(i == uClipPolygonVCount[polyIdx]) {
 			break;
 		}
 
@@ -1203,9 +1056,8 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 		// horitonzal line check
 		// if point  crosses the edge y coords, proceed
 		// line equation  xm + b
-		if (((verti.y > pointNDC.y) != (vertj.y > pointNDC.y)) &&
-			(pointNDC.x < (vertj.x - verti.x) * ((pointNDC.y - verti.y) / (vertj.y - verti.y)) + verti.x))
-		{
+		if(((verti.y > pointNDC.y) != (vertj.y > pointNDC.y)) &&
+			(pointNDC.x < (vertj.x - verti.x) * ((pointNDC.y - verti.y) / (vertj.y - verti.y)) + verti.x)) {
 			c = !c; // toggles for every line crossing within the polygon
 		}
 		j = i;
@@ -1219,16 +1071,15 @@ bool pointInClipPolygon(vec3 point, int polyIdx)
 // by transforming a world position to local position wrt clip transformation
 // point is not strictly required to be passed as parameter
 // point is defined in local positino, but transformed to world position, and taken back to local position wrt cube
-bool pointInClipBox(mat4 clipBoxInvMat, vec3 point)
-{
+bool pointInClipBox(mat4 clipBoxInvMat, vec3 point) {
 	// every clipBox is defined as an inverse matrix taking from world to local space
 	// so checking in within -0.5 and 0.5 in all axes.
 	// point in local coords, not worls
 
-	vec4 clipPosition = clipBoxInvMat * modelMatrix * vec4(point, 1.0);
-	bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
-	inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
-	inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+	vec4 clipPosition = clipBoxInvMat * modelMatrix * vec4(point, 1.0f);
+	bool inside = -0.5f <= clipPosition.x && clipPosition.x <= 0.5f;
+	inside = inside && -0.5f <= clipPosition.y && clipPosition.y <= 0.5f;
+	inside = inside && -0.5f <= clipPosition.z && clipPosition.z <= 0.5f;
 	return inside;
 }
 
@@ -1238,129 +1089,94 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point)
  * HAve two options, one is to directly extract a filter from all arrays. other is to explicitely receive the values
  */
 
-bool doLogicalEval(int operator, float attributeValue, float compareValue, int startIndex, int endIndex)
-{
+bool doLogicalEval(int operator, float attributeValue, float compareValue, int startIndex, int endIndex) {
 
 	bool result = false;
 #if defined(num_float_values) && num_float_values > 0
 
-	if (operator== OP_EQUALS_CONST)
-	{
+	if(operator == OP_EQUALS_CONST) {
 		result = attributeValue == uFloatFilterValues[startIndex];
-	}
-	else if (operator== OP_EQUALS_ATTRIBUTE)
-	{
+	} else if(operator == OP_EQUALS_ATTRIBUTE) {
 		result = attributeValue == attributeValue;
-	}
-	else if (operator== OP_LESS_THAN_CONST)
-	{
+	} else if(operator == OP_LESS_THAN_CONST) {
 		result = attributeValue < uFloatFilterValues[startIndex];
-	}
-	else if (operator== OP_LESS_THAN_ATTRIBUTE)
-	{
+	} else if(operator == OP_LESS_THAN_ATTRIBUTE) {
 		result = attributeValue < attributeValue;
-	}
-	else if (operator== OP_LESS_THAN_EQ_CONST)
-	{
+	} else if(operator == OP_LESS_THAN_EQ_CONST) {
 		result = attributeValue <= uFloatFilterValues[startIndex];
-	}
-	else if (operator== OP_LESS_THAN_EQ_ATTRIBUTE)
-	{
+	} else if(operator == OP_LESS_THAN_EQ_ATTRIBUTE) {
 		result = attributeValue <= attributeValue;
-	}
-	else if (operator== OP_GREATER_THAN_CONST)
-	{
+	} else if(operator == OP_GREATER_THAN_CONST) {
 		result = attributeValue > uFloatFilterValues[startIndex];
-	}
-	else if (operator== OP_GREATER_THAN_ATTRIBUTE)
-	{
+	} else if(operator == OP_GREATER_THAN_ATTRIBUTE) {
 		result = attributeValue > attributeValue;
-	}
-	else if (operator== OP_GREATER_THAN_EQ_CONST)
-	{
+	} else if(operator == OP_GREATER_THAN_EQ_CONST) {
 		result = attributeValue >= uFloatFilterValues[startIndex];
-	}
-	else if (operator== OP_GREATER_THAN_EQ_ATTRIBUTE)
-	{
+	} else if(operator == OP_GREATER_THAN_EQ_ATTRIBUTE) {
 		result = attributeValue >= attributeValue;
-	}
-	else if (operator== OP_DISTINCT_CONST)
-	{
+	} else if(operator == OP_DISTINCT_CONST) {
 		result = attributeValue != uFloatFilterValues[startIndex];
-	}
-	else if (operator== OP_DISTINCT_ATTRIBUTE)
-	{
+	} else if(operator == OP_DISTINCT_ATTRIBUTE) {
 		result = attributeValue != compareValue; // todo fix it
-	}
-
-	else if (operator== OP_RANGE_INCINC)
-	{
+	} else if(operator == OP_RANGE_INCINC) {
 		// requires indices, keep to float
 		result = (uFloatFilterValues[startIndex] <= attributeValue) && attributeValue <= uFloatFilterValues[endIndex];
 	}
 	////////////////////////////////////////////////////
 
-	else if (operator== OP_RANGE_INCEXC)
-	{
+	else if(operator == OP_RANGE_INCEXC) {
 		result = (uFloatFilterValues[startIndex] <= attributeValue) && attributeValue < uFloatFilterValues[endIndex];
 	}
 	////////////////////////////////////////////////////
 
-	else if (operator== OP_RANGE_EXCINC)
-	{
+	else if(operator == OP_RANGE_EXCINC) {
 		result = (uFloatFilterValues[startIndex] < attributeValue) && attributeValue <= uFloatFilterValues[endIndex];
 	}
 	////////////////////////////////////////////////////
 
-	else if (operator== OP_RANGE_EXCEXC)
-	{
+	else if(operator == OP_RANGE_EXCEXC) {
 		result = (uFloatFilterValues[startIndex] < attributeValue) && attributeValue < uFloatFilterValues[endIndex];
 	}
 
 	////////////////////////////////////////////////////
 
-	else if (operator== OP_IN)
-	{
+	else if(operator == OP_IN) {
 		result = false;
-		for (int i = startIndex; i <= endIndex; i++)
-		{
-			if (attributeValue == uFloatFilterValues[i])
-			{
+		for(int i = startIndex; i <= endIndex; i++) {
+			if(attributeValue == uFloatFilterValues[i]) {
 				result = true;
 				break;
 			}
 		}
 	}
 	////////////////////////////////////////////////////
-	else if (operator== OP_OUT) // not working
+	else if(operator == OP_OUT) // not working
 	{
 		result = true;
-		for (int i = startIndex; i <= endIndex; i++)
-		{
-			if (attributeValue == uFloatFilterValues[i])
-			{
+		for(int i = startIndex; i <= endIndex; i++) {
+			if(attributeValue == uFloatFilterValues[i]) {
 				result = false;
 				break;
 			}
 		}
 	}
 	///////////////////////////////////////////////////
-	else if (operator== OP_OUTSIDE_RANGE_INCINC) // not working
+	else if(operator == OP_OUTSIDE_RANGE_INCINC) // not working
 	{
 		result = attributeValue <= uFloatFilterValues[startIndex] || attributeValue >= uFloatFilterValues[endIndex];
 	}
 	///////////////////////////////////////////////////
-	else if (operator== OP_OUTSIDE_RANGE_INCEXC) // not working
+	else if(operator == OP_OUTSIDE_RANGE_INCEXC) // not working
 	{
 		result = attributeValue <= uFloatFilterValues[startIndex] || attributeValue > uFloatFilterValues[endIndex];
 
 	} ///////////////////////////////////////////////////
-	else if (operator== OP_OUTSIDE_RANGE_EXCINC) // not working
+	else if(operator == OP_OUTSIDE_RANGE_EXCINC) // not working
 	{
 		result = attributeValue < uFloatFilterValues[startIndex] || attributeValue >= uFloatFilterValues[endIndex];
 
 	} ///////////////////////////////////////////////////
-	else if (operator== OP_OUTSIDE_RANGE_EXCEXC) // not working
+	else if(operator == OP_OUTSIDE_RANGE_EXCEXC) // not working
 	{
 		result = attributeValue <= uFloatFilterValues[startIndex] || attributeValue >= uFloatFilterValues[endIndex];
 	}
@@ -1374,14 +1190,12 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 
 // requires
 // #if defined(num_clippolygons) && num_clippolygons > 0
-void doClipping()
-{
+void doClipping() {
 
 	{
 		vec4 cl = getClassification();
-		if (cl.a == 0.0)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+		if(cl.a == 0.0f) {
+			gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
 
 			return;
 		}
@@ -1390,9 +1204,8 @@ void doClipping()
 #if defined(clip_return_number_enabled)
 	{ // return number filter
 		vec2 range = uFilterReturnNumberRange;
-		if (returnNumber < range.x || returnNumber > range.y)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+		if(returnNumber < range.x || returnNumber > range.y) {
+			gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
 
 			return;
 		}
@@ -1402,9 +1215,8 @@ void doClipping()
 #if defined(clip_number_of_returns_enabled)
 	{ // number of return filter
 		vec2 range = uFilterNumberOfReturnsRange;
-		if (numberOfReturns < range.x || numberOfReturns > range.y)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+		if(numberOfReturns < range.x || numberOfReturns > range.y) {
+			gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
 
 			return;
 		}
@@ -1416,9 +1228,8 @@ void doClipping()
 		float time = (gpsTime + uGpsOffset) * uGpsScale;
 		vec2 range = uFilterGPSTimeClipRange;
 
-		if (time < range.x || time > range.y)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+		if(time < range.x || time > range.y) {
+			gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
 
 			return;
 		}
@@ -1428,9 +1239,8 @@ void doClipping()
 #if defined(clip_point_source_id_enabled)
 	{ // point source id filter
 		vec2 range = uFilterPointSourceIDClipRange;
-		if (pointSourceID < range.x || pointSourceID > range.y)
-		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+		if(pointSourceID < range.x || pointSourceID > range.y) {
+			gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
 
 			return;
 		}
@@ -1445,40 +1255,38 @@ void doClipping()
 	bool highlight = false;
 	bool active_ = false;
 	bool visible = true;
-	vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
+	vec3 highlightColor = vec3(0.0f, 0.0f, 0.0f); // white
 
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-	for (int i = 0; i < num_clusteredpointsegments; i++)
-	{
-		if (clusteredpointsegments[i] == seg_cluster_id)
-		{
+	for(int i = 0; i < num_clusteredpointsegments; i++) {
+		//two cases,
+		// 1) if inside the clustering list
+		//2) outside the clustering list
+
+		//  SHOW  OUTSIDE  or not Visible mens the point is clipped
+
+		//1) In List
+		if(clusteredpointsegments[i] == seg_cluster_id) {
 			active_ = activeStates[i];
 			highlight = selectedStates[i];
 			visible = visibleStates[i];
-			highlightColor = vec3(0, 0, 1);
-			if (segmentClipTasks[i] == CLIPTASK_SHOW_OUTSIDE || !visible)
-			{
+
+			= vec3(0, 0, 1);
+
+			if(segmentClipTasks[i] == CLIPTASK_SHOW_OUTSIDE || !visible) {
 				clip = true;
-			}
-			else if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
-			{
+			} else if(segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE) {
 				isolateAnything = true;
 				isolateThis = true;
-			}
-			else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
-			{
+			} else if(segmentClipTasks[i] == CLIPTASK_GRAYSCALE) {
 				grayscaleAnything = true;
 				grayscaleThis = false;
 			}
-		}
-		else
+		} else  //2) Not in list
 		{
-			if (segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE)
-			{
+			if(segmentClipTasks[i] == CLIPTASK_SHOW_INSIDE) {
 				isolateAnything = true;
-			}
-			else if (segmentClipTasks[i] == CLIPTASK_GRAYSCALE)
-			{
+			} else if(segmentClipTasks[i] == CLIPTASK_GRAYSCALE) {
 				grayscaleAnything = true;
 			}
 		}
@@ -1498,8 +1306,7 @@ void doClipping()
 	// IF INSIDE, CHECK CLIP TASK AND CHANGE COLOR ACCORDINGLY
 	{
 #if defined(num_clipboxes) && num_clipboxes > 0
-		for (int i = 0; i < num_clipboxes; i++)
-		{
+		for(int i = 0; i < num_clipboxes; i++) {
 			// vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4(position, 1.0);
 			// bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
 			// inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
@@ -1516,8 +1323,7 @@ void doClipping()
 			// highlightColor = boxColors[i];//setting to blue at the beginning, so
 
 			// CLUSTERING TOOLS CODE
-			if (inside)
-			{
+			if(inside) {
 
 				{ // if inside but nos a clip tasks,highlight as cyan
 				  // useful for debugging
@@ -1525,63 +1331,51 @@ void doClipping()
 				  // highlight= true;
 				}
 
-				if (clipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
-				{
+				if(clipTasks[i] == CLIPTASK_SHOW_OUTSIDE) {
 					clip = true;
-				}
-				else if (clipTasks[i] == CLIPTASK_SHOW_INSIDE)
-				{
+				} else if(clipTasks[i] == CLIPTASK_SHOW_INSIDE) {
 					isolateAnything = true;
 					isolateThis = true;
-				}
-				else if (clipTasks[i] == CLIPTASK_GRAYSCALE)
-				{
+				} else if(clipTasks[i] == CLIPTASK_GRAYSCALE) {
 					grayscaleAnything = true;
 					grayscaleThis = false;
-				}
-				else if (clipTasks[i] == CLIPTASK_HIGHLIGHT)
-				{
+				} else if(clipTasks[i] == CLIPTASK_HIGHLIGHT) {
 					highlight = true;
 					highlightColor = boxColors[i];
 					// highlightColor = vec3(0.5, 1.0, 0.0);
-				}
-				else if (clipTasks[i] == CLIPTASK_ACTIVE)
-				{
+				} else if(clipTasks[i] == CLIPTASK_ACTIVE) {
 					active_ = true;
 				}
 
 				//////////// adding code for custom boxvolume  , writing to selectionClipTasks
-				if (selectionClipTasks[i] == CLIPTASK_HIGHLIGHT)
-				{
-					highlight = true;
-					// highlightColor = selectionBoxColors[i]; // no esta entrando
-					highlightColor = boxColors[i]; // color per clipbox
-				}
-				else if (selectionClipTasks[i] == CLIPTASK_ACTIVE)
-				{
-					active_ = true;
-				}
-				else if (selectionClipTasks[i] == CLIPTASK_GRAYSCALE)
-				{
-					grayscaleThis = true;
-				}
-				else if (selectionClipTasks[i] == CLIPTASK_SHOW_INSIDE)
-				{
-					isolateThis = true;
-				}
-				else if (selectionClipTasks[i] == CLIPTASK_SHOW_OUTSIDE)
-				{
-					isolateThis = false;
-				}
+				//repeted but for selection. Can we clear them?? use the same?
+				//we must store instead in clipTasks[i]
+
+				//overriding values from selectionClipTasks
+
+				// if(selectionClipTasks[i] == CLIPTASK_SHOW_OUTSIDE) {
+				// 	isolateThis = false;
+				// } else if(selectionClipTasks[i] == CLIPTASK_SHOW_INSIDE) {
+				// 	isolateThis = true;
+				// } else if(selectionClipTasks[i] == CLIPTASK_GRAYSCALE) {
+				// 	grayscaleThis = true;
+				// } else if(selectionClipTasks[i] == CLIPTASK_HIGHLIGHT) {
+				// 	highlight = true;
+				// 	// highlightColor = selectionBoxColors[i]; // no esta entrando
+				// 	highlightColor = boxColors[i]; // color per clipbox
+				// } else if(selectionClipTasks[i] == CLIPTASK_ACTIVE) {
+				// 	active_ = true;
+				// }
+
+
+
+				//////////////////////////////////////////////
 			}
-			else // outside
+			else // if point is  outside of the filter...
 			{
-				if (clipTasks[i] == CLIPTASK_SHOW_INSIDE)
-				{
+				if(clipTasks[i] == CLIPTASK_SHOW_INSIDE) {
 					isolateAnything = true;
-				}
-				else if (clipTasks[i] == CLIPTASK_GRAYSCALE)
-				{
+				} else if(clipTasks[i] == CLIPTASK_GRAYSCALE) {
 					grayscaleAnything = true;
 				}
 
@@ -1597,8 +1391,7 @@ void doClipping()
 	{ // polygonClipVolume section,
 #if defined(num_clippolygons) && num_clippolygons > 0
 
-		for (int i = 0; i < num_clippolygons; i++)
-		{
+		for(int i = 0; i < num_clippolygons; i++) {
 			bool inside = pointInClipPolygon(position, i);
 
 			{ // code PREVIOUS TO CLUSTERING TOOL
@@ -1608,8 +1401,7 @@ void doClipping()
 				// TODO, if inside, continue or break to skip  testing other polygons
 				// must set the color to the polygon color but
 
-				if (inside)
-				{ // applies the corresponding color
+				if(inside) { // applies the corresponding color
 					vColor.r = uClipPolygonColor[i].x;
 					vColor.g = uClipPolygonColor[i].y;
 					vColor.b = uClipPolygonColor[i].z;
@@ -1622,20 +1414,21 @@ void doClipping()
 #endif
 	}
 
+	//////////////////////////////////////////////////////////////////////
+
 	// IF INSIDE, CHECK COLOR AND TASK
-	{ // clipVolume section   , uses  clipMethod and clipTask
+	{ // clipVolume section   , uses  clipMethod and clipTask	//clipMEthod uniform works as a global action
+
 		bool insideAny = insideCount > 0;
 		bool insideAll = (clipVolumesCount > 0) && (clipVolumesCount == insideCount);
 
-		if (clipMethod == CLIPMETHOD_INSIDE_ANY)
-		{
-			if (insideAny && clipTask == CLIPTASK_HIGHLIGHT)
-			{
+		if(clipMethod == CLIPMETHOD_INSIDE_ANY) {
+			if(insideAny && clipTask == CLIPTASK_HIGHLIGHT) {
 
-				vColor.r += 0.5; // default
+				vColor.r += 0.5f; // default
+
 #if defined(num_clipboxes) && num_clipboxes > 0
-				if (highlight)
-				{
+				if(highlight) {
 
 					vColor.r = highlightColor.x;
 					vColor.g = highlightColor.y;
@@ -1660,24 +1453,18 @@ void doClipping()
 				// vColor.r += 0.5;//some constant
 				// vColor.g = 0.1;//some constant
 				// vColor.b = 0.1;//some constant
+			} else if(!insideAny && clipTask == CLIPTASK_SHOW_INSIDE) {
+				gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
+			} else if(insideAny && clipTask == CLIPTASK_SHOW_OUTSIDE) {
+				gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
 			}
-			else if (!insideAny && clipTask == CLIPTASK_SHOW_INSIDE)
-			{
-				gl_Position = vec4(100.0, 100.0, 100.0, 1.0);
-			}
-			else if (insideAny && clipTask == CLIPTASK_SHOW_OUTSIDE)
-			{
-				gl_Position = vec4(100.0, 100.0, 100.0, 1.0);
-			}
-		}
-		else if (clipMethod == CLIPMETHOD_INSIDE_ALL)
-		{
-			if (insideAll && clipTask == CLIPTASK_HIGHLIGHT)
-			{
-				vColor.r += 0.5; // default highlight color,
+		} else
+		////////////////////////////
+		if(clipMethod == CLIPMETHOD_INSIDE_ALL) {
+			if(insideAll && clipTask == CLIPTASK_HIGHLIGHT) {
+				vColor.r += 0.5f; // default highlight color is reddish for clip
 #if defined(num_clipboxes) && num_clipboxes > 0
-				if (highlight)
-				{
+				if(highlight) {
 
 					vColor.r = highlightColor.x;
 					vColor.g = highlightColor.y;
@@ -1697,48 +1484,60 @@ void doClipping()
 				// }
 
 #endif
-			}
-			else if (!insideAll && clipTask == CLIPTASK_SHOW_INSIDE)
-			{
-				gl_Position = vec4(100.0, 100.0, 100.0, 1.0);
-			}
-			else if (insideAll && clipTask == CLIPTASK_SHOW_OUTSIDE)
-			{
-				gl_Position = vec4(100.0, 100.0, 100.0, 1.0);
+			} else
+			if(!insideAll && clipTask == CLIPTASK_SHOW_INSIDE) {
+				gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
+			} else
+			if(insideAll && clipTask == CLIPTASK_SHOW_OUTSIDE) {
+				gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
 			}
 		}
 	}
 
+
+
+	//final coloring code for all cases with CLIP
+
 	{ // CLUSTERING TOOL CODE  , uses active_, grayscaleAnything, grayscaleThis, highlight, clip, isolateAnything, isolateThis
 
-		if ((isolateAnything && !isolateThis) || clip)
+		if((isolateAnything && !isolateThis) || clip)// if clipped or isolatedAnything, make it dissapear by moving it away
 		{
-			gl_Position = vec4(100.0, 100.0, 100.0, 1.0);
-		}
-		else if (active_)
+			gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
+		} else if(active_) //current cluster under mouse, can be customized as nothing else uses it
 		{
-			float grayScale75p = 3.0 * (0.299 * vColor.r + 0.587 * vColor.g + 0.114 * vColor.b) / 4.0;
-			vColor.r = grayScale75p + 0.71 / 2.0;
-			vColor.g = grayScale75p + 1.0 / 2.0;
-			vColor.b = grayScale75p + 0.631 / 2.0;
-		}
-		else if (highlight)
-		{
-			float grayScale75p = 3.0 * (0.299 * vColor.r + 0.587 * vColor.g + 0.114 * vColor.b) / 4.0;
-			vColor.r = grayScale75p + highlightColor.r / 2.0;
-			vColor.g = grayScale75p + highlightColor.g / 2.0;
-			vColor.b = grayScale75p + highlightColor.b / 2.0;
+			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+			vColor.r = grayScale75p + 0.71f / 2.0f;
+			vColor.g = grayScale75p + 1.0f / 2.0f;
+			vColor.b = grayScale75p + 0.631f / 2.0f;
 
-			// vColor.r = 0.0;
-			// vColor.g = 1.0;
-			// vColor.b =  0.0;
-		}
-		else if (grayscaleAnything && grayscaleThis)
+			vColor.r = 0.0f;
+			vColor.g = 1.0f;
+			vColor.b = 1.0f;
+
+		} else if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
 		{
-			float grayScale = 0.299 * vColor.r + 0.587 * vColor.g + 0.114 * vColor.b;
+			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+			vColor.r = grayScale75p + highlightColor.r / 2.0f;
+			vColor.g = grayScale75p + highlightColor.g / 2.0f;
+			vColor.b = grayScale75p + highlightColor.b / 2.0f;
+
+			vColor.r = 0.0f;
+			vColor.g = 1.0f;
+			vColor.b = 0.0f;
+		} else if(grayscaleAnything && grayscaleThis)//just ignores other coloring and turn into greyscale all but
+		// also points not inside filtered  are marked with greyscale under this asumption as they are not overriden by next filtering.
+
+		{
+			float grayScale = 0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b;
 			vColor.r = grayScale;
 			vColor.g = grayScale;
 			vColor.b = grayScale;
+
+			//for testing magenta for greyscale
+			vColor.r = 0.0f;
+			vColor.g = 0.0f;
+			vColor.b = 1.0f;
+
 		}
 	}
 
@@ -1750,6 +1549,7 @@ void doClipping()
 	//  #endif
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
 // Filtering is set appart from  clipping by passing through a set of spatial an logical filters
 // the general worlkflow is a cascade  of  spatial  and logical filters, so resulting poing gets a true or false value
 // post actions after filtering are can be highlight, color replacement as value replacement or show/hide
@@ -1789,8 +1589,7 @@ void doClipping()
 
 // This place is easier to work as here directly things are added
 
-bool doFiltering()
-{
+bool doFiltering() {
 
 	// bool highlight = false;
 
@@ -1828,19 +1627,16 @@ bool doFiltering()
 
 		// float current_value = aExtra; // move this attribute
 
-		for (int i = 0; i < mixed_filters; i++)
-		{
+		for(int i = 0; i < mixed_filters; i++) {
 
 			// each entry in the filter list points to a filter type or an stop value
 			int filterType = uMixedFilters[i];
 
 #if defined(num_clipboxes) && num_clipboxes > 0
-			if (filterType == FILTER_BOXVOLUME)
-			{
+			if(filterType == FILTER_BOXVOLUME) {
 				// check if point ins inside box
 
-				if (!skip)
-				{
+				if(!skip) {
 					currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
 					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
 				}
@@ -1854,10 +1650,8 @@ bool doFiltering()
 #endif
 
 #if defined(num_clippolygons) && num_clippolygons > 0
-			if (filterType == FILTER_POLYGONVOLUME)
-			{
-				if (!skip)
-				{
+			if(filterType == FILTER_POLYGONVOLUME) {
+				if(!skip) {
 					currentFilterValue = currentFilterValue && pointInClipPolygon(position, polygonFilterIndex);
 					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
 				}
@@ -1872,8 +1666,7 @@ bool doFiltering()
 
 #if defined(num_logical_filters) && num_logical_filters > 0
 
-			if (filterType == FILTER_LOGIC)
-			{
+			if(filterType == FILTER_LOGIC) {
 
 				// if (logicFilterIndex == 5){
 				// 	return true;
@@ -1890,11 +1683,9 @@ bool doFiltering()
 				// if (listType == 1)
 				// {
 
-				if (currentOperator == OP_STOP)
-				{
+				if(currentOperator == OP_STOP) {
 					// stop value, means end of the filter list
-					if (i == 0)
-					{
+					if(i == 0) {
 						// if is the first filter, just return the false value
 						currentFilterValue = false; // return true or false, depending on the filters applied
 					}
@@ -1905,15 +1696,12 @@ bool doFiltering()
 					stopped = true;
 
 					continue; // continue to next
-				}
-				else
-				{
+				} else {
 
-					if (!skip)
-					{
+					if(!skip) {
 
 						#if defined(num_float_values) && num_float_values > 0
-							currentFilterValue = currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+						currentFilterValue = currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
 						#endif
 
 						skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
@@ -1941,8 +1729,7 @@ bool doFiltering()
 
 #endif
 	}
-	if (!stopped)
-	{
+	if(!stopped) {
 		globalValue = globalValue || currentFilterValue; // OR operation for the last filter
 														 // return false; // return false, point is not visible
 	}
@@ -1960,9 +1747,8 @@ bool doFiltering()
 // ##     ## ##     ## #### ##    ##
 //
 
-void main()
-{
-	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+void main() {
+	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0f);
 	vViewPosition = mvPosition.xyz;
 	gl_Position = projectionMatrix * mvPosition;
 	vLogDepth = log2(-mvPosition.z);
@@ -2002,7 +1788,7 @@ void main()
 
 #if defined hq_depth_pass
 	float originalDepth = gl_Position.w;
-	float adjustedDepth = originalDepth + 2.0 * vRadius;
+	float adjustedDepth = originalDepth + 2.0f * vRadius;
 	float adjust = adjustedDepth / originalDepth;
 
 	mvPosition.xyz = mvPosition.xyz * adjust;
@@ -2013,25 +1799,22 @@ void main()
 	doClipping();
 
 #if defined(mixed_filters) && mixed_filters > 0
-	bool res = doFiltering();
+	// bool res = doFiltering();
 
-	if (res)
-	{
-		vColor = vec3(1.0, 1.0, 0.0); // yellow highlight on selection
-	}
+	// if(res) {
+	// 	vColor = vec3(1.0f, 1.0f, 0.0f); // yellow highlight on selection
+	// }
 #endif
 
 #if defined(num_clipspheres) && num_clipspheres > 0
-	for (int i = 0; i < num_clipspheres; i++)
-	{
+	for(int i = 0; i < num_clipspheres; i++) {
 		vec4 sphereLocal = uClipSpheres[i] * mvPosition;
 
 		float distance = length(sphereLocal.xyz);
 
-		if (distance < 1.0)
-		{
+		if(distance < 1.0f) {
 			float w = distance;
-			vec3 cGradient = texture(gradient, vec2(w, 1.0 - w)).rgb;
+			vec3 cGradient = texture(gradient, vec2(w, 1.0f - w)).rgb;
 
 			vColor = cGradient;
 			// vColor = cGradient * 0.7 + vColor * 0.3;
@@ -2041,63 +1824,57 @@ void main()
 
 #if defined(num_shadowmaps) && num_shadowmaps > 0
 
-	const float sm_near = 0.1;
-	const float sm_far = 10000.0;
+	const float sm_near = 0.1f;
+	const float sm_far = 10000.0f;
 
-	for (int i = 0; i < num_shadowmaps; i++)
-	{
-		vec3 viewPos = (uShadowWorldView[i] * vec4(position, 1.0)).xyz;
+	for(int i = 0; i < num_shadowmaps; i++) {
+		vec3 viewPos = (uShadowWorldView[i] * vec4(position, 1.0f)).xyz;
 		float distanceToLight = abs(viewPos.z);
 
 		vec4 projPos = uShadowProj[i] * uShadowWorldView[i] * vec4(position, 1);
 		vec3 nc = projPos.xyz / projPos.w;
 
-		float u = nc.x * 0.5 + 0.5;
-		float v = nc.y * 0.5 + 0.5;
+		float u = nc.x * 0.5f + 0.5f;
+		float v = nc.y * 0.5f + 0.5f;
 
-		vec2 sampleStep = vec2(1.0 / (2.0 * 1024.0), 1.0 / (2.0 * 1024.0)) * 1.5;
+		vec2 sampleStep = vec2(1.0f / (2.0f * 1024.0f), 1.0f / (2.0f * 1024.0f)) * 1.5f;
 		vec2 sampleLocations[9];
-		sampleLocations[0] = vec2(0.0, 0.0);
+		sampleLocations[0] = vec2(0.0f, 0.0f);
 		sampleLocations[1] = sampleStep;
 		sampleLocations[2] = -sampleStep;
 		sampleLocations[3] = vec2(sampleStep.x, -sampleStep.y);
 		sampleLocations[4] = vec2(-sampleStep.x, sampleStep.y);
 
-		sampleLocations[5] = vec2(0.0, sampleStep.y);
-		sampleLocations[6] = vec2(0.0, -sampleStep.y);
-		sampleLocations[7] = vec2(sampleStep.x, 0.0);
-		sampleLocations[8] = vec2(-sampleStep.x, 0.0);
+		sampleLocations[5] = vec2(0.0f, sampleStep.y);
+		sampleLocations[6] = vec2(0.0f, -sampleStep.y);
+		sampleLocations[7] = vec2(sampleStep.x, 0.0f);
+		sampleLocations[8] = vec2(-sampleStep.x, 0.0f);
 
-		float visibleSamples = 0.0;
-		float numSamples = 0.0;
+		float visibleSamples = 0.0f;
+		float numSamples = 0.0f;
 
-		float bias = vRadius * 2.0;
+		float bias = vRadius * 2.0f;
 
-		for (int j = 0; j < 9; j++)
-		{
+		for(int j = 0; j < 9; j++) {
 			vec4 depthMapValue = texture(uShadowMap[i], vec2(u, v) + sampleLocations[j]);
 
 			float linearDepthFromSM = depthMapValue.x + bias;
 			float linearDepthFromViewer = distanceToLight;
 
-			if (linearDepthFromSM > linearDepthFromViewer)
-			{
-				visibleSamples += 1.0;
+			if(linearDepthFromSM > linearDepthFromViewer) {
+				visibleSamples += 1.0f;
 			}
 
-			numSamples += 1.0;
+			numSamples += 1.0f;
 		}
 
 		float visibility = visibleSamples / numSamples;
 
-		if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0 || nc.x < -1.0 || nc.x > 1.0 || nc.y < -1.0 || nc.y > 1.0 || nc.z < -1.0 || nc.z > 1.0)
-		{
+		if(u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f || nc.x < -1.0f || nc.x > 1.0f || nc.y < -1.0f || nc.y > 1.0f || nc.z < -1.0f || nc.z > 1.0f) {
 			// vColor = vec3(0.0, 0.0, 0.2);
-		}
-		else
-		{
+		} else {
 			// vColor = vec3(1.0, 1.0, 1.0) * visibility + vec3(1.0, 1.0, 1.0) * vec3(0.5, 0.0, 0.0) * (1.0 - visibility);
-			vColor = vColor * visibility + vColor * uShadowColor * (1.0 - visibility);
+			vColor = vColor * visibility + vColor * uShadowColor * (1.0f - visibility);
 		}
 	}
 
