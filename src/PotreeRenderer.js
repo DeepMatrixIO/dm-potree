@@ -1465,11 +1465,19 @@ export class Renderer {
 
 			// GLOBAL CLIP TASK AND METHOD
 			//setting global clip method and task used in clipBoxes and clipPolygons, but als may be overriden
-			if (material.clipBoxes.length + material.clipPolygons.length === 0) {
+			// if (material.clipBoxes.length + material.clipPolygons.length === 0) {
+			// 	shader.setUniform1i("clipTask", ClipTask.NONE);
+			// } else {
+			// 	shader.setUniform1i("clipTask", material.clipTask);
+			// }
+
+			if (material.mixedFilters.length ===  0) {
 				shader.setUniform1i("clipTask", ClipTask.NONE);
 			} else {
 				shader.setUniform1i("clipTask", material.clipTask);
 			}
+
+
 
 			shader.setUniform1i("clipMethod", material.clipMethod);
 
@@ -1499,12 +1507,17 @@ export class Renderer {
 					//of course it crashes within the existing profile as it is made of clipboxes
 					//a proper if wuilf
 					try {
+
+
+						//per box clptask
 						const clipTasks = material.clipBoxes.map(
 							(clipbox) => clipbox.box.actualClipTask
 						);
 						const lClipTasks = shader.uniformLocations['clipTasks[0]'];
-
 						gl.uniform1iv(lClipTasks, clipTasks);
+
+
+
 
 
 						const boxColors = material.clipBoxes
