@@ -748,8 +748,8 @@ export class TransformationTool {
 	update() {
 
 		if (this.selection.length === 1
-		&& this.selection.at(0).modifieable !== undefined
-		&& this.selection.at(0).modifieable
+		&& this.selection.at(0).modifiable !== undefined
+		&& this.selection.at(0).modifiable
 		){
 
 			this.scene.visible = true;
