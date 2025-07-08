@@ -21,6 +21,13 @@ in vec3 normal;
 in float aExtra;
 in float seg_cluster_id;
 
+
+
+//multiple attributes are packed here and accessed by index
+// #if defined(num_filter_packed_attributes)	 && num_filter_packed_attributes > 0
+in vec2 filterPackedAttributes;
+// #endif
+
 // in float filterAttribute[3];//Filtering  Attributes Indexed by number from browser side. Total number limited by webgl to 16, so trying with 3
 
 uniform mat4 modelMatrix;
@@ -158,15 +165,14 @@ uniform int uMixedVolumes[num_mixed_volumes]; // number of attributes used for f
 // calls doFiltering
 #endif
 
+///////////////////////////////////////// logical filters
 #if defined(num_logical_filters) && num_logical_filters > 0
-
 uniform int uFilterList[num_logical_filters * 5]; // list of filters encoded with indices
 // uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
 #endif
 
 #if defined(num_float_values) && num_float_values > 0
 uniform float uFloatFilterValues[num_float_values];
-
 #endif
 
 #if defined(num_int_values) && num_int_values > 0
@@ -175,11 +181,12 @@ uniform int uIntegerFilterValues[num_int_values];
 
 #if defined(mixed_filters) && mixed_filters > 0 // means something is commited to filtering
 uniform int uMixedFilters[mixed_filters];		// list of filters encoded with indices, extra variables are checked independently
-// uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters
-// uniform float uFloatFilterValues[num_filter_values];//arrays cant be set to zero, so setting dummy values
-// uniform int uIntegerFilterValues[num_list_values];
-// calls doFiltering
+// uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters, so they are indices
 #endif
+
+
+
+
 
 uniform float size;
 uniform float minSize;
@@ -1333,7 +1340,8 @@ void doClipping(bool inside) {
 		}
 		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
 		{
-			vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
 
 			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
 			vColor.r = grayScale75p + hColor.r / 2.0f;
@@ -1473,7 +1481,11 @@ bool doFiltering() {
 	//
 	bool globalValue = false;		// global value for all applied filters . all stacked filters are evaluated by OR
 	bool currentFilterValue = true; // Each filter list until STOP is evaluated by AND by default but some steps can be OR or XOR evaluated
-	vec3 current_xyz = position;	// if some other positional filters applied
+	// vec3 current_xyz = position;	// if some other positional filters applied
+	vec4 worldPosition = modelMatrix *	 vec4(position, 1.0f);
+
+	//vec3 ppos = worldPosition.xyz;
+
 
 	bool skip = false; // skip the rest of the filters, if one is not passed. Experimental
 	bool stopped = true;
@@ -1552,7 +1564,12 @@ bool doFiltering() {
 				int listType = uFilterList[logicFilterIndex + 4];
 				logicFilterIndex += 5;
 
-				float currAttVal = classification; // TODO change it
+				// float currAttVal = classification; // TODO change it to take value from packed array
+				//float currAttVal = worldPosition.z;// testing with position.z
+
+				float currAttVal = filterPackedAttributes[1];// testing with position.z
+
+
 
 				// if (listType == 1)
 				// {
@@ -1672,7 +1689,7 @@ void main() {
 	bool isInside = true;
 	//doFiltering
 	#if defined(mixed_filters) && mixed_filters > 0
-	isInside = doFiltering();
+	isInside = doFiltering(); // position is in world space, so pass it as parameter
 
 	// if(res) {
 	// 	vColor = vec3(1.0f, 1.0f, 0.0f); // yellow highlight on selection

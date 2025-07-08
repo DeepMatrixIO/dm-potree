@@ -55,7 +55,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		//adding the custom filter
 		//////////////////////////////  added in viewer.update and retrieved in potreeRenderer
-		this.filterAttributes = [];//array to store array  indexes to be filtered
+		this.filterPackedAttributes = [];//array to store array  indexes to be filtered
 		this.filterList = [];//array to store filter functions to be applied in order, each returns true false
 		this.integerFilterValues = [];//array to store integer values to be used for filtering
 		this.floatFilterValues = [];//array to store float values to be used for filtering
@@ -112,6 +112,9 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			indices: {type: 'fv', value: []},
 			//[this.attributeKey]: {type: 'fv', value: []},
 			seg_cluster_id: {type: 'fv', value: []},
+
+
+
 		};
 
 		//we may move this to the corresponding tool as this is
@@ -304,7 +307,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		extraDefines.push('#define custom_range 1');//custom rendering of extra attributes on custom range other than data range
 
-		extraDefines.push('#define filter_pc 1');//eNABLES POINTCLOUD FILTERING FOR SELECTION
+		// extraDefines.push('#define filter_pc 1');//eNABLES POINTCLOUD FILTERING FOR SELECTION
 
 
 		return extraDefines;;
@@ -571,7 +574,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		//check length as simple update Shader strategy
 
-		//stop not being added, so is not counted properl;y
+		//filters are flattened
 		let logicalFilters = this.mixedFilters.filter((filter) => (filter.getIntType() == FilterIntType.LOGICAL ));
 		let pcfilterlist = new PointCloudFilterList()
 		logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
@@ -595,6 +598,31 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		}
 
 	}
+
+
+	//stored in filterAttributes , the packed name is only used in the shader and potreeRenderer
+	setFilterPackedAttributes(attributeNames) {
+		if (attributeNames === undefined || attributeNames === null) {
+			this.filterPackedAttributes = [];//reset the array
+			this.setCustomDefine("num_filter_packed_attributes", 0);//set the define for filtering, 0 non
+			return;//do nothing
+		}
+
+
+		//let prevMixedFilterSize = this.mixedFilters.length
+		this.filterPackedAttributes = attributeNames;//sets the array
+
+
+
+		// let doUpdate = this.filterPackedAttributes.length > 0;
+		// if (doUpdate) {
+
+		// 	this.setCustomDefine("num_filter_packed_attributes", this.filterPackedAttributes.length);//set the define for filtering, 0 non
+
+		// }
+
+	}
+
 
 
 	get gradient() {
