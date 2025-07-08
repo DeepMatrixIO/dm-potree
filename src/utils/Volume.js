@@ -110,11 +110,11 @@ export class Volume extends THREE.Object3D {
 
 	}
 
-	get modifieable() {
+	get modifiable() {
 		return this._modifiable;
 	}
 
-	set modifieable(value) {
+	set modifiable(value) {
 		this._modifiable = value;
 
 		this.update();
