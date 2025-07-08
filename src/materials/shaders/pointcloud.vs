@@ -1259,13 +1259,26 @@ void doClipping(bool inside) {
 
 	//Active comes from the clustering tool, so all segment ids should be tested
 
+#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
+	for(int i = 0; i < num_clusteredpointsegments; i++) {
+		if(clusteredpointsegments[i] == seg_cluster_id) {
+			active_ = activeStates[i];
+			highlight = selectedStates[i];//not in use here
+			visible = visibleStates[i];//not in use here
+			highlightColor = vec3(0, 0, 1);
+			i = num_clusteredpointsegments;//finish loop
+
+		}
+	}
+#endif
+
 	//all points have to set a clip task
 
 	if(clipTask == CLIPTASK_ACTIVE) {
 		// show points inside the clip box
 		//inside = true;
 		//isolateThis = true; // isolate this point
-		highlight=false;
+		highlight = false;
 		active_ = true;
 
 	} else if(clipTask == CLIPTASK_SHOW_INSIDE) {
@@ -1273,7 +1286,7 @@ void doClipping(bool inside) {
 
 		// showAll = false; // do not display points outside
 		// showThis = true; // display this point
-		highlight=false;//??
+		highlight = false;//??
 		visible = inside;
 
 	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE) {
@@ -1281,7 +1294,7 @@ void doClipping(bool inside) {
 		// showAll = true; // do not display points outside
 		// showThis = false; // display this point
 		visible = !inside;
-		highlight=false;
+		highlight = false;
 
 	} else if(clipTask == CLIPTASK_GRAYSCALE) {
 		grayscaleAnything = true;
@@ -1339,9 +1352,7 @@ void doClipping(bool inside) {
 
 			return;
 
-
 		}
-
 
 		if(grayscaleAnything && grayscaleThis)//just ignores other coloring and turn into greyscale all but
 		// also points not inside filtered  are marked with greyscale under this asumption as they are not overriden by next filtering.
@@ -1382,17 +1393,15 @@ void doClipping(bool inside) {
 			//do not change its colour, just show them
 			return;
 
-
 		}
 
 		if(clipTask == CLIPTASK_SHOW_INSIDE) {//render points outside normally or simply do nothing
 			//do not change its colour
-						gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
+			gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
 
 			return;
 
 		}
-
 
 		if(grayscaleAnything && grayscaleThis) {
 			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
