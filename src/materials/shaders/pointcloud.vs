@@ -1152,18 +1152,20 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 		for(int i = startIndex; i <= endIndex; i++) {
 			if(attributeValue == uFloatFilterValues[i]) {
 				result = true;
-				break;
+				i=endIndex;
+				//break;
 			}
 		}
 	}
 	////////////////////////////////////////////////////
-	else if(operator == OP_OUT) // not working
+	else if(operator == OP_OUT) // not
 	{
 		result = true;
 		for(int i = startIndex; i <= endIndex; i++) {
 			if(attributeValue == uFloatFilterValues[i]) {
 				result = false;
-				break;
+				i=endIndex;
+				//break;
 			}
 		}
 	}
@@ -1273,6 +1275,7 @@ void doClipping(bool inside) {
 			highlight = selectedStates[i];//not in use here
 			visible = visibleStates[i];//not in use here
 			highlightColor = vec3(0, 0, 1);
+
 			i = num_clusteredpointsegments;//finish loop
 
 		}
