@@ -2281,7 +2281,7 @@ export class Viewer extends EventDispatcher {
 				for (let pointcloud of visiblePointClouds) {
 					pointcloud.material.setMixedFilters(mixedFilters);//joint list of filters, spatial and logical, and others. Set defines them properly. Taken care in potreerenderer
 
-					pointcloud.material.setFilterPackedAttributes(['classification','seg_type']);//TODO   extract if from actual filters, just for testing
+//					pointcloud.material.setFilterPackedAttributes(['classification','seg_type']);//TODO   extract if from actual filters, just for testing
 
 					pointcloud.material.updateShaderSource();
 

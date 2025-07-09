@@ -94,6 +94,8 @@ export class PointCloudFilter {
 				let attrIndex = index1;
 				let constIndex = index2;
 				let optNumber = index3; //optional constant index for dual value operations, -1 if not used
+
+				//integer list may be deprecated
 				if (
 					list_type == FilterConstListType.INTEGER_LIST &&
 					integer_filter_values.length > 0 &&
@@ -446,18 +448,41 @@ export class PointCloudFilterList {
 
 
 
-		let attributeList = [];
+		let attributeList = [];//is being reordered to avoid duplicates and indices changed accordingly
 		let filterList = []; //filter operations are index dependant and as such, values are offsetted
 		let integer_filter_values = [];
 		let float_filter_values = [];
 
+		let attributeMap = new Map(); //used to avoid duplicates in the attribute list and update indices accordingly
+		//maps attribute to index in the attributeList
+		//if attributes appear on different order somewhere else, as the map exists, existing index values will be replaced with the new ones,
+
 
 		for (const filter of this.filters) {
-			attributeList.push(...filter.attributeList);
+
+			//flattening and applying offset on attribute Index
+			filter.attributeList.forEach((attr, index) => {
+				if (!attributeMap.has(attr)) {//add it
+					attributeMap.set(attr, attributeList.length + index);
+					attributeList.push(attr);
+				}
+				//else {
+					//update the index in the filter
+					let attrIndex = attributeMap.get(attr);
+					filter.filterList.forEach(filt => {
+						if (filt[1] === index) {
+							filt[1] = attrIndex; //update the index in the filter
+						}
+					});
+				//}
+			});
+
+			// console.log('AttributeList', attributeList);
+
 
 			for (const filt of filter.filterList) {
 				//apply offsets to indices
-				let attrIndex = filt[1]; //does not require offset
+				let attrIndex = filt[1]; //offset is applied earlier
 				let constIndex = filt[2];//requires offset
 				let optNumber = filt[3];//requires offset
 				let listType = filt[4]; //does not require offset

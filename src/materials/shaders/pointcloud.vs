@@ -1567,7 +1567,7 @@ bool doFiltering() {
 				// float currAttVal = classification; // TODO change it to take value from packed array
 				//float currAttVal = worldPosition.z;// testing with position.z
 
-				float currAttVal = filterPackedAttributes[1];// testing with position.z
+				float currAttVal = filterPackedAttributes[attribIdx];// testing with position.z
 
 
 

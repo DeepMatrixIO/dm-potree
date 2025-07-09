@@ -55,6 +55,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		//adding the custom filter
 		//////////////////////////////  added in viewer.update and retrieved in potreeRenderer
+		this.filterPackedAttributesUpdated=false;//true needs reloading
 		this.filterPackedAttributes = [];//array to store array  indexes to be filtered
 		this.filterList = [];//array to store filter functions to be applied in order, each returns true false
 		this.integerFilterValues = [];//array to store integer values to be used for filtering
@@ -574,16 +575,21 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		//check length as simple update Shader strategy
 
-		//filters are flattened
-		let logicalFilters = this.mixedFilters.filter((filter) => (filter.getIntType() == FilterIntType.LOGICAL ));
-		let pcfilterlist = new PointCloudFilterList()
-		logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
-		let flat = pcfilterlist.flatten();
+			//filters are flattened
+			let logicalFilters = this.mixedFilters.filter((filter) => (filter.getIntType() == FilterIntType.LOGICAL));
+			let pcfilterlist = new PointCloudFilterList()
+			logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
+			let flat = pcfilterlist.flatten();
 
+		this.filterPackedAttributes=flat.attributeList;
 		let doUpdate = (prevMixedFilterSize !== filters.length);
 		if (doUpdate) {
+
+
+			this.filterPackedAttributesUpdated=true;
+
 			this.setCustomDefine("mixed_filters", this.mixedFilters.length);//set the define for filtering, 0 non
-			this.setCustomDefine("num_logical_filters", logicalFilters.length );//set the define for filtering, 0 non
+			this.setCustomDefine("num_logical_filters", logicalFilters.length);//set the define for filtering, 0 non
 			this.setCustomDefine("num_int_values", flat.integer_filter_values.length);//set the define for filtering, 0 non
 			this.setCustomDefine("num_float_values", flat.float_filter_values.length);//set the define for filtering, 0 non
 
