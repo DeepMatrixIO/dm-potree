@@ -463,7 +463,24 @@ export class PointCloudFilterList {
 			//flattening and applying offset on attribute Index
 			filter.attributeList.forEach((attr, index) => {
 				if (!attributeMap.has(attr)) {//add it
+
+					if( attr == "z") {
+						attributeMap.set(attr, -3);
+
+					}else
+					if(attr == "x") {
+						attributeMap.set(attr, -1);
+					} else
+					if( attr == "y") {
+						attributeMap.set(attr, -2);
+
+					}
+
+					else{
+
 					attributeMap.set(attr, attributeList.length + index);
+
+					}
 					attributeList.push(attr);
 				}
 				//else {

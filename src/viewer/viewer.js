@@ -760,6 +760,22 @@ export class Viewer extends EventDispatcher {
 
 	}
 
+	enableControls() {
+
+			this.controls.stop();
+
+			this.controls.enabled=true;
+
+	}
+
+	disableControls() {
+
+			this.controls.enabled=false;
+			this.controls.stop();
+
+	}
+
+
 	getMinNodeSize() {
 		return this.minNodeSize;
 	};
@@ -2125,28 +2141,33 @@ export class Viewer extends EventDispatcher {
 		this.scene.cameraP.fov = this.fov;
 
 		let controls = this.getControls();
-		if (controls === this.deviceControls) {
-			this.controls.setScene(scene);
-			this.controls.update(delta);
 
-			this.scene.cameraP.position.copy(scene.view.position);
-			this.scene.cameraO.position.copy(scene.view.position);
-		} else if (controls !== null) {
-			controls.setScene(scene);
-			controls.update(delta);
+		if (controls.enabled) {
+			if (controls === this.deviceControls) {
+				this.controls.setScene(scene);
+				this.controls.update(delta);
 
-			if (typeof debugDisabled === "undefined") {
 				this.scene.cameraP.position.copy(scene.view.position);
-				this.scene.cameraP.rotation.order = "ZXY";
-				this.scene.cameraP.rotation.x = Math.PI / 2 + this.scene.view.pitch;
-				this.scene.cameraP.rotation.z = this.scene.view.yaw;
-			}
+				this.scene.cameraO.position.copy(scene.view.position);
+			} else if (controls !== null) {
+				controls.setScene(scene);
+				controls.update(delta);
 
-			this.scene.cameraO.position.copy(scene.view.position);
-			this.scene.cameraO.rotation.order = "ZXY";
-			this.scene.cameraO.rotation.x = Math.PI / 2 + this.scene.view.pitch;
-			this.scene.cameraO.rotation.z = this.scene.view.yaw;
+				if (typeof debugDisabled === "undefined") {
+					this.scene.cameraP.position.copy(scene.view.position);
+					this.scene.cameraP.rotation.order = "ZXY";
+					this.scene.cameraP.rotation.x = Math.PI / 2 + this.scene.view.pitch;
+					this.scene.cameraP.rotation.z = this.scene.view.yaw;
+				}
+
+				this.scene.cameraO.position.copy(scene.view.position);
+				this.scene.cameraO.rotation.order = "ZXY";
+				this.scene.cameraO.rotation.x = Math.PI / 2 + this.scene.view.pitch;
+				this.scene.cameraO.rotation.z = this.scene.view.yaw;
+			}
 		}
+
+
 
 		camera.updateMatrix();
 		camera.updateMatrixWorld();
@@ -2236,8 +2257,8 @@ export class Viewer extends EventDispatcher {
 
 			// set clip volumes in material
 			for (let pointcloud of visiblePointClouds) {
-				pointcloud.material.setClipBoxes(clipBoxes);
-				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);
+				pointcloud.material.setClipBoxes(clipBoxes);//profiles and std volumes but not updating mixed profiles
+				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//updated but not updating mixed profiles
 				pointcloud.material.clipTask = this.clipTask;
 				pointcloud.material.clipMethod = this.clipMethod;
 
@@ -2278,16 +2299,26 @@ export class Viewer extends EventDispatcher {
 
 
 			// if (mixedFilters.length > 0) {
-				for (let pointcloud of visiblePointClouds) {
-					pointcloud.material.setMixedFilters(mixedFilters);//joint list of filters, spatial and logical, and others. Set defines them properly. Taken care in potreerenderer
+			for (let pointcloud of visiblePointClouds) {
+				pointcloud.material.setMixedFilters(mixedFilters);//joint list of filters, spatial and logical, and others. Set defines them properly. Taken care in potreerenderer
 
-//					pointcloud.material.setFilterPackedAttributes(['classification','seg_type']);//TODO   extract if from actual filters, just for testing
+				//					pointcloud.material.setFilterPackedAttributes(['classification','seg_type']);//TODO   extract if from actual filters, just for testing
 
-					pointcloud.material.updateShaderSource();
+				pointcloud.material.updateShaderSource();
 
-				}
+			}
 			// }
 		}
+
+
+		///////////////////////need to fix profiles, either adding them to mixed filters or to separate list
+		//so far they get into
+
+
+
+
+
+
 
 
 		// //custom BOXES have different behaviour

@@ -21,8 +21,6 @@ in vec3 normal;
 in float aExtra;
 in float seg_cluster_id;
 
-
-
 //multiple attributes are packed here and accessed by index
 // #if defined(num_filter_packed_attributes)	 && num_filter_packed_attributes > 0
 in vec2 filterPackedAttributes;
@@ -183,10 +181,6 @@ uniform int uIntegerFilterValues[num_int_values];
 uniform int uMixedFilters[mixed_filters];		// list of filters encoded with indices, extra variables are checked independently
 // uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters, so they are indices
 #endif
-
-
-
-
 
 uniform float size;
 uniform float minSize;
@@ -1152,7 +1146,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 		for(int i = startIndex; i <= endIndex; i++) {
 			if(attributeValue == uFloatFilterValues[i]) {
 				result = true;
-				i=endIndex;
+				i = endIndex;
 				//break;
 			}
 		}
@@ -1164,7 +1158,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 		for(int i = startIndex; i <= endIndex; i++) {
 			if(attributeValue == uFloatFilterValues[i]) {
 				result = false;
-				i=endIndex;
+				i = endIndex;
 				//break;
 			}
 		}
@@ -1275,7 +1269,7 @@ void doClipping(bool inside) {
 			highlight = selectedStates[i];//not in use here
 			visible = visibleStates[i];//not in use here
 			highlightColor = vec3(0, 0, 1);
-
+			inside=true;
 			i = num_clusteredpointsegments;//finish loop
 
 		}
@@ -1485,10 +1479,9 @@ bool doFiltering() {
 	bool globalValue = false;		// global value for all applied filters . all stacked filters are evaluated by OR
 	bool currentFilterValue = true; // Each filter list until STOP is evaluated by AND by default but some steps can be OR or XOR evaluated
 	// vec3 current_xyz = position;	// if some other positional filters applied
-	vec4 worldPosition = modelMatrix *	 vec4(position, 1.0f);
+	vec4 worldPosition = modelMatrix * vec4(position, 1.0f);
 
 	//vec3 ppos = worldPosition.xyz;
-
 
 	bool skip = false; // skip the rest of the filters, if one is not passed. Experimental
 	bool stopped = true;
@@ -1570,9 +1563,16 @@ bool doFiltering() {
 				// float currAttVal = classification; // TODO change it to take value from packed array
 				//float currAttVal = worldPosition.z;// testing with position.z
 
-				float currAttVal = filterPackedAttributes[attribIdx];// testing with position.z
-
-
+				float currAttVal = 0.0f;
+				if(attribIdx == -3) {
+					currAttVal = worldPosition.z;
+				} else if(attribIdx == -2) {
+					currAttVal = worldPosition.y;
+				} else if(attribIdx == -1) {
+					currAttVal = worldPosition.x;
+				} else {
+					currAttVal = filterPackedAttributes[attribIdx];// testing with position.z
+				}
 
 				// if (listType == 1)
 				// {

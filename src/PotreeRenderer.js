@@ -583,7 +583,7 @@ export class Renderer {
 	}
 
 	///////////////////
-	createBuffer(geometry,packedAttributes) {
+	createBuffer(geometry, packedAttributes) {
 		let gl = this.gl;
 		let webglBuffer = new WebGLBuffer();
 		webglBuffer.vao = gl.createVertexArray();
@@ -624,7 +624,7 @@ export class Renderer {
 		/////////////////////////////////////
 		//if defined, a packed attribute is created for filtering.
 
-		this.createFilterPackedAttributes(geometry, webglBuffer,packedAttributes);//relies on the
+		this.createFilterPackedAttributes(geometry, webglBuffer, packedAttributes);//relies on the
 
 		///////////////////////////////////
 
@@ -642,6 +642,7 @@ export class Renderer {
 	}
 
 	//given  the stored list of attributes in material and a given order, attributes are stored and indexed by array
+	//particular cases lilke Z attribute, require custom code
 	createFilterPackedAttributes(geometry, webglBuffer, filterPackedAttributes) {
 		const gl = this.gl;
 		const numVertices = geometry.attributes.position.count;
@@ -654,26 +655,42 @@ export class Renderer {
 
 
 		//let totalAttributes = filterAttributeNames.length;
-				let totalAttributes = 2;
+		let totalAttributes = 2;
 		// Create packed array (4 floats per vertex)
 		const packedData = new Float32Array(numVertices * totalAttributes);
 
 		//interleaving data
 
 		for (let j = 0;j < totalAttributes;j++) {
-			const attrName = filterAttributeNames[j];
+			let attrName = filterAttributeNames[j];
+			//  if (attrName == "Z" || attrName === "z" || attrName === "y" || attrName === "Y" || attrName === "x" || attrName === "X") {
+			// // 	attrName = "position"; // Assuming Z is stored in position attribute
+			//  }
+
+			//x y or z only set empty values
+
 			const attribute = geometry.attributes[attrName];
+
 			if (attribute) {
+				// if(attrName === "position" ) {
+
+				// 	for (let i = 0;i < numVertices;i++) {
+				// 		packedData[i * totalAttributes + j] = attribute.array[i*3 + 2]; // Assuming Z is the third component in a vec3 but still needs to be transformed in the shader code to get world position
+
+				// 	}
+				// }
+				// else {
 				for (let i = 0;i < numVertices;i++) {
 					packedData[i * totalAttributes + j] = attribute.array[i];
 
 				}
-			} else {
+				//}
+			// } else {
 
-				for (let i = 0;i < numVertices;i++) {
-					packedData[i * totalAttributes + j] = 0.0;
+			// 	for (let i = 0;i < numVertices;i++) {
+			// 		packedData[i * totalAttributes + j] = 0.0;
 
-				}
+			// 	}
 			}
 
 
@@ -708,7 +725,7 @@ export class Renderer {
 
 
 	///////////////////
-	updateBuffer(geometry,packedAttributes) {
+	updateBuffer(geometry, packedAttributes) {
 		let gl = this.gl;
 
 		let webglBuffer = this.buffers.get(geometry);
@@ -752,7 +769,7 @@ export class Renderer {
 		}
 
 		// Update filter packed attributes
-		this.createFilterPackedAttributes(geometry, webglBuffer,packedAttributes);
+		this.createFilterPackedAttributes(geometry, webglBuffer, packedAttributes);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, null);
 		gl.bindVertexArray(null);
@@ -1061,7 +1078,7 @@ export class Renderer {
 			let webglBuffer = null;
 			if (!this.buffers.has(geometry)) {
 				//webglBuffer = this.createBuffer(geometry);
-				webglBuffer = this.createBuffer(geometry,material.filterPackedAttributes);//hardcoded packed attributes
+				webglBuffer = this.createBuffer(geometry, material.filterPackedAttributes);//hardcoded packed attributes
 				this.buffers.set(geometry, webglBuffer);
 			} else {
 				webglBuffer = this.buffers.get(geometry);
@@ -1069,10 +1086,10 @@ export class Renderer {
 					let attribute = geometry.attributes[attributeName];
 
 					if (attribute.version > webglBuffer.vbos.get(attributeName).version) {
-						this.updateBuffer(geometry,material.filterPackedAttributes);
+						this.updateBuffer(geometry, material.filterPackedAttributes);
 					}
 					if (material.filterPackedAttributes.length > 0 && material.filterPackedAttributesUpdated) {
-						this.updateBuffer(geometry,material.filterPackedAttributes);
+						this.updateBuffer(geometry, material.filterPackedAttributes);
 					}
 				}
 			}
@@ -1333,7 +1350,7 @@ export class Renderer {
 		}
 
 
-		material.filterPackedAttributesUpdated= false;//avoid multiple packed attributes updates
+		material.filterPackedAttributesUpdated = false;//avoid multiple packed attributes updates
 
 		gl.bindVertexArray(null);
 

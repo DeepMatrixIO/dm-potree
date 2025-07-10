@@ -16,6 +16,8 @@ export class ClippingTool extends EventDispatcher{
 		this.maxPolygonVertices = 16;
 
 		this.addEventListener("start_inserting_clipping_volume", e => {
+			this.viewer.disableControls();
+
 			this.viewer.dispatchEvent({
 				type: "cancel_insertions"
 			});
@@ -133,6 +135,7 @@ export class ClippingTool extends EventDispatcher{
 				this.viewer.inputHandler.startDragging(
 					polyClipVol.markers[polyClipVol.markers.length - 1]);
 			}else if(e.button === THREE.MOUSE.RIGHT){
+
 				cancel.callback(e);
 			}
 		};
@@ -160,7 +163,11 @@ export class ClippingTool extends EventDispatcher{
 
 			this.viewer.renderer.domElement.removeEventListener("mouseup", insertionCallback, true);
 			this.viewer.removeEventListener("cancel_insertions", cancel.callback);
+
 			this.viewer.inputHandler.enabled = true;
+			this.viewer.enableControls();
+
+
 		};
 
 		this.viewer.addEventListener("cancel_insertions", cancel.callback);

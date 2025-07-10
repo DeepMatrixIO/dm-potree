@@ -576,12 +576,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		//check length as simple update Shader strategy
 
 			//filters are flattened
-			let logicalFilters = this.mixedFilters.filter((filter) => (filter.getIntType() == FilterIntType.LOGICAL));
+			let logicalFilters = this.mixedFilters.filter((filter) => (filter.getIntType() == FilterIntType.LOGICAL));//in case of attribute index, [x,y,z] = [-1,-2,-3]
 			let pcfilterlist = new PointCloudFilterList()
 			logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
 			let flat = pcfilterlist.flatten();
 
-		this.filterPackedAttributes=flat.attributeList;
+		this.filterPackedAttributes=flat.attributeList;//this is for potreeRenderer to pack extra attributes except for position, which is already there
 		let doUpdate = (prevMixedFilterSize !== filters.length);
 		if (doUpdate) {
 
