@@ -2265,7 +2265,7 @@ export class Viewer extends EventDispatcher {
 				//added for classification and segmentation
 				//const pointCloudPointClusters = this.scene.pointClusters.map(cluster => cluster.filterSegmentsByPointCloud(pointcloud.identifier));
 
-				const pointCloudPointClusters = this.scene.pointClusters.map(//TODO take identifier from some other place or default it
+				const pointCloudPointClusters = this.scene.pointClusters.filter( pc => pc.visible ).map(//TODO take identifier from some other place or default it
 					cluster => {
 						let identifier = pointcloud.dataId || pointcloud.identifier || pointcloud.id || 0;
 						return cluster.filterSegmentsByPointCloud(identifier);

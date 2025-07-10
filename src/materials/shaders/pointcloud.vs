@@ -8,7 +8,7 @@ precision highp int;
 #define PI 3.141592653589793
 
 bool active_;//
-bool inside_;//
+bool visible=true;//for a given cluster
 
 
 in vec3 position;
@@ -1261,7 +1261,7 @@ void doClipping(bool inside) {
 	bool grayscaleThis = true;
 	bool highlight = false;
 	//bool active_ = false;//now global
-	bool visible = true;
+	//bool visible = true;//now global
 	vec3 highlightColor = vec3(0.0f, 0.0f, 0.0f); // white
 
 	//Active comes from the clustering tool, so all segment ids should be tested
@@ -1297,7 +1297,7 @@ void doClipping(bool inside) {
 		highlight = false;//??
 		visible = inside;
 
-	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE) {
+	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE  && inside) {
 		// show points outside the clip box
 		// showAll = true; // do not display points outside
 		// showThis = false; // display this point
@@ -1313,7 +1313,7 @@ void doClipping(bool inside) {
 		highlight = true; // highlight current cluster
 		// showAll=true;
 		// showThis=true;
-		visible = true;
+		// visible = true;
 
 	}
 
@@ -1326,11 +1326,17 @@ void doClipping(bool inside) {
 	float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
 	float grayScale = 3.0f * (0.15f * vColor.r + 0.29f * vColor.g + 0.05f * vColor.b) / 4.0f;
 	float grayScale50p = 3.0f * (0.6f * vColor.r + 1.0f * vColor.g + 0.25f * vColor.b) / 4.0f;
+
+
+
 	if(inside) {
-		if(active_) //current cluster under mouse, highlight by default in custom green plus greyscale
+
+
+
+		if(active_ ) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
 			//make it greyscale and add some color
-			vec3 activeColor = vec3(0.98f, 0.98f, 0.0f); // green
+			vec3 activeColor = vec3(0.0f, 0.98f, 0.02f); // green
 
 
 			vColor.r = grayScale + activeColor.r / 2.0f;
@@ -1342,7 +1348,7 @@ void doClipping(bool inside) {
 			// vColor.b = 1.0f;
 			return;
 		}
-		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		if(highlight ) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
 		{
 			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
 			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
@@ -1381,6 +1387,8 @@ void doClipping(bool inside) {
 			// vColor.b = 1.0f;
 			return;
 		}
+
+
 
 	} else {//outside, do not apply color, or do not show, or show if required
 
@@ -1441,18 +1449,33 @@ void doClipping(bool inside) {
 bool checkInsideCluster(){
 bool isInside=true;
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-	isInside=false;
+
 	for(int i = 0; i < num_clusteredpointsegments; i++) {
 		if(clusteredpointsegments[i] == seg_cluster_id) {
+
+			visible = visibleStates[i];//not in use here
+
 			active_ = activeStates[i];
 			//highlight = selectedStates[i];//not in use here
-			//visible = visibleStates[i];//not in use here
 			//highlightColor = vec3(0, 0, 1);
 			isInside=true;
-			i = num_clusteredpointsegments;//finish loop
+
+
+
+			//inside and visible, applu
+			//inside and not visible, i.e. disabled, still make it visible
+
+			//not inside and visible, nothing
+			//not inside and not visible then make it not inside still not visible
+			//i = num_clusteredpointsegments;//finish loop
+			return isInside;
+
+			// visible=visible_;
 
 		}
+
 	}
+	isInside=false;
 #endif
 return isInside;
 }
