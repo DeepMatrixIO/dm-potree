@@ -118,7 +118,7 @@ export class ClusterTool extends EventDispatcher {
 		}
 	}
 	segmentIsClustered(pointcloudId, segmentId) {
-		console.log('ClusterTool:segmentIsClustered');
+		// console.log('ClusterTool:segmentIsClustered');
 		return this.viewer.scene.pointClusters.find((cluster) =>
 			cluster.containsSegment(pointcloudId, segmentId)
 		);

@@ -7,6 +7,10 @@ precision highp int;
 #define max_clip_vertices 16
 #define PI 3.141592653589793
 
+bool active_;//
+bool inside_;//
+
+
 in vec3 position;
 in vec3 color;
 in float intensity;
@@ -1256,25 +1260,25 @@ void doClipping(bool inside) {
 	bool grayscaleAnything = false;
 	bool grayscaleThis = true;
 	bool highlight = false;
-	bool active_ = false;
+	//bool active_ = false;//now global
 	bool visible = true;
 	vec3 highlightColor = vec3(0.0f, 0.0f, 0.0f); // white
 
 	//Active comes from the clustering tool, so all segment ids should be tested
 
-#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-	for(int i = 0; i < num_clusteredpointsegments; i++) {
-		if(clusteredpointsegments[i] == seg_cluster_id) {
-			active_ = activeStates[i];
-			highlight = selectedStates[i];//not in use here
-			visible = visibleStates[i];//not in use here
-			highlightColor = vec3(0, 0, 1);
-			inside=true;
-			i = num_clusteredpointsegments;//finish loop
+// #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
+// 	for(int i = 0; i < num_clusteredpointsegments; i++) {
+// 		if(clusteredpointsegments[i] == seg_cluster_id) {
+// 			active_ = activeStates[i];
+// 			highlight = selectedStates[i];//not in use here
+// 			visible = visibleStates[i];//not in use here
+// 			highlightColor = vec3(0, 0, 1);
+// 			inside=true;
+// 			i = num_clusteredpointsegments;//finish loop
 
-		}
-	}
-#endif
+// 		}
+// 	}
+// #endif
 
 	//all points have to set a clip task
 
@@ -1319,16 +1323,19 @@ void doClipping(bool inside) {
 		// {
 		// 	gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
 		// } else
-
+	float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+	float grayScale = 3.0f * (0.15f * vColor.r + 0.29f * vColor.g + 0.05f * vColor.b) / 4.0f;
+	float grayScale50p = 3.0f * (0.6f * vColor.r + 1.0f * vColor.g + 0.25f * vColor.b) / 4.0f;
 	if(inside) {
 		if(active_) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
 			//make it greyscale and add some color
-			vec3 activeColor = vec3(0.71f, 1.0f, 0.631f); // green
-			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
-			vColor.r = grayScale75p + activeColor.r / 2.0f;
-			vColor.g = grayScale75p + activeColor.g / 2.0f;
-			vColor.b = grayScale75p + activeColor.b / 2.0f;
+			vec3 activeColor = vec3(0.98f, 0.98f, 0.0f); // green
+
+
+			vColor.r = grayScale + activeColor.r / 2.0f;
+			vColor.g = grayScale + activeColor.g / 2.0f;
+			vColor.b = grayScale + activeColor.b / 2.0f;
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1340,10 +1347,10 @@ void doClipping(bool inside) {
 			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
 			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
 
-			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
-			vColor.r = grayScale75p + hColor.r / 2.0f;
-			vColor.g = grayScale75p + hColor.g / 2.0f;
-			vColor.b = grayScale75p + hColor.b / 2.0f;
+
+			vColor.r = grayScale50p + hColor.r / 2.0f;
+			vColor.g = grayScale50p + hColor.g / 2.0f;
+			vColor.b = grayScale50p + hColor.b / 2.0f;
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1428,6 +1435,36 @@ void doClipping(bool inside) {
 
 }
 
+
+
+
+bool checkInsideCluster(){
+bool isInside=true;
+#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
+	isInside=false;
+	for(int i = 0; i < num_clusteredpointsegments; i++) {
+		if(clusteredpointsegments[i] == seg_cluster_id) {
+			active_ = activeStates[i];
+			//highlight = selectedStates[i];//not in use here
+			//visible = visibleStates[i];//not in use here
+			//highlightColor = vec3(0, 0, 1);
+			isInside=true;
+			i = num_clusteredpointsegments;//finish loop
+
+		}
+	}
+#endif
+return isInside;
+}
+
+
+
+
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Filtering is set appart from  clipping by passing through a set of spatial an logical filters
 // the general worlkflow is a cascade  of  spatial  and logical filters, so resulting poing gets a true or false value
@@ -1468,7 +1505,16 @@ void doClipping(bool inside) {
 
 // This place is easier to work as here directly things are added
 
-bool doFiltering() {
+bool doFiltering(bool isInside) {
+
+	if(!isInside ){
+		return isInside;//skip some processing
+	}
+
+
+
+
+
 
 	// bool highlight = false;
 
@@ -1690,12 +1736,18 @@ void main() {
 #endif
 
 	bool isInside = true;
+
+#if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
+		isInside=checkInsideCluster();
+	#endif
+
+
+
+
 	//doFiltering
 	#if defined(mixed_filters) && mixed_filters > 0
-	isInside = doFiltering(); // position is in world space, so pass it as parameter
-
-	// if(res) {
-	// 	vColor = vec3(1.0f, 1.0f, 0.0f); // yellow highlight on selection
+	isInside = doFiltering(isInside); // position is in world space, so pass it as parameter
+	// if(res) {vColor = vec3(1.0f, 1.0f, 0.0f); // yellow highlight on selection
 	// }
 	#endif
 
