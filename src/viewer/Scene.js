@@ -221,6 +221,58 @@ export class Scene extends EventDispatcher {
 		});
 	}
 
+
+	addStaticFilterColor(r,g,b) {//filter i set of objects containing all items, making easier to manage items
+
+		let filter = new PointCloudFilter(
+			FilterOperationType.COLORIZE,
+			0, 0, -1, 1,
+			[],
+			[],
+			[r,g,b]
+
+		);
+
+		//to avoid issues, is just a JSON definition
+		this.filters.push(filter);//order is kept in this array
+		this.mixedFilters.push(filter);//order is kept in this array
+		// this.volumes.push(volume);
+		this.dispatchEvent({
+			'type': 'filter_added',
+			'scene': this,
+			'filter': filter
+		});
+	}
+
+
+
+	//reads a given cluster and adds a Logic Filter
+	//operator is  segment_cluster_id in[ id1,id2,...	]
+	//This can later be
+	addStaticClusterFilter(pointCluster) {//filter i set of objects containing all items, making easier to manage items
+
+		let ids=pointCluster.segments.map(item => item.segmentId)
+		let attributeList = ["seg_cluster_id"];
+		let filter = new PointCloudFilter(
+			FilterOperationType.IN, 0, 0, ids.length -1, 1,
+			attributeList,
+			[],
+			ids
+
+		);
+
+		//to avoid issues, is just a JSON definition
+		this.filters.push(filter);//order is kept in this array
+		this.mixedFilters.push(filter);//order is kept in this array
+		// this.volumes.push(volume);
+		this.dispatchEvent({
+			'type': 'filter_added',
+			'scene': this,
+			'filter': filter
+		});
+	}
+
+
 	addStaticStopFilter() {//filter i set of objects containing all items, making easier to manage items
 
 		let filter = new PointCloudFilter(

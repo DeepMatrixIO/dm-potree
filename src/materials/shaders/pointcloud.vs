@@ -8,8 +8,15 @@ precision highp int;
 #define PI 3.141592653589793
 
 bool active_;//
-bool visible=true;//for a given cluster
+bool visible = true;//for a given cluster
+vec3 highlightColor = vec3(1.0f, 1.0f, 1.0f); // white
 
+bool clip = false;
+	// bool showAll = false;//?????
+	// bool showThis = false;//?????
+bool grayscaleAnything = false;
+bool grayscaleThis = true;
+bool highlight = false;
 
 in vec3 position;
 in vec3 color;
@@ -93,6 +100,8 @@ uniform float uOrthoHeight;
 #define OP_OR 23
 #define OP_NOT 24
 #define OP_XOR 25
+
+#define OP_COLORIZE 100// sets global color and returns true
 
 #define OP_STOP 254
 #define OP_ALL 255
@@ -1099,7 +1108,13 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	bool result = false;
 #if defined(num_float_values) && num_float_values > 0
 
-	if(operator == OP_EQUALS_CONST) {
+	if(operator == OP_COLORIZE) {
+		highlightColor = vec3(uFloatFilterValues[startIndex], uFloatFilterValues[startIndex + 1], uFloatFilterValues[startIndex + 2]);
+		result = true;
+		highlight = true;
+		//clipTask= CLIPTASK_HIGHLIGHT;
+
+	} else if(operator == OP_EQUALS_CONST) {
 		result = attributeValue == uFloatFilterValues[startIndex];
 	} else if(operator == OP_EQUALS_ATTRIBUTE) {
 		result = attributeValue == attributeValue;
@@ -1254,15 +1269,8 @@ void doClipping(bool inside) {
 	}
 #endif
 
-	bool clip = false;
-	// bool showAll = false;//?????
-	// bool showThis = false;//?????
-	bool grayscaleAnything = false;
-	bool grayscaleThis = true;
-	bool highlight = false;
 	//bool active_ = false;//now global
 	//bool visible = true;//now global
-	vec3 highlightColor = vec3(0.0f, 0.0f, 0.0f); // white
 
 	//Active comes from the clustering tool, so all segment ids should be tested
 
@@ -1297,7 +1305,7 @@ void doClipping(bool inside) {
 		highlight = false;//??
 		visible = inside;
 
-	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE  && inside) {
+	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE && inside) {
 		// show points outside the clip box
 		// showAll = true; // do not display points outside
 		// showThis = false; // display this point
@@ -1327,17 +1335,12 @@ void doClipping(bool inside) {
 	float grayScale = 3.0f * (0.15f * vColor.r + 0.29f * vColor.g + 0.05f * vColor.b) / 4.0f;
 	float grayScale50p = 3.0f * (0.6f * vColor.r + 1.0f * vColor.g + 0.25f * vColor.b) / 4.0f;
 
-
-
 	if(inside) {
 
-
-
-		if(active_ ) //current cluster under mouse, highlight by default in custom green plus greyscale
+		if(active_) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
 			//make it greyscale and add some color
 			vec3 activeColor = vec3(0.0f, 0.98f, 0.02f); // green
-
 
 			vColor.r = grayScale + activeColor.r / 2.0f;
 			vColor.g = grayScale + activeColor.g / 2.0f;
@@ -1348,15 +1351,14 @@ void doClipping(bool inside) {
 			// vColor.b = 1.0f;
 			return;
 		}
-		if(highlight ) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
 		{
 			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
 
-
-			vColor.r = grayScale50p + hColor.r / 2.0f;
-			vColor.g = grayScale50p + hColor.g / 2.0f;
-			vColor.b = grayScale50p + hColor.b / 2.0f;
+			vColor.r = grayScale50p + highlightColor.r / 2.0f;
+			vColor.g = grayScale50p + highlightColor.g / 2.0f;
+			vColor.b = grayScale50p + highlightColor.b / 2.0f;
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1387,8 +1389,6 @@ void doClipping(bool inside) {
 			// vColor.b = 1.0f;
 			return;
 		}
-
-
 
 	} else {//outside, do not apply color, or do not show, or show if required
 
@@ -1443,11 +1443,8 @@ void doClipping(bool inside) {
 
 }
 
-
-
-
-bool checkInsideCluster(){
-bool isInside=true;
+bool checkInsideCluster() {
+	bool isInside = true;
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
 
 	for(int i = 0; i < num_clusteredpointsegments; i++) {
@@ -1458,9 +1455,7 @@ bool isInside=true;
 			active_ = activeStates[i];
 			//highlight = selectedStates[i];//not in use here
 			//highlightColor = vec3(0, 0, 1);
-			isInside=true;
-
-
+			isInside = true;
 
 			//inside and visible, applu
 			//inside and not visible, i.e. disabled, still make it visible
@@ -1475,18 +1470,10 @@ bool isInside=true;
 		}
 
 	}
-	isInside=false;
+	isInside = false;
 #endif
-return isInside;
+	return isInside;
 }
-
-
-
-
-
-
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Filtering is set appart from  clipping by passing through a set of spatial an logical filters
@@ -1530,14 +1517,9 @@ return isInside;
 
 bool doFiltering(bool isInside) {
 
-	if(!isInside ){
+	if(!isInside) {
 		return isInside;//skip some processing
 	}
-
-
-
-
-
 
 	// bool highlight = false;
 
@@ -1761,11 +1743,8 @@ void main() {
 	bool isInside = true;
 
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-		isInside=checkInsideCluster();
+	isInside = checkInsideCluster();
 	#endif
-
-
-
 
 	//doFiltering
 	#if defined(mixed_filters) && mixed_filters > 0

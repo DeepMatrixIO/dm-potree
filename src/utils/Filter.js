@@ -55,7 +55,17 @@ export class PointCloudFilter {
 						1])
 		return;
 		}
+		if (operator === FilterOperationType.COLORIZE	) {
 
+
+					this.filterList.push([
+						operator,
+						-1,
+						0,
+						-1,
+						1])
+		return;
+		}
 
 		if (
 			integer_filter_values.length === 0 &&
