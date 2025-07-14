@@ -32,6 +32,8 @@ export class PointCloudFilter {
 
 	) {
 
+		this.operator = operator; //filter operation type, default is STOP
+		this.name = this.getFilterName(); //filter operation type, default is STOP
 		//this.enabled = true; //filter is enabled by default
 		this.visible = true; // to make it compatible with checkups
 		this.initialized = true; // always initialized
@@ -53,6 +55,7 @@ export class PointCloudFilter {
 						-1,
 						-1,
 						1])
+						this.name = "STOP";
 		return;
 		}
 		if (operator === FilterOperationType.COLORIZE	) {
@@ -64,6 +67,7 @@ export class PointCloudFilter {
 						0,
 						-1,
 						1])
+						this.name = "COLORIZE";
 		return;
 		}
 
@@ -233,6 +237,104 @@ export class PointCloudFilter {
 
 			return;
 		}
+	}
+
+
+	getFilterName(){
+
+
+			if ( this.operator === FilterOperationType.EQUALS_CONST) {
+				return "EQUALS_CONST";
+			}
+			if ( this.operator === FilterOperationType.EQUALS_ATTR) {
+				return "EQUALS_ATTR";
+			}
+			if ( this.operator === FilterOperationType.LESS_CONST) {
+				return "LESS_CONST";
+			}
+			if ( this.operator === FilterOperationType.LESS_ATTR) {
+				return "LESS_ATTR";
+			}
+			if ( this.operator === FilterOperationType.LEQ_CONST) {
+				return "LEQ_CONST";
+			}
+			if ( this.operator === FilterOperationType.LEQ_ATTR) {
+				return "LEQ_ATTR";
+			}
+			if ( this.operator === FilterOperationType.GREATER_CONST) {
+				return "GREATER_CONST";
+			}
+			if ( this.operator === FilterOperationType.GREATER_ATTR) {
+				return "GREATER_ATTR";
+			}
+			if ( this.operator === FilterOperationType.GREATEREQ_CONST) {
+				return "GREATEREQ_CONST";
+			}
+			if ( this.operator === FilterOperationType.GREATEREQ_ATTR) {
+				return "GREATEREQ_ATTR";
+			}
+			if ( this.operator === FilterOperationType.RANGE_INCINC) {
+				return "RANGE_INCINC";
+			}
+			if ( this.operator === FilterOperationType.RANGE_EXINC) {
+				return "RANGE_EXINC";
+			}
+			if ( this.operator === FilterOperationType.RANGE_INCEX) {
+				return "RANGE_INCEX";
+			}
+			if ( this.operator === FilterOperationType.RANGE_EXEX) {
+				return "RANGE_EXEX";
+			}
+			if ( this.operator === FilterOperationType.IN) {
+				return "IN";
+			}
+			if ( this.operator === FilterOperationType.OUT) {
+				return "OUT";
+			}
+			if ( this.operator === FilterOperationType.DISTINCT_CONST) {
+				return "DISTINCT_CONST";
+			}
+			if ( this.operator === FilterOperationType.DISTINCT_ATTR) {
+				return "DISTINCT_ATTR";
+			}
+			if ( this.operator === FilterOperationType.OUTSIDE_RANGE_INCINC) {
+				return "OUTSIDE_RANGE_INCINC";
+			}
+			if ( this.operator === FilterOperationType.OUTSIDE_RANGE_EXINC) {
+				return "OUTSIDE_RANGE_EXINC";
+			}
+			if ( this.operator === FilterOperationType.OUTSIDE_RANGE_INCEX) {
+				return "OUTSIDE_RANGE_INCEX";
+			}
+			if ( this.operator === FilterOperationType.OUTSIDE_RANGE_EXEX) {
+				return "OUTSIDE_RANGE_EXEX";
+			}
+			if ( this.operator === FilterOperationType.AND) {
+				return "AND";
+			}
+			if ( this.operator === FilterOperationType.OR) {
+				return "OR";
+			}
+			if ( this.operator === FilterOperationType.NOT) {
+				return "NOT";
+			}
+			if ( this.operator === FilterOperationType.XOR) {
+				return "XOR";
+			}
+			if ( this.operator === FilterOperationType.COLORIZE) {
+				return "COLORIZE";
+			}
+			if ( this.operator === FilterOperationType.STOP) {
+				return "STOP";
+			}
+			if ( this.operator === FilterOperationType.ALL) {
+				return "ALL";
+			}
+			return "UNKNOWN";
+
+
+
+
 	}
 
 
@@ -421,6 +523,19 @@ export class PointCloudFilter {
 		}
 	}
 
+
+	toJSON(){
+		return {
+			intType: this._intType,
+			attributeList: this.attributeList,
+			filterList: this.filterList,
+			integer_filter_values: this.integer_filter_values,
+			float_filter_values: this.float_filter_values,
+			visible: this.visible,
+			initialized: this.initialized,
+			enabled: this.enabled
+		};
+	}
 }
 
 

@@ -9,7 +9,7 @@ precision highp int;
 
 bool active_;//
 bool visible = true;//for a given cluster
-vec3 highlightColor = vec3(1.0f, 1.0f, 1.0f); // white
+vec3 highlightColor = vec3(0.5f, 0.0f, 0.0f); // white
 
 bool clip = false;
 	// bool showAll = false;//?????
@@ -17,6 +17,7 @@ bool clip = false;
 bool grayscaleAnything = false;
 bool grayscaleThis = true;
 bool highlight = false;
+bool colorize = false;
 
 in vec3 position;
 in vec3 color;
@@ -63,6 +64,7 @@ uniform float uOrthoHeight;
 #define CLIPTASK_SHOW_OUTSIDE 3
 #define CLIPTASK_GRAYSCALE 4
 #define CLIPTASK_ACTIVE 5
+// #define CLIPTASK_COLORIZE 6
 
 #define CLIPMETHOD_INSIDE_ANY 0
 #define CLIPMETHOD_INSIDE_ALL 1
@@ -1111,8 +1113,9 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	if(operator == OP_COLORIZE) {
 		highlightColor = vec3(uFloatFilterValues[startIndex], uFloatFilterValues[startIndex + 1], uFloatFilterValues[startIndex + 2]);
 		result = true;
-		highlight = true;
-		//clipTask= CLIPTASK_HIGHLIGHT;
+		highlight = false;
+		//clipTask= CLIPTASK_COLORIZE;
+		colorize = true;
 
 	} else if(operator == OP_EQUALS_CONST) {
 		result = attributeValue == uFloatFilterValues[startIndex];
@@ -1324,6 +1327,15 @@ void doClipping(bool inside) {
 		// visible = true;
 
 	}
+	 //else if(clipTask == CLIPTASK_COLORIZE) {
+	// 	highlight = true; // highlight current cluster
+	// 	// showAll=true;
+	// 	// showThis=true;
+	// 	// visible = true;
+	// 	highlight=false;
+	// 	colorize=true;
+
+	// }
 
 		 //assigning color and cliptask action
 
@@ -1337,7 +1349,52 @@ void doClipping(bool inside) {
 
 	if(inside) {
 
-		if(active_) //current cluster under mouse, highlight by default in custom green plus greyscale
+		if(colorize && active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		{
+			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+
+			vColor.r = highlightColor.r;
+			vColor.g = highlightColor.g;
+			vColor.b = highlightColor.b;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 0.0f;
+			return;
+		}
+
+		if(colorize) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		{
+			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+
+			vColor.r = highlightColor.r;
+			vColor.g = highlightColor.g;
+			vColor.b = highlightColor.b;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 0.0f;
+
+		}
+
+		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		{
+			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+
+			vColor.r = grayScale75p + highlightColor.r / 2.0f;
+			vColor.g = grayScale75p + highlightColor.g / 2.0f;
+			vColor.b = grayScale75p + highlightColor.b / 2.0f;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 0.0f;
+			// return;
+		}
+
+		if(active_ && !colorize) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
 			//make it greyscale and add some color
 			vec3 activeColor = vec3(0.0f, 0.98f, 0.02f); // green
@@ -1349,20 +1406,6 @@ void doClipping(bool inside) {
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
 			// vColor.b = 1.0f;
-			return;
-		}
-		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
-		{
-			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
-
-			vColor.r = grayScale50p + highlightColor.r / 2.0f;
-			vColor.g = grayScale50p + highlightColor.g / 2.0f;
-			vColor.b = grayScale50p + highlightColor.b / 2.0f;
-
-			// vColor.r = 0.0f;
-			// vColor.g = 1.0f;
-			// vColor.b = 0.0f;
 			return;
 		}
 

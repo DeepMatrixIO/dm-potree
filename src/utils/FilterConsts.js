@@ -53,7 +53,7 @@ export class FilterOperationType {
 	static NOT = 24;//logical NOT operation on a filter  // TODO
 	static XOR = 25;//logical XOR operation between two filters  // TODO
 
-	static COLORIZE = 100;//filter encodes color in float array and sets start index. Color is vec3???
+	static COLORIZE = 100;//filter encodes color in float array and sets start index. Color is vec3??? Side effect is to set highlight color
 
 	static STOP = 254;
 	static ALL = 255;
