@@ -10,6 +10,7 @@ precision highp int;
 bool active_;//
 bool visible = true;//for a given cluster
 vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
+vec3 assignedColor = vec3(1.0f, 0.0f, 0.0f); //
 
 bool clip = false;
 	// bool showAll = false;//?????
@@ -18,6 +19,8 @@ bool grayscaleAnything = false;
 bool grayscaleThis = true;
 bool highlight = false;
 bool colorize = false;
+bool skip = false; // skip the rest of the filters, if one is not passed. Experimental
+bool stopped = true;
 
 in vec3 position;
 in vec3 color;
@@ -1111,11 +1114,15 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 #if defined(num_float_values) && num_float_values > 0
 
 	if(operator == OP_COLORIZE) {
-		highlightColor = vec3(uFloatFilterValues[startIndex], uFloatFilterValues[startIndex + 1], uFloatFilterValues[startIndex + 2]);
+		assignedColor = vec3(uFloatFilterValues[startIndex], uFloatFilterValues[startIndex + 1], uFloatFilterValues[startIndex + 2]);
+
+
+		colorize = true;
+
 		result = true;
 		highlight = false;
 		//clipTask= CLIPTASK_COLORIZE;
-		colorize = true;
+
 
 	} else if(operator == OP_EQUALS_CONST) {
 		result = attributeValue == uFloatFilterValues[startIndex];
@@ -1350,37 +1357,7 @@ void doClipping(bool inside) {
 	if(inside) {
 
 
-		if(colorize) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
-		{
-			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
-
-			vColor.r = highlightColor.r;
-			vColor.g = highlightColor.g;
-			vColor.b = highlightColor.b;
-
-			// vColor.r = 0.0f;
-			// vColor.g = 1.0f;
-			// vColor.b = 0.0f;
-
-		}
-
-		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
-		{
-			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
-
-			vColor.r = grayScale75p + highlightColor.r / 2.0f;
-			vColor.g = grayScale75p + highlightColor.g / 2.0f;
-			vColor.b = grayScale75p + highlightColor.b / 2.0f;
-
-			// vColor.r = 0.0f;
-			// vColor.g = 1.0f;
-			// vColor.b = 0.0f;
-			// return;
-		}
-
-		if(active_ ) //current cluster under mouse, highlight by default in custom green plus greyscale
+		if(active_) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
 			//make it greyscale and add some color
 			vec3 activeColor = vec3(0.0f, 1.0f, 1.0f); // green
@@ -1394,6 +1371,55 @@ void doClipping(bool inside) {
 			// vColor.b = 1.0f;
 			return;
 		}
+		if(colorize) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		{
+			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+
+			vColor.r = assignedColor.r;
+			vColor.g = assignedColor.g;
+			vColor.b = assignedColor.b;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 0.0f;
+			return;
+		}
+		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		{
+			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+			vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
+
+
+			vColor.r = grayScale75p + highlightColor.r / 2.0f;
+			vColor.g = grayScale75p + highlightColor.g / 2.0f;
+			vColor.b = grayScale75p + highlightColor.b / 2.0f;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 0.0f;
+			return;
+		}
+
+		if(colorize && !active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		{
+			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+
+			vColor.r = highlightColor.r;
+			vColor.g = highlightColor.g;
+			vColor.b = highlightColor.b;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 0.0f;
+			return;
+		}
+
+
+
+
 
 		if(clipTask == CLIPTASK_SHOW_OUTSIDE) {//render points outside normally or simply do nothing
 			//do not change its colour
@@ -1419,26 +1445,9 @@ void doClipping(bool inside) {
 			return;
 		}
 
-				if(colorize && !active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
-		{
-			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
-
-			vColor.r = highlightColor.r;
-			vColor.g = highlightColor.g;
-			vColor.b = highlightColor.b;
-
-			// vColor.r = 0.0f;
-			// vColor.g = 1.0f;
-			// vColor.b = 0.0f;
-			return;
-		}
-
-
 	} else {//outside, do not apply color, or do not show, or show if required
 
-		if(colorize){
-
+		if(colorize) {
 
 			vColor.r = highlightColor.r;
 			vColor.g = highlightColor.g;
@@ -1463,8 +1472,6 @@ void doClipping(bool inside) {
 			vColor.r = grayScale75p + activeColor.r / 2.0f;
 			vColor.g = grayScale75p + activeColor.g / 2.0f;
 			vColor.b = grayScale75p + activeColor.b / 2.0f;
-
-
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1518,10 +1525,8 @@ bool checkInsideCluster() {
 			//highlight = selectedStates[i];//not in use here
 			//highlightColor = vec3(0, 0, 1);
 			isInside = true;//used for preview but
-
-
-
-			//inside and visible, applu
+			colorize=false;
+			//colorize and visible, applu
 			//inside and not visible, i.e. disabled, still make it visible
 
 			//not inside and visible, nothing
@@ -1535,6 +1540,7 @@ bool checkInsideCluster() {
 
 	}
 	isInside = false;
+	//colorize=false;
 #endif
 	return isInside;
 }
@@ -1587,6 +1593,7 @@ bool doFiltering(bool isInside) {
 
 	// bool highlight = false;
 
+
 	// vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
 
 	// bool inside = true;
@@ -1597,9 +1604,6 @@ bool doFiltering(bool isInside) {
 	vec4 worldPosition = modelMatrix * vec4(position, 1.0f);
 
 	//vec3 ppos = worldPosition.xyz;
-
-	bool skip = false; // skip the rest of the filters, if one is not passed. Experimental
-	bool stopped = true;
 
 	// code for complex spatial and logical filtering. depends on a filter list
 	//[ filterType1, filterType2, ..., stop,filterTypeN, stop, filterTypeN+1, ...]
@@ -1615,6 +1619,9 @@ bool doFiltering(bool isInside) {
 
 	int integerIndex = 0;
 	int floatIndex = 0;
+
+
+
 
 	{
 		// all objects must be defined
@@ -1636,6 +1643,14 @@ bool doFiltering(bool isInside) {
 				if(!skip) {
 					currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
 					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+
+
+
+					if(currentFilterValue){
+						colorize=false;
+					}
+					highlight=true;
+					//colorize=false;
 				}
 				// currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
 
@@ -1651,7 +1666,13 @@ bool doFiltering(bool isInside) {
 				if(!skip) {
 					currentFilterValue = currentFilterValue && pointInClipPolygon(position, polygonFilterIndex);
 					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+					highlight=true;
+					if(currentFilterValue){
+						colorize=false;
+					}
+					//colorize=false;
 				}
+
 				// check if point ins inside box
 
 				polygonFilterIndex++;
@@ -1712,7 +1733,7 @@ bool doFiltering(bool isInside) {
 						#if defined(num_float_values) && num_float_values > 0
 						currentFilterValue = currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
 						#endif
-
+						highlight=true;
 						skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
 
 						stopped = false;

@@ -917,7 +917,7 @@ export class Sidebar {
 	initFilters() {
 		this.initClassificationList();
 		this.initReturnFilters();
-		this.initGPSTimeFilters();
+		//this.initGPSTimeFilters();
 		this.initPointSourceIDFilters();
 
 	}
