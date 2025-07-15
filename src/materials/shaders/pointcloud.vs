@@ -9,7 +9,7 @@ precision highp int;
 
 bool active_;//
 bool visible = true;//for a given cluster
-vec3 highlightColor = vec3(0.5f, 0.0f, 0.0f); // white
+vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
 
 bool clip = false;
 	// bool showAll = false;//?????
@@ -1349,20 +1349,6 @@ void doClipping(bool inside) {
 
 	if(inside) {
 
-		if(colorize && active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
-		{
-			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
-
-			vColor.r = highlightColor.r;
-			vColor.g = highlightColor.g;
-			vColor.b = highlightColor.b;
-
-			// vColor.r = 0.0f;
-			// vColor.g = 1.0f;
-			// vColor.b = 0.0f;
-			return;
-		}
 
 		if(colorize) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
 		{
@@ -1394,14 +1380,14 @@ void doClipping(bool inside) {
 			// return;
 		}
 
-		if(active_ && !colorize) //current cluster under mouse, highlight by default in custom green plus greyscale
+		if(active_ ) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
 			//make it greyscale and add some color
-			vec3 activeColor = vec3(0.0f, 0.98f, 0.02f); // green
+			vec3 activeColor = vec3(0.0f, 1.0f, 1.0f); // green
 
-			vColor.r = grayScale + activeColor.r / 2.0f;
-			vColor.g = grayScale + activeColor.g / 2.0f;
-			vColor.b = grayScale + activeColor.b / 2.0f;
+			vColor.r = grayScale75p + activeColor.r / 2.0f;
+			vColor.g = grayScale75p + activeColor.g / 2.0f;
+			vColor.b = grayScale75p + activeColor.b / 2.0f;
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1433,7 +1419,32 @@ void doClipping(bool inside) {
 			return;
 		}
 
+				if(colorize && !active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		{
+			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+
+			vColor.r = highlightColor.r;
+			vColor.g = highlightColor.g;
+			vColor.b = highlightColor.b;
+
+			// vColor.r = 0.0f;
+			// vColor.g = 1.0f;
+			// vColor.b = 0.0f;
+			return;
+		}
+
+
 	} else {//outside, do not apply color, or do not show, or show if required
+
+		if(colorize){
+
+
+			vColor.r = highlightColor.r;
+			vColor.g = highlightColor.g;
+			vColor.b = highlightColor.b;
+			return;
+		}
 
 		if(active_) {//still highlights it but as greyscale??? think about it
 
@@ -1443,9 +1454,17 @@ void doClipping(bool inside) {
 			// vColor.g = grayScale75p + 1.0f / 2.0f;
 			// vColor.b = grayScale75p + 0.631f / 2.0f;
 
-			vColor.r = grayScale75p + 0.0f;//casting?
-			vColor.g = grayScale75p + 0.0f;
-			vColor.b = grayScale75p + 0.0f;
+			// vColor.r = grayScale75p + 0.0f;//casting?
+			// vColor.g = grayScale75p + 0.0f;
+			// vColor.b = grayScale75p + 0.0f;
+
+			vec3 activeColor = vec3(0.0f, 1.0f, 1.0f); // green
+
+			vColor.r = grayScale75p + activeColor.r / 2.0f;
+			vColor.g = grayScale75p + activeColor.g / 2.0f;
+			vColor.b = grayScale75p + activeColor.b / 2.0f;
+
+
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1498,7 +1517,9 @@ bool checkInsideCluster() {
 			active_ = activeStates[i];
 			//highlight = selectedStates[i];//not in use here
 			//highlightColor = vec3(0, 0, 1);
-			isInside = true;
+			isInside = true;//used for preview but
+
+
 
 			//inside and visible, applu
 			//inside and not visible, i.e. disabled, still make it visible
@@ -1786,7 +1807,8 @@ void main() {
 	bool isInside = true;
 
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-	isInside = checkInsideCluster();
+	// isInside =
+	checkInsideCluster();//on ly set is active
 	#endif
 
 	//doFiltering
