@@ -11,6 +11,7 @@ bool active_;//
 bool visible = true;//for a given cluster
 vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
 vec3 assignedColor = vec3(1.0f, 0.0f, 0.0f); //
+vec3 olderColor = vec3(1.0f, 0.0f, 0.0f); //
 
 bool clip = false;
 	// bool showAll = false;//?????
@@ -1114,15 +1115,17 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 #if defined(num_float_values) && num_float_values > 0
 
 	if(operator == OP_COLORIZE) {
+
+		//have to check if i am inside
+		olderColor = assignedColor;
 		assignedColor = vec3(uFloatFilterValues[startIndex], uFloatFilterValues[startIndex + 1], uFloatFilterValues[startIndex + 2]);
 
-
 		colorize = true;
+		highlight = false;//may not be required
 
 		result = true;
-		highlight = false;
-		//clipTask= CLIPTASK_COLORIZE;
 
+		//clipTask= CLIPTASK_COLORIZE;
 
 	} else if(operator == OP_EQUALS_CONST) {
 		result = attributeValue == uFloatFilterValues[startIndex];
@@ -1328,7 +1331,12 @@ void doClipping(bool inside) {
 		visible = true;
 
 	} else if(clipTask == CLIPTASK_HIGHLIGHT) {
-		highlight = true; // highlight current cluster
+		// if(colorize) {
+		// 	highlight = false; // highlight current cluster
+		// } else {
+		// 	highlight = true;
+		// }
+		//highlight = true; // highlight current cluster
 		// showAll=true;
 		// showThis=true;
 		// visible = true;
@@ -1355,7 +1363,6 @@ void doClipping(bool inside) {
 	float grayScale50p = 3.0f * (0.6f * vColor.r + 1.0f * vColor.g + 0.25f * vColor.b) / 4.0f;
 
 	if(inside) {
-
 
 		if(active_) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
@@ -1391,7 +1398,6 @@ void doClipping(bool inside) {
 //			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
 			vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
 
-
 			vColor.r = grayScale75p + highlightColor.r / 2.0f;
 			vColor.g = grayScale75p + highlightColor.g / 2.0f;
 			vColor.b = grayScale75p + highlightColor.b / 2.0f;
@@ -1416,10 +1422,6 @@ void doClipping(bool inside) {
 			// vColor.b = 0.0f;
 			return;
 		}
-
-
-
-
 
 		if(clipTask == CLIPTASK_SHOW_OUTSIDE) {//render points outside normally or simply do nothing
 			//do not change its colour
@@ -1447,17 +1449,16 @@ void doClipping(bool inside) {
 
 	} else {//outside, do not apply color, or do not show, or show if required
 
-		if(colorize) {
+		// if(colorize && stopped) {
 
-			vColor.r = highlightColor.r;
-			vColor.g = highlightColor.g;
-			vColor.b = highlightColor.b;
-			return;
-		}
+		// 	// vColor.r = assignedColor.r;
+		// 	// vColor.g = assignedColor.g;
+		// 	// vColor.b = assignedColor.b;
+		// 	return;
+		// }
 
-		if(active_) {//still highlights it but as greyscale??? think about it
+		if(active_) {
 
-			//make it greyscale and add some color
 			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
 			// vColor.r = grayScale75p + 0.71f / 2.0f;
 			// vColor.g = grayScale75p + 1.0f / 2.0f;
@@ -1525,7 +1526,14 @@ bool checkInsideCluster() {
 			//highlight = selectedStates[i];//not in use here
 			//highlightColor = vec3(0, 0, 1);
 			isInside = true;//used for preview but
-			colorize=false;
+
+			if(colorize) {
+				highlight = false;
+				//colorize=true;
+			} else {
+				highlight = true;
+			}
+
 			//colorize and visible, applu
 			//inside and not visible, i.e. disabled, still make it visible
 
@@ -1593,7 +1601,6 @@ bool doFiltering(bool isInside) {
 
 	// bool highlight = false;
 
-
 	// vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
 
 	// bool inside = true;
@@ -1620,9 +1627,6 @@ bool doFiltering(bool isInside) {
 	int integerIndex = 0;
 	int floatIndex = 0;
 
-
-
-
 	{
 		// all objects must be defined
 #if defined(mixed_filters) && mixed_filters > 0
@@ -1640,22 +1644,28 @@ bool doFiltering(bool isInside) {
 			if(filterType == FILTER_BOXVOLUME) {
 				// check if point ins inside box
 
-				if(!skip) {
-					currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
-					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+				// if(!skip) {
+				currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
+				skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+				// }
 
+				if(currentFilterValue && stopped) {
 
+					//we reset all colors and states
+					colorize = false;
+					highlight = true;
+					stopped = false;
 
-					if(currentFilterValue){
-						colorize=false;
-					}
-					highlight=true;
-					//colorize=false;
 				}
-				// currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
 
+				if(!currentFilterValue && !stopped) {//if falls outside again, mark t he stop again
+					stopped = true;
+					assignedColor = olderColor;
+				}
+
+				//if outside, do not change anything, no color, no highlight,
 				boxFilterIndex++;
-				stopped = false;
+				// stopped = false;
 
 				continue; // continue to next
 			}
@@ -1663,20 +1673,30 @@ bool doFiltering(bool isInside) {
 
 #if defined(num_clippolygons) && num_clippolygons > 0
 			if(filterType == FILTER_POLYGONVOLUME) {
-				if(!skip) {
-					currentFilterValue = currentFilterValue && pointInClipPolygon(position, polygonFilterIndex);
-					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
-					highlight=true;
-					if(currentFilterValue){
-						colorize=false;
-					}
-					//colorize=false;
+				// if(!skip) {
+				currentFilterValue = currentFilterValue && pointInClipPolygon(position, polygonFilterIndex);
+				skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+
+				// }
+
+				if(currentFilterValue && stopped) {
+
+					//we reset all colors and states
+					colorize = false;
+					highlight = true;
+					stopped = false;
+
 				}
 
-				// check if point ins inside box
+				if(!currentFilterValue && !stopped) {//if falls outside again, mark t he stop again
+					stopped = true;
+					assignedColor = olderColor;
+				}
+
+				boxFilterIndex++;
 
 				polygonFilterIndex++;
-				stopped = false;
+				// stopped = false;
 
 				continue; // continue to next
 			}
@@ -1721,6 +1741,7 @@ bool doFiltering(bool isInside) {
 					}
 
 					globalValue = globalValue || currentFilterValue; // OR operation
+
 					currentFilterValue = true;						 // reset for next filter
 					skip = false;									 // reset skip for next filter
 					stopped = true;
@@ -1728,19 +1749,34 @@ bool doFiltering(bool isInside) {
 					continue; // continue to next
 				} else {
 
-					if(!skip) {
+					// if(!skip) {
 
 						#if defined(num_float_values) && num_float_values > 0
-						currentFilterValue = currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+					currentFilterValue = currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
 						#endif
-						highlight=true;
-						skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+					if(currentFilterValue && stopped) {
 
+					//we reset all colors and states
+						colorize = false;
+						highlight = true;
 						stopped = false;
 
-						continue; // continue to next
 					}
+
+					if(!currentFilterValue && !stopped) {//if falls outside again, mark t he stop again
+						stopped = true;
+						assignedColor = olderColor;
+					}
+
+						// highlight=true;
+					skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+
+						// stopped = false;
+
+					continue; // continue to next
+					// }
 				}
+
 			}
 #endif
 
