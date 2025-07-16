@@ -1,5 +1,5 @@
 
-import {max, mix} from "three/tsl";
+// import {max, mix} from "three/tsl";
 import * as THREE from "../libs/three.js/build/three.module.js";
 import {PointCloudTree} from "./PointCloudTree.js";
 import {ClipTask, ElevationGradientRepeat, PointSizeType} from "./defines.js";

@@ -41,7 +41,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 		this.color = new THREE.Color(0xff0000); // default color
 
 		this.task = this.SELECTION_TASK; // default task, selection, used for subcode
-
+		this.visible = true; // default visibility
 	}
 
 	addMarker() {
@@ -133,6 +133,8 @@ export class PolygonClipVolume extends THREE.Object3D {
 			task: this.task,//ok
 			camera: cameraData,//ok, but not used in potreeRenderer
 			initialized: this.initialized,//ok???
+			visible:this.visible,
+			intType: this.intType,//ok, but not used in potreeRenderer
 			//maxPolygonVertices: this.maxPolygonVertices,//internal static???
 			//modelWorldMatrix: this.modelWorldMatrix.toArray(),
 
@@ -144,7 +146,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 		return data;
 	}
 
-	fromJSON(data) {
+	static fromJSON(data) {
 		let newCamera = null;
 		if (data.camera.type === "PerspectiveCamera") {
 			newCamera = new THREE.PerspectiveCamera(
@@ -200,7 +202,8 @@ export class PolygonClipVolume extends THREE.Object3D {
 			tmp.markers.push(marker);
 			console.log(marker)
 		}
-
+		tmp.visible = data.visible !== undefined ? data.visible : true; // default to true if not provided
+		tmp.intType = data.intType || FilterIntType.POLYGON; // default to POLYGON if not provided
 		return tmp;
 	}
 

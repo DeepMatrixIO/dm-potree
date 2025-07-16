@@ -1,11 +1,14 @@
 
+
 import * as THREE from "../../libs/three.js/build/three.module.js";
 import {Annotation} from "../Annotation.js";
 import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
 import {PointCloudFilter} from "../utils/Filter.js";
-import {FilterOperationType} from "../utils/FilterConsts.js";
+import {FilterIntType, FilterOperationType} from "../utils/FilterConsts.js";
+import {PolygonClipVolume} from "../utils/PolygonClipVolume.js";
+import {BoxVolume} from "../utils/Volume.js";
 import {View} from "./View.js";
 
 
@@ -179,8 +182,9 @@ export class Scene extends EventDispatcher {
 
 	addVolume(volume) {
 		// this.mixedVolumes.push(volume);//order is kept in this array
-		this.mixedFilters.push(volume);//order is kept in this array
+
 		this.volumes.push(volume);
+		this.addFilter(volume);//add volume as a filter
 		this.dispatchEvent({
 			'type': 'volume_added',
 			'scene': this,
@@ -190,7 +194,7 @@ export class Scene extends EventDispatcher {
 
 	addFilter(filter) {//filter i set of objects containing all items, making easier to manage items
 		//to avoid issues, is just a JSON definition
-		this.filters.push(filter);//order is kept in this array
+		//this.filters.push(filter);//order is kept in this array
 		this.mixedFilters.push(filter);//order is kept in this array
 		// this.volumes.push(volume);
 		this.dispatchEvent({
@@ -199,6 +203,35 @@ export class Scene extends EventDispatcher {
 			'filter': filter
 		});
 	}
+
+	loadJSONFilter(jsonFilter) {//filter i set of objects containing all items, making easier to manage items
+		//to avoid issues, is just a JSON definition
+		let filter;
+		if (jsonFilter.intType === FilterIntType.BOXVOLUME) {
+			filter = BoxVolume.fromJSON(jsonFilter);
+			this.addVolume(filter);
+			this.addFilter(filter);
+		}
+		if (jsonFilter.intType === FilterIntType.POLYGON) {//OK
+			filter = PolygonClipVolume.fromJSON(jsonFilter);
+			this.addVolume(filter);
+			this.addFilter(filter);
+		}
+		if (jsonFilter.intType === FilterIntType.LOGICAL) {
+			filter = PointCloudFilter.fromJSON(jsonFilter);
+		}
+
+		// this.filters.push(filter);//order is kept in this array
+		this.mixedFilters.push(filter);//order is kept in this array
+		// this.volumes.push(volume);
+		this.dispatchEvent({
+			'type': 'filter_added',
+			'scene': this,
+			'filter': filter
+		});
+	}
+
+
 
 	addStaticFilter(operator, attributeIndex, optIndex1, optIndex2, listType, attributeList, integerList, floatList) {//filter i set of objects containing all items, making easier to manage items
 
@@ -211,8 +244,8 @@ export class Scene extends EventDispatcher {
 		);
 
 		//to avoid issues, is just a JSON definition
-		this.filters.push(filter);//order is kept in this array
-		this.mixedFilters.push(filter);//order is kept in this array
+		//this.filters.push(filter);//order is kept in this array
+		this.addFilter(filter);//order is kept in this array
 		// this.volumes.push(volume);
 		this.dispatchEvent({
 			'type': 'filter_added',
@@ -222,19 +255,19 @@ export class Scene extends EventDispatcher {
 	}
 
 
-	addStaticFilterColor(r,g,b) {//filter i set of objects containing all items, making easier to manage items
+	addStaticFilterColor(r, g, b) {//filter i set of objects containing all items, making easier to manage items
 
 		let filter = new PointCloudFilter(
 			FilterOperationType.COLORIZE,
 			0, 0, -1, 1,
 			[],
 			[],
-			[r,g,b]
+			[r, g, b]
 
 		);
 
 		//to avoid issues, is just a JSON definition
-		this.filters.push(filter);//order is kept in this array
+		//this.filters.push(filter);//order is kept in this array
 		this.mixedFilters.push(filter);//order is kept in this array
 		// this.volumes.push(volume);
 		this.dispatchEvent({
@@ -251,10 +284,10 @@ export class Scene extends EventDispatcher {
 	//This can later be
 	addStaticClusterFilter(pointCluster) {//filter i set of objects containing all items, making easier to manage items
 
-		let ids=pointCluster.segments.map(item => item.segmentId)
+		let ids = pointCluster.segments.map(item => item.segmentId)
 		let attributeList = ["seg_cluster_id"];
 		let filter = new PointCloudFilter(
-			FilterOperationType.IN, 0, 0, ids.length -1, 1,
+			FilterOperationType.IN, 0, 0, ids.length - 1, 1,
 			attributeList,
 			[],
 			ids
@@ -262,9 +295,9 @@ export class Scene extends EventDispatcher {
 		);
 
 		//to avoid issues, is just a JSON definition
-		this.filters.push(filter);//order is kept in this array
-		this.mixedFilters.push(filter);//order is kept in this array
-		// this.volumes.push(volume);
+
+		this.addFilter(filter);//order is kept in this array
+
 		this.dispatchEvent({
 			'type': 'filter_added',
 			'scene': this,
@@ -284,9 +317,10 @@ export class Scene extends EventDispatcher {
 
 		// filter._intType= FilterOperationType.STOP; //this is a stop filter, no filter applied
 		//to avoid issues, is just a JSON definition
-		this.filters.push(filter);//order is kept in this array
-		this.mixedFilters.push(filter);//order is kept in this array
-		// this.volumes.push(volume);
+		// this.filters.push(filter);//order is kept in this array
+		// this.mixedFilters.push(filter);//order is kept in this array
+		this.addFilter(filter);//add filter as a filter
+
 		this.dispatchEvent({
 			'type': 'filter_added',
 			'scene': this,
@@ -372,18 +406,12 @@ export class Scene extends EventDispatcher {
 
 	removeVolume(volume) {
 
-		//may get discarded
-		// let indexMixedVol = this.mixedVolumes.indexOf(volume);
-		// if (indexMixedVol > -1) {
-		// 	this.mixedVolumes.splice(indexMixedVol, 1);
+
+		// let indexMixedFilter = this.mixedFilters.indexOf(volume);
+		// if (indexMixedFilter > -1) {
+		// 	this.mixedFilters.splice(indexMixedFilter, 1);
 
 		// }
-
-		let indexMixedFilter = this.mixedFilters.indexOf(volume);
-		if (indexMixedFilter > -1) {
-			this.mixedFilters.splice(indexMixedFilter, 1);
-
-		}
 
 		let index = this.volumes.indexOf(volume);
 		if (index > -1) {
@@ -397,25 +425,35 @@ export class Scene extends EventDispatcher {
 		}
 		// removing mixed volumes
 
-
 	};
 
 
-	removeFilter(filter) {
+	removeMixedFilter(filter) {
 
 		//will get removed
 
 
+
+		let indexVolumeFilter = this.volumes.indexOf(filter);
+		if (indexVolumeFilter > -1) {
+			this.volumes = this.volumes.splice(indexVolumeFilter, 1);
+		}
+
+
+		let indexPolygonClipFilter = this.polygonClipVolumes.indexOf(filter);
+		if (indexPolygonClipFilter > -1) {
+			this.polygonClipVolumes = this.polygonClipVolumes.splice(indexPolygonClipFilter, 1);
+		}
+
+		// let indexFilter = this.filters.indexOf(filter);
+		// if (indexFilter > -1) {
+		// 	this.filters.splice(indexFilter, 1);
+		// }
+
 		let indexMixedFilter = this.mixedFilters.indexOf(filter);
 		if (indexMixedFilter > -1) {
-			this.mixedFilters.splice(indexMixedFilter, 1);
+			this.mixedFilters = this.mixedFilters.splice(indexMixedFilter, 1);
 		}
-
-		let indexFilter = this.filters.indexOf(filter);
-		if (indexFilter > -1) {
-			this.filters.splice(indexFilter, 1);
-		}
-
 
 		this.dispatchEvent({
 			'type': 'filter_removed',
@@ -426,9 +464,51 @@ export class Scene extends EventDispatcher {
 	// removing mixed volumes
 
 
+	//takes all mixed filters and serializes them to JSON so they can be saved
+	serializeMixedFilters() {
+		let json = {
+			'mixedFilters': []
+
+		}
+
+		for (let filter of this.mixedFilters) {
+			if (filter instanceof BoxVolume || filter instanceof PolygonClipVolume) {
+				json.mixedFilters.push(filter.toJSON());
+			} else if (filter instanceof PointCloudFilter) {
+				json.mixedFilters.push(filter.toJSON());
+			} else {
+				console.warn("Unknown filter type", filter);
+			}
+		}
 
 
 
+		return json;
+	}
+
+
+
+	deserializeMixedFilters(json) {
+		if (json.mixedFilters) {
+			for (let filterData of json.mixedFilters) {
+				if (filterData.intType === FilterIntType.BOXVOLUME) {
+					let filter = BoxVolume.fromJSON(filterData);
+					this.addVolume(filter);
+					// this.addFilter(filter);
+				} else if (filterData.intType === FilterIntType.POLYGON) {
+					let filter = PolygonClipVolume.fromJSON(filterData);
+					this.addPolygonClipVolume(filter);
+					// this.addFilter(filter);
+				} else if (filterData.intType === FilterIntType.LOGICAL) {
+					let filter = PointCloudFilter.fromJSON(filterData);
+					this.addFilter(filter);
+				} else {
+					console.warn("Unknown filter type", filterData);
+				}
+			}
+		}
+
+	}
 
 	addCameraAnimation(animation) {
 		this.cameraAnimations.push(animation);
@@ -454,8 +534,9 @@ export class Scene extends EventDispatcher {
 
 	addPolygonClipVolume(volume) {
 		// this.mixedVolumes.push(volume);//order is kept in this array
-		this.mixedFilters.push(volume);//order is kept in this array
+		// this.mixedFilters.push(volume);//order is kept in this array
 		this.polygonClipVolumes.push(volume);
+		this.addFilter(volume);//add volume as a filter
 		this.dispatchEvent({
 			"type": "polygon_clip_volume_added",
 			"scene": this,
@@ -475,10 +556,10 @@ export class Scene extends EventDispatcher {
 		// 	// });
 		// }
 
-		let indexMixedFilter = this.mixedFilters.indexOf(volume);
-		if (indexMixedFilter > -1) {
-			this.mixedFilters.splice(indexMixedFilter, 1);
-		}
+		// let indexMixedFilter = this.mixedFilters.indexOf(volume);
+		// if (indexMixedFilter > -1) {
+		// 	this.mixedFilters.splice(indexMixedFilter, 1);
+		// }
 
 		let index = this.polygonClipVolumes.indexOf(volume);
 		if (index > -1) {
@@ -563,20 +644,18 @@ export class Scene extends EventDispatcher {
 
 	removeAllMixedFilters() {
 
-		//remove all mixed filters, including polygon clip volumes and other mixed volumes
-		this.filters = [];
-		// for (let filter of this.mixedFilters) {
-		// 	this.removeFilter(filter);
-		// }
-		this.mixedFilters = [];
 
-		for (let volume of this.volumes) {
-			this.removeVolume(volume);
+		while (this.mixedFilters.length > 0) {
+			let filter = this.mixedFilters.pop();
+			this.removeMixedFilter(filter);
+		// 	this.dispatchEvent({
+		// 	'type': 'filter_removed',
+		// 	'scene': this,
+		// 	'filter': filter
+		// });
 		}
 
-		for (let volume of this.polygonClipVolumes) {
-			this.removePolygonClipVolume(volume);
-		}
+
 
 
 

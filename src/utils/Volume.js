@@ -20,7 +20,7 @@ export class Volume extends THREE.Object3D {
 		//console.log(this.constructor.name);
 
 		this._clip = args.clip || false;
-		this._visible = true;
+		this.visible = true;
 		this.showVolumeLabel = true;
 		this._modifiable = args.modifiable || true;
 
@@ -145,7 +145,7 @@ export class BoxVolume extends Volume {
 
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = 'box_' + this.constructor.counter;
-
+		this.visible= true;
 		let boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 		boxGeometry.computeBoundingBox();
 
@@ -257,46 +257,67 @@ export class BoxVolume extends Volume {
 		return Math.abs(this.scale.x * this.scale.y * this.scale.z);
 	}
 
+toJSON() {
+    let data = super.toJSON();
+    data.uuid = this.uuid;
+    data.name = this.constructor.name;
+    data._clip = this._clip;
+    data._modifiable = this._modifiable;
+    data.name = this.name;
+    data.visible = this.visible;
+    data._visible = this._visible;
+    data.intType = this.intType;
+    data.initialized = this._initialized;
 
-	toJSON() {
-		let data = super.toJSON();
-		data.uuid = this.uuid;
-		data.type = this.constructor.name;
-		data.clip = this._clip;
-		data.modifiable = this._modifiable;
-		data.name = this.name;
-		data.visible = this.visible;
-		data.modifiable = this.modifiable;
+    data.matrix = this.matrix.toArray();
+    data.matrixWorld = this.matrixWorld.toArray();
 
+    return data;
+}
 
-		data.matrix = this.matrix.toArray();
-		return data;
-	}
+	static fromJSON(data) {
+    let volume = new BoxVolume({
+        clip: data._clip,
+        modifiable: data._modifiable
+    });
 
-	fromJSON(data) {
-		let volume = new BoxVolume({
-			clip: data.clip,
-			modifiable: data.modifiable
-		});
+    // Set basic properties
+    volume._initialized = true;
+    volume.uuid = data.uuid;
+    volume.name = data.name;
+    volume._modifiable = data._modifiable;
+    volume.intType = data.intType || FilterIntType.BOXVOLUME;
 
-		volume.uuid = data.uuid;
-		volume.name = data.name;
+    // Restore visibility
+    volume._visible = data._visible !== undefined ? data._visible : data.visible;
+    volume._clip = data._clip;
 
-		volume.matrix.fromArray(data.matrix);
-		volume.matrix.decompose(volume.position, volume.quaternion, volume.scale);
+    // Restore transformation
+    volume.matrix.fromArray(data.matrix);
+    volume.matrix.decompose(volume.position, volume.quaternion, volume.scale);
 
+    // Apply matrix world if available
+    if (data.matrixWorld) {
+        volume.matrixWorld.fromArray(data.matrixWorld);
+    }
 
-		volume.visible = data.visible;
-		volume.modifiable = data.modifiable;
+    // Update matrices and visibility
+    volume.updateMatrix();
+    volume.updateMatrixWorld(true);
 
-		return volume;
-	}
+    // Important: Call update to refresh visibility and geometry
+    volume.update();
+
+    return volume;
+}
 
 	getIntType() {
 		return this.intType;
 	}
 
 };
+
+// window.BoxVolume = BoxVolume; // for global access, e.g. in Potree
 
 export class SphereVolume extends Volume {
 

@@ -526,6 +526,7 @@ export class PointCloudFilter {
 
 	toJSON(){
 		return {
+			name: this.name,
 			intType: this._intType,
 			attributeList: this.attributeList,
 			filterList: this.filterList,
@@ -535,6 +536,26 @@ export class PointCloudFilter {
 			initialized: this.initialized,
 			enabled: this.enabled
 		};
+	}
+
+	static fromJSON(data) {
+		let filter = new PointCloudFilter(
+
+			data.filterList[0][0],//operator
+			data.filterList[0][1],//index1
+			data.filterList[0][2],//index2
+			data.filterList[0][3],//index3
+			data.filterList[0][4],//list type
+			data.attributeList,//array of attributes
+			data.integer_filter_values,//data values
+			data.float_filter_values//data values
+		);
+		filter.name = data.name;
+		filter._intType = data.intType;
+		filter.visible = data.visible;
+		filter.initialized = data.initialized;
+		filter.enabled = data.enabled;
+		return filter;
 	}
 }
 
