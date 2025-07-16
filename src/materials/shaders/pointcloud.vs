@@ -1693,7 +1693,6 @@ bool doFiltering(bool isInside) {
 					assignedColor = olderColor;
 				}
 
-				boxFilterIndex++;
 
 				polygonFilterIndex++;
 				// stopped = false;
@@ -1751,9 +1750,9 @@ bool doFiltering(bool isInside) {
 
 					// if(!skip) {
 
-						#if defined(num_float_values) && num_float_values > 0
+					#if defined(num_float_values) && num_float_values > 0
 					currentFilterValue = currentFilterValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
-						#endif
+					#endif
 					if(currentFilterValue && stopped) {
 
 					//we reset all colors and states
