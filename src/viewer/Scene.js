@@ -428,27 +428,26 @@ export class Scene extends EventDispatcher {
 	};
 
 
-	removeMixedFilter(filter) {
+	removeMixedFilterAt(index) {
 
 		//will get removed
+		let filter=this.mixedFilters.at(index)
+
+		this.removeVolume(filter);
+		this.removePolygonClipVolume(filter);
 
 
-
-		let indexVolumeFilter = this.volumes.indexOf(filter);
-		if (indexVolumeFilter > -1) {
-			this.volumes = this.volumes.splice(indexVolumeFilter, 1);
-		}
-
-
-		let indexPolygonClipFilter = this.polygonClipVolumes.indexOf(filter);
-		if (indexPolygonClipFilter > -1) {
-			this.polygonClipVolumes = this.polygonClipVolumes.splice(indexPolygonClipFilter, 1);
-		}
-
-		// let indexFilter = this.filters.indexOf(filter);
-		// if (indexFilter > -1) {
-		// 	this.filters.splice(indexFilter, 1);
+		// let indexVolumeFilter = this.volumes.indexOf(filter);
+		// if (indexVolumeFilter > -1) {
+		// 	this.volumes = this.volumes.splice(indexVolumeFilter, 1);
 		// }
+
+
+		// let indexPolygonClipFilter = this.polygonClipVolumes.indexOf(filter);
+		// if (indexPolygonClipFilter > -1) {
+		// 	this.polygonClipVolumes = this.polygonClipVolumes.splice(indexPolygonClipFilter, 1);
+		// }
+
 
 		let indexMixedFilter = this.mixedFilters.indexOf(filter);
 		if (indexMixedFilter > -1) {
@@ -461,6 +460,45 @@ export class Scene extends EventDispatcher {
 			'filter': filter
 		});
 	}
+
+
+
+	removeMixedFilter(filter) {
+
+		//will get removed
+
+
+		this.removeVolume(filter);
+		this.removePolygonClipVolume(filter);
+
+
+		// let indexVolumeFilter = this.volumes.indexOf(filter);
+		// if (indexVolumeFilter > -1) {
+		// 	this.volumes = this.volumes.splice(indexVolumeFilter, 1);
+		// }
+
+
+		// let indexPolygonClipFilter = this.polygonClipVolumes.indexOf(filter);
+		// if (indexPolygonClipFilter > -1) {
+		// 	this.polygonClipVolumes = this.polygonClipVolumes.splice(indexPolygonClipFilter, 1);
+		// }
+
+
+
+		let indexMixedFilter = this.mixedFilters.indexOf(filter);
+		if (indexMixedFilter > -1) {
+			this.mixedFilters = this.mixedFilters.splice(indexMixedFilter, 1);
+		}
+
+		this.dispatchEvent({
+			'type': 'filter_removed',
+			'scene': this,
+			'filter': filter
+		});
+	}
+
+
+
 	// removing mixed volumes
 
 

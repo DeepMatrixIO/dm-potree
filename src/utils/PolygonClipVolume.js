@@ -105,12 +105,6 @@ export class PolygonClipVolume extends THREE.Object3D {
 			// Camera type
 			type: this.camera.type,
 
-			// Basic properties
-			fov: this.camera.fov,
-			aspect: this.camera.aspect,
-			near: this.camera.near,
-			far: this.camera.far,
-			zoom: this.camera.zoom,
 
 			// Transform
 			position: this.camera.position.toArray(),
@@ -125,6 +119,35 @@ export class PolygonClipVolume extends THREE.Object3D {
 			projectionMatrix: this.camera.projectionMatrix.toArray()
 		};
 
+
+
+
+
+		//camera data is to be stored either as perspective or ortographic parameters
+		if (this.camera.type === "PerspectiveCamera") {
+
+			cameraData.fov = this.camera.fov;
+			cameraData.aspect = this.camera.aspect;
+			cameraData.near = this.camera.near;
+			cameraData.far = this.camera.far;
+			cemeraData.zoom = this.camera.zoom;
+
+		} else if (this.camera.type == "OrthographicCamera") {
+			// Ortho cameras need different parameters
+
+			cameraData.left = this.camera.left;
+			cameraData.right = this.camera.right;
+			cameraData.top = this.camera.top;
+			cameraData.bottom = this.camera.bottom;
+			cameraData.near = this.camera.near;
+			cameraData.far = this.camera.far;
+
+
+		}
+
+
+
+
 		let data = {
 			uuid: this.uuid,//ok
 			name: this.name,//ok
@@ -133,7 +156,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 			task: this.task,//ok
 			camera: cameraData,//ok, but not used in potreeRenderer
 			initialized: this.initialized,//ok???
-			visible:this.visible,
+			visible: this.visible,
 			intType: this.intType,//ok, but not used in potreeRenderer
 			//maxPolygonVertices: this.maxPolygonVertices,//internal static???
 			//modelWorldMatrix: this.modelWorldMatrix.toArray(),

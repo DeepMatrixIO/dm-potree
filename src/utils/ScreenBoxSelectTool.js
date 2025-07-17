@@ -242,7 +242,7 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 					all: true,
 					pickClipped: true,
 					pointSizeType: PointSizeType.FIXED,
-					pointSize: 1};
+					pointSize: 7};
 
 				let pointsNear = pointcloud.pick(viewer, volCam, ray, pickerSettings);
 
