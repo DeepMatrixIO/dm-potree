@@ -10,8 +10,8 @@ precision highp int;
 bool active_;//
 bool visible = true;//for a given cluster
 vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
-vec3 assignedColor = vec3(1.0f, 0.0f, 0.0f); //
-vec3 olderColor = vec3(1.0f, 0.0f, 0.0f); //
+vec3 assignedColor = vec3(0.0f, 1.0f, 0.0f); //
+vec3 olderColor = vec3(0.0f, 0.0f, 1.0f); //
 
 bool clip = false;
 	// bool showAll = false;//?????
@@ -39,7 +39,7 @@ in float seg_cluster_id;
 
 //multiple attributes are packed here and accessed by index
 // #if defined(num_filter_packed_attributes)	 && num_filter_packed_attributes > 0
-in vec2 filterPackedAttributes;
+in vec4 filterPackedAttributes;
 // #endif
 
 // in float filterAttribute[3];//Filtering  Attributes Indexed by number from browser side. Total number limited by webgl to 16, so trying with 3
@@ -1645,8 +1645,8 @@ bool doFiltering(bool isInside) {
 		// dont check other variables as they were required to reach this state, but are still commited
 
 		// float current_value = aExtra; // move this attribute
-		bool isIn = false;
 		for(int i = 0; i < mixed_filters; i++) {
+		bool isIn = true;
 
 			// each entry in the filter list points to a filter type or an stop value
 			int filterType = uMixedFilters[i];
@@ -1669,26 +1669,28 @@ bool doFiltering(bool isInside) {
 					colorize = false;
 					highlight = true;
 					stopped = false;
+					// highlightColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
 
-				}
+
+				}else
 
 				if(!currentFilterValue && !stopped) {//if falls outside again, mark t he stop again
 					stopped = true;
 					assignedColor = olderColor;
 				}
 
-				//colorized version
-				// if(isIn){
-				// 	colorize=true;
-				// 	olderColor=assignedColor;
-				// 	assignedColor = vec3(boxColors[boxFilterIndex].x,boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
-				// }
+				// colorized version
+				if(isIn){
+					colorize=true;
+					olderColor=assignedColor;
+					assignedColor = vec3(boxColors[boxFilterIndex].x,boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+				}
 
 			//highlight version
-				if(isIn) {
-					highlightColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+				// if(isIn) {
 
-				}
+				// }
+
 
 				// currentFilterValue = currentFilterValue && isIn;
 
@@ -1715,26 +1717,31 @@ bool doFiltering(bool isInside) {
 					colorize = false;
 					highlight = true;
 					stopped = false;
+					// highlightColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
 
-				}
+
+				}else
 
 				if(!currentFilterValue && !stopped) {//if falls outside again, mark t he stop again
 					stopped = true;
 					assignedColor = olderColor;
 				}
 
-				//colorize version
-				// if(isIn) {//change color based on object color
-				// 	colorize = true;
-				// 	olderColor = assignedColor;
-				// 	assignedColor = vec3(				uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
-				// }
+				colorize version
+				if(isIn) {//change color based on object color
+					colorize = true;
+					olderColor = assignedColor;
+					assignedColor = vec3(				uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
+				}
 
 				//highlight version
-				if(isIn) {//change color based on object color
+				// if(isIn ) {//change color based on object color
 
-					highlightColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
-				}
+				// }else{
+
+
+				// }
+
 
 				polygonFilterIndex++;
 
