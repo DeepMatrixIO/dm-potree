@@ -268,6 +268,7 @@ toJSON() {
     data._visible = this._visible;
     data.intType = this.intType;
     data.initialized = this._initialized;
+	data.color = this.color.getHex(); // store the color of the box
 
     data.matrix = this.matrix.toArray();
     data.matrixWorld = this.matrixWorld.toArray();
@@ -305,6 +306,10 @@ toJSON() {
     volume.updateMatrix();
     volume.updateMatrixWorld(true);
 
+
+
+	volume.color = new THREE.Color(data.color || 0x0000ff); // restore color, default to blue if not set
+	// volume.box.material.color.set(volume.color);
     // Important: Call update to refresh visibility and geometry
     volume.update();
 

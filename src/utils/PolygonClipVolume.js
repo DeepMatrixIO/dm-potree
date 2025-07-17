@@ -130,7 +130,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 			cameraData.aspect = this.camera.aspect;
 			cameraData.near = this.camera.near;
 			cameraData.far = this.camera.far;
-			cemeraData.zoom = this.camera.zoom;
+			cameraData.zoom = this.camera.zoom;
 
 		} else if (this.camera.type == "OrthographicCamera") {
 			// Ortho cameras need different parameters

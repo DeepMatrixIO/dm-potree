@@ -1318,14 +1318,24 @@ void doClipping(bool inside) {
 		highlight = false;//??
 		visible = inside;
 
-	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE && inside) {
+	// } else if(clipTask == CLIPTASK_SHOW_OUTSIDE && inside) {
+	// 	// show points outside the clip box
+	// 	// showAll = true; // do not display points outside
+	// 	// showThis = false; // display this point
+	// 	visible = !inside;
+	// 	highlight = false;
+
+	// }
+		} else if(clipTask == CLIPTASK_SHOW_OUTSIDE ) {
 		// show points outside the clip box
 		// showAll = true; // do not display points outside
 		// showThis = false; // display this point
 		visible = !inside;
 		highlight = false;
 
-	} else if(clipTask == CLIPTASK_GRAYSCALE) {
+	}
+
+	 else if(clipTask == CLIPTASK_GRAYSCALE) {
 		grayscaleAnything = true;
 		grayscaleThis = true;
 		visible = true;
@@ -1396,7 +1406,8 @@ void doClipping(bool inside) {
 		{
 			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
 //			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
-			vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
+
+			//vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
 
 			vColor.r = grayScale75p + highlightColor.r / 2.0f;
 			vColor.g = grayScale75p + highlightColor.g / 2.0f;
@@ -1634,7 +1645,7 @@ bool doFiltering(bool isInside) {
 		// dont check other variables as they were required to reach this state, but are still commited
 
 		// float current_value = aExtra; // move this attribute
-
+		bool isIn = false;
 		for(int i = 0; i < mixed_filters; i++) {
 
 			// each entry in the filter list points to a filter type or an stop value
@@ -1645,7 +1656,10 @@ bool doFiltering(bool isInside) {
 				// check if point ins inside box
 
 				// if(!skip) {
-				currentFilterValue = currentFilterValue && pointInClipBox(clipBoxes[boxFilterIndex], position);
+				//side effects include reading current color and storing as highlight color
+
+				isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);
+				currentFilterValue = currentFilterValue && isIn;
 				skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
 				// }
 
@@ -1662,6 +1676,21 @@ bool doFiltering(bool isInside) {
 					stopped = true;
 					assignedColor = olderColor;
 				}
+
+				//colorized version
+				// if(isIn){
+				// 	colorize=true;
+				// 	olderColor=assignedColor;
+				// 	assignedColor = vec3(boxColors[boxFilterIndex].x,boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+				// }
+
+			//highlight version
+				if(isIn) {
+					highlightColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+
+				}
+
+				// currentFilterValue = currentFilterValue && isIn;
 
 				//if outside, do not change anything, no color, no highlight,
 				boxFilterIndex++;
@@ -1674,9 +1703,10 @@ bool doFiltering(bool isInside) {
 #if defined(num_clippolygons) && num_clippolygons > 0
 			if(filterType == FILTER_POLYGONVOLUME) {
 				// if(!skip) {
-				currentFilterValue = currentFilterValue && pointInClipPolygon(position, polygonFilterIndex);
-				skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
+				isIn = pointInClipPolygon(position, polygonFilterIndex);
+				//skip = !currentFilterValue; // if is false, skip the rest of the filters until stop
 
+				currentFilterValue = currentFilterValue && isIn;
 				// }
 
 				if(currentFilterValue && stopped) {
@@ -1693,9 +1723,20 @@ bool doFiltering(bool isInside) {
 					assignedColor = olderColor;
 				}
 
+				//colorize version
+				// if(isIn) {//change color based on object color
+				// 	colorize = true;
+				// 	olderColor = assignedColor;
+				// 	assignedColor = vec3(				uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
+				// }
+
+				//highlight version
+				if(isIn) {//change color based on object color
+
+					highlightColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
+				}
 
 				polygonFilterIndex++;
-				// stopped = false;
 
 				continue; // continue to next
 			}
