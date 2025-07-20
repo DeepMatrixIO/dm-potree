@@ -78,21 +78,26 @@ export class NodeLoader {
 				//let response = await fetch(urlOctree, fetchOptions);
 				let retry = 1;
 
-				//do {
-				fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
-				response = await fetch(urlOctree, fetchOptions);
-				//	if (response.status >= 400) {
-				//console.log("OCTREELOADER " + (retry) + " loading node: " + node.name + " from: " + urlOctree +
-				//	"\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
-				//		retry++;
-				//activeWait(100);
-				//	} else {
-				//		break
-				//	}
+				do {
 
-				//} while (retry <= maxRetries && response.status >= 400);
+					//normal request request
+					fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
+					response = await fetch(urlOctree, fetchOptions);
 
+					if (response.status >= 400) {
+						// console.log("OCTREELOADER " + (retry) + " loading node: " + node.name + " from: " + urlOctree +
+						// 	"\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
+						retry++;
+						//activeWait(500);//troublesome
+					} else {
+						// console.log("OCTREELOADER RELOAD " + (retry) + " loading node: " + node.name + " from: " + urlOctree +
+							// "\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
+						break;
+					}
 
+				} while (retry <= maxRetries && response.status >= 400);
+
+				//leave it for regular reload
 				if (response.status >= 400) {
 					throw new Error(`Failed to load node ${node.name} from ${urlOctree}. Status: ${response.status}, StatusText: ${response.statusText}, OK: ${response.ok}`);
 				}
@@ -197,7 +202,7 @@ export class NodeLoader {
 			Potree.numNodesLoading--;
 
 			console.log(`OctreeLoader: failed to load ${node.name}`);
-			console.log(e);
+			//console.log(e);
 			//console.log(`trying again!`);
 		}
 	}
@@ -219,14 +224,14 @@ export class NodeLoader {
 		//console.log("NodeLoader.parseHierarchy Chunk Size numNodes: " + numNodes  );
 
 		function byteToBitMask(byte) {
-    		return byte.toString(2).padStart(8, '0');
+			return byte.toString(2).padStart(8, '0');
 		}
 
 
 
 
 
-		for (let i = 0; i < numNodes; i++) {
+		for (let i = 0;i < numNodes;i++) {
 			// console.log("---------------------------------------------" );
 			// console.log("Processing node: " + i + " of " + numNodes);
 			let current = nodes[i];
@@ -241,9 +246,9 @@ export class NodeLoader {
 			// 	// debugger;
 			// }
 
-			current.idx=i;
+			current.idx = i;
 
-			let mask= byteToBitMask(childMask);
+			let mask = byteToBitMask(childMask);
 
 			//console.log(`IDX: ${i}  Name: ${current.name} Type: ${type} childMask: ${childMask} mask ${byteToBitMask(childMask)}  numPoints: ${numPoints}  byteOffset: ${byteOffset}  byteSize: ${byteSize}`);
 
@@ -311,7 +316,7 @@ export class NodeLoader {
 				continue;
 			}
 
-			for (let childIndex = 0; childIndex < 8; childIndex++) {
+			for (let childIndex = 0;childIndex < 8;childIndex++) {
 				let childExists = ((1 << childIndex) & childMask) !== 0;
 
 				if (!childExists) {
@@ -347,33 +352,33 @@ export class NodeLoader {
 		// }
 	}
 
-/**
- * Hierarchy is a binary file that contains the hierarchy of the octree.
- * Each node is one of the following types:
+	/**
+	 * Hierarchy is a binary file that contains the hierarchy of the octree.
+	 * Each node is one of the following types:
 
-		enum TYPE {
-		NORMAL = 0,
-		LEAF   = 1,
-		PROXY  = 2,
-	};
+			enum TYPE {
+			NORMAL = 0,
+			LEAF   = 1,
+			PROXY  = 2,
+		};
 
 
-Each Hierarchy node is 22 bytes long
+	Each Hierarchy node is 22 bytes long
 
- * 1 byte: type (0, 1, 2)
- * 1 byte: childMask (0-255) (8 bits, 1 for each child)
- * 4 bytes: numPoints (0-2^32-1)
- * 8 bytes: byteOffset (0-2^64-1)
- * 8 bytes: byteSize (0-2^64-1)
- *
+	 * 1 byte: type (0, 1, 2)
+	 * 1 byte: childMask (0-255) (8 bits, 1 for each child)
+	 * 4 bytes: numPoints (0-2^32-1)
+	 * 8 bytes: byteOffset (0-2^64-1)
+	 * 8 bytes: byteSize (0-2^64-1)
+	 *
 
- * Leaf nodes have a no children, and are the ones that have a byteOffset and byteSize
+	 * Leaf nodes have a no children, and are the ones that have a byteOffset and byteSize
 
- Proxy nodes (pseudo-leaf in one chunk pointing to root of a child-chunk)
+	 Proxy nodes (pseudo-leaf in one chunk pointing to root of a child-chunk)
 
- * Proxy nodes have a byteOffset and byteSize, but no children. They point to a jump in the hierarchy.bin file, rather than to the octree.bin file.
+	 * Proxy nodes have a byteOffset and byteSize, but no children. They point to a jump in the hierarchy.bin file, rather than to the octree.bin file.
 
-*/
+	*/
 
 	async loadHierarchy(node) {
 

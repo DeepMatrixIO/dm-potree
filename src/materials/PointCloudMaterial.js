@@ -502,9 +502,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.updateShaderSource();
 		}
 
+//why 16?
 		this.uniforms.clipBoxes.value = new Float32Array(
 			this.clipBoxes.length * 16
 		);
+
+
 
 		for (let i = 0;i < this.clipBoxes.length;i++) {
 			let box = clipBoxes[i];

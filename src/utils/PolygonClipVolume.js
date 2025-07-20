@@ -35,7 +35,8 @@ export class PolygonClipVolume extends THREE.Object3D {
 		this.markers = [];
 		this.initialized = false;
 
-		this.maxPolygonVertices = 16;//also in Clipping Tool.js, update in potreeRenderer
+		this.maxPolygonVertices = 64;//also in Clipping Tool.js, update in potreeRenderer
+				// this.maxPolygonVertices = 16;//also in Clipping Tool.js, update in potreeRenderer
 
 		//adding color per PolygonClipVolume
 		this.color = new THREE.Color(0xff0000); // default color

@@ -887,7 +887,7 @@ export class Renderer {
 					let clipPolygonVCount = [];//vertices per polygon or vertex count  [4,6,8,etc]
 					let worldViewProjMatrices = [];
 
-					let maxPolygonVertices = 16;//ut overwritten
+					let maxPolygonVertices = 64;//ut overwritten
 					for (let clipPolygon of material.clipPolygons) {
 
 						let view = clipPolygon.viewMatrix;

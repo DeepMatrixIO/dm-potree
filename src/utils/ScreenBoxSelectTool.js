@@ -3,12 +3,12 @@ import * as THREE from "../../libs/three.js/build/three.module.js";
 import {BoxVolume} from "./Volume.js";
 import {Utils} from "../utils.js";
 import {PointSizeType} from "../defines.js";
-import { EventDispatcher } from "../EventDispatcher.js";
+import {EventDispatcher} from "../EventDispatcher.js";
 
 
-export class ScreenBoxSelectTool extends EventDispatcher{
+export class ScreenBoxSelectTool extends EventDispatcher {
 
-	constructor(viewer){
+	constructor(viewer) {
 		super();
 
 		this.viewer = viewer;
@@ -19,11 +19,11 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 		viewer.addEventListener("scene_changed", this.onSceneChange.bind(this));
 	}
 
-	onSceneChange(scene){
+	onSceneChange(scene) {
 		console.log("scene changed");
 	}
 
-	startInsertion(){
+	startInsertion() {
 		let domElement = this.viewer.renderer.domElement;
 
 		let volume = new BoxVolume();
@@ -54,7 +54,7 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 		// If you're switching to an orthographic camera, ensure the m
 
 
-		let drag = e =>{
+		let drag = e => {
 			// console.log("dragging....................................................................");
 			volume.visible = true;
 
@@ -121,6 +121,21 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 			//
 			let camera = e.viewer.scene.getActiveCamera();
 			let size = e.viewer.renderer.getSize(new THREE.Vector2());
+
+			//checking box size
+			let xSize = e.drag.end.x - e.drag.start.x
+			let ySize = e.drag.end.y - e.drag.start.y
+			let minAllowedSize = 20;
+			let boxSize = Math.sqrt(xSize * xSize + ySize * ySize)
+			if (boxSize < minAllowedSize) {
+				console.warn("Box size is too small, minimum allowed size is: ", minAllowedSize);
+				this.viewer.scene.removeVolume(volume);
+				return;
+
+			}
+
+
+
 			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
 			//let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
 			let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
@@ -204,9 +219,9 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 
 			// TODO support more than one point cloud
 			//iterate over all pointclouds and raycast them
-			for(let pointcloud of this.viewer.scene.pointclouds){
+			for (let pointcloud of this.viewer.scene.pointclouds) {
 
-				if(!pointcloud.visible){
+				if (!pointcloud.visible) {
 					continue;
 				}
 
@@ -225,8 +240,8 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 				volCam.updateProjectionMatrix();
 				volCam.matrixWorldInverse.copy(volCam.matrixWorld).invert();
 
-				let volpos=volCam.getWorldPosition(new THREE.Vector3())
-				let voldir=volCam.getWorldDirection(new THREE.Vector3())
+				let volpos = volCam.getWorldPosition(new THREE.Vector3())
+				let voldir = volCam.getWorldDirection(new THREE.Vector3())
 				let ray = new THREE.Ray(volpos, voldir);
 
 				//computes inverse ray
@@ -242,7 +257,8 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 					all: true,
 					pickClipped: true,
 					pointSizeType: PointSizeType.FIXED,
-					pointSize: 7};
+					pointSize: 7
+				};
 
 				let pointsNear = pointcloud.pick(viewer, volCam, ray, pickerSettings);
 
@@ -260,17 +276,17 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 			//near points appear at the back while far points appear at the front, check it twice
 
 			//debugging
-			console.log("Total points raycasted:" , allPointsNear.length, allPointsFar.length);
+			console.log("Total points raycasted:", allPointsNear.length, allPointsFar.length);
 
 			//adds all points
-			if(allPointsNear.length > 0 && allPointsFar.length > 0){
+			if (allPointsNear.length > 0 && allPointsFar.length > 0) {
 				let viewLine = new THREE.Line3(ray.origin, new THREE.Vector3().addVectors(ray.origin, ray.direction));
 
 				let closestOnLine = allPointsNear.map(p => viewLine.closestPointToPoint(p.position, false, new THREE.Vector3()));
-				let closest = closestOnLine.sort( (a, b) => ray.origin.distanceTo(a) - ray.origin.distanceTo(b))[0];
+				let closest = closestOnLine.sort((a, b) => ray.origin.distanceTo(a) - ray.origin.distanceTo(b))[0];
 
 				let farthestOnLine = allPointsFar.map(p => viewLine.closestPointToPoint(p.position, false, new THREE.Vector3()));
-				let farthest = farthestOnLine.sort( (a, b) => ray.origin.distanceTo(b) - ray.origin.distanceTo(a))[0];
+				let farthest = farthestOnLine.sort((a, b) => ray.origin.distanceTo(b) - ray.origin.distanceTo(a))[0];
 
 				let distance = closest.distanceTo(farthest);
 				let centroid = new THREE.Vector3().addVectors(closest, farthest).multiplyScalar(0.5);
@@ -293,11 +309,11 @@ export class ScreenBoxSelectTool extends EventDispatcher{
 		return volume;
 	}
 
-	update(e){
+	update(e) {
 		//console.log(e.delta)
 	}
 
-	render(){
+	render() {
 		this.viewer.renderer.render(this.scene, this.viewer.scene.getActiveCamera());
 	}
 

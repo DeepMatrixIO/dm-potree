@@ -431,7 +431,7 @@ export class Scene extends EventDispatcher {
 	removeMixedFilterAt(index) {
 
 		//will get removed
-		let filter=this.mixedFilters.at(index)
+		let filter = this.mixedFilters.at(index)
 
 		this.removeVolume(filter);
 		this.removePolygonClipVolume(filter);
@@ -508,19 +508,28 @@ export class Scene extends EventDispatcher {
 			'mixedFilters': []
 
 		}
+		try {
 
-		for (let filter of this.mixedFilters) {
-			if (filter instanceof BoxVolume || filter instanceof PolygonClipVolume) {
-				json.mixedFilters.push(filter.toJSON());
-			} else if (filter instanceof PointCloudFilter) {
-				json.mixedFilters.push(filter.toJSON());
-			} else {
-				console.warn("Unknown filter type", filter);
+			// do not use instance as custom classes cannot be found
+			for (let filter of this.mixedFilters) {
+				// if (filter instanceof BoxVolume || filter instanceof PolygonClipVolume) {
+				if (filter.intType === FilterIntType.BOXVOLUME || filter.intType === FilterIntType.POLYGON) {
+					json.mixedFilters.push(filter.toJSON());
+				} else if (filter.intType === FilterIntType.LOGICAL) {
+					json.mixedFilters.push(filter.toJSON());
+				} else {
+					console.warn("Unknown filter type", filter);
+				}
 			}
+
+
+		} catch (e) {
+			console.error("Error serializing mixed filters", e);
+			let json = {
+				'mixedFilters': []
+			};
+			return json;
 		}
-
-
-
 		return json;
 	}
 
@@ -686,11 +695,11 @@ export class Scene extends EventDispatcher {
 		while (this.mixedFilters.length > 0) {
 			let filter = this.mixedFilters.pop();
 			this.removeMixedFilter(filter);
-		// 	this.dispatchEvent({
-		// 	'type': 'filter_removed',
-		// 	'scene': this,
-		// 	'filter': filter
-		// });
+			// 	this.dispatchEvent({
+			// 	'type': 'filter_removed',
+			// 	'scene': this,
+			// 	'filter': filter
+			// });
 		}
 
 

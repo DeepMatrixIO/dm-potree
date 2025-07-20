@@ -551,7 +551,66 @@ export class Utils {
 		}
 	}
 
-	static mouseToRayOrtho(mouse, camera, width, height) {
+static mouseToRayOrtho(mouse, camera, width, height) {
+		// Normalize mouse coordinates
+		let normalizedMouse = {
+			x: (mouse.x / width) * 2 - 1,
+			y: -(mouse.y / height) * 2 + 1
+		};
+
+		// Create a vector in normalized device coordinates
+		let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
+		vector.unproject(camera); // Convert to world space but is far, so it must be placed closer to camera
+
+		// For orthographic camera, the ray origin is the unprojected vector
+		let origin = vector.clone();
+
+
+
+		// Ray direction is the camera's forward vector
+		let direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+
+		//TODO replace with analytical solution
+		let dist= camera.position.distanceTo(origin);
+
+		let minDist=dist ;
+		let maxDist= 10000;
+		while(dist > maxDist){//moving faster wrt scale
+			origin.addScaledVector(direction, dist);
+			dist = camera.position.distanceTo(origin);
+			// if(dist < minDist){
+			// 	minDist = dist;
+			// }else{
+			// 	origin.addScaledVector(direction, -step);
+			// }
+			// console.log("moving origin to ", origin, " distance to camera is ", dist);
+		}
+
+		// let minDist=dist ;
+		// let step= 10000;
+		// while(minDist >= dist){//moving faster wrt scale
+		// 	origin.addScaledVector(direction, step);
+		// 	dist = camera.position.distanceTo(origin);
+		// 	if(dist < minDist){
+		// 		minDist = dist;
+		// 	}else{
+		// 		origin.addScaledVector(direction, -step);
+		// 	}
+		// 	// console.log("moving origin to ", origin, " distance to camera is ", dist);
+		// }
+
+
+
+		origin.addScaledVector(direction, dist);//move it at a distance
+
+
+		// console.log("Min Distance to Camera: " , minDist , " @ ", origin.x , origin.y, origin.z);
+
+		return new THREE.Ray(origin, direction);
+	};
+
+	//TODO. Works but produces coordinates far away from camera.
+	static mouseToRayOrthoOld(mouse, camera, width, height) {
 		// Normalize mouse coordinates
 		let normalizedMouse = {
 			x: (mouse.x / width) * 2 - 1,
