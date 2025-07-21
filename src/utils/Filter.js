@@ -610,17 +610,18 @@ export class PointCloudFilterList {
 			filter.attributeList.forEach((attr, index) => {
 				if (!attributeMap.has(attr)) {//add it
 
-					if( attr == "z") {
-						attributeMap.set(attr, -3);
+					if( attr == "z" || attr == "Z") {
+						attributeMap.set(attr, -3);//negative index is used for xyz
 
 					}else
-					if(attr == "x") {
+					if(attr == "x" || attr == "X") {
 						attributeMap.set(attr, -1);
 					} else
-					if( attr == "y") {
+					if( attr == "y" || attr == "Y") {
 						attributeMap.set(attr, -2);
 
 					}
+					//other attributes can be used as well, but only return_number and number of returns seem useful
 
 					else{
 

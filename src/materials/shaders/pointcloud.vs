@@ -1307,6 +1307,15 @@ void doClipping(bool inside) {
 
 	//all points have to set a clip task
 
+
+
+	if(clipTask == CLIPTASK_NONE) {
+
+		colorize=false;
+		highlight = false; // no highlight
+		active_=false;
+	}
+
 	if(clipTask == CLIPTASK_ACTIVE) {
 		//show points within the cluster
 
@@ -1318,7 +1327,8 @@ void doClipping(bool inside) {
 
 		// showAll = false; // do not display points outside
 		// showThis = true; // display this point
-		highlight = false;//??
+		//highlight = false;//??
+		//colorize=true;
 		visible = inside;
 
 	// } else if(clipTask == CLIPTASK_SHOW_OUTSIDE && inside) {
@@ -1335,6 +1345,7 @@ void doClipping(bool inside) {
 		// showThis = false; // display this point
 		visible = !inside;
 		highlight = false;
+		colorize=false;
 
 	}
 
@@ -1439,6 +1450,8 @@ void doClipping(bool inside) {
 
 		if(clipTask == CLIPTASK_SHOW_OUTSIDE) {//render points outside normally or simply do nothing
 			//do not change its colour
+			// colorize=false;
+			// high
 			gl_Position = vec4(100.0f, 100.0f, 100.0f, 0.0f);
 
 			return;
@@ -1519,14 +1532,14 @@ void doClipping(bool inside) {
 		}
 
 		if(grayscaleAnything && grayscaleThis) {
-			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
-			// vColor.r = grayScale75p + 0.71f / 2.0f;
-			// vColor.g = grayScale75p + 1.0f / 2.0f;
-			// vColor.b = grayScale75p + 0.631f / 2.0f;
+			// float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+			// // vColor.r = grayScale75p + 0.71f / 2.0f;
+			// // vColor.g = grayScale75p + 1.0f / 2.0f;
+			// // vColor.b = grayScale75p + 0.631f / 2.0f;
 
-			vColor.r = grayScale75p + 0.0f;//casting?
-			vColor.g = grayScale75p + 0.0f;
-			vColor.b = grayScale75p + 0.0f;
+			// vColor.r = grayScale75p + 0.0f;//casting?
+			// vColor.g = grayScale75p + 0.0f;
+			// vColor.b = grayScale75p + 0.0f;
 			return;
 		}
 		//no highlight outside selection
