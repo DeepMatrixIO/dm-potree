@@ -451,7 +451,9 @@ export class Scene extends EventDispatcher {
 
 		let indexMixedFilter = this.mixedFilters.indexOf(filter);
 		if (indexMixedFilter > -1) {
-			this.mixedFilters = this.mixedFilters.splice(indexMixedFilter, 1);
+			// this.mixedFilters = this.mixedFilters.splice(indexMixedFilter, 1);
+			// this.mixedFilters =
+			this.mixedFilters.splice(indexMixedFilter, 1);
 		}
 
 		this.dispatchEvent({
@@ -461,6 +463,23 @@ export class Scene extends EventDispatcher {
 		});
 	}
 
+	//takes the last mixed filter and removes it
+	removeLastMixedFilter() {
+
+		//will get removed
+		let filter = this.mixedFilters.pop()
+
+		this.removeVolume(filter);
+		this.removePolygonClipVolume(filter);
+
+
+		//not in use but may be used from the UI
+		this.dispatchEvent({
+			'type': 'filter_removed',
+			'scene': this,
+			'filter': filter
+		});
+	}
 
 
 	removeMixedFilter(filter) {
@@ -487,7 +506,8 @@ export class Scene extends EventDispatcher {
 
 		let indexMixedFilter = this.mixedFilters.indexOf(filter);
 		if (indexMixedFilter > -1) {
-			this.mixedFilters = this.mixedFilters.splice(indexMixedFilter, 1);
+			// this.mixedFilters =
+			this.mixedFilters.splice(indexMixedFilter, 1);
 		}
 
 		this.dispatchEvent({
