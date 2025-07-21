@@ -46,29 +46,29 @@ export class PointCloudFilter {
 
 		// let operator=filter[0]; //first item is the operator, if not provided, it is set to ALL
 
-		if (operator === FilterOperationType.STOP	) {
+		if (operator === FilterOperationType.STOP) {
 
 
-					this.filterList.push([
-						operator,
-						-1,
-						-1,
-						-1,
-						1])
-						this.name = "STOP";
-		return;
+			this.filterList.push([
+				operator,
+				-1,
+				-1,
+				-1,
+				1])
+			this.name = "STOP";
+			return;
 		}
-		if (operator === FilterOperationType.COLORIZE	) {
+		if (operator === FilterOperationType.COLORIZE) {
 
 
-					this.filterList.push([
-						operator,
-						-1,
-						0,
-						-1,
-						1])
-						this.name = "COLORIZE";
-		return;
+			this.filterList.push([
+				operator,
+				-1,
+				0,
+				-1,
+				1])
+			this.name = "COLORIZE";
+			return;
 		}
 
 		if (
@@ -240,97 +240,97 @@ export class PointCloudFilter {
 	}
 
 
-	getFilterName(){
+	getFilterName() {
 
 
-			if ( this.operator === FilterOperationType.EQUALS_CONST) {
-				return "EQUALS_CONST";
-			}
-			if ( this.operator === FilterOperationType.EQUALS_ATTR) {
-				return "EQUALS_ATTR";
-			}
-			if ( this.operator === FilterOperationType.LESS_CONST) {
-				return "LESS_CONST";
-			}
-			if ( this.operator === FilterOperationType.LESS_ATTR) {
-				return "LESS_ATTR";
-			}
-			if ( this.operator === FilterOperationType.LEQ_CONST) {
-				return "LEQ_CONST";
-			}
-			if ( this.operator === FilterOperationType.LEQ_ATTR) {
-				return "LEQ_ATTR";
-			}
-			if ( this.operator === FilterOperationType.GREATER_CONST) {
-				return "GREATER_CONST";
-			}
-			if ( this.operator === FilterOperationType.GREATER_ATTR) {
-				return "GREATER_ATTR";
-			}
-			if ( this.operator === FilterOperationType.GREATEREQ_CONST) {
-				return "GREATEREQ_CONST";
-			}
-			if ( this.operator === FilterOperationType.GREATEREQ_ATTR) {
-				return "GREATEREQ_ATTR";
-			}
-			if ( this.operator === FilterOperationType.RANGE_INCINC) {
-				return "RANGE_INCINC";
-			}
-			if ( this.operator === FilterOperationType.RANGE_EXINC) {
-				return "RANGE_EXINC";
-			}
-			if ( this.operator === FilterOperationType.RANGE_INCEX) {
-				return "RANGE_INCEX";
-			}
-			if ( this.operator === FilterOperationType.RANGE_EXEX) {
-				return "RANGE_EXEX";
-			}
-			if ( this.operator === FilterOperationType.IN) {
-				return "IN";
-			}
-			if ( this.operator === FilterOperationType.OUT) {
-				return "OUT";
-			}
-			if ( this.operator === FilterOperationType.DISTINCT_CONST) {
-				return "DISTINCT_CONST";
-			}
-			if ( this.operator === FilterOperationType.DISTINCT_ATTR) {
-				return "DISTINCT_ATTR";
-			}
-			if ( this.operator === FilterOperationType.OUTSIDE_RANGE_INCINC) {
-				return "OUTSIDE_RANGE_INCINC";
-			}
-			if ( this.operator === FilterOperationType.OUTSIDE_RANGE_EXINC) {
-				return "OUTSIDE_RANGE_EXINC";
-			}
-			if ( this.operator === FilterOperationType.OUTSIDE_RANGE_INCEX) {
-				return "OUTSIDE_RANGE_INCEX";
-			}
-			if ( this.operator === FilterOperationType.OUTSIDE_RANGE_EXEX) {
-				return "OUTSIDE_RANGE_EXEX";
-			}
-			if ( this.operator === FilterOperationType.AND) {
-				return "AND";
-			}
-			if ( this.operator === FilterOperationType.OR) {
-				return "OR";
-			}
-			if ( this.operator === FilterOperationType.NOT) {
-				return "NOT";
-			}
-			if ( this.operator === FilterOperationType.XOR) {
-				return "XOR";
-			}
-			if ( this.operator === FilterOperationType.COLORIZE) {
-				return "COLORIZE";
-			}
-			if ( this.operator === FilterOperationType.STOP) {
-				return "STOP";
-			}
-			if ( this.operator === FilterOperationType.ALL) {
-				return "ALL";
-			}
-			return "UNKNOWN";
+		if (this.operator === FilterOperationType.EQUALS_CONST) {
+			return "EQUALS_CONST";
+		}
+		if (this.operator === FilterOperationType.EQUALS_ATTR) {
+			return "EQUALS_ATTR";
+		}
+		if (this.operator === FilterOperationType.LESS_CONST) {
+			return "LESS_CONST";
+		}
+		if (this.operator === FilterOperationType.LESS_ATTR) {
+			return "LESS_ATTR";
+		}
+		if (this.operator === FilterOperationType.LEQ_CONST) {
+			return "LEQ_CONST";
+		}
+		if (this.operator === FilterOperationType.LEQ_ATTR) {
+			return "LEQ_ATTR";
+		}
+		if (this.operator === FilterOperationType.GREATER_CONST) {
+			return "GREATER_CONST";
+		}
+		if (this.operator === FilterOperationType.GREATER_ATTR) {
+			return "GREATER_ATTR";
+		}
+		if (this.operator === FilterOperationType.GREATEREQ_CONST) {
+			return "GREATEREQ_CONST";
+		}
+		if (this.operator === FilterOperationType.GREATEREQ_ATTR) {
+			return "GREATEREQ_ATTR";
+		}
+		if (this.operator === FilterOperationType.RANGE_INCINC) {
+			return "RANGE_INCINC";
+		}
+		if (this.operator === FilterOperationType.RANGE_EXINC) {
+			return "RANGE_EXINC";
+		}
+		if (this.operator === FilterOperationType.RANGE_INCEX) {
+			return "RANGE_INCEX";
+		}
+		if (this.operator === FilterOperationType.RANGE_EXEX) {
+			return "RANGE_EXEX";
+		}
+		if (this.operator === FilterOperationType.IN) {
+			return "IN";
+		}
+		if (this.operator === FilterOperationType.OUT) {
+			return "OUT";
+		}
+		if (this.operator === FilterOperationType.DISTINCT_CONST) {
+			return "DISTINCT_CONST";
+		}
+		if (this.operator === FilterOperationType.DISTINCT_ATTR) {
+			return "DISTINCT_ATTR";
+		}
+		if (this.operator === FilterOperationType.OUTSIDE_RANGE_INCINC) {
+			return "OUTSIDE_RANGE_INCINC";
+		}
+		if (this.operator === FilterOperationType.OUTSIDE_RANGE_EXINC) {
+			return "OUTSIDE_RANGE_EXINC";
+		}
+		if (this.operator === FilterOperationType.OUTSIDE_RANGE_INCEX) {
+			return "OUTSIDE_RANGE_INCEX";
+		}
+		if (this.operator === FilterOperationType.OUTSIDE_RANGE_EXEX) {
+			return "OUTSIDE_RANGE_EXEX";
+		}
+		if (this.operator === FilterOperationType.AND) {
+			return "AND";
+		}
+		if (this.operator === FilterOperationType.OR) {
+			return "OR";
+		}
+		if (this.operator === FilterOperationType.NOT) {
+			return "NOT";
+		}
+		if (this.operator === FilterOperationType.XOR) {
+			return "XOR";
+		}
+		if (this.operator === FilterOperationType.COLORIZE) {
+			return "COLORIZE";
+		}
+		if (this.operator === FilterOperationType.STOP) {
+			return "STOP";
+		}
+		if (this.operator === FilterOperationType.ALL) {
+			return "ALL";
+		}
+		return "UNKNOWN";
 
 
 
@@ -338,11 +338,11 @@ export class PointCloudFilter {
 	}
 
 
-	getIntType() {
+	get intType() {
 		return this._intType;
 	}
 
-	setIntType(value) {
+	set intType(value) {
 		this._intType = value;
 		if (value !== FilterIntType.LOGICAL) {
 			throw new Error(
@@ -524,7 +524,7 @@ export class PointCloudFilter {
 	}
 
 
-	toJSON(){
+	toJSON() {
 		return {
 			name: this.name,
 			intType: this._intType,
@@ -610,34 +610,34 @@ export class PointCloudFilterList {
 			filter.attributeList.forEach((attr, index) => {
 				if (!attributeMap.has(attr)) {//add it
 
-					if( attr == "z" || attr == "Z") {
+					if (attr == "z" || attr == "Z") {
 						attributeMap.set(attr, -3);//negative index is used for xyz
 
-					}else
-					if(attr == "x" || attr == "X") {
-						attributeMap.set(attr, -1);
 					} else
-					if( attr == "y" || attr == "Y") {
-						attributeMap.set(attr, -2);
+						if (attr == "x" || attr == "X") {
+							attributeMap.set(attr, -1);
+						} else
+							if (attr == "y" || attr == "Y") {
+								attributeMap.set(attr, -2);
 
-					}
-					//other attributes can be used as well, but only return_number and number of returns seem useful
+							}
+							//other attributes can be used as well, but only return_number and number of returns seem useful
 
-					else{
+							else {
 
-					attributeMap.set(attr, attributeList.length + index);
+								attributeMap.set(attr, attributeList.length + index);
 
-					}
+							}
 					attributeList.push(attr);
 				}
 				//else {
-					//update the index in the filter
-					let attrIndex = attributeMap.get(attr);
-					filter.filterList.forEach(filt => {
-						if (filt[1] === index) {
-							filt[1] = attrIndex; //update the index in the filter
-						}
-					});
+				//update the index in the filter
+				let attrIndex = attributeMap.get(attr);
+				filter.filterList.forEach(filt => {
+					if (filt[1] === index) {
+						filt[1] = attrIndex; //update the index in the filter
+					}
+				});
 				//}
 			});
 

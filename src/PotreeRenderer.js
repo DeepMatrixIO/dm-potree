@@ -1806,7 +1806,7 @@ export class Renderer {
 				//podria  poner la lista directamente
 				//gl.uniform1iv(lMixedVolumes, false, material.uniforms.lMixedVolumes.value);//setting the mixed volumes
 
-				let mixvol = material.mixedVolumes.map((vol) => vol.getIntType());
+				let mixvol = material.mixedVolumes.map((vol) => vol.intType);
 				if (mixvol.length > 0) {
 					// console.log(mixvol)
 					gl.uniform1iv(lMixedVolumes, mixvol)
@@ -1840,13 +1840,13 @@ export class Renderer {
 				//podria  poner la lista directamente
 				//gl.uniform1iv(lMixedVolumes, false, material.uniforms.lMixedVolumes.value);//setting the mixed volumes
 
-				let mixFilt = material.mixedFilters.map((filt) => filt.getIntType());
+				let mixFilt = material.mixedFilters.map((filt) => filt.intType);
 				if (mixFilt.length > 0) {
 					// console.log(mixvol)
 					gl.uniform1iv(lMixedFilters, mixFilt)
 				}
 
-				let filters = material.mixedFilters.filter((f) => f.getIntType() == FilterIntType.LOGICAL)
+				let filters = material.mixedFilters.filter((f) => f.intType == FilterIntType.LOGICAL)
 				if (filters.length > 0) {//if there are logical filters, then commit the rest of items
 
 					const lFilterAttributes = shader.uniformLocations["uFilterAttributes[0]"];//packed attributes per point, indexed

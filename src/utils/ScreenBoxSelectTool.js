@@ -295,6 +295,9 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 				volume.initialized = true;
 				volume.visible = true;
+			} else {
+				this.viewer.scene.removeVolume(volume);
+				return;
 			}
 
 			volume.clip = true;

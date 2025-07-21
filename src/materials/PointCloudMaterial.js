@@ -502,7 +502,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.updateShaderSource();
 		}
 
-//why 16?
+		//why 16? MAtrix size
 		this.uniforms.clipBoxes.value = new Float32Array(
 			this.clipBoxes.length * 16
 		);
@@ -579,7 +579,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		//check length as simple update Shader strategy
 
 			//filters are flattened
-			let logicalFilters = this.mixedFilters.filter((filter) => (filter.getIntType() == FilterIntType.LOGICAL));//in case of attribute index, [x,y,z] = [-1,-2,-3]
+			let logicalFilters = this.mixedFilters.filter((filter) => (filter.intType == FilterIntType.LOGICAL));//in case of attribute index, [x,y,z] = [-1,-2,-3]
 			let pcfilterlist = new PointCloudFilterList()
 			logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
 			let flat = pcfilterlist.flatten();

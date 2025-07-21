@@ -9,7 +9,7 @@ import {FilterIntType} from "./FilterConsts.js";
 export class Volume extends THREE.Object3D {
 	constructor(args = {}) {
 		super();
-		this.intType = FilterIntType.NONE; //default value, can be set by user
+		this._intType = FilterIntType.NONE; //default value, can be set by user
 		this._initialized = false; //used to signal that the volume is initialized, i.e. geometry and material are set
 		if (this.constructor.name === "Volume") {
 			console.warn("Can't create object of class Volume directly. Use classes BoxVolume or SphereVolume instead.");
@@ -120,8 +120,8 @@ export class Volume extends THREE.Object3D {
 		this.update();
 	}
 
-	getIntType() {
-		return this.intType;
+	get intType() {
+		return this._intType;
 	}
 
 };
@@ -141,7 +141,7 @@ export class BoxVolume extends Volume {
 	constructor(args = {}) {
 		super(args);
 
-		this.intType = FilterIntType.BOXVOLUME; //default value, can be set by user
+		this._intType = FilterIntType.BOXVOLUME; //default value, can be set by user
 
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = 'box_' + this.constructor.counter;
@@ -316,8 +316,11 @@ toJSON() {
     return volume;
 }
 
-	getIntType() {
-		return this.intType;
+	get intType() {
+		return this._intType;
+	}
+	set intType(value) {
+		this._intType = value;
 	}
 
 };

@@ -17,7 +17,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 
 	constructor(camera) {
 		super();
-		this.intType = FilterIntType.POLYGON; // PolygonClipVolume type, can be set by user
+		this._intType = FilterIntType.POLYGON; // PolygonClipVolume type, can be set by user
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = "polygon_clip_volume_" + this.constructor.counter;
 
@@ -232,8 +232,11 @@ export class PolygonClipVolume extends THREE.Object3D {
 	}
 
 
-	getIntType() {
-		return this.intType;
+	get intType() {
+		return this._intType;
+	}
+	set intType(value) {
+		this._intType = value;
 	}
 
 };
