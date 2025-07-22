@@ -1580,11 +1580,15 @@ export class Renderer {
 			// 	shader.setUniform1i("clipTask", material.clipTask);
 			// }
 
-			if (material.mixedFilters.length === 0) {
-				shader.setUniform1i("clipTask", ClipTask.NONE);
-			} else {
+
+
+			/////////////TODO check
+			//this is producing issues for cluster tool highlight
+			// if (material.mixedFilters.length === 0) {
+			// 	shader.setUniform1i("clipTask", ClipTask.NONE);//this is not correct
+			// } else {
 				shader.setUniform1i("clipTask", material.clipTask);
-			}
+			// }
 
 
 
