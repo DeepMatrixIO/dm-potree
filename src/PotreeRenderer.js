@@ -655,7 +655,7 @@ export class Renderer {
 
 
 		//let totalAttributes = filterAttributeNames.length;
-		let totalAttributes = 2;
+		let totalAttributes = 4;//max by vec4 limitation
 		// Create packed array (4 floats per vertex)
 		const packedData = new Float32Array(numVertices * totalAttributes);
 
@@ -1580,11 +1580,15 @@ export class Renderer {
 			// 	shader.setUniform1i("clipTask", material.clipTask);
 			// }
 
-			if (material.mixedFilters.length === 0) {
-				shader.setUniform1i("clipTask", ClipTask.NONE);
-			} else {
+
+
+			/////////////TODO check
+			//this is producing issues for cluster tool highlight
+			// if (material.mixedFilters.length === 0) {
+			// 	shader.setUniform1i("clipTask", ClipTask.NONE);//this is not correct
+			// } else {
 				shader.setUniform1i("clipTask", material.clipTask);
-			}
+			// }
 
 
 
@@ -1905,7 +1909,7 @@ export class Renderer {
 
 
 			// WIP as 24 jun 2025
-			let customFiltering = true;
+			let customFiltering =  false;
 			if (customFiltering) {
 
 				//all enabled by FILTER_PC defines
@@ -1913,11 +1917,11 @@ export class Renderer {
 				//setting locations for filters
 				const lfilterAttributes = shader.uniformLocations['filter_attributes[0]'];//packed attributes per point, indexed
 				const lfilterList = shader.uniformLocations['filter_list[0]'];
-				const lfilterFloatConstants = shader.uniformLocations['filter_float_constants[0]'];
-				const lfilterIntConstants = shader.uniformLocations['filter_int_constants[0]'];
+				// const lfilterFloatConstants = shader.uniformLocations['filter_float_constants[0]'];
+				// const lfilterIntConstants = shader.uniformLocations['filter_int_constants[0]'];
 
-				const lfilterBoxVolume = shader.uniformLocations['filter_string_constants[0]'];//list of filters indexed assigned to a  clip
-				const lfilterPolygon = shader.uniformLocations['filter_boolean_constants[0]'];
+				// const lfilterBoxVolume = shader.uniformLocations['filter_string_constants[0]'];//list of filters indexed assigned to a  clip
+				// const lfilterPolygon = shader.uniformLocations['filter_boolean_constants[0]'];
 
 
 				//setting filter arrays

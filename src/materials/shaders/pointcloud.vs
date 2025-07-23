@@ -11,11 +11,12 @@ precision highp int;
 
 #define PI 3.141592653589793
 
-bool active_=false;//
+bool active_ = false;//
 bool visible = true;//for a given cluster
-vec3 highlightColor = vec3(1.0f, 0.62f, 0.0f); // currently not in use as volumes always have a color
-vec3 assignedColor = vec3(0.0f, 1.0f, 0.0f); //not in use, as it is always overwritten for vox and polygon but not for logic , only colorize
+vec3 highlightColor = vec3(1.0f, 0.92f, 0.0f); // currently not in use as volumes always have a color
+vec3 assignedColor = vec3(1.0f, 0.0f, 0.0f); //not in use, as it is always overwritten for vox and polygon but not for logic , only colorize
 vec3 olderColor = vec3(0.0f, 0.0f, 1.0f); //
+vec3 activeColor = vec3(0.0f, 1.0f, 0.15f); // green
 
 bool clip = false;
 	// bool showAll = false;//?????
@@ -1307,13 +1308,11 @@ void doClipping(bool inside) {
 
 	//all points have to set a clip task
 
-
-
 	if(clipTask == CLIPTASK_NONE) {
 
-		colorize=false;
+		colorize = false;
 		highlight = false; // no highlight
-		active_=false;
+		active_ = false;
 	}
 
 	if(clipTask == CLIPTASK_ACTIVE) {
@@ -1339,17 +1338,15 @@ void doClipping(bool inside) {
 	// 	highlight = false;
 
 	// }
-		} else if(clipTask == CLIPTASK_SHOW_OUTSIDE ) {
+	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE) {
 		// show points outside the clip box
 		// showAll = true; // do not display points outside
 		// showThis = false; // display this point
 		visible = !inside;
 		highlight = false;
-		colorize=false;
+		colorize = false;
 
-	}
-
-	 else if(clipTask == CLIPTASK_GRAYSCALE) {
+	} else if(clipTask == CLIPTASK_GRAYSCALE) {
 		grayscaleAnything = true;
 		grayscaleThis = true;
 		visible = true;
@@ -1382,20 +1379,35 @@ void doClipping(bool inside) {
 		// {
 		// 	gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
 		// } else
+	// float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+	// float grayScale = 3.0f * (0.15f * vColor.r + 0.29f * vColor.g + 0.05f * vColor.b) / 4.0f;
+	// float grayScale50p = 3.0f * (0.6f * vColor.r + 1.0f * vColor.g + 0.25f * vColor.b) / 4.0f;
+
+// Light grayscale (75% intensity)
+	float grayLight = 0.75f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b);
+
+// Medium grayscale (50% intensity)
+	float grayMedium = 0.5f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b);
+
+// Dark grayscale (25% intensity)
+	float grayDark = 0.25f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b);
+
+// Your 75% version (from line 1381)
 	float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
-	float grayScale = 3.0f * (0.15f * vColor.r + 0.29f * vColor.g + 0.05f * vColor.b) / 4.0f;
-	float grayScale50p = 3.0f * (0.6f * vColor.r + 1.0f * vColor.g + 0.25f * vColor.b) / 4.0f;
 
 	if(inside) {
 
 		if(active_) //current cluster under mouse, highlight by default in custom green plus greyscale
 		{
 			//make it greyscale and add some color
-			vec3 activeColor = vec3(0.0f, 1.0f, 1.0f); // green
 
-			vColor.r = grayScale75p + activeColor.r / 2.0f;
-			vColor.g = grayScale75p + activeColor.g / 2.0f;
-			vColor.b = grayScale75p + activeColor.b / 2.0f;
+			vColor.r = grayLight + activeColor.r / 2.0f;
+			vColor.g = grayLight + activeColor.g / 2.0f;
+			vColor.b = grayLight + activeColor.b / 2.0f;
+
+			// vColor.r = activeColor.r ;
+			// vColor.g = activeColor.g ;
+			// vColor.b = activeColor.b ;
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1474,13 +1486,11 @@ void doClipping(bool inside) {
 			return;
 		}
 
-
 	}
 	///////////////////////////////////////////////////////////////////////
 	//OUTSIDE //outside, NO HIGHLIGHT, NO COLORIZE
 	///////////////////////////////////////////////////////////////////////
-	else{
-
+	else {
 
 		// if(colorize && stopped) {
 
@@ -1492,7 +1502,7 @@ void doClipping(bool inside) {
 
 		if(active_) {
 
-			float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
+			// float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
 			// vColor.r = grayScale75p + 0.71f / 2.0f;
 			// vColor.g = grayScale75p + 1.0f / 2.0f;
 			// vColor.b = grayScale75p + 0.631f / 2.0f;
@@ -1503,13 +1513,13 @@ void doClipping(bool inside) {
 
 			// vec3 activeColor = vec3(0.0f, 1.0f, 1.0f); // green
 
-			// vColor.r = grayScale75p + activeColor.r / 2.0f;
-			// vColor.g = grayScale75p + activeColor.g / 2.0f;
-			// vColor.b = grayScale75p + activeColor.b / 2.0f;
+			vColor.r = grayDark + activeColor.r / 2.0f;
+			vColor.g = grayDark + activeColor.g / 2.0f;
+			vColor.b = grayDark + activeColor.b / 2.0f;
 
-			vColor.r = grayScale75p ;
-			vColor.g = grayScale75p ;
-			vColor.b = grayScale75p ;
+			// vColor.r = grayScale75p ;
+			// vColor.g = grayScale75p ;
+			// vColor.b = grayScale75p ;
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1673,7 +1683,7 @@ bool doFiltering(bool isInside) {
 
 		// float current_value = aExtra; // move this attribute
 		for(int i = 0; i < mixed_filters; i++) {
-		bool isIn = true;
+			bool isIn = true;
 
 			// each entry in the filter list points to a filter type or an stop value
 			int filterType = uMixedFilters[i];
@@ -1697,30 +1707,25 @@ bool doFiltering(bool isInside) {
 					stopped = false;
 					// highlightColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
 
-
-				}else
-
-				if(!currentFilterChainValue && !stopped) {//if CURRENT FILTER CHAING TURNS TO fall outside , SO MAY NOT REQUIRE TO CHECK STOP
+				} else if(!currentFilterChainValue && !stopped) {//if CURRENT FILTER CHAING TURNS TO fall outside , SO MAY NOT REQUIRE TO CHECK STOP
 				//NOTE, may be problematic. Older color is the last stop color. Stop should only be set at the very beginning, at an explicit  stop step , at ending, not here
 				//a moving inside condition must return all values at the end or at a stop
-
 
 					stopped = true;
 					assignedColor = olderColor;
 				}
 
 				// colorized version, takes current color as the last assigned color
-				if(isIn){
-					colorize=true;
-					olderColor=assignedColor;//may not work
-					assignedColor = vec3(boxColors[boxFilterIndex].x,boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+				if(isIn) {
+					colorize = true;
+					olderColor = assignedColor;//may not work
+					assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
 				}
 
 			//highlight version
 				// if(isIn) {
 
 				// }
-
 
 				// currentFilterChainValue = currentFilterChainValue && isIn;
 
@@ -1748,9 +1753,7 @@ bool doFiltering(bool isInside) {
 					stopped = false;
 					// highlightColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
 
-				}else
-
-				if(!currentFilterChainValue && !stopped) {//it turns as an outside point, and is no longer stopped, stop it again and return to last color
+				} else if(!currentFilterChainValue && !stopped) {//it turns as an outside point, and is no longer stopped, stop it again and return to last color
 					stopped = true;
 					assignedColor = olderColor;//however, colors should only be  changed at stop
 				}
@@ -1758,12 +1761,11 @@ bool doFiltering(bool isInside) {
 				//colorize version
 				if(isIn) {//change color based on object color
 					colorize = true;//colorize has higher precedence over highlight
-					highlight=false;
+					highlight = false;
 					olderColor = assignedColor;//move it to stop
-					assignedColor = vec3(				uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
+					assignedColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
 
 				}
-
 
 				polygonFilterIndex++;
 
@@ -1934,7 +1936,7 @@ void main() {
 
 #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
 	// isInside =
-	checkInsideCluster();//on ly set is active
+	checkInsideCluster();//not accounted for the inside, t hat comes from filtering, t his only sets active
 	#endif
 
 	//doFiltering
