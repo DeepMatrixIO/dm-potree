@@ -551,7 +551,10 @@ export class Utils {
 		}
 	}
 
-static mouseToRayOrtho(mouse, camera, width, height) {
+
+
+
+	static mouseToRayOrtho(mouse, camera, width, height) {
 		// Normalize mouse coordinates
 		let normalizedMouse = {
 			x: (mouse.x / width) * 2 - 1,
@@ -571,21 +574,27 @@ static mouseToRayOrtho(mouse, camera, width, height) {
 		let direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
 		//TODO replace with analytical solution
-		let dist= camera.position.distanceTo(origin);
+		let dist = camera.position.distanceTo(origin);
 
-		let minDist=dist ;
-		let maxDist= 10000;
-		while(dist > maxDist){//moving faster wrt scale
-			origin.addScaledVector(direction, dist);
-			dist = camera.position.distanceTo(origin);
-			// if(dist < minDist){
-			// 	minDist = dist;
-			// }else{
-			// 	origin.addScaledVector(direction, -step);
-			// }
-			// console.log("moving origin to ", origin, " distance to camera is ", dist);
-		}
 
+		////////////////////////////
+		//analitical solution
+		// Set up the plane
+		const planePoint = camera.position.clone();
+		const planeNormal = direction.clone();
+
+		// Calculate intersection
+		const t = (planeNormal.dot(planePoint) - planeNormal.dot(origin)) /
+			planeNormal.dot(direction);
+
+		// Calculate intersection point
+		const intersectionPoint = origin.clone().add(direction.clone().multiplyScalar(t));
+		//////////////////////
+
+
+
+
+		//brute force solution
 		// let minDist=dist ;
 		// let step= 10000;
 		// while(minDist >= dist){//moving faster wrt scale
@@ -599,14 +608,28 @@ static mouseToRayOrtho(mouse, camera, width, height) {
 		// 	// console.log("moving origin to ", origin, " distance to camera is ", dist);
 		// }
 
+		//naive solution
+		//		let minDist=dist ;
+		// let maxDist= 10000;
+		// while(dist > maxDist){//moving faster wrt scale
+		// 	origin.addScaledVector(direction, dist);
+		// 	dist = camera.position.distanceTo(origin);
+		// 	// if(dist < minDist){
+		// 	// 	minDist = dist;
+		// 	// }else{
+		// 	// 	origin.addScaledVector(direction, -step);
+		// 	// }
+		// 	// console.log("moving origin to ", origin, " distance to camera is ", dist);
+		// }
 
 
-		origin.addScaledVector(direction, dist);//move it at a distance
+		//computing new start distance
+		// origin.addScaledVector(direction, dist);//move it at a distance
 
 
 		// console.log("Min Distance to Camera: " , minDist , " @ ", origin.x , origin.y, origin.z);
-
-		return new THREE.Ray(origin, direction);
+		// return new THREE.Ray(origin, direction);
+		return new THREE.Ray(intersectionPoint, direction);
 	};
 
 	//TODO. Works but produces coordinates far away from camera.
