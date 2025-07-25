@@ -1122,7 +1122,7 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 	if(operator == OP_COLORIZE) {
 
 		//have to check if i am inside
-		olderColor = assignedColor;
+		// olderColor = assignedColor;
 		assignedColor = vec3(uFloatFilterValues[startIndex], uFloatFilterValues[startIndex + 1], uFloatFilterValues[startIndex + 2]);
 
 		colorize = true;
@@ -1647,12 +1647,6 @@ bool doFiltering(bool isInside) {
 		return isInside;//skip some processing
 	}
 
-	// bool highlight = false;
-
-	// vec3 highlightColor = vec3(1.0, 1.0, 1.0); // white
-
-	// bool inside = true;
-	//
 	bool globalValue = false;		// global value for all applied filters . all stacked filters are evaluated by OR
 	bool currentFilterChainValue = true; // Each filter list until STOP is evaluated by AND by default but some steps can be OR or XOR evaluated
 	// vec3 current_xyz = position;	// if some other positional filters applied
@@ -1672,9 +1666,6 @@ bool doFiltering(bool isInside) {
 
 	int logicFilterIndex = 0;
 
-	int integerIndex = 0;
-	int floatIndex = 0;
-
 	{
 		// all objects must be defined
 #if defined(mixed_filters) && mixed_filters > 0
@@ -1687,82 +1678,36 @@ bool doFiltering(bool isInside) {
 
 			// each entry in the filter list points to a filter type or an stop value
 			int filterType = uMixedFilters[i];
+///////////////////////////////////////////////////////////////
+		#if defined(num_clipboxes) && num_clipboxes > 0
+					if(filterType == FILTER_BOXVOLUME) {
+						// check if point ins inside box
 
-#if defined(num_clipboxes) && num_clipboxes > 0
-			if(filterType == FILTER_BOXVOLUME) {
-				// check if point ins inside box
+						isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);
+						currentFilterChainValue = currentFilterChainValue && isIn;
 
-				// if(!skip) {
-				//side effects include reading current color and storing as highlight color
 
-				isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);
-				currentFilterChainValue = currentFilterChainValue && isIn;
-				skip = !currentFilterChainValue; // if is false, skip the rest of the filters until stop
-				// }
+						if(isIn) {
+							stopped=false;
+							colorize = true;
+							assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+						}
+						boxFilterIndex++;
 
-				if(currentFilterChainValue && stopped) {
-					//we reset all colors and highlight states for new color and test chain
-					colorize = false;
-					highlight = true;
-					stopped = false;
-					// highlightColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
-
-				} else if(!currentFilterChainValue && !stopped) {//if CURRENT FILTER CHAING TURNS TO fall outside , SO MAY NOT REQUIRE TO CHECK STOP
-				//NOTE, may be problematic. Older color is the last stop color. Stop should only be set at the very beginning, at an explicit  stop step , at ending, not here
-				//a moving inside condition must return all values at the end or at a stop
-
-					stopped = true;
-					assignedColor = olderColor;
-				}
-
-				// colorized version, takes current color as the last assigned color
-				if(isIn) {
-					colorize = true;
-					olderColor = assignedColor;//may not work
-					assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
-				}
-
-			//highlight version
-				// if(isIn) {
-
-				// }
-
-				// currentFilterChainValue = currentFilterChainValue && isIn;
-
-				//if outside, do not change anything, no color, no highlight,
-				boxFilterIndex++;
-				// stopped = false;
-
-				continue; // continue to next
-			}
-#endif
-
+						continue; // continue to next
+					}
+		#endif
+////////////////////////////////////////////////////////////////
 #if defined(num_clippolygons) && num_clippolygons > 0
 			if(filterType == FILTER_POLYGONVOLUME) {
-				// if(!skip) {
 				isIn = pointInClipPolygon(position, polygonFilterIndex);
-				//skip = !currentFilterChainValue; // if is false, skip the rest of the filters until stop
-
 				currentFilterChainValue = currentFilterChainValue && isIn;
-				// }
-
-				if(currentFilterChainValue && stopped) {//re enable highlight
-					//we reset all colors and states
-					colorize = false;
-					highlight = true;//however, color is assigned later, so highlight is not required anymore
-					stopped = false;
-					// highlightColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
-
-				} else if(!currentFilterChainValue && !stopped) {//it turns as an outside point, and is no longer stopped, stop it again and return to last color
-					stopped = true;
-					assignedColor = olderColor;//however, colors should only be  changed at stop
-				}
 
 				//colorize version
 				if(isIn) {//change color based on object color
+					stopped=false;
 					colorize = true;//colorize has higher precedence over highlight
 					highlight = false;
-					olderColor = assignedColor;//move it to stop
 					assignedColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
 
 				}
@@ -1772,14 +1717,11 @@ bool doFiltering(bool isInside) {
 				continue; // continue to next
 			}
 #endif
-
+////////////////////////////////////////////////////////////////////
 #if defined(num_logical_filters) && num_logical_filters > 0
 
 			if(filterType == FILTER_LOGIC) {
 
-				// if (logicFilterIndex == 5){
-				// 	return true;
-				// }
 				int currentOperator = uFilterList[logicFilterIndex];
 				int attribIdx = uFilterList[logicFilterIndex + 1];
 				int index1 = uFilterList[logicFilterIndex + 2];
@@ -1787,8 +1729,7 @@ bool doFiltering(bool isInside) {
 				int listType = uFilterList[logicFilterIndex + 4];
 				logicFilterIndex += 5;
 
-				// float currAttVal = classification; // TODO change it to take value from packed array
-				//float currAttVal = worldPosition.z;// testing with position.z
+
 
 				float currAttVal = 0.0f;
 				if(attribIdx == -3) {
@@ -1801,73 +1742,61 @@ bool doFiltering(bool isInside) {
 					currAttVal = filterPackedAttributes[attribIdx];// testing with position.z
 				}
 
-				// if (listType == 1)
-				// {
-
+//////////// STOP
 				if(currentOperator == OP_STOP) {
-					// stop value, means end of the filter list
+					// stop value, means end of the filter list and final color set
 					if(i == 0) {
 						// if is the first filter, just return the false value
 						currentFilterChainValue = false; // return true or false, depending on the filters applied
 					}
 
+					if(currentFilterChainValue) {//if point is here, assignedColor is the current Color
+						olderColor = assignedColor;
+					} else {
+						assignedColor=olderColor;//current block failed and must return to older color if any, but better
+					}
+
 					globalValue = globalValue || currentFilterChainValue; // OR operation
-
 					currentFilterChainValue = true;						 // reset for next filter
-					skip = false;									 // reset skip for next filter
+					// skip = false;									 // reset skip for next filter
 					stopped = true;
-
 					continue; // continue to next
+
 				} else {
-
-					// if(!skip) {
-
+/////////////logical
 					#if defined(num_float_values) && num_float_values > 0
-					currentFilterChainValue = currentFilterChainValue && doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+					isIn = doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+					currentFilterChainValue = currentFilterChainValue && isIn;
+
 					#endif
-					if(currentFilterChainValue && stopped) {
 
-					//we reset all colors and states
-						colorize = false;  //disable coloring as the first task and turn default highlight
-						highlight = true;
-						stopped = false;
+
+					if(isIn) {//change color based on object color
+						stopped=false;
+						colorize = true;//colorize has higher precedence over highlight
+						highlight = false;
 
 					}
 
-					if(!currentFilterChainValue && !stopped) {//if falls outside again, mark t he stop again
-						stopped = true;
-						assignedColor = olderColor;
-					}
+					continue;
 
-						// highlight=true;
-					skip = !currentFilterChainValue; // if is false, skip the rest of the filters until stop
-
-						// stopped = false;
-
-					continue; // continue to next
-					// }
 				}
 
 			}
 #endif
 
-			// other filters
 
-			// if (filterType == FILTER_NONE)
-			// {
-			// 	// check if point ins inside box
-			// 	currentFilterChainValue = currentFilterChainValue && true; //
-			// 	logicFilterIndex += 5; // just increase the index, no need to check anything
-			// 				stopped = false;
-
-			// 	continue;										 // continue to next
-			// }
 		}
 
 #endif
 	}
 	if(!stopped) {
 		globalValue = globalValue || currentFilterChainValue; // OR operation for the last filter
+		if(!currentFilterChainValue){
+			colorize=true;
+			assignedColor=olderColor;
+
+		}
 														 // return false; // return false, point is not visible
 	}
 
