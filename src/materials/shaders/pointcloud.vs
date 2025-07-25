@@ -1322,26 +1322,12 @@ void doClipping(bool inside) {
 		active_ = true;
 
 	} else if(clipTask == CLIPTASK_SHOW_INSIDE) {
-		// show points inside the clip box
-
-		// showAll = false; // do not display points outside
-		// showThis = true; // display this point
-		//highlight = false;//??
-		//colorize=true;
 		visible = inside;
 
-	// } else if(clipTask == CLIPTASK_SHOW_OUTSIDE && inside) {
-	// 	// show points outside the clip box
-	// 	// showAll = true; // do not display points outside
-	// 	// showThis = false; // display this point
-	// 	visible = !inside;
-	// 	highlight = false;
 
-	// }
 	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE) {
 		// show points outside the clip box
-		// showAll = true; // do not display points outside
-		// showThis = false; // display this point
+
 		visible = !inside;
 		highlight = false;
 		colorize = false;
@@ -1352,36 +1338,10 @@ void doClipping(bool inside) {
 		visible = true;
 
 	} else if(clipTask == CLIPTASK_HIGHLIGHT) {
-		// if(colorize) {
-		// 	highlight = false; // highlight current cluster
-		// } else {
-		// 	highlight = true;
-		// }
-		//highlight = true; // highlight current cluster
-		// showAll=true;
-		// showThis=true;
-		// visible = true;
+		// highlight = true;
 
 	}
-	 //else if(clipTask == CLIPTASK_COLORIZE) {
-	// 	highlight = true; // highlight current cluster
-	// 	// showAll=true;
-	// 	// showThis=true;
-	// 	// visible = true;
-	// 	highlight=false;
-	// 	colorize=true;
 
-	// }
-
-		 //assigning color and cliptask action
-
-		// if((isolateAnything && !isolateThis) || clip)// if clipped or isolatedAnything, make it dissapear by moving it away
-		// {
-		// 	gl_Position = vec4(100.0f, 100.0f, 100.0f, 1.0f);
-		// } else
-	// float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
-	// float grayScale = 3.0f * (0.15f * vColor.r + 0.29f * vColor.g + 0.05f * vColor.b) / 4.0f;
-	// float grayScale50p = 3.0f * (0.6f * vColor.r + 1.0f * vColor.g + 0.25f * vColor.b) / 4.0f;
 
 // Light grayscale (75% intensity)
 	float grayLight = 0.75f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b);
@@ -1414,10 +1374,8 @@ void doClipping(bool inside) {
 			// vColor.b = 1.0f;
 			return;
 		}
-		if(colorize) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		if(colorize)
 		{
-			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
 
 			vColor.r = assignedColor.r;
 			vColor.g = assignedColor.g;
@@ -1435,9 +1393,9 @@ void doClipping(bool inside) {
 
 			//vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
 
-			vColor.r = grayScale75p + highlightColor.r / 2.0f;
-			vColor.g = grayScale75p + highlightColor.g / 2.0f;
-			vColor.b = grayScale75p + highlightColor.b / 2.0f;
+			// vColor.r = grayScale75p + highlightColor.r / 2.0f;
+			// vColor.g = grayScale75p + highlightColor.g / 2.0f;
+			// vColor.b = grayScale75p + highlightColor.b / 2.0f;
 
 			// vColor.r = 0.0f;
 			// vColor.g = 1.0f;
@@ -1445,20 +1403,20 @@ void doClipping(bool inside) {
 			return;
 		}
 
-		if(colorize && !active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
-		{
-			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+// 		if(colorize && !active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+// 		{
+// 			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+// //			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
 
-			vColor.r = highlightColor.r;
-			vColor.g = highlightColor.g;
-			vColor.b = highlightColor.b;
+// 			vColor.r = highlightColor.r;
+// 			vColor.g = highlightColor.g;
+// 			vColor.b = highlightColor.b;
 
-			// vColor.r = 0.0f;
-			// vColor.g = 1.0f;
-			// vColor.b = 0.0f;
-			return;
-		}
+// 			// vColor.r = 0.0f;
+// 			// vColor.g = 1.0f;
+// 			// vColor.b = 0.0f;
+// 			return;
+// 		}
 
 		if(clipTask == CLIPTASK_SHOW_OUTSIDE) {//render points outside normally or simply do nothing
 			//do not change its colour
