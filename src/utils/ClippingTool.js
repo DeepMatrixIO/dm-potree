@@ -167,10 +167,12 @@ export class ClippingTool extends EventDispatcher{
 			this.viewer.inputHandler.enabled = true;
 			this.viewer.enableControls();
 
+			this.viewer.dispatchEvent({type: "cancel_polygon_insertions"});
 
 		};
 
 		this.viewer.addEventListener("cancel_insertions", cancel.callback);
+		this.viewer.addEventListener("polygon_insertions_cancelled", cancel.callback);
 		this.viewer.renderer.domElement.addEventListener("mouseup", insertionCallback , true);
 		this.viewer.inputHandler.enabled = false;
 
