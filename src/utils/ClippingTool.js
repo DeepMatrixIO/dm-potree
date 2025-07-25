@@ -3,11 +3,12 @@
 import * as THREE from "../../libs/three.js/build/three.module.js";
 import {ClipVolume} from "./ClipVolume.js";
 import {PolygonClipVolume} from "./PolygonClipVolume.js";
-import { EventDispatcher } from "../EventDispatcher.js";
+import {EventDispatcher} from "../EventDispatcher.js";
+import {KeyCodes} from "../KeyCodes.js";
 
-export class ClippingTool extends EventDispatcher{
+export class ClippingTool extends EventDispatcher {
 
-	constructor(viewer){
+	constructor(viewer) {
 		super();
 
 		this.viewer = viewer;
@@ -18,9 +19,7 @@ export class ClippingTool extends EventDispatcher{
 		this.addEventListener("start_inserting_clipping_volume", e => {
 			this.viewer.disableControls();
 
-			this.viewer.dispatchEvent({
-				type: "cancel_insertions"
-			});
+
 		});
 
 		this.sceneMarker = new THREE.Scene();
@@ -44,12 +43,12 @@ export class ClippingTool extends EventDispatcher{
 		});
 	}
 
-	setScene(scene){
-		if(this.scene === scene){
+	setScene(scene) {
+		if (this.scene === scene) {
 			return;
 		}
 
-		if(this.scene){
+		if (this.scene) {
 			this.scene.removeEventListeners("clip_volume_added", this.onAdd);
 			this.scene.removeEventListeners("clip_volume_removed", this.onRemove);
 			this.scene.removeEventListeners("polygon_clip_volume_added", this.onAdd);
@@ -65,9 +64,13 @@ export class ClippingTool extends EventDispatcher{
 	}
 
 	startInsertion(args = {}) {
+
+		this.viewer.dispatchEvent({
+			type: "cancel_insertions"
+		});
 		let type = args.type || null;
 
-		if(!type) return null;
+		if (!type) return null;
 
 		let domElement = this.viewer.renderer.domElement;
 		let canvasSize = this.viewer.renderer.getSize(new THREE.Vector2());
@@ -115,7 +118,7 @@ export class ClippingTool extends EventDispatcher{
 		};
 
 		let insertionCallback = (e) => {
-			if(e.button === THREE.MOUSE.LEFT){
+			if (e.button === THREE.MOUSE.LEFT) {
 
 				polyClipVol.addMarker();
 
@@ -128,13 +131,13 @@ export class ClippingTool extends EventDispatcher{
 				});
 
 
-				if(polyClipVol.markers.length > this.maxPolygonVertices){
+				if (polyClipVol.markers.length > this.maxPolygonVertices) {
 					cancel.callback();
 				}
 
 				this.viewer.inputHandler.startDragging(
 					polyClipVol.markers[polyClipVol.markers.length - 1]);
-			}else if(e.button === THREE.MOUSE.RIGHT){
+			} else if (e.button === THREE.MOUSE.RIGHT) {
 
 				cancel.callback(e);
 			}
@@ -151,8 +154,8 @@ export class ClippingTool extends EventDispatcher{
 			//});
 			svg.remove();
 
-			if(polyClipVol.markers.length > 3) {
-				if(polyClipVol.markers.length == this.maxPolygonVertices){//bounded to 8
+			if (polyClipVol.markers.length > 3) {
+				if (polyClipVol.markers.length == this.maxPolygonVertices) {//bounded to 8
 					polyClipVol.removeLastMarker();
 				}
 				//polyClipVol.removeLastMarker();//las marker was removed with no reason
@@ -171,10 +174,33 @@ export class ClippingTool extends EventDispatcher{
 
 		};
 
-		this.viewer.addEventListener("cancel_insertions", cancel.callback);
+
+		let abort = () => {
+			svg.remove();
+			this.viewer.scene.removePolygonClipVolume(polyClipVol);
+			this.viewer.renderer.domElement.removeEventListener("mouseup", insertionCallback, true);
+			this.viewer.removeEventListener("cancel_insertions", cancel.callback);
+			this.viewer.inputHandler.enabled = true;
+			this.viewer.enableControls();
+			this.viewer.dispatchEvent({type: "cancel_polygon_insertions"});
+		};
+
+
+		// this.viewer.addEventListener("cancel_insertions", cancel.callback);
+		this.viewer.addEventListener("cancel_insertions", abort);
 		this.viewer.addEventListener("polygon_insertions_cancelled", cancel.callback);
-		this.viewer.renderer.domElement.addEventListener("mouseup", insertionCallback , true);
+		this.viewer.renderer.domElement.addEventListener("mouseup", insertionCallback, true);
 		this.viewer.inputHandler.enabled = false;
+
+
+
+		this.viewer.inputHandler.addEventListener("keydown", e => {
+			if (e.keyCode === KeyCodes.ESCAPE) {
+				abort();
+			};
+		});
+
+
 
 		polyClipVol.addMarker();
 		this.viewer.inputHandler.startDragging(

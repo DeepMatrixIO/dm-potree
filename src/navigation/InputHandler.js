@@ -348,7 +348,7 @@ export class InputHandler extends EventDispatcher {
 
 		this.pressedKeys[e.keyCode] = true;
 
-		// e.preventDefault();
+		e.preventDefault();
 	}
 
 	onKeyUp(e) {

@@ -4,6 +4,7 @@ import {BoxVolume} from "./Volume.js";
 import {Utils} from "../utils.js";
 import {PointSizeType} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
+import {KeyCodes} from "../KeyCodes.js";
 
 
 export class ScreenBoxSelectTool extends EventDispatcher {
@@ -17,6 +18,10 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		viewer.addEventListener("update", this.update.bind(this));
 		viewer.addEventListener("render.pass.perspective_overlay", this.render.bind(this));
 		viewer.addEventListener("scene_changed", this.onSceneChange.bind(this));
+
+
+
+
 	}
 
 	onSceneChange(scene) {
@@ -24,7 +29,12 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 	}
 
 	startInsertion() {
+
+		this.viewer.dispatchEvent({
+			type: "cancel_insertions"
+		});
 		let domElement = this.viewer.renderer.domElement;
+
 
 		let volume = new BoxVolume();
 		volume.position.set(12345, 12345, 12345);
@@ -129,7 +139,8 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 			let boxSize = Math.sqrt(xSize * xSize + ySize * ySize)
 			if (boxSize < minAllowedSize) {
 				console.warn("Box size is too small, minimum allowed size is: ", minAllowedSize);
-				this.viewer.scene.removeVolume(volume);
+				// this.viewer.scene.removeVolume(volume);
+				this.cancelInsertion(volume);
 				return;
 
 			}
@@ -296,7 +307,9 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 				volume.initialized = true;
 				volume.visible = true;
 			} else {
-				this.viewer.scene.removeVolume(volume);
+				console.log("Invalid BoxVolume. Removing")
+				//this.viewer.scene.removeVolume(volume);
+				this.cancelInsertion(volume);
 				return;
 			}
 
@@ -307,10 +320,49 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		this.addEventListener("drag", drag);
 		this.addEventListener("drop", drop);
 
+		let cancelKey = e => {
+			console.log("Pressing cancel key ", e.key)
+			if (e.keyCode === KeyCodes.ESCAPE ) {
+				$(selectionBox).remove();
+				this.cancelInsertion(e);
+
+			} else {
+				console.warn("Unknown key pressed for canceling insertion: ", e.key);
+			}
+		};
+
+		viewer.inputHandler.addEventListener("keydown", cancelKey);
+		this.viewer.addEventListener("cancel_insertions", e => {
+			// console.log("Canceling insertion");
+			// $(selectionBox).remove();
+			this.cancelInsertion(volume);
+			viewer.inputHandler.removeEventListener("keydown", cancelKey);
+		});
+
+
+
 		viewer.inputHandler.addInputListener(this);
 
 		return volume;
 	}
+
+	//triggered by user pressing ESCAPE or other cancel action
+	cancelInsertion(volume) {
+
+		// $(selectionBox).remove();//still jquery
+		this.viewer.scene.removeVolume(volume);
+		this.dispatchEvent({type: "volume_insertion_canceled", volume: volume});
+		this.removeEventListener("drag");
+		this.removeEventListener("drop");
+		this.viewer.inputHandler.deselectAll();
+
+		this.viewer.inputHandler.removeInputListener(this);
+
+
+
+
+	}
+
 
 	update(e) {
 		//console.log(e.delta)
