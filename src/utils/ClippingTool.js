@@ -39,7 +39,10 @@ export class ClippingTool extends EventDispatcher {
 			// let volumes = e.selection.filter(e => (e instanceof ClipVolume));//apparentrly is not in use
 			// volumes.forEach(e => this.viewer.scene.removeClipVolume(e));//aparently not in use
 			let polyVolumes = e.selection.filter(e => (e instanceof PolygonClipVolume));
-			polyVolumes.forEach(e => this.viewer.scene.removePolygonClipVolume(e));
+			polyVolumes.forEach(e => {
+				this.viewer.scene.removePolygonClipVolume(e);
+				this.viewer.scene.removeMixedFilter(e);
+			});
 		});
 	}
 
@@ -65,9 +68,7 @@ export class ClippingTool extends EventDispatcher {
 
 	startInsertion(args = {}) {
 
-		this.viewer.dispatchEvent({
-			type: "cancel_insertions"
-		});
+
 		let type = args.type || null;
 
 		if (!type) return null;
@@ -107,7 +108,10 @@ export class ClippingTool extends EventDispatcher {
 		$(domElement.parentElement).append(svg);
 
 		let polyClipVol = new PolygonClipVolume(this.viewer.scene.getActiveCamera().clone());
-
+		this.viewer.dispatchEvent({
+			type: "cancel_insertions", source: polyClipVol
+		});
+		polyClipVol.initialized = false;
 		this.dispatchEvent({"type": "start_inserting_clipping_volume"});
 
 		this.viewer.scene.addPolygonClipVolume(polyClipVol);
@@ -163,9 +167,9 @@ export class ClippingTool extends EventDispatcher {
 			} else {
 				this.viewer.scene.removePolygonClipVolume(polyClipVol);
 			}
-
 			this.viewer.renderer.domElement.removeEventListener("mouseup", insertionCallback, true);
 			this.viewer.removeEventListener("cancel_insertions", cancel.callback);
+			this.viewer.removeEventListener("keydown", cancelKey);
 
 			this.viewer.inputHandler.enabled = true;
 			this.viewer.enableControls();
@@ -175,30 +179,57 @@ export class ClippingTool extends EventDispatcher {
 		};
 
 
-		let abort = () => {
+		let abort = (polyClipVol) => {
+
+			if (polyClipVol.initialized) {
+				return
+			}
 			svg.remove();
 			this.viewer.scene.removePolygonClipVolume(polyClipVol);
+			this.viewer.scene.removeMixedFilter(polyClipVol);
 			this.viewer.renderer.domElement.removeEventListener("mouseup", insertionCallback, true);
 			this.viewer.removeEventListener("cancel_insertions", cancel.callback);
 			this.viewer.inputHandler.enabled = true;
 			this.viewer.enableControls();
 			this.viewer.dispatchEvent({type: "cancel_polygon_insertions"});
+			this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
+
 		};
 
 
 		// this.viewer.addEventListener("cancel_insertions", cancel.callback);
-		this.viewer.addEventListener("cancel_insertions", abort);
+		this.viewer.addEventListener("cancel_insertions",
+
+			e => {
+				if (e.source == polyClipVol && polyClipVol.initialized) {
+					return;
+				}
+
+					abort(polyClipVol);
+					this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
+
+
+			});
 		this.viewer.addEventListener("polygon_insertions_cancelled", cancel.callback);
 		this.viewer.renderer.domElement.addEventListener("mouseup", insertionCallback, true);
 		this.viewer.inputHandler.enabled = false;
 
 
-
-		this.viewer.inputHandler.addEventListener("keydown", e => {
+		let cancelKey = e => {
+			// console.log("Pressing cancel key ", e.key)
 			if (e.keyCode === KeyCodes.ESCAPE) {
-				abort();
-			};
-		});
+				// $(selectionBox).remove();
+				abort(polyClipVol);
+
+
+			} else {
+				console.warn("Unknown key pressed for canceling insertion: ", e.key);
+			}
+		};
+
+
+		this.viewer.inputHandler.addEventListener("keydown", cancelKey);
+
 
 
 

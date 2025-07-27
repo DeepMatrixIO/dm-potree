@@ -30,13 +30,15 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 	startInsertion() {
 
-		this.viewer.dispatchEvent({
-			type: "cancel_insertions"
-		});
+
 		let domElement = this.viewer.renderer.domElement;
 
 
 		let volume = new BoxVolume();
+
+		this.viewer.dispatchEvent({
+			type: "cancel_insertions", source: volume
+		});
 		volume.position.set(12345, 12345, 12345);
 		volume.showVolumeLabel = false;
 		volume.visible = true;
@@ -125,10 +127,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 			this.viewer.inputHandler.deselectAll();
 			this.viewer.inputHandler.toggleSelection(volume);
-			//
-			// camera.updateMatrixWorld();
-			// camera.updateProjectionMatrix();
-			//
+
 			let camera = e.viewer.scene.getActiveCamera();
 			let size = e.viewer.renderer.getSize(new THREE.Vector2());
 
@@ -150,71 +149,6 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
 			//let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
 			let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
-
-			let line = new THREE.Line3(ray.origin, new THREE.Vector3().addVectors(ray.origin, ray.direction));
-
-
-			/////////////////////////////////////////////////////////////////
-			//DRAWIING AN ARROW HELPER TO UNDERSTAND THE DIRECTION
-
-			// console.log("RAY ORIGIN: ",ray.origin.x, ray.origin.y, ray.origin.z);
-			// console.log("RAY DIRECTION: ",ray.direction.x, ray.direction.y, ray.direction.z);
-
-			// const arrowHelper = new THREE.ArrowHelper(ray.direction.clone().normalize(), ray.origin, 40, 0xffff00, 3, 2);
-			// this.viewer.scene.scene.add(arrowHelper);
-
-
-
-			// this.viewer.arrowHelper = arrowHelper;
-
-
-
-			// const planeGeometry = new THREE.PlaneGeometry(128, 128, 8, 8);
-			// const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-			// planeMaterial.wireframe= true;
-			// const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-
-			// plane.position.copy(  ray.origin.add(ray.direction.clone().multiplyScalar(10)) );
-			// const up = new THREE.Vector3(0, 0, 1); // Plane's default normal
-			// const quaternion = new THREE.Quaternion().setFromUnitVectors(up, ray.direction.clone().normalize());
-			// plane.quaternion.copy(quaternion);
-			// this.viewer.plane = plane;
-			// this.viewer.scene.scene.add(plane);
-
-
-
-
-			//console.log("DROP: ",e.drag.start.x, e.drag.start.y, e.drag.end.x, e.drag.end.y);
-			//console.log("DROP: ",e.drop.x, e.drop.y, e.drop.width, e.drop.height);
-
-			/////////////////////////////////////////////
-
-			// let rayStart = mouseToRayOrtho(e.drag.start, camera, size.width, size.height);
-			// let rayEnd = mouseToRayOrtho(e.drag.end, camera, size.width, size.height);
-
-			// console.log("RAY START: ",rayStart.origin.x, rayStart.origin.y, rayStart.origin.z);
-			// console.log("RAY START DIR: ",rayStart.direction.x, rayStart.direction.y, rayStart.direction.z);
-
-			// console.log("RAY STOP: ",rayEnd.origin.x,  rayEnd.origin.y, rayEnd.origin.z);
-			// console.log("RAY STOP DIR : ",rayEnd.direction.x, rayEnd.direction.y, rayEnd.direction.z);
-
-
-			// const arrowHelperStart = new THREE.ArrowHelper(rayStart.direction.clone().normalize(), rayStart.origin, 50, 0xff0000, 3, 2);
-			// this.viewer.scene.scene.add(arrowHelperStart);
-			// const arrowHelperEnd = new THREE.ArrowHelper( rayEnd.direction.clone().normalize(), rayEnd.origin, 60, 0x0000ff, 3, 2);
-			// this.viewer.scene.scene.add(arrowHelperEnd);
-
-
-
-			// let caster1=new THREE.Raycaster(rayStart.origin, rayStart.direction.clone().normalize(), 0, 10000);
-			// let caster2=new THREE.Raycaster(rayEnd.origin, rayEnd.direction.clone().normalize(), 0, 10000);
-
-			// let intersections=[]
-			// intersections=caster1.intersectObjects(plane);
-
-
-
-
 
 
 			/////////////////////////////////////////////////////////////////
@@ -306,6 +240,9 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 				volume.initialized = true;
 				volume.visible = true;
+
+				this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
+
 			} else {
 				console.log("Invalid BoxVolume. Removing")
 				//this.viewer.scene.removeVolume(volume);
@@ -321,10 +258,10 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		this.addEventListener("drop", drop);
 
 		let cancelKey = e => {
-			console.log("Pressing cancel key ", e.key)
-			if (e.keyCode === KeyCodes.ESCAPE ) {
+			// console.log("Pressing cancel key ", e.key)
+			if (e.keyCode === KeyCodes.ESCAPE) {
 				$(selectionBox).remove();
-				this.cancelInsertion(e);
+				this.cancelInsertion(volume);
 
 			} else {
 				console.warn("Unknown key pressed for canceling insertion: ", e.key);
@@ -333,10 +270,15 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 		viewer.inputHandler.addEventListener("keydown", cancelKey);
 		this.viewer.addEventListener("cancel_insertions", e => {
-			// console.log("Canceling insertion");
+			console.log("Canceling insertion");
 			// $(selectionBox).remove();
+			if (e.source == volume && volume.initialized) {
+				return;
+			}
+
 			this.cancelInsertion(volume);
-			viewer.inputHandler.removeEventListener("keydown", cancelKey);
+			this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
+
 		});
 
 
@@ -346,16 +288,19 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		return volume;
 	}
 
-	//triggered by user pressing ESCAPE or other cancel action
+	//triggered by user pressing ESCAPE or other cancelWe said it also Bank of America.  action
 	cancelInsertion(volume) {
-
-		// $(selectionBox).remove();//still jquery
-		this.viewer.scene.removeVolume(volume);
-		this.dispatchEvent({type: "volume_insertion_canceled", volume: volume});
+		if (volume.initialized) {
+			return;
+		}
 		this.removeEventListener("drag");
 		this.removeEventListener("drop");
-		this.viewer.inputHandler.deselectAll();
+		// $(selectionBox).remove();//still jquery
+		// this.viewer.scene.removeVolume(volume);
+		this.viewer.scene.removeMixedFilter(volume);
+		this.dispatchEvent({type: "volume_insertion_canceled", volume: volume});
 
+		this.viewer.inputHandler.deselectAll();
 		this.viewer.inputHandler.removeInputListener(this);
 
 
