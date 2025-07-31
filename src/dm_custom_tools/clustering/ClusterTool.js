@@ -36,6 +36,14 @@ export class ClusterTool extends EventDispatcher {
 			pointCluster.setActive(false)
 		);
 	}
+	cancel() {
+		this.deactivate();
+		this.viewer.scene.dispatchEvent({
+			type: 'pointorama_pointCluster_cancel',
+			value: {pointCluster: this.currentPointCluster},
+		});
+	}
+
 	setCurrentPointCluster(pointCluster) {
 		console.log('ClusterTool:setCurrentPointCluster');
 		var _a, _b, _c;

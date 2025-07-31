@@ -544,7 +544,8 @@ export class PointCloudFilter {
 			float_filter_values: this.float_filter_values,
 			visible: this.visible,
 			initialized: this.initialized,
-			enabled: this.enabled
+			enabled: this.enabled,
+			groupId: this.groupId
 		};
 	}
 
@@ -565,6 +566,7 @@ export class PointCloudFilter {
 		filter.visible = data.visible;
 		filter.initialized = data.initialized;
 		filter.enabled = data.enabled;
+		filter.groupId = data.groupId || 0; //default to 0 if not provided
 		return filter;
 	}
 }

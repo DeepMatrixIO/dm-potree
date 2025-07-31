@@ -160,6 +160,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 
 
 		let data = {
+			groupId: this.groupId,
 			uuid: this.uuid,//ok
 			name: this.name,//ok
 			markers: this.markers.map(m => m.position.toArray()),//ok
@@ -221,7 +222,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 
 		let tmp = new PolygonClipVolume(newCamera);
 
-
+		tmp.groupId = data.groupId;
 		tmp.uuid = data.uuid;
 		tmp.name = data.name;
 		tmp.color.setHex(data.color);

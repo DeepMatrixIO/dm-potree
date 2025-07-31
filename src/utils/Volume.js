@@ -279,6 +279,7 @@ toJSON() {
 
     data.matrix = this.matrix.toArray();
     data.matrixWorld = this.matrixWorld.toArray();
+	data.groupId = this.groupId;
 
     return data;
 }
@@ -290,6 +291,7 @@ toJSON() {
     });
 
     // Set basic properties
+	volume.groupId = data.groupId;
     volume._initialized = true;
     volume.uuid = data.uuid;
     volume.name = data.name;
