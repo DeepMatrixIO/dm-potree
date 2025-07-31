@@ -14,6 +14,7 @@ import {FilterConstListType, FilterIntType, FilterOperationType} from "./FilterC
 //Single filter
 export class PointCloudFilter {
 	_intType = FilterIntType.LOGICAL;//
+	_groupId = 0;
 
 	constructor(
 		operator = FilterOperationType.STOP,
@@ -32,6 +33,8 @@ export class PointCloudFilter {
 
 	) {
 
+
+	 // used to group volumes, e.g. for filtering
 		this.operator = operator; //filter operation type, default is STOP
 		this.name = this.getFilterName(); //filter operation type, default is STOP
 		//this.enabled = true; //filter is enabled by default
@@ -237,6 +240,13 @@ export class PointCloudFilter {
 
 			return;
 		}
+	}
+
+	get groupId() {
+		return this._groupId;
+	}
+	set groupId(value) {
+			this._groupId = value;
 	}
 
 

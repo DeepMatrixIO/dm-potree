@@ -195,7 +195,7 @@ export class ClusterTool extends EventDispatcher {
 	onDoubleClick() {
 		console.log('ClusterTool:onDoubleClick');
 		this.finishPointCluster();
-		this.viewer.scene.dispatchEvent({
+		this.viewer.dispatchEvent({
 			type: 'pointorama_pointCluster_added',
 			value: {pointCluster: this.currentPointCluster},
 		});

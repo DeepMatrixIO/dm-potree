@@ -3,6 +3,7 @@ import * as THREE from "../../libs/three.js/build/three.module.js";
 
 export class ClipVolume extends THREE.Object3D {
 
+	_groupId = 0; // used to group volumes, e.g. for filtering
 	constructor(args) {
 		super();
 
@@ -170,6 +171,15 @@ export class ClipVolume extends THREE.Object3D {
 
 		this.update();
 	};
+
+
+	get groupId() {
+		return this._groupId;
+	}
+	set groupId(value) {
+			this._groupId = value;
+	}
+
 
 	setClipOffset(offset) {
 		this.clipOffset = offset;

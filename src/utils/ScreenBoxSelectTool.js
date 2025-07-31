@@ -37,7 +37,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		let volume = new BoxVolume();
 
 		this.viewer.dispatchEvent({
-			type: "cancel_insertions", source: volume
+			type: "cancel_insertions", source: volume, reason: "start_insertion"
 		});
 		volume.position.set(12345, 12345, 12345);
 		volume.showVolumeLabel = false;
@@ -261,7 +261,11 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 			// console.log("Pressing cancel key ", e.key)
 			if (e.keyCode === KeyCodes.ESCAPE) {
 				$(selectionBox).remove();
-				this.cancelInsertion(volume);
+				this.viewer.dispatchEvent({type: "cancel_insertions"}, {
+					source: volume,
+					reason: "cancel_insertion"
+				});
+				// this.cancelInsertion(volume);
 
 			} else {
 				console.warn("Unknown key pressed for canceling insertion: ", e.key);
@@ -269,12 +273,9 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		};
 
 		viewer.inputHandler.addEventListener("keydown", cancelKey);
+
 		this.viewer.addEventListener("cancel_insertions", e => {
 			console.log("Canceling insertion");
-			// $(selectionBox).remove();
-			if (e.source == volume && volume.initialized) {
-				return;
-			}
 
 			this.cancelInsertion(volume);
 			this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
@@ -298,7 +299,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		// $(selectionBox).remove();//still jquery
 		// this.viewer.scene.removeVolume(volume);
 		this.viewer.scene.removeMixedFilter(volume);
-		this.dispatchEvent({type: "volume_insertion_canceled", volume: volume});
+		// this.dispatchEvent({type: "volume_insertion_canceled", volume: volume});
 
 		this.viewer.inputHandler.deselectAll();
 		this.viewer.inputHandler.removeInputListener(this);

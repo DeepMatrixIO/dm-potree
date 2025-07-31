@@ -17,6 +17,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 
 	constructor(camera) {
 		super();
+		this._groupId = 0; // used to group volumes, e.g. for filtering
 		this._intType = FilterIntType.POLYGON; // PolygonClipVolume type, can be set by user
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = "polygon_clip_volume_" + this.constructor.counter;
@@ -44,6 +45,15 @@ export class PolygonClipVolume extends THREE.Object3D {
 		this.task = this.SELECTION_TASK; // default task, selection, used for subcode
 		this.visible = true; // default visibility
 	}
+
+
+	get groupId() {
+		return this._groupId;
+	}
+	set groupId(value) {
+			this._groupId = value;
+	}
+
 
 	addMarker() {
 

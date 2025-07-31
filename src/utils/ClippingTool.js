@@ -109,7 +109,7 @@ export class ClippingTool extends EventDispatcher {
 
 		let polyClipVol = new PolygonClipVolume(this.viewer.scene.getActiveCamera().clone());
 		this.viewer.dispatchEvent({
-			type: "cancel_insertions", source: polyClipVol
+			type: "cancel_insertions", source: polyClipVol, reason: "start_insertion"
 		});
 		polyClipVol.initialized = false;
 		this.dispatchEvent({"type": "start_inserting_clipping_volume"});
@@ -174,24 +174,30 @@ export class ClippingTool extends EventDispatcher {
 			this.viewer.inputHandler.enabled = true;
 			this.viewer.enableControls();
 
-			this.viewer.dispatchEvent({type: "cancel_polygon_insertions"});
+			// this.viewer.dispatchEvent({type: "cancel_polygon_insertions"});
+			this.viewer.dispatchEvent({type: "polygon_insertions_completed"});
+
+
 
 		};
 
 
-		let abort = (polyClipVol) => {
+		let cancelInsertion = (polyClipVol) => {
 
 			if (polyClipVol.initialized) {
 				return
 			}
 			svg.remove();
-			this.viewer.scene.removePolygonClipVolume(polyClipVol);
+
 			this.viewer.scene.removeMixedFilter(polyClipVol);
+			this.viewer.scene.removePolygonClipVolume(polyClipVol);
 			this.viewer.renderer.domElement.removeEventListener("mouseup", insertionCallback, true);
 			this.viewer.removeEventListener("cancel_insertions", cancel.callback);
 			this.viewer.inputHandler.enabled = true;
 			this.viewer.enableControls();
-			this.viewer.dispatchEvent({type: "cancel_polygon_insertions"});
+			// this.viewer.dispatchEvent({type: "cancel_polygon_insertions"});
+			//this.dispatchEvent({type: "volume_insertion_canceled", volume: polyClipVol});
+
 			this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
 
 		};
@@ -201,12 +207,12 @@ export class ClippingTool extends EventDispatcher {
 		this.viewer.addEventListener("cancel_insertions",
 
 			e => {
-				if (e.source == polyClipVol && polyClipVol.initialized) {
-					return;
-				}
-
-					abort(polyClipVol);
-					this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
+				// if (e.source == polyClipVol && polyClipVol.initialized) {
+				// 	return;
+				// }
+				console.log("canceling insertions")
+				cancelInsertion(polyClipVol);
+				this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
 
 
 			});
@@ -219,7 +225,11 @@ export class ClippingTool extends EventDispatcher {
 			// console.log("Pressing cancel key ", e.key)
 			if (e.keyCode === KeyCodes.ESCAPE) {
 				// $(selectionBox).remove();
-				abort(polyClipVol);
+
+				this.viewer.dispatchEvent({
+					type: "cancel_insertions", source: polyClipVol, reason: "cancel_insertion"
+				});
+				//cancelInsertion(polyClipVol);
 
 
 			} else {

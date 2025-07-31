@@ -18,7 +18,7 @@ export class Volume extends THREE.Object3D {
 		//console.log(this);
 		//console.log(this.constructor);
 		//console.log(this.constructor.name);
-
+		this._groupId = args.groupId || 0; // used to group volumes, e.g. for filtering
 		this._clip = args.clip || false;
 		this.visible = true;
 		this.showVolumeLabel = true;
@@ -51,6 +51,13 @@ export class Volume extends THREE.Object3D {
 			this.addEventListener('deselect', e => {});
 		}
 
+	}
+
+	get groupId() {
+		return this._groupId;
+	}
+	set groupId(value) {
+			this._groupId = value;
 	}
 
 	get visible() {
