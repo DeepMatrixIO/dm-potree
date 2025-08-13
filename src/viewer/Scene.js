@@ -252,6 +252,7 @@ export class Scene extends EventDispatcher {
 			'scene': this,
 			'filter': filter
 		});
+		return filter;
 	}
 
 
@@ -275,6 +276,7 @@ export class Scene extends EventDispatcher {
 			'scene': this,
 			'filter': filter
 		});
+		return filter;
 	}
 
 
@@ -303,6 +305,7 @@ export class Scene extends EventDispatcher {
 			'scene': this,
 			'filter': filter
 		});
+		return filter;
 	}
 
 
@@ -326,6 +329,7 @@ export class Scene extends EventDispatcher {
 			'scene': this,
 			'filter': filter
 		});
+		return filter;
 	}
 
 
