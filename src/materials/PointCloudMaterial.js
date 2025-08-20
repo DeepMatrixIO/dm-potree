@@ -55,7 +55,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		//adding the custom filter
 		//////////////////////////////  added in viewer.update and retrieved in potreeRenderer
-		this.filterPackedAttributesUpdated=false;//true needs reloading
+		this.filterPackedAttributesUpdated = false;//true needs reloading
 		this.filterPackedAttributes = [];//array to store array  indexes to be filtered
 		this.filterList = [];//array to store filter functions to be applied in order, each returns true false
 		this.integerFilterValues = [];//array to store integer values to be used for filtering
@@ -81,12 +81,17 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.customDefines = new Map(); //non std defines
 
 
-		this.setCustomDefine("custom_range", '1');//custom rendering of extra attributes on custom range other than data range
+		this.setCustomDefine("custom_range", 1);//custom rendering of extra attributes on custom range other than data range
 		//		this.customDefines.set("filter_pc", '1');//filtering and custom clip rendering
 
 		this.ranges = new Map();
 
 		this._activeAttributeName = null;
+
+		//added stuff
+		this._defaultVisibleRangeChanged = false;
+
+		///
 
 		this._defaultIntensityRangeChanged = false;
 		this._defaultElevationRangeChanged = false;
@@ -225,22 +230,22 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.customUniforms = {
 			//  Added for custom rendering on aExtra attributes
 
-			//used for distance rendering
+			//used for distance rendering to a given point
 			positionRef: {type: '3fv', value: [701414.3400000763, 3144096.5100004575, 234.61000000834466]},//distance rendering as 3d array
-			rangeValues: {type: 'fv', value: [0, 10]},//distance rendering as array
+			rangeValues: {type: 'fv', value: [0, 10]},//min max values to apply distance rendering. Array
 
 			//isonlines simulation
-			isoValues: {type: 'fv', value: [2.0, 0.5, 0.1]},//a color to be used for non visible points
+			isoValues: {type: 'fv', value: [2.0, 0.5, 0.1]},//iso surface values, master line value , secondary line value, line tolerance due point cloud characteristics
 			isoColorA: {type: 'fv', value: [1.0, 0.1, 0.1]},//master line
 			isoColorB: {type: 'fv', value: [0.1, 1.0, 0.1]},//secondary l
 
 
-			//custom range visualziation for aExtra
-			visibleRange: {type: 'fv', value: [0.1, 0.9]},//a visible subset ot gradient to be displayed
+			//custom range visualziation for aExtra or even std attributes.
+			visibleRange: {type: 'fv', value: [0.1, 0.9]},//a visible subset of the gradient to be displayed, i.e.  GRADIENT MIN [ ... ,visibleRange[0] ,...,visibleRange[1]   , ...] Gradient MAX value
 			nonVisibleColorMin: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
 			nonVisibleColorMax: {type: 'fv', value: [0.5, 0.5, 0.5]},//a color to be used for non visible points
-			allVisible: {type: 'fv', value: [1.0, 1.0]},//a boolean to set if all points are visible or not
-			minMaxRange: {type: 'fv', value: [0.0, 1.0]},//Custom Min mac
+			allVisible: {type: 'fv', value: [1.0, 1.0]},//a boolean to set if points above or below visibleRange are visible or not
+			// minMaxRange: {type: 'fv', value: [0.0, 1.0]},//Custom Min mac
 			//min max range
 
 			//add filter defines
@@ -283,10 +288,17 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 	}
 
+	//sets the custom uniforms for the shader as a keyvalue pair
+	//i.e.  minMaxRange: {type: 'fv', value: [0.0, 1.0]},//Custom Min mac
+	//this may not be rquired to be called as definitions already exist
+	// setCustomUniforms(uniforms	= {}) {
+	// 	this.customUniforms = uniforms;
 
-	setCustomUniforms() {
-		this.customUniforms = uniforms;
+	// }
 
+	//allows to add a custom uniform per material but must be added to all objects, otherwise, set statically in customUniforms
+	addCustomUniform(name, type, value) {
+		this.customUniforms[name] = {type, value};
 	}
 
 	getCustomUniforms() {
@@ -296,24 +308,24 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	//this should come from somewhere else and stored as variable
 
 
-	//static list of defines
-	//they trigger most shader code and additional capabilities as on off switches
-	getExtraDefines() {
-		let extraDefines = [];
+	// //static list of defines
+	// //they trigger most shader code and additional capabilities as on off switches
+	// getExtraDefines() {
+	// 	let extraDefines = [];
 
-		//extraDefines.push('#define distance_to_point 0');//renders based on distance to a given point position, requires the pointRef[x,y,z]  uniform
-		//extraDefines.push('#define num_ranges 0');//Isolines
+	// 	//extraDefines.push('#define distance_to_point 0');//renders based on distance to a given point position, requires the pointRef[x,y,z]  uniform
+	// 	//extraDefines.push('#define num_ranges 0');//Isolines
 
-		//extraDefines.push('#define draw_isolines 1');//enables the function
+	// 	//extraDefines.push('#define draw_isolines 1');//enables the function
 
-		extraDefines.push('#define custom_range 1');//custom rendering of extra attributes on custom range other than data range
+	// 	extraDefines.push('#define custom_range 1');//custom rendering of extra attributes on custom range other than data range
 
-		// extraDefines.push('#define filter_pc 1');//eNABLES POINTCLOUD FILTERING FOR SELECTION
+	// 	// extraDefines.push('#define filter_pc 1');//eNABLES POINTCLOUD FILTERING FOR SELECTION
 
 
-		return extraDefines;;
+	// 	return extraDefines;;
 
-	}
+	// }
 
 
 
@@ -370,12 +382,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	updateShaderSource() {
 		let vs = Shaders['pointcloud.vs'];
 		let fs = Shaders['pointcloud.fs'];
-		let definesString = this.getDefines();//already called getExtraDefines
+		let definesString = this.getDefines();
 
 
 		//already added in getDEfines, removed for test
 		if (this.customDefines) {//also a map
-			//definesString += this.getExtraDefines();//add static definitions for custom defines
+
 			definesString += "\n" + this.getCustomDefines();//get them dinamically  from map
 		}
 
@@ -477,10 +489,6 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		}
 
 
-		//{//custom defines are added
-		// let extras = this.getExtraDefines();//static custom defines
-		// defines = defines.concat(extras);
-		//}
 
 
 		return defines.join('\n');
@@ -540,34 +548,14 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		}
 	}
 
-	// keeping the different clip volumes order in a single array
-	//if it changes, update shader code and defines as well
 
-	//it sets  the internal uniforms and populates values
-
-	// setMixedVolumes(mixedVolumes) {
-	// 	if (mixedVolumes === undefined || mixedVolumes === null) {
-	// 		return;//do nothing
-	// 	}
-	// 	let prevMixedVolumeSize = this.mixedVolumes.length;
-	// 	this.mixedVolumes = mixedVolumes;//sets the array
-
-	// 	//check length as simple update Shader strategy
-
-	// 	let doUpdate = prevMixedVolumeSize !== mixedVolumes.length;
-
-	// 	if (doUpdate) {
-	// 		this.setCustomDefine("num_mixed_volumes", this.mixedVolumes.length);//set the define for filtering
-	// 		this.updateShaderSource();//check code here
-	// 	}
-
-	// }
 
 
 	//always set define variables before updating the shader code, but can be set here
-
 	//here filters set as both spatial an logical filters
 	//filters are encoded as integer values
+	//ALL THE DEFINE AND UNOFORM LOGIC IS HANDLED HERE BY THE ATTRIBUTE SETTING.
+
 	setMixedFilters(filters) {
 		if (filters === undefined || filters === null) {
 			return;//do nothing
@@ -578,18 +566,18 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		//check length as simple update Shader strategy
 
-			//filters are flattened
-			let logicalFilters = this.mixedFilters.filter((filter) => (filter.intType == FilterIntType.LOGICAL));//in case of attribute index, [x,y,z] = [-1,-2,-3]
-			let pcfilterlist = new PointCloudFilterList()
-			logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
-			let flat = pcfilterlist.flatten();
+		//filters are flattened
+		let logicalFilters = this.mixedFilters.filter((filter) => (filter.intType == FilterIntType.LOGICAL));//in case of attribute index, [x,y,z] = [-1,-2,-3]
+		let pcfilterlist = new PointCloudFilterList()
+		logicalFilters.forEach((filter) => {pcfilterlist.addFilter(filter)});
+		let flat = pcfilterlist.flatten();
 
-		this.filterPackedAttributes=flat.attributeList;//this is for potreeRenderer to pack extra attributes except for position, which is already there
+		this.filterPackedAttributes = flat.attributeList;//this is for potreeRenderer to pack extra attributes except for position, which is already there
 		let doUpdate = (prevMixedFilterSize !== filters.length);
 		if (doUpdate) {
 
 
-			this.filterPackedAttributesUpdated=true;
+			this.filterPackedAttributesUpdated = true;
 
 			this.setCustomDefine("mixed_filters", this.mixedFilters.length);//set the define for filtering, 0 non
 			this.setCustomDefine("num_logical_filters", logicalFilters.length);//set the define for filtering, 0 non
@@ -1146,6 +1134,89 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			target: this,
 		});
 	}
+
+	////////////////////////////////////////////////
+	get visibleRange() {
+		return this.customUniforms.visibleRange.value;
+	}
+
+	set visibleRange(value) {
+		if (!(value instanceof Array && value.length === 2)) {
+			return;
+		}
+
+		if (
+			value[0] === this.customUniforms.visibleRange.value[0] &&
+			value[1] === this.customUniforms.visibleRange.value[1]
+		) {
+			return;//do nothing
+		}
+		//otherwise replace them
+		this.customUniforms.visibleRange.value = value;
+
+		// if (!this._defaultVisibleRangeChanged) {
+		// 	this._initialVisibleMin = value[0];
+		// 	this._initialVisibleMax = value[1];
+		// }
+		// this._defaultVisibleRangeChanged = true;
+
+		this.dispatchEvent({
+			type: 'material_property_changed',
+			target: this,
+		});
+	}
+
+	get allVisible() {
+		return this.customUniforms.allVisible.value;
+	}
+
+	set allVisible(value) {
+		if (!(value instanceof Array && value.length === 2)) {
+			return;
+		}
+
+		if (
+			value[0] === this.customUniforms.allVisible.value[0] &&
+			value[1] === this.customUniforms.allVisible.value[1]
+		) {
+			return;//do nothing
+		}
+		//otherwise replace them
+		this.customUniforms.allVisible.value = value;
+
+		// if (!this._defaultVisibleRangeChanged) {
+		// 	this._initialVisibleMin = value[0];
+		// 	this._initialVisibleMax = value[1];
+		// }
+		// this._defaultVisibleRangeChanged = true;
+
+		this.dispatchEvent({
+			type: 'material_property_changed',
+			target: this,
+		});
+	}
+
+	get nonVisibleColorMax(){
+		return this.customUniforms.nonVisibleColorMax.value;
+	}
+
+	set nonVisibleColorMax(value){
+		this.customUniforms.nonVisibleColorMax.value = value;
+	}
+
+	get nonVisibleColorMin(){
+		return this.customUniforms.nonVisibleColorMin.value;
+	}
+
+	set nonVisibleColorMin(value){
+		//add checkups on color
+		this.customUniforms.nonVisibleColorMin.value = value;
+	}
+
+
+	///////////////////////////////////////////////
+
+
 
 	get intensityGamma() {
 		return this.uniforms.intensity_gbc.value[0];

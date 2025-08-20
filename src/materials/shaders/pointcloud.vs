@@ -148,10 +148,11 @@ uniform float isoColorB[3];
 //   minValue = colorRampBegin <= minVisibleColor <= maxVisibleColor, maxValue = colorRampEnd
 #if defined(custom_range)
 uniform float visibleRange[2];		 // visible min max values. They should be within uExtraRange
-uniform float maxRange[2];			 // sets the min max range for the gradient texture
-uniform float allVisible[2];		 // color for the min value
-uniform float nonVisibleColorMin[3]; // color for the min value
-uniform float nonVisibleColorMax[3]; // color for the max value
+// uniform float maxRange[2];			 // sets the min max range for the gradient texture
+uniform float allVisible[2];		 // points below or above visibleRange min max, should be rendered or not
+//custom colors used  for non Visible
+uniform float nonVisibleColorMin[3]; // color for values below visibleRange min. Used if allVisible[0] min is set true
+uniform float nonVisibleColorMax[3]; // color for values above visibleRange max. Used if allVisible[1] max is set to true
 
 #endif
 
@@ -234,7 +235,7 @@ uniform float uGpsOffset;
 
 uniform vec2 uNormalizedGpsBufferRange;
 
-uniform vec3 uIntensity_gbc;
+uniform vec3 uIntensity_gbc;//gamma, brightness, contrast, defaulted at [1,0,0]
 uniform vec3 uRGB_gbc;
 uniform vec3 uExtra_gbc;
 
@@ -543,16 +544,66 @@ vec3 getRGB() {
 	return rgb;
 }
 
-float getIntensity() {
-	float w = (intensity - intensityRange.x) / (intensityRange.y - intensityRange.x);
-	w = pow(w, uIntensity_gbc.x);
+//careful on the return types or it gets undetected
+#if defined(custom_range) && custom_range > 0
+vec3 customIntensity() {
+
+	vec3 color;
+	bool none = true;
+
+	float w = intensity;
+
+	if(w > visibleRange[1]) {
+		w = visibleRange[1];//clamp
+		if(allVisible[1] == 0.0f) {
+			isVisible = 0;
+		}
+		// vOpacity=0.0;//set somewhere else
+		color = vec3(nonVisibleColorMax[0], nonVisibleColorMax[1], nonVisibleColorMax[2]);
+		return color;
+	}
+
+	if(w < visibleRange[0]) {
+		w = visibleRange[0];
+		if(allVisible[0] == 0.0f) {
+			isVisible = 0;
+		}
+
+		// color = vec3(allVisible[0], allVisible[1], allVisible[2]);
+		// vOpacity=0.0;//set somewhere else
+		color = vec3(nonVisibleColorMin[0], nonVisibleColorMin[1], nonVisibleColorMin[2]);
+
+		// return vec3(0.0, 0.0, 0.0);
+		// color = vec3(0.0, 0.0, 0.0);
+		// none=false;
+		// return color;
+		return color;
+	}
+	//override w
+	w = (intensity - intensityRange.x) / (intensityRange.y - intensityRange.x);//normalize
+	w = pow(w, uIntensity_gbc.x);//scale value to a given exponent
 	w = w + uIntensity_gbc.y;
 	w = (w - 0.5f) * getContrastFactor(uIntensity_gbc.z) + 0.5f;
 	w = clamp(w, 0.0f, 1.0f);
 
-	return w;
+	// return w;
+	color = texture(gradient, vec2(w, 1.0f - w)).rgb;
+	return color;
+
 }
 
+#endif
+
+//returns w but
+float getIntensity() {
+
+	float w = (intensity - intensityRange.x) / (intensityRange.y - intensityRange.x);//normalize
+	w = pow(w, uIntensity_gbc.x);//scale value to a given exponent
+	w = w + uIntensity_gbc.y;
+	w = (w - 0.5f) * getContrastFactor(uIntensity_gbc.z) + 0.5f;
+	w = clamp(w, 0.0f, 1.0f);
+	return w;
+}
 vec3 getGpsTime() {
 
 	float w = (gpsTime + uGpsOffset) * uGpsScale;
@@ -569,8 +620,35 @@ vec3 getGpsTime() {
 
 vec3 getElevation() {
 	vec4 world = modelMatrix * vec4(position, 1.0f);
-	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);
+	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);//value is scaled to range
 	vec3 cElevation = texture(gradient, vec2(w, 1.0f - w)).rgb;
+
+#if defined(custom_range) && custom_range > 0
+	vec3 color;
+	//work on visible range
+	float val = world.z;
+	if(val > visibleRange[1]) {
+		if(allVisible[1] == 0.0f) {
+			isVisible = 0;
+		}
+		// vOpacity=0.0;//set somewhere else
+		color = vec3(nonVisibleColorMax[0], nonVisibleColorMax[1], nonVisibleColorMax[2]);
+		return color;
+	}
+	if(val < visibleRange[0]) {
+		if(allVisible[0] == 0.0f) {
+			isVisible = 0;
+		}
+		// vOpacity=0.0;//set somewhere else
+		color = vec3(nonVisibleColorMin[0], nonVisibleColorMin[1], nonVisibleColorMin[2]);
+		return color;
+	}
+	// w = (world.z - visibleRange[0]) / (elevationRange[1] - elevationRange[0]);//value is scaled to range
+	// cElevation = texture(gradient, vec2(w, 1.0f - w)).rgb;
+
+	// return cElevation;
+#endif
+
 // vec3 iso = vec3(0.0, 0.0, 0.0);
 // override the color at a given heights and tolerance
 #if defined(draw_isolines) && draw_isolines > 0
@@ -656,8 +734,47 @@ vec3 getReturns() {
 	// }
 }
 
+//both returnNumber and numberOfReturn values are required
+//default renreding is: SIngle return yellow
+//otherwise, one red, max blue, green something in the middle
+//number of returns is static and all points have that same number
+//return number is between 1 and number of returns.
 vec3 getReturnNumber() {
-	if(numberOfReturns == 1.0f) {
+
+#if defined(custom_range) && custom_range > 0
+
+	vec3 color;
+	//work on visible range
+	float val = returnNumber;
+	if(val > visibleRange[1]) {
+
+		if(allVisible[1] == 0.0f) {
+			isVisible = 0;
+		}
+		// vOpacity=0.0;//set somewhere else
+		color = vec3(nonVisibleColorMax[0], nonVisibleColorMax[1], nonVisibleColorMax[2]);
+		return color;
+	}
+
+	if(val < visibleRange[0]) {
+
+		if(allVisible[0] == 0.0f) {
+			isVisible = 0;
+		}
+
+		// vOpacity=0.0;//set somewhere else
+		color = vec3(nonVisibleColorMin[0], nonVisibleColorMin[1], nonVisibleColorMin[2]);
+
+		// return vec3(0.0, 0.0, 0.0);
+		// color = vec3(0.0, 0.0, 0.0);
+		// none=false;
+		// return color;
+		return color;
+	}
+#endif
+
+	//otherwise keep the coloring
+	if(numberOfReturns == 1.0f) {//default or no value
 		return vec3(1.0f, 1.0f, 0.0f);
 	} else {
 		if(returnNumber == 1.0f) {
@@ -899,7 +1016,7 @@ vec3 getExtra() {
 	return distanceRendering(); // considers only position
 #endif
 
-	// initial implementation for habing uExtraRange and uExtraScale, uExtraOffset
+	// initial implementation for having uExtraRange and uExtraScale, uExtraOffset, skipping default implementation for extra aTTR
 #if defined(custom_range) && custom_range > 0
 	return customRangeRendering(); // considers oExtra value and min max data_range
 #endif
@@ -941,8 +1058,9 @@ vec3 getColor() {
 #elif defined color_type_gps_time
 	color = getGpsTime();
 #elif defined color_type_intensity_gradient
-	float w = getIntensity();
-	color = texture(gradient, vec2(w, 1.0f - w)).rgb;
+	//float w = getIntensity();
+	color = customIntensity();
+	//color = texture(gradient, vec2(w, 1.0f - w)).rgb;
 #elif defined color_type_color
 	color = uColor;
 #elif defined color_type_level_of_detail
@@ -1324,7 +1442,6 @@ void doClipping(bool inside) {
 	} else if(clipTask == CLIPTASK_SHOW_INSIDE) {
 		visible = inside;
 
-
 	} else if(clipTask == CLIPTASK_SHOW_OUTSIDE) {
 		// show points outside the clip box
 
@@ -1341,7 +1458,6 @@ void doClipping(bool inside) {
 		// highlight = true;
 
 	}
-
 
 // Light grayscale (75% intensity)
 	float grayLight = 0.75f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b);
@@ -1374,8 +1490,7 @@ void doClipping(bool inside) {
 			// vColor.b = 1.0f;
 			return;
 		}
-		if(colorize)
-		{
+		if(colorize) {
 
 			vColor.r = assignedColor.r;
 			vColor.g = assignedColor.g;
@@ -1638,22 +1753,21 @@ bool doFiltering(bool isInside) {
 			int filterType = uMixedFilters[i];
 ///////////////////////////////////////////////////////////////
 		#if defined(num_clipboxes) && num_clipboxes > 0
-					if(filterType == FILTER_BOXVOLUME) {
+			if(filterType == FILTER_BOXVOLUME) {
 						// check if point ins inside box
 
-						isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);
-						currentFilterChainValue = currentFilterChainValue && isIn;
+				isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);
+				currentFilterChainValue = currentFilterChainValue && isIn;
 
+				if(isIn) {
+					stopped = false;
+					colorize = true;
+					assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+				}
+				boxFilterIndex++;
 
-						if(isIn) {
-							stopped=false;
-							colorize = true;
-							assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
-						}
-						boxFilterIndex++;
-
-						continue; // continue to next
-					}
+				continue; // continue to next
+			}
 		#endif
 ////////////////////////////////////////////////////////////////
 #if defined(num_clippolygons) && num_clippolygons > 0
@@ -1663,7 +1777,7 @@ bool doFiltering(bool isInside) {
 
 				//colorize version
 				if(isIn) {//change color based on object color
-					stopped=false;
+					stopped = false;
 					colorize = true;//colorize has higher precedence over highlight
 					highlight = false;
 					assignedColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
@@ -1687,8 +1801,6 @@ bool doFiltering(bool isInside) {
 				int listType = uFilterList[logicFilterIndex + 4];
 				logicFilterIndex += 5;
 
-
-
 				float currAttVal = 0.0f;
 				if(attribIdx == -3) {
 					currAttVal = worldPosition.z;
@@ -1711,7 +1823,7 @@ bool doFiltering(bool isInside) {
 					if(currentFilterChainValue) {//if point is here, assignedColor is the current Color
 						olderColor = assignedColor;
 					} else {
-						assignedColor=olderColor;//current block failed and must return to older color if any, but better
+						assignedColor = olderColor;//current block failed and must return to older color if any, but better
 					}
 
 					globalValue = globalValue || currentFilterChainValue; // OR operation
@@ -1728,9 +1840,8 @@ bool doFiltering(bool isInside) {
 
 					#endif
 
-
 					if(isIn) {//change color based on object color
-						stopped=false;
+						stopped = false;
 						colorize = true;//colorize has higher precedence over highlight
 						highlight = false;
 
@@ -1743,16 +1854,15 @@ bool doFiltering(bool isInside) {
 			}
 #endif
 
-
 		}
 
 #endif
 	}
 	if(!stopped) {
 		globalValue = globalValue || currentFilterChainValue; // OR operation for the last filter
-		if(!currentFilterChainValue){
-			colorize=true;
-			assignedColor=olderColor;
+		if(!currentFilterChainValue) {
+			colorize = true;
+			assignedColor = olderColor;
 
 		}
 														 // return false; // return false, point is not visible

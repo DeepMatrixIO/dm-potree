@@ -840,11 +840,11 @@ export class PointCloudOctree extends PointCloudTree {
 
 		let gl = renderer.getContext();
 		let clamp = (number, min, max) => Math.min(Math.max(min, number), max);
-		console.log(
-			"Scissor test: ",
-			parseInt(clamp(pixelPos.x - (pickWindowSize - 1) / 2, 0, width)),
-			parseInt(clamp(pixelPos.y - (pickWindowSize - 1) / 2, 0, height)),
-			parseInt(pickWindowSize), parseInt(pickWindowSize));
+		// console.log(
+		// 	"Scissor test: ",
+		// 	parseInt(clamp(pixelPos.x - (pickWindowSize - 1) / 2, 0, width)),
+		// 	parseInt(clamp(pixelPos.y - (pickWindowSize - 1) / 2, 0, height)),
+		// 	parseInt(pickWindowSize), parseInt(pickWindowSize));
 
 		gl.enable(gl.SCISSOR_TEST);
 		// gl.scissor(
@@ -886,7 +886,7 @@ export class PointCloudOctree extends PointCloudTree {
 		//data is encoded in RGBA values in unsigned bytes
 		//so each pixel consists of 4 entries in the array
 		//4 byte = 32 bit = 24 bit for RGB and 8 bit for A
-		console.log('Extracting data:', x, y, pickWindowSize, pickWindowSize);
+		// console.log('Extracting data:', x, y, pickWindowSize, pickWindowSize);
 		gl.readPixels(x, y, pickWindowSize, pickWindowSize, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
 		renderer.setRenderTarget(null);
@@ -934,6 +934,7 @@ export class PointCloudOctree extends PointCloudTree {
 		}
 
 
+		if(window.debugPick)
 		{ // DEBUG: show panel with pick image
 			let img = Utils.pixelsArrayToImage(buffer, w, h);
 			let screenshot = img.src;

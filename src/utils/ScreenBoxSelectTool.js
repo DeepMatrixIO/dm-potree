@@ -134,8 +134,8 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 			//checking box size
 			let xSize = e.drag.end.x - e.drag.start.x
 			let ySize = e.drag.end.y - e.drag.start.y
-			console.log("Box bounds:  START", e.drag.start.x, e.drag.start.y, " END: ", e.drag.end.x, e.drag.end.y);
-			console.log("Box size: ", xSize, ySize);
+			// console.log("Box bounds:  START", e.drag.start.x, e.drag.start.y, " END: ", e.drag.end.x, e.drag.end.y);
+			// console.log("Box size: ", xSize, ySize);
 
 			let minAllowedSize = 20;
 			let boxSize = Math.sqrt(xSize * xSize + ySize * ySize)
@@ -150,13 +150,13 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 
 			let screenCentroid = new THREE.Vector2().addVectors(e.drag.end, e.drag.start).multiplyScalar(0.5);
-			console.log("Screen Size: ", viewer.renderArea.offsetWidth, viewer.renderArea.offsetHeight);
-			console.log("screenCentroid: ", screenCentroid.x, screenCentroid.y);
+			// console.log("Screen Size: ", viewer.renderArea.offsetWidth, viewer.renderArea.offsetHeight);
+			// console.log("screenCentroid: ", screenCentroid.x, screenCentroid.y);
 			//let ray = mouseToRayOrtho(screenCentroid, camera, size.width, size.height);
 			let ray = Utils.mouseToRay(screenCentroid, camera, size.width, size.height);
 			//ray in orto returns the mouse in screen coords based on ortho proj
-			console.log("ray origin: ", ray.origin.x, ray.origin.y, ray.origin.z);
-			console.log("ray direction: ", ray.direction.x, ray.direction.y, ray.direction.z);
+			// console.log("ray origin: ", ray.origin.x, ray.origin.y, ray.origin.z);
+			// console.log("ray direction: ", ray.direction.x, ray.direction.y, ray.direction.z);
 
 			/////////////////////////////////////////////////////////////////
 
@@ -215,7 +215,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 					// pickOutsideClipRegion: true //not in use
 				};
 
-				console.log("Finding Near points...");
+				// console.log("Finding Near points...");
 
 				//pick is based on the actual camera view planes.
 				let pointsNear = pointcloud.pick(viewer, volCam, ray, pickerSettings);
@@ -234,12 +234,12 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 			//near points appear at the back while far points appear at the front, check it twice
 
 			//debugging
-			console.log("Total points picked:", allPointsNear.length, allPointsFar.length);
+			// console.log("Total points picked:", allPointsNear.length, allPointsFar.length);
 
 			//adds all points
 
-			if (allPointsNear.length === 0 && allPointsFar.length > 0) {
-				console.log("Invalid BoxVolume. Removing")
+			if (allPointsNear.length === 0 && allPointsFar.length >= 0) {
+				// console.log("Invalid BoxVolume. Removing")
 				//this.viewer.scene.removeVolume(volume);
 				this.cancelInsertion(volume);
 				return;
@@ -267,7 +267,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 			}
 			if (allPointsNear.length > 0 && allPointsFar.length === 0) {
-				console.log("TESTING Only near points found , creating a far distance");
+				// console.log("TESTING Only near points found , creating a far distance");
 
 				let viewLine = new THREE.Line3(ray.origin, new THREE.Vector3().addVectors(ray.origin, ray.direction));
 
@@ -279,11 +279,11 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 				let farthest = sorted.at(-1);
 
 
-				console.log("Closest: ", closest.x, closest.y, closest.z);
-				console.log("Farthest: ", farthest.x, farthest.y, farthest.z);
+				// console.log("Closest: ", closest.x, closest.y, closest.z);
+				// console.log("Farthest: ", farthest.x, farthest.y, farthest.z);
 
 				let centroid = new THREE.Vector3().addVectors(closest, farthest).multiplyScalar(0.5);
-				console.log("Centroid: ", centroid.x, centroid.y, centroid.z);
+				// console.log("Centroid: ", centroid.x, centroid.y, centroid.z);
 				let distance = closest.distanceTo(farthest);
 
 				volume.scale.z = distance * 1.1;
@@ -296,9 +296,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 
 			}
-			if (allPointsNear.length === 0 && allPointsFar.length > 0) {
-				console.log("Only far points found, creating a near distance");
-			}
+
 
 
 
@@ -329,7 +327,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		viewer.inputHandler.addEventListener("keydown", cancelKey);
 
 		this.viewer.addEventListener("cancel_insertions", e => {
-			console.log("Canceling insertion");
+			// console.log("Canceling insertion");
 
 			this.cancelInsertion(volume);
 			this.viewer.inputHandler.removeEventListener("keydown", cancelKey);
