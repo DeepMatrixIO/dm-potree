@@ -53,7 +53,7 @@ export class Viewer extends EventDispatcher {
 		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
 
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
-
+		this.isFootBasedProjection = false;
 		this.ecefCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 
 
@@ -368,12 +368,24 @@ export class Viewer extends EventDispatcher {
 
 	set projection(value) {
 
-		this._projection = value;
-		console.log('setting potree current projection')
+		if (value != null) {
+
+
+			this._projection = value;
+
+			this.isFootBasedProjection =
+
+				this._projection.includes('us-ft') ||
+				this._projection.includes('ft') ||
+				this._projection.includes('feet');
+
+			console.log('setting potree current projection')
+		}
+
 	}
 
 	ecef = 'EPSG:4978'; // ECEF
-	wgs84 = 'EPSG:4326'; // ECEF
+	wgs84 = 'EPSG:4326'; // WGS84
 
 	updateCurrentPosition() {
 		try {
@@ -1325,6 +1337,12 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+	/**
+	 * Set the viewer default projection based on the first pointcloud, otherwise null.
+	 * Another option is to scroll and assign the first valid projection.
+	 *
+	 */
+
 	getProjection() {
 		const pointcloud = this.scene.pointclouds[0];
 
@@ -2275,7 +2293,7 @@ export class Viewer extends EventDispatcher {
 				//added for classification and segmentation
 				//const pointCloudPointClusters = this.scene.pointClusters.map(cluster => cluster.filterSegmentsByPointCloud(pointcloud.identifier));
 
-				const pointCloudPointClusters = this.scene.pointClusters.filter( pc => pc.visible ).map(//TODO take identifier from some other place or default it
+				const pointCloudPointClusters = this.scene.pointClusters.filter(pc => pc.visible).map(//TODO take identifier from some other place or default it
 					cluster => {
 						let identifier = pointcloud.dataId || pointcloud.identifier || pointcloud.id || 0;
 						return cluster.filterSegmentsByPointCloud(identifier);
