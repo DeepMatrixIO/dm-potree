@@ -52,7 +52,7 @@ export class Viewer extends EventDispatcher {
 		this.currentWGS84Position = {lat: 0, lon: 0, alt: 0};//ADDED by  @jguerrer // updated on each loop before general update.
 		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
 
-		this.projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
+		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
 
 		this.ecefCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 
@@ -360,6 +360,16 @@ export class Viewer extends EventDispatcher {
 		} catch (e) {
 			this.onCrash(e);
 		}
+	}
+
+	get projection() {
+		return this._projection;
+	}
+
+	set projection(value) {
+
+		this._projection = value;
+		console.log('setting potree current projection')
 	}
 
 	ecef = 'EPSG:4978'; // ECEF
