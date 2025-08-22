@@ -1826,8 +1826,16 @@ bool doFiltering(bool isInside) {
 						assignedColor = olderColor;//current block failed and must return to older color if any, but better
 					}
 
+
+					if(stopped){//if i just came from a stop
+						currentFilterChainValue=false;
+					}
+
 					globalValue = globalValue || currentFilterChainValue; // OR operation
 					currentFilterChainValue = true;						 // reset for next filter
+
+
+
 					// skip = false;									 // reset skip for next filter
 					stopped = true;
 					continue; // continue to next
