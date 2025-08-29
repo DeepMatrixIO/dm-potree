@@ -3,7 +3,8 @@ import {
 	AdditiveBlending,
 	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
 	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
-} from "../../libs/three.js/build/three.core.js";
+// } from "../../libs/three.js/build/three.core.js";
+} from "../../libs/three.js/build/three.module.js";
 import {ElevationGradientRepeat, PointShape, PointSizeType, TreeType} from "../defines.js";
 import {Utils} from "../utils.js";
 import {PointCloudFilterList} from "../utils/Filter.js";
