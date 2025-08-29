@@ -1,11 +1,8 @@
-
-
-import * as THREE from "../libs/three.js/build/three.module.js";
+import {Vector3,Matrix4,Vector4, Vector2, Box3} from 'three'
 import {Action} from "./Actions.js";
 import {EventDispatcher} from "./EventDispatcher.js";
 import {Utils} from "./utils.js";
-
-//import {Math, MathUtils} from 'three';
+// import {Math} from 'three';
 
 export class Annotation extends EventDispatcher {
 	constructor(args = {}) {
@@ -14,22 +11,22 @@ export class Annotation extends EventDispatcher {
 		this.scene = null;
 		this._title = args.title || 'No Title';
 		this._description = args.description || '';
-		this.offset = new THREE.Vector3();
-		//this.uuid = THREE.Math.generateUUID();
-		this.uuid = THREE.MathUtils.generateUUID();
+		this.offset = new Vector3();
+		//this.uuid = Math.generateUUID();
+		this.uuid = Math.generateUUID();
 
 		if (!args.position) {
 			this.position = null;
 		} else if (args.position.x != null) {
 			this.position = args.position;
 		} else {
-			this.position = new THREE.Vector3(...args.position);
+			this.position = new Vector3(...args.position);
 		}
 
 		this.cameraPosition = (args.cameraPosition instanceof Array)
-			? new THREE.Vector3().fromArray(args.cameraPosition) : args.cameraPosition;
+			? new Vector3().fromArray(args.cameraPosition) : args.cameraPosition;
 		this.cameraTarget = (args.cameraTarget instanceof Array)
-			? new THREE.Vector3().fromArray(args.cameraTarget) : args.cameraTarget;
+			? new Vector3().fromArray(args.cameraTarget) : args.cameraTarget;
 		this.radius = args.radius;
 		this.view = args.view || null;
 		this.keepOpen = false;
@@ -45,7 +42,7 @@ export class Annotation extends EventDispatcher {
 
 		this.children = [];
 		this.parent = null;
-		this.boundingBox = new THREE.Box3();
+		this.boundingBox = new Box3();
 
 		let iconClose = exports.resourcePath + '/icons/close.svg';
 
@@ -189,7 +186,7 @@ export class Annotation extends EventDispatcher {
 				$(this.domElement).find(".annotation-titlebar").css("pointer-events", "");
 			},
 			drag: (event, ui) => {
-				let renderAreaWidth = viewer.renderer.getSize(new THREE.Vector2()).width;
+				let renderAreaWidth = viewer.renderer.getSize(new Vector2()).width;
 				//let renderAreaHeight = viewer.renderer.getSize().height;
 
 				let diff = {
@@ -203,7 +200,7 @@ export class Annotation extends EventDispatcher {
 				};
 
 				let camera = viewer.scene.getActiveCamera();
-				let oldScreenPos = new THREE.Vector3()
+				let oldScreenPos = new Vector3()
 					.addVectors(annotationStartPos, annotationStartOffset)
 					.project(camera);
 
@@ -214,7 +211,7 @@ export class Annotation extends EventDispatcher {
 				let newPos = newScreenPos.clone();
 				newPos.unproject(camera);
 
-				let newOffset = new THREE.Vector3().subVectors(newPos, this.position);
+				let newOffset = new Vector3().subVectors(newPos, this.position);
 				this.offset.copy(newOffset);
 			}
 		});
@@ -223,19 +220,19 @@ export class Annotation extends EventDispatcher {
 			let position = this.position;
 			let scene = viewer.scene;
 
-			const renderAreaSize = viewer.renderer.getSize(new THREE.Vector2());
+			const renderAreaSize = viewer.renderer.getSize(new Vector2());
 			let renderAreaWidth = renderAreaSize.width;
 			let renderAreaHeight = renderAreaSize.height;
 
 			let start = this.position.clone();
-			let end = new THREE.Vector3().addVectors(this.position, this.offset);
+			let end = new Vector3().addVectors(this.position, this.offset);
 
 			let toScreen = (position) => {
 				let camera = scene.getActiveCamera();
-				let screenPos = new THREE.Vector3();
+				let screenPos = new Vector3();
 
-				let worldView = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-				let ndc = new THREE.Vector4(position.x, position.y, position.z, 1.0).applyMatrix4(worldView);
+				let worldView = new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+				let ndc = new Vector4(position.x, position.y, position.z, 1.0).applyMatrix4(worldView);
 				// limit w to small positive value, in case position is behind the camera
 				ndc.w = Math.max(ndc.w, 0.1);
 				ndc.divideScalar(ndc.w);
@@ -430,7 +427,7 @@ export class Annotation extends EventDispatcher {
 	}
 
 	updateBounds() {
-		let box = new THREE.Box3();
+		let box = new Box3();
 
 		if (this.position) {
 			box.expandByPoint(this.position);
@@ -531,7 +528,7 @@ export class Annotation extends EventDispatcher {
 		} else if (this.position) {
 			endTarget = this.position;
 		} else {
-			endTarget = this.boundingBox.getCenter(new THREE.Vector3());
+			endTarget = this.boundingBox.getCenter(new Vector3());
 		}
 
 		if (this.cameraPosition) {

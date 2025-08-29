@@ -1,5 +1,6 @@
 
-import * as THREE from "../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../libs/js/build/module.js";
+import {CatmullRomCurve3, MathUtils, Object3D, Vector2, Vector3} from 'three';
 import {Line2} from "../../../libs/three.js/lines/Line2.js";
 import {LineGeometry} from "../../../libs/three.js/lines/LineGeometry.js";
 import {LineMaterial} from "../../../libs/three.js/lines/LineMaterial.js";
@@ -10,8 +11,8 @@ import {Utils} from "../../utils.js";
 class ControlPoint {
 
 	constructor() {
-		this.position = new THREE.Vector3(0, 0, 0);
-		this.target = new THREE.Vector3(0, 0, 0);
+		this.position = new Vector3(0, 0, 0);
+		this.target = new Vector3(0, 0, 0);
 		this.positionHandle = null;
 		this.targetHandle = null;
 	}
@@ -31,10 +32,10 @@ export class CameraAnimation extends EventDispatcher {
 
 		this.controlPoints = [];
 
-		//this.uuid = THREE.Math.generateUUID();
-		this.uuid = THREE.MathUtils.generateUUID();
+		//this.uuid = Math.generateUUID();
+		this.uuid = MathUtils.generateUUID();
 
-		this.node = new THREE.Object3D();
+		this.node = new Object3D();
 		this.node.name = "camera animation";
 		this.viewer.scene.scene.add(this.node);
 
@@ -58,13 +59,13 @@ export class CameraAnimation extends EventDispatcher {
 		const camera = viewer.scene.getActiveCamera();
 		const target = viewer.scene.view.getPivot();
 
-		const cpCenter = new THREE.Vector3(
+		const cpCenter = new Vector3(
 			0.3 * camera.position.x + 0.7 * target.x,
 			0.3 * camera.position.y + 0.7 * target.y,
 			0.3 * camera.position.z + 0.7 * target.z,
 		);
 
-		const targetCenter = new THREE.Vector3(
+		const targetCenter = new Vector3(
 			0.05 * camera.position.x + 0.95 * target.x,
 			0.05 * camera.position.y + 0.95 * target.y,
 			0.05 * camera.position.z + 0.95 * target.z,
@@ -108,7 +109,7 @@ export class CameraAnimation extends EventDispatcher {
 		viewer.addEventListener("update", () => {
 
 			const camera = viewer.scene.getActiveCamera();
-			const {width, height} = viewer.renderer.getSize(new THREE.Vector2());
+			const {width, height} = viewer.renderer.getSize(new Vector2());
 
 			this.node.visible = this.visible;
 
@@ -243,7 +244,7 @@ export class CameraAnimation extends EventDispatcher {
 				dashSize: 5,
 				gapSize: 2,
 				linewidth: 2,
-				resolution: new THREE.Vector2(1000, 1000),
+				resolution: new Vector2(1000, 1000),
 			});
 
 			const line = new Line2(geometry, material);
@@ -260,7 +261,7 @@ export class CameraAnimation extends EventDispatcher {
 				dashSize: 5,
 				gapSize: 2,
 				linewidth: 2,
-				resolution: new THREE.Vector2(1000, 1000),
+				resolution: new Vector2(1000, 1000),
 			});
 
 			const line = new Line2(geometry, material);
@@ -309,7 +310,7 @@ export class CameraAnimation extends EventDispatcher {
 		let material = new LineMaterial({
 			color: 0xff0000,
 			linewidth: 2,
-			resolution: new THREE.Vector2(1000, 1000),
+			resolution: new Vector2(1000, 1000),
 		});
 
 		const line = new Line2(geometry, material);
@@ -324,7 +325,7 @@ export class CameraAnimation extends EventDispatcher {
 			const positions = this.controlPoints.map(cp => cp.position);
 			const first = positions[0];
 
-			const curve = new THREE.CatmullRomCurve3(positions);
+			const curve = new CatmullRomCurve3(positions);
 			curve.curveType = this.curveType;
 
 			const n = 100;
@@ -351,7 +352,7 @@ export class CameraAnimation extends EventDispatcher {
 			const positions = this.controlPoints.map(cp => cp.target);
 			const first = positions[0];
 
-			const curve = new THREE.CatmullRomCurve3(positions);
+			const curve = new CatmullRomCurve3(positions);
 			curve.curveType = this.curveType;
 
 			const n = 100;
@@ -445,7 +446,7 @@ export class CameraAnimation extends EventDispatcher {
 				const x = evt.clientX - rect.x;
 				const y = evt.clientY - rect.y;
 
-				const {width, height} = this.viewer.renderer.getSize(new THREE.Vector2());
+				const {width, height} = this.viewer.renderer.getSize(new Vector2());
 				const camera = this.viewer.scene.getActiveCamera();
 				//const cp = this.controlPoints.find(cp => cp.handle.svg === svg);
 				const projected = vector.clone().project(camera);

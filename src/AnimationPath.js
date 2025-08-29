@@ -1,5 +1,6 @@
-//changes to more recent version of three.js, above 0124 require to move from Geometry to BufferGeometry
-import * as THREE from "../libs/three.js/build/three.module.js";
+//changes to more recent version of js, above 0124 require to move from Geometry to BufferGeometry
+import {BufferGeometry, Float32BufferAttribute,CatmullRomCurve3} from 'three'
+
 
 export class PathAnimation {
 
@@ -79,7 +80,7 @@ export class PathAnimation {
 export class AnimationPath {
 	constructor(points = []) {
 		this.points = points;
-		this.spline = new THREE.CatmullRomCurve3(points);
+		this.spline = new CatmullRomCurve3(points);
 		//this.spline.reparametrizeByArcLength(1 / this.spline.getLength().total);
 	}
 
@@ -91,7 +92,7 @@ export class AnimationPath {
 		return this.spline.getLength();
 	}
 
-	//changes to more recent version of three.js, above 0124 require to move from Geometry to BufferGeometry
+	//changes to more recent version of js, above 0124 require to move from Geometry to BufferGeometry
 	animate(start, end, speed, callback) {
 		let animation = new PathAnimation(this, start, end, speed, callback);
 		animation.start();
@@ -112,15 +113,15 @@ export class AnimationPath {
 	}
 
 	getGeometry() {
-		//let geometry = new THREE.Geometry();
-		let geometry = new THREE.BufferGeometry();//this affects whenever geometry is accessed 
+		//let geometry = new Geometry();
+		let geometry = new BufferGeometry();//this affects whenever geometry is accessed
 
 		let samples = 500;
 		let i = 0;
 		let vertices = []
 		for (let u = 0; u <= 1; u += 1 / samples) {
 			let position = this.spline.getPoint(u);
-			//geometry.vertices[i] = new THREE.Vector3(position.x, position.y, position.z);
+			//geometry.vertices[i] = new Vector3(position.x, position.y, position.z);
 			vertices.push(position.x, position.y, position.z);
 
 			i++;
@@ -128,11 +129,11 @@ export class AnimationPath {
 
 		if (this.closed) {
 			let position = this.spline.getPoint(0);
-			//geometry.vertices[i] = new THREE.Vector3(position.x, position.y, position.z);
+			//geometry.vertices[i] = new Vector3(position.x, position.y, position.z);
 			vertices.push(position.x, position.y, position.z);
 
 		}
-		geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+		geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
 
 		return geometry;
 	}

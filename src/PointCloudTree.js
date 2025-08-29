@@ -1,6 +1,7 @@
 
-import * as THREE from "../libs/three.js/build/three.module.js";
-import { EventDispatcher } from "./EventDispatcher.js";
+import {Object3D} from 'three';
+
+import {EventDispatcher} from "./EventDispatcher.js";
 
 
 export class PointCloudTreeNode extends EventDispatcher{
@@ -39,7 +40,7 @@ export class PointCloudTreeNode extends EventDispatcher{
 	}
 };
 
-export class PointCloudTree extends THREE.Object3D {
+export class PointCloudTree extends Object3D {
 	constructor () {
 		super();
 	}

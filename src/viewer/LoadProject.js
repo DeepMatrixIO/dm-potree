@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Vector3} from 'three';
+
 import {Annotation} from "../Annotation.js";
 import {PointSizeType} from "../defines.js";
 import {CameraAnimation} from "../modules/CameraAnimation/CameraAnimation.js";
@@ -111,7 +112,7 @@ function loadMeasurement(viewer, data) {
 	// color
 
 	for (const point of data.points) {
-		const pos = new THREE.Vector3(...point);
+		const pos = new Vector3(...point);
 		measure.addMarker(pos);
 	}
 
@@ -304,7 +305,7 @@ function loadProfile(viewer, data) {
 	profile.setWidth(data.width);
 
 	for (const point of points) {
-		profile.addMarker(new THREE.Vector3(...point));
+		profile.addMarker(new Vector3(...point));
 	}
 
 	viewer.scene.addProfile(profile);

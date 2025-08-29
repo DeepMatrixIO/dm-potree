@@ -1,6 +1,7 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
 
+import {Vector3} from "three";
 import {Utils} from "../utils.js";
 
 export class Compass{
@@ -18,12 +19,12 @@ export class Compass{
 
 			const camera = viewer.scene.getActiveCamera();
 
-			const p1 = camera.getWorldPosition(new THREE.Vector3());
+			const p1 = camera.getWorldPosition(new Vector3());
 			const p2 = p1.clone().add(direction);
 
 			const projection = viewer.getProjection();
 			const azimuth = Utils.computeAzimuth(p1, p2, projection);
-			
+
 			this.dom.css("transform", `rotateZ(${-azimuth}rad)`);
 		});
 

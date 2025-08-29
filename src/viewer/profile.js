@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Box3, BufferAttribute, BufferGeometry, MathUtils, Matrix4, Mesh, MeshNormalMaterial, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer} from 'three';
 import {EventDispatcher} from "../EventDispatcher.js";
 import {PointCloudTree} from "../PointCloudTree.js";
 import {Points} from "../Points.js";
@@ -36,7 +37,7 @@ class Batch {
 		this.geometry = geometry;
 		this.material = material;
 
-		this.sceneNode = new THREE.Points(geometry, material);
+		this.sceneNode = new Points(geometry, material);
 
 		this.geometryNode = {
 			estimatedSpacing: 1.0,
@@ -99,9 +100,9 @@ class ProfileFakeOctree extends PointCloudTree {
 			start: this.currentBatch.geometry.drawRange.count,
 			count: 0
 		};
-		let projectedBox = new THREE.Box3();
+		let projectedBox = new Box3();
 
-		let truePos = new THREE.Vector3();
+		let truePos = new Vector3();
 
 		for (let i = 0; i < data.numPoints; i++) {
 
@@ -135,7 +136,7 @@ class ProfileFakeOctree extends PointCloudTree {
 			let y = 0;
 			let z = truePos.z;
 
-			projectedBox.expandByPoint(new THREE.Vector3(x, y, z));
+			projectedBox.expandByPoint(new Vector3(x, y, z));
 
 			let index = updateRange.start + updateRange.count;
 			let geometry = this.currentBatch.geometry;
@@ -177,11 +178,11 @@ class ProfileFakeOctree extends PointCloudTree {
 
 		data.projectedBox = projectedBox;
 
-		this.projectedBox = this.points.reduce((a, i) => a.union(i.projectedBox), new THREE.Box3());
+		this.projectedBox = this.points.reduce((a, i) => a.union(i.projectedBox), new Box3());
 	}
 
 	createNewBatch(data) {
-		let geometry = new THREE.BufferGeometry();
+		let geometry = new BufferGeometry();
 
 		// create new batches with batch_size elements of the same type as the attribute
 		for (let attributeName of Object.keys(data.data)) {
@@ -199,7 +200,7 @@ class ProfileFakeOctree extends PointCloudTree {
 
 			let batchBuffer = new constructor(numElements * this.batchSize);
 
-			let bufferAttribute = new THREE.BufferAttribute(batchBuffer, numElements, normalized);
+			let bufferAttribute = new BufferAttribute(batchBuffer, numElements, normalized);
 			bufferAttribute.potree = {
 				range: [0, 1],
 			};
@@ -246,13 +247,13 @@ export class ProfileWindow extends EventDispatcher {
 		this.svg = d3.select('svg#profileSVG');
 		this.mouseIsDown = false;
 
-		this.projectedBox = new THREE.Box3();
+		this.projectedBox = new Box3();
 		this.pointclouds = new Map();
 		this.numPoints = 0;
 		this.lastAddPointsTimestamp = undefined;
 
-		this.mouse = new THREE.Vector2(0, 0);
-		this.scale = new THREE.Vector3(1, 1, 1);
+		this.mouse = new Vector2(0, 0);
+		this.scale = new Vector3(1, 1, 1);
 
 		this.autoFitEnabled = true; // completely disable/enable
 		this.autoFit = false; // internal
@@ -326,7 +327,7 @@ export class ProfileWindow extends EventDispatcher {
 			let x = e.clientX - rect.left;
 			let y = e.clientY - rect.top;
 
-			let newMouse = new THREE.Vector2(x, y);
+			let newMouse = new Vector2(x, y);
 
 			if (this.mouseIsDown) {
 				// DRAG
@@ -567,9 +568,9 @@ export class ProfileWindow extends EventDispatcher {
 			index: null
 		};
 
-		let pointBox = new THREE.Box2(
-			new THREE.Vector2(mileage - radius, elevation - radius),
-			new THREE.Vector2(mileage + radius, elevation + radius));
+		let pointBox = new Box2(
+			new Vector2(mileage - radius, elevation - radius),
+			new Vector2(mileage + radius, elevation + radius));
 
 		let numTested = 0;
 		let numSkipped = 0;
@@ -579,9 +580,9 @@ export class ProfileWindow extends EventDispatcher {
 		for (let [pointcloud, entry] of this.pointclouds) {
 			for (let points of entry.points) {
 
-				let collisionBox = new THREE.Box2(
-					new THREE.Vector2(points.projectedBox.min.x, points.projectedBox.min.z),
-					new THREE.Vector2(points.projectedBox.max.x, points.projectedBox.max.z)
+				let collisionBox = new Box2(
+					new Vector2(points.projectedBox.min.x, points.projectedBox.min.z),
+					new Vector2(points.projectedBox.max.x, points.projectedBox.max.z)
 				);
 
 				let intersects = collisionBox.intersectsBox(pointBox);
@@ -657,7 +658,7 @@ export class ProfileWindow extends EventDispatcher {
 	}
 
 	initTHREE() {
-		this.renderer = new THREE.WebGLRenderer({alpha: true, premultipliedAlpha: false});
+		this.renderer = new WebGLRenderer({alpha: true, premultipliedAlpha: false});
 		this.renderer.setClearColor(0x000000, 0);
 		this.renderer.setSize(10, 10);
 		this.renderer.autoClear = false;
@@ -683,21 +684,21 @@ export class ProfileWindow extends EventDispatcher {
 
 		}
 
-		this.camera = new THREE.OrthographicCamera(-1000, 1000, 1000, -1000, -1000, 1000);
+		this.camera = new OrthographicCamera(-1000, 1000, 1000, -1000, -1000, 1000);
 		this.camera.up.set(0, 0, 1);
 		this.camera.rotation.order = "ZXY";
 		this.camera.rotation.x = Math.PI / 2.0;
 
 
-		this.scene = new THREE.Scene();
-		this.profileScene = new THREE.Scene();
+		this.scene = new Scene();
+		this.profileScene = new Scene();
 
-		let sg = new THREE.SphereGeometry(1, 16, 16);
-		let sm = new THREE.MeshNormalMaterial();
-		this.pickSphere = new THREE.Mesh(sg, sm);
+		let sg = new SphereGeometry(1, 16, 16);
+		let sm = new MeshNormalMaterial();
+		this.pickSphere = new Mesh(sg, sm);
 		this.scene.add(this.pickSphere);
 
-		this.viewerPickSphere = new THREE.Mesh(sg, sm);
+		this.viewerPickSphere = new Mesh(sg, sm);
 	}
 
 	initSVG() {
@@ -772,13 +773,13 @@ export class ProfileWindow extends EventDispatcher {
 			let width = this.renderArea[0].clientWidth;
 			let height = this.renderArea[0].clientHeight;
 
-			let size = this.projectedBox.getSize(new THREE.Vector3());
+			let size = this.projectedBox.getSize(new Vector3());
 
 			let sx = width / size.x;
 			let sy = height / size.z;
 			let scale = Math.min(sx, sy);
 
-			let center = this.projectedBox.getCenter(new THREE.Vector3());
+			let center = this.projectedBox.getCenter(new Vector3());
 			this.scale.set(scale, scale, 1);
 			this.camera.position.copy(center);
 
@@ -804,7 +805,7 @@ export class ProfileWindow extends EventDispatcher {
 		this.removeEventListeners("on_reset_once");
 
 		this.autoFit = true;
-		this.projectedBox = new THREE.Box3();
+		this.projectedBox = new Box3();
 
 		for (let [key, entry] of this.pointclouds) {
 			entry.dispose();
@@ -982,9 +983,9 @@ export class ProfileWindowController {
 			const end = points[points.length - 1];
 			const center = start.clone().add(end).multiplyScalar(0.5);
 
-			const mMoveOrigin = new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z);
-			const mRotate = new THREE.Matrix4().makeRotationZ(radians);
-			const mMoveBack = new THREE.Matrix4().makeTranslation(center.x, center.y, center.z);
+			const mMoveOrigin = new Matrix4().makeTranslation(-center.x, -center.y, -center.z);
+			const mRotate = new Matrix4().makeRotationZ(radians);
+			const mMoveBack = new Matrix4().makeTranslation(center.x, center.y, center.z);
 			//const transform = mMoveOrigin.multiply(mRotate).multiply(mMoveBack);
 			const transform = mMoveBack.multiply(mRotate).multiply(mMoveOrigin);
 
@@ -998,12 +999,12 @@ export class ProfileWindowController {
 		}
 
 		$("#potree_profile_rotate_cw").click(() => {
-			const radians = THREE.MathUtils.degToRad(this.rotateAmount);
+			const radians = MathUtils.degToRad(this.rotateAmount);
 			rotate(-radians);
 		});
 
 		$("#potree_profile_rotate_ccw").click(() => {
-			const radians = THREE.MathUtils.degToRad(this.rotateAmount);
+			const radians = MathUtils.degToRad(this.rotateAmount);
 			rotate(radians);
 		});
 
@@ -1014,7 +1015,7 @@ export class ProfileWindowController {
 			const end = points[points.length - 1];
 
 			const dir = end.clone().sub(start).normalize();
-			const up = new THREE.Vector3(0, 0, 1);
+			const up = new Vector3(0, 0, 1);
 			const forward = up.cross(dir);
 			const move = forward.clone().multiplyScalar(profile.width / 2);
 
@@ -1032,7 +1033,7 @@ export class ProfileWindowController {
 			const end = points[points.length - 1];
 
 			const dir = end.clone().sub(start).normalize();
-			const up = new THREE.Vector3(0, 0, 1);
+			const up = new Vector3(0, 0, 1);
 			const forward = up.cross(dir);
 			const move = forward.clone().multiplyScalar(-profile.width / 2);
 

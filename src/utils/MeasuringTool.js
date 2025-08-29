@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {MathUtils, Scene, Vector2, Vector3} from 'three';
 import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
@@ -18,7 +19,7 @@ function updateAzimuth(viewer, measure) {
 	}
 
 	const camera = viewer.scene.getActiveCamera();
-	const renderAreaSize = viewer.renderer.getSize(new THREE.Vector2());
+	const renderAreaSize = viewer.renderer.getSize(new Vector2());
 	const width = renderAreaSize.width;
 	const height = renderAreaSize.height;
 
@@ -100,8 +101,8 @@ function updateAzimuth(viewer, measure) {
 
 	// label
 	const radians = Utils.computeAzimuth(p0.position, p1.position, viewer.getProjection());
-	//let degrees = THREE.Math.radToDeg(radians);
-	let degrees = THREE.MathUtils.radToDeg(radians);
+	//let degrees = Math.radToDeg(radians);
+	let degrees = MathUtils.radToDeg(radians);
 	if (degrees < 0) {
 		degrees = 360 + degrees;
 	}
@@ -135,10 +136,10 @@ export class MeasuringTool extends EventDispatcher {
 		});
 
 		this.showLabels = true;
-		this.scene = new THREE.Scene();
+		this.scene = new Scene();
 		this.scene.name = 'scene_measurement';
-		//this.light = new THREE.PointLight(0xffffff, 1000, 10);
-		this.light = new THREE.DirectionalLight(0xffffff, 2.5)
+		//this.light = new PointLight(0xffffff, 1000, 10);
+		this.light = new DirectionalLight(0xffffff, 2.5)
 		this.light.position.copy(viewer.scene.getActiveCamera().position);
 				//this.light.position.z += 500;
 		this.light.position.z += 1000;
@@ -150,9 +151,9 @@ export class MeasuringTool extends EventDispatcher {
 
 		this.scene.add(this.light);
 		//this.scene.add(plh);
-		//this.scene.add(new THREE.AmbientLight(0x00ff00, 0.5));
+		//this.scene.add(new AmbientLight(0x00ff00, 0.5));
 		//this.add(dl);
-		//this.light = new THREE.PointLight(0xffffff, 1.0);
+		//this.light = new PointLight(0xffffff, 1.0);
 		//this.scene.add(this.light);
 
 
@@ -223,7 +224,7 @@ export class MeasuringTool extends EventDispatcher {
 		};
 
 		let insertionCallback = (e) => {
-			if (e.button === THREE.MOUSE.LEFT) {
+			if (e.button === MOUSE.LEFT) {
 				measure.addMarker(measure.points[measure.points.length - 1].position.clone());
 
 				if (measure.points.length >= measure.maxMarkers) {
@@ -232,7 +233,7 @@ export class MeasuringTool extends EventDispatcher {
 
 				this.viewer.inputHandler.startDragging(
 					measure.spheres[measure.spheres.length - 1]);
-			} else if (e.button === THREE.MOUSE.RIGHT) {
+			} else if (e.button === MOUSE.RIGHT) {
 				cancel.callback();
 			}
 		};
@@ -250,7 +251,7 @@ export class MeasuringTool extends EventDispatcher {
 			domElement.addEventListener('mouseup', insertionCallback, false);
 		}
 
-		measure.addMarker(new THREE.Vector3(0, 0, 0));
+		measure.addMarker(new Vector3(0, 0, 0));
 		this.viewer.inputHandler.startDragging(
 			measure.spheres[measure.spheres.length - 1]);
 
@@ -264,7 +265,7 @@ export class MeasuringTool extends EventDispatcher {
 		let domElement = this.renderer.domElement;
 		let measurements = this.viewer.scene.measurements;
 
-		const renderAreaSize = this.renderer.getSize(new THREE.Vector2());
+		const renderAreaSize = this.renderer.getSize(new Vector2());
 		let clientWidth = renderAreaSize.width;
 		let clientHeight = renderAreaSize.height;
 
@@ -283,7 +284,7 @@ export class MeasuringTool extends EventDispatcher {
 
 			// spheres
 			for (let sphere of measure.spheres) {
-				let distance = camera.position.distanceTo(sphere.getWorldPosition(new THREE.Vector3()));
+				let distance = camera.position.distanceTo(sphere.getWorldPosition(new Vector3()));
 				let pr = Utils.projectedRadius(1, camera, distance, clientWidth, clientHeight);
 				let scale = (15 / pr);
 				sphere.scale.set(scale, scale, scale);
@@ -292,7 +293,7 @@ export class MeasuringTool extends EventDispatcher {
 			// labels
 			let labels = measure.edgeLabels.concat(measure.angleLabels);
 			for (let label of labels) {
-				let distance = camera.position.distanceTo(label.getWorldPosition(new THREE.Vector3()));
+				let distance = camera.position.distanceTo(label.getWorldPosition(new Vector3()));
 				let pr = Utils.projectedRadius(1, camera, distance, clientWidth, clientHeight);
 				let scale = (70 / pr);
 
@@ -308,22 +309,22 @@ export class MeasuringTool extends EventDispatcher {
 				let label = measure.coordinateLabels[j];
 				let sphere = measure.spheres[j];
 
-				let distance = camera.position.distanceTo(sphere.getWorldPosition(new THREE.Vector3()));
+				let distance = camera.position.distanceTo(sphere.getWorldPosition(new Vector3()));
 
-				let screenPos = sphere.getWorldPosition(new THREE.Vector3()).clone().project(camera);
+				let screenPos = sphere.getWorldPosition(new Vector3()).clone().project(camera);
 				screenPos.x = Math.round((screenPos.x + 1) * clientWidth / 2);
 				screenPos.y = Math.round((-screenPos.y + 1) * clientHeight / 2);
 				screenPos.z = 0;
 				screenPos.y -= 30;
 
-				let labelPos = new THREE.Vector3(
+				let labelPos = new Vector3(
 					(screenPos.x / clientWidth) * 2 - 1,
 					-(screenPos.y / clientHeight) * 2 + 1,
 					0.5);
 				labelPos.unproject(camera);
 				if (this.viewer.scene.cameraMode == CameraMode.PERSPECTIVE) {
 					let direction = labelPos.sub(camera.position).normalize();
-					labelPos = new THREE.Vector3().addVectors(
+					labelPos = new Vector3().addVectors(
 						camera.position, direction.multiplyScalar(distance));
 
 				}
@@ -353,8 +354,8 @@ export class MeasuringTool extends EventDispatcher {
 					let min = lowPoint.z;
 					let max = highPoint.z;
 
-					let start = new THREE.Vector3(highPoint.x, highPoint.y, min);
-					let end = new THREE.Vector3(highPoint.x, highPoint.y, max);
+					let start = new Vector3(highPoint.x, highPoint.y, min);
+					let end = new Vector3(highPoint.x, highPoint.y, max);
 
 					let lowScreen = lowPoint.clone().project(camera);
 					let startScreen = start.clone().project(camera);

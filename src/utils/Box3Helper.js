@@ -1,16 +1,18 @@
 /**
  *
- * code adapted from three.js BoxHelper.js
- * https://github.com/mrdoob/three.js/blob/dev/src/helpers/BoxHelper.js
+ * code adapted from js BoxHelper.js
+ * https://github.com/mrdoob/js/blob/dev/src/helpers/BoxHelper.js
  *
  * @author mrdoob / http://mrdoob.com/
  * @author Mugen87 / http://github.com/Mugen87
  * @author mschuetz / http://potree.org
  */
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {BufferGeometry, LineBasicMaterial,  LineSegments, BufferAttribute} from 'three'
 
-export class Box3Helper extends THREE.LineSegments {
+
+export class Box3Helper extends LineSegments {
 	constructor (box, color) {
 		if (color === undefined) color = 0xffff00;
 
@@ -26,11 +28,11 @@ export class Box3Helper extends THREE.LineSegments {
 			box.min.x, box.max.y, box.max.z
 		]);
 
-		let geometry = new THREE.BufferGeometry();
-		geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-		geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+		let geometry = new BufferGeometry();
+		geometry.setIndex(new BufferAttribute(indices, 1));
+		geometry.setAttribute('position', new BufferAttribute(positions, 3));
 
-		let material = new THREE.LineBasicMaterial({ color: color });
+		let material = new LineBasicMaterial({ color: color });
 
 		super(geometry, material);
 	}

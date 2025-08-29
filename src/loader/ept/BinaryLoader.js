@@ -1,5 +1,6 @@
 
-import * as THREE from "../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../libs/js/build/module.js";
+import {Box3, BufferAttribute, BufferGeometry, Vector3} from 'three';
 import {XHRFactory} from "../../XHRFactory.js";
 
 export class EptBinaryLoader {
@@ -44,57 +45,57 @@ export class EptBinaryLoader {
 		let worker = Potree.workerPool.getWorker(workerPath);
 
 		worker.onmessage = function(e) {
-			let g = new THREE.BufferGeometry();
+			let g = new BufferGeometry();
 			let numPoints = e.data.numPoints;
 
 			let position = new Float32Array(e.data.position);
-			g.setAttribute('position', new THREE.BufferAttribute(position, 3));
+			g.setAttribute('position', new BufferAttribute(position, 3));
 
 			let indices = new Uint8Array(e.data.indices);
-			g.setAttribute('indices', new THREE.BufferAttribute(indices, 4));
+			g.setAttribute('indices', new BufferAttribute(indices, 4));
 
 			if (e.data.color) {
 				let color = new Uint8Array(e.data.color);
-				g.setAttribute('color', new THREE.BufferAttribute(color, 4, true));
+				g.setAttribute('color', new BufferAttribute(color, 4, true));
 			}
 			if (e.data.intensity) {
 				let intensity = new Float32Array(e.data.intensity);
 				g.setAttribute('intensity',
-						new THREE.BufferAttribute(intensity, 1));
+						new BufferAttribute(intensity, 1));
 			}
 			if (e.data.classification) {
 				let classification = new Uint8Array(e.data.classification);
 				g.setAttribute('classification',
-						new THREE.BufferAttribute(classification, 1));
+						new BufferAttribute(classification, 1));
 			}
 			if (e.data.returnNumber) {
 				let returnNumber = new Uint8Array(e.data.returnNumber);
 				g.setAttribute('return number',
-						new THREE.BufferAttribute(returnNumber, 1));
+						new BufferAttribute(returnNumber, 1));
 			}
 			if (e.data.numberOfReturns) {
 				let numberOfReturns = new Uint8Array(e.data.numberOfReturns);
 				g.setAttribute('number of returns',
-						new THREE.BufferAttribute(numberOfReturns, 1));
+						new BufferAttribute(numberOfReturns, 1));
 			}
 			if (e.data.pointSourceId) {
 				let pointSourceId = new Uint16Array(e.data.pointSourceId);
 				g.setAttribute('source id',
-						new THREE.BufferAttribute(pointSourceId, 1));
+						new BufferAttribute(pointSourceId, 1));
 			}
 
 			g.attributes.indices.normalized = true;
 
-			let tightBoundingBox = new THREE.Box3(
-				new THREE.Vector3().fromArray(e.data.tightBoundingBox.min),
-				new THREE.Vector3().fromArray(e.data.tightBoundingBox.max)
+			let tightBoundingBox = new Box3(
+				new Vector3().fromArray(e.data.tightBoundingBox.min),
+				new Vector3().fromArray(e.data.tightBoundingBox.max)
 			);
 
 			node.doneLoading(
 					g,
 					tightBoundingBox,
 					numPoints,
-					new THREE.Vector3(...e.data.mean));
+					new Vector3(...e.data.mean));
 
 			Potree.workerPool.returnWorker(workerPath, worker);
 		};

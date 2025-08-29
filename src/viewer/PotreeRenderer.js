@@ -1,6 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
-
+// import * as THREE from "../../libs/js/build/module.js";
+import {Mesh, MeshBasicMaterial, Scene, SphereGeometry, Vector2} from 'three';
 
 export class PotreeRenderer {
 
@@ -9,9 +9,9 @@ export class PotreeRenderer {
 		this.renderer = viewer.renderer;
 
 		{
-			let dummyScene = new THREE.Scene();
-			let geometry = new THREE.SphereGeometry(0.001, 2, 2);
-			let mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial());
+			let dummyScene = new Scene();
+			let geometry = new SphereGeometry(0.001, 2, 2);
+			let mesh = new Mesh(geometry, new MeshBasicMaterial());
 			mesh.position.set(36453, 35163, 764712);
 			dummyScene.add(mesh);
 
@@ -51,7 +51,7 @@ export class PotreeRenderer {
 
 		viewer.dispatchEvent({type: "render.pass.begin",viewer: viewer});
 
-		const renderAreaSize = renderer.getSize(new THREE.Vector2());
+		const renderAreaSize = renderer.getSize(new Vector2());
 		const width = params.viewport ? params.viewport[2] : renderAreaSize.x;
 		const height = params.viewport ? params.viewport[3] : renderAreaSize.y;
 

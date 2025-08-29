@@ -1,3 +1,4 @@
+//NOT IN USE ANYMORE, REMOVE IT
 import {EventDispatcher} from "../../EventDispatcher";
 
 export class SelectionTool extends EventDispatcher {

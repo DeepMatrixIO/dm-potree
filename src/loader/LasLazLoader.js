@@ -1,6 +1,8 @@
 
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Box3, BufferAttribute, BufferGeometry, Vector3} from 'three';
+
 import {Version} from "../Version.js";
 import {XHRFactory} from "../XHRFactory.js";
 
@@ -108,7 +110,7 @@ export class LasLazLoader {
 			lf.isOpen = false;
 		}catch(e){
 			console.error("failed to close las/laz file!!!");
-			
+
 			throw e;
 		}
 	}
@@ -131,7 +133,7 @@ export class LasLazBatcher{
 		const pointAttributes = node.pcoGeometry.pointAttributes;
 
 		worker.onmessage = (e) => {
-			let geometry = new THREE.BufferGeometry();
+			let geometry = new BufferGeometry();
 			let numPoints = lasBuffer.pointsCount;
 
 			let positions = new Float32Array(e.data.position);
@@ -143,14 +145,14 @@ export class LasLazBatcher{
 			let pointSourceIDs = new Uint16Array(e.data.pointSourceID);
 			let indices = new Uint8Array(e.data.indices);
 
-			geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-			geometry.setAttribute('color', new THREE.BufferAttribute(colors, 4, true));
-			geometry.setAttribute('intensity', new THREE.BufferAttribute(intensities, 1));
-			geometry.setAttribute('classification', new THREE.BufferAttribute(classifications, 1));
-			geometry.setAttribute('return number', new THREE.BufferAttribute(returnNumbers, 1));
-			geometry.setAttribute('number of returns', new THREE.BufferAttribute(numberOfReturns, 1));
-			geometry.setAttribute('source id', new THREE.BufferAttribute(pointSourceIDs, 1));
-			geometry.setAttribute('indices', new THREE.BufferAttribute(indices, 4));
+			geometry.setAttribute('position', new BufferAttribute(positions, 3));
+			geometry.setAttribute('color', new BufferAttribute(colors, 4, true));
+			geometry.setAttribute('intensity', new BufferAttribute(intensities, 1));
+			geometry.setAttribute('classification', new BufferAttribute(classifications, 1));
+			geometry.setAttribute('return number', new BufferAttribute(returnNumbers, 1));
+			geometry.setAttribute('number of returns', new BufferAttribute(numberOfReturns, 1));
+			geometry.setAttribute('source id', new BufferAttribute(pointSourceIDs, 1));
+			geometry.setAttribute('indices', new BufferAttribute(indices, 4));
 			geometry.attributes.indices.normalized = true;
 
 			for(const key in e.data.ranges){
@@ -161,9 +163,9 @@ export class LasLazBatcher{
 				attribute.range[1] = Math.max(attribute.range[1], range[1]);
 			}
 
-			let tightBoundingBox = new THREE.Box3(
-				new THREE.Vector3().fromArray(e.data.tightBoundingBox.min),
-				new THREE.Vector3().fromArray(e.data.tightBoundingBox.max)
+			let tightBoundingBox = new Box3(
+				new Vector3().fromArray(e.data.tightBoundingBox.min),
+				new Vector3().fromArray(e.data.tightBoundingBox.max)
 			);
 
 			geometry.boundingBox = this.node.boundingBox;
@@ -174,7 +176,7 @@ export class LasLazBatcher{
 			this.node.loaded = true;
 			this.node.loading = false;
 			Potree.numNodesLoading--;
-			this.node.mean = new THREE.Vector3(...e.data.mean);
+			this.node.mean = new Vector3(...e.data.mean);
 
 			Potree.workerPool.returnWorker(workerPath, worker);
 		};

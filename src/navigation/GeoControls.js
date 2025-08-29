@@ -2,7 +2,7 @@
 /**
  * @author mschuetz / http://mschuetz.at
  *
- * adapted from THREE.OrbitControls by
+ * adapted from OrbitControls by
  *
  * @author qiao / https://github.com/qiao
  * @author mrdoob / http://mrdoob.com
@@ -20,8 +20,8 @@
  *
  *
  */
-
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Matrix4, Object3D, Vector2, Vector3} from 'three';
+// import * as THREE from "../../libs/js/build/module.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";
 
@@ -38,7 +38,7 @@ export class GeoControls extends EventDispatcher{
 		// Set to false to disable this control
 		this.enabled = true;
 
-		// Set this to a THREE.SplineCurve3 instance
+		// Set this to a SplineCurve3 instance
 		this.track = null;
 		// position on track in intervall [0,1]
 		this.trackPos = 0;
@@ -46,24 +46,24 @@ export class GeoControls extends EventDispatcher{
 		this.rotateSpeed = 1.0;
 		this.moveSpeed = 10.0;
 
-		let rotateStart = new THREE.Vector2();
-		let rotateEnd = new THREE.Vector2();
-		let rotateDelta = new THREE.Vector2();
+		let rotateStart = new Vector2();
+		let rotateEnd = new Vector2();
+		let rotateDelta = new Vector2();
 
-		let panStart = new THREE.Vector2();
-		let panEnd = new THREE.Vector2();
-		let panDelta = new THREE.Vector2();
-		let panOffset = new THREE.Vector3();
+		let panStart = new Vector2();
+		let panEnd = new Vector2();
+		let panDelta = new Vector2();
+		let panOffset = new Vector3();
 
-		// TODO Unused: let offset = new THREE.Vector3();
+		// TODO Unused: let offset = new Vector3();
 
 		let phiDelta = 0;
 		let thetaDelta = 0;
-		let pan = new THREE.Vector3();
+		let pan = new Vector3();
 
 		this.shiftDown = false;
 
-		let lastPosition = new THREE.Vector3();
+		let lastPosition = new Vector3();
 
 		let STATE = { NONE: -1, ROTATE: 0, SPEEDCHANGE: 1, PAN: 2 };
 
@@ -113,12 +113,12 @@ export class GeoControls extends EventDispatcher{
 		if (newTangent.equals(oldTangent)) {
 			// no change in direction
 		} else {
-			let tangentDiffNormal = new THREE.Vector3().crossVectors(oldTangent, newTangent).normalize();
+			let tangentDiffNormal = new Vector3().crossVectors(oldTangent, newTangent).normalize();
 			let angle = oldTangent.angleTo(newTangent);
-			let rot = new THREE.Matrix4().makeRotationAxis(tangentDiffNormal, angle);
-			let dir = this.object.getWorldDirection(new THREE.Vector3()).clone();
+			let rot = new Matrix4().makeRotationAxis(tangentDiffNormal, angle);
+			let dir = this.object.getWorldDirection(new Vector3()).clone();
 			dir = dir.applyMatrix4(rot);
-			let target = new THREE.Vector3().addVectors(this.object.position, dir);
+			let target = new Vector3().addVectors(this.object.position, dir);
 			this.object.lookAt(target);
 			this.object.updateMatrixWorld();
 
@@ -132,7 +132,7 @@ export class GeoControls extends EventDispatcher{
 		}
 
 		if (this.trackPos === null) {
-			let target = new THREE.Vector3().addVectors(this.object.position, newTangent);
+			let target = new Vector3().addVectors(this.object.position, newTangent);
 			this.object.lookAt(target);
 		}
 
@@ -152,7 +152,7 @@ export class GeoControls extends EventDispatcher{
 	}
 
 	stop(){
-		
+
 	}
 
 	getTrackPos(){
@@ -235,7 +235,7 @@ export class GeoControls extends EventDispatcher{
 
 		let object = this.object;
 
-		this.object = new THREE.Object3D();
+		this.object = new Object3D();
 		this.object.position.copy(object.position);
 		this.object.rotation.copy(object.rotation);
 		this.object.updateMatrix();
@@ -273,7 +273,7 @@ export class GeoControls extends EventDispatcher{
 			}
 		}
 
-		if (!pan.equals(new THREE.Vector3(0, 0, 0))) {
+		if (!pan.equals(new Vector3(0, 0, 0))) {
 			let event = {
 				type: 'move',
 				translation: pan.clone()
@@ -293,8 +293,8 @@ export class GeoControls extends EventDispatcher{
 		}
 
 		this.object.updateMatrix();
-		let rot = new THREE.Matrix4().makeRotationY(thetaDelta);
-		let res = new THREE.Matrix4().multiplyMatrices(rot, this.object.matrix);
+		let rot = new Matrix4().makeRotationY(thetaDelta);
+		let res = new Matrix4().multiplyMatrices(rot, this.object.matrix);
 		this.object.quaternion.setFromRotationMatrix(res);
 
 		this.object.rotation.x += phiDelta;

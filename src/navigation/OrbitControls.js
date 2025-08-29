@@ -1,7 +1,7 @@
 /**
  * @author mschuetz / http://mschuetz.at
  *
- * adapted from THREE.OrbitControls by
+ * adapted from OrbitControls by
  *
  * @author qiao / https://github.com/qiao
  * @author mrdoob / http://mrdoob.com
@@ -13,7 +13,8 @@
  *
  */
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Scene, Sphere, Vector2, Vector3} from 'three';
 import {MOUSE} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
@@ -28,14 +29,14 @@ export class OrbitControls extends EventDispatcher {
 		this.renderer = viewer.renderer;
 
 		this.scene = null;
-		this.sceneControls = new THREE.Scene();
+		this.sceneControls = new Scene();
 
 		this.rotationSpeed = 5;
 
 		this.fadeFactor = 20;
 		this.yawDelta = 0;
 		this.pitchDelta = 0;
-		this.panDelta = new THREE.Vector2(0, 0);
+		this.panDelta = new Vector2(0, 0);
 		this.radiusDelta = 0;
 
 		this.doubleClockZoomEnabled = true;
@@ -187,13 +188,13 @@ export class OrbitControls extends EventDispatcher {
 
 			let nodes = I.pointcloud.nodesOnRay(I.pointcloud.visibleNodes, ray);
 			let lastNode = nodes[nodes.length - 1];
-			let radius = lastNode.getBoundingSphere(new THREE.Sphere()).radius;
+			let radius = lastNode.getBoundingSphere(new Sphere()).radius;
 			targetRadius = Math.min(this.scene.view.radius, radius);
 			targetRadius = Math.max(minimumJumpDistance, targetRadius);
 		}
 
 		let d = this.scene.view.direction.multiplyScalar(-1);
-		let cameraTargetPosition = new THREE.Vector3().addVectors(I.location, d.multiplyScalar(targetRadius));
+		let cameraTargetPosition = new Vector3().addVectors(I.location, d.multiplyScalar(targetRadius));
 		// TODO Unused: let controlsTargetPosition = I.location;
 
 		let animationDuration = 600;
@@ -251,7 +252,7 @@ export class OrbitControls extends EventDispatcher {
 			view.pitch = pitch;
 
 			let V = this.scene.view.direction.multiplyScalar(-view.radius);
-			let position = new THREE.Vector3().addVectors(pivot, V);
+			let position = new Vector3().addVectors(pivot, V);
 
 			view.position.copy(position);
 		}
@@ -273,7 +274,7 @@ export class OrbitControls extends EventDispatcher {
 			let radius = view.radius + progression * this.radiusDelta;
 
 			let V = view.direction.multiplyScalar(-radius);
-			let position = new THREE.Vector3().addVectors(view.getPivot(), V);
+			let position = new Vector3().addVectors(view.getPivot(), V);
 			view.radius = radius;
 
 			view.position.copy(position);

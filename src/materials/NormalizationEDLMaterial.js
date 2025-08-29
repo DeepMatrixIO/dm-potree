@@ -1,13 +1,12 @@
-
 import {Shaders} from "../../build/shaders/shaders.js";
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import { RawShaderMaterial} from 'three'
 
-
-export class NormalizationEDLMaterial extends THREE.RawShaderMaterial {
+export class NormalizationEDLMaterial extends RawShaderMaterial {
 
 	constructor(parameters = {}) {
 		super();
-		this.glslVersion = THREE.GLSL3;//webgl 2.0
+		this.glslVersion = GLSL3;//webgl 2.0
 
 		let uniforms = {
 			screenWidth: {type: 'f', value: 0},

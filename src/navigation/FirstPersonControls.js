@@ -1,7 +1,7 @@
 /**
  * @author mschuetz / http://mschuetz.at
  *
- * adapted from THREE.OrbitControls by
+ * adapted from OrbitControls by
  *
  * @author qiao / https://github.com/qiao
  * @author mrdoob / http://mrdoob.com
@@ -13,10 +13,11 @@
  *
  */
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
 import {MOUSE} from "../defines.js";
 import {Utils} from "../utils.js";
 import {EventDispatcher} from "../EventDispatcher.js";
+import {Scene, Sphere, Vector3} from "three";
 
 
 export class FirstPersonControls extends EventDispatcher {
@@ -27,7 +28,7 @@ export class FirstPersonControls extends EventDispatcher {
 		this.renderer = viewer.renderer;
 
 		this.scene = null;
-		this.sceneControls = new THREE.Scene();
+		this.sceneControls = new Scene();
 
 		this.rotationSpeed = 200;
 		this.moveSpeed = 10;
@@ -45,8 +46,8 @@ export class FirstPersonControls extends EventDispatcher {
 		this.fadeFactor = 50;
 		this.yawDelta = 0;
 		this.pitchDelta = 0;
-		this.translationDelta = new THREE.Vector3(0, 0, 0);
-		this.translationWorldDelta = new THREE.Vector3(0, 0, 0);
+		this.translationDelta = new Vector3(0, 0, 0);
+		this.translationWorldDelta = new Vector3(0, 0, 0);
 
 		this.tweens = [];
 
@@ -114,10 +115,10 @@ export class FirstPersonControls extends EventDispatcher {
 		this.pitchDelta = 0;
 		this.translationDelta.set(0, 0, 0);
 	}
-	
+
 	zoomToLocation(mouse){
 		let camera = this.scene.getActiveCamera();
-		
+
 		let I = Utils.getMousePointCloudIntersection(
 			mouse,
 			camera,
@@ -137,13 +138,13 @@ export class FirstPersonControls extends EventDispatcher {
 
 			let nodes = I.pointcloud.nodesOnRay(I.pointcloud.visibleNodes, ray);
 			let lastNode = nodes[nodes.length - 1];
-			let radius = lastNode.getBoundingSphere(new THREE.Sphere()).radius;
+			let radius = lastNode.getBoundingSphere(new Sphere()).radius;
 			targetRadius = Math.min(this.scene.view.radius, radius);
 			targetRadius = Math.max(minimumJumpDistance, targetRadius);
 		}
 
 		let d = this.scene.view.direction.multiplyScalar(-1);
-		let cameraTargetPosition = new THREE.Vector3().addVectors(I.location, d.multiplyScalar(targetRadius));
+		let cameraTargetPosition = new Vector3().addVectors(I.location, d.multiplyScalar(targetRadius));
 		// TODO Unused: let controlsTargetPosition = I.location;
 
 		let animationDuration = 600;

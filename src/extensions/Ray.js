@@ -1,7 +1,7 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import { Ray } from 'three'
 
-THREE.Ray.prototype.distanceToPlaneWithNegative = function (plane) {
+Ray.prototype.distanceToPlaneWithNegative = function (plane) {
 	let denominator = plane.normal.dot(this.direction);
 	if (denominator === 0) {
 		// line is coplanar, return origin

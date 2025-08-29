@@ -1,5 +1,5 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Scene, Vector2, Vector3} from "three";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
 import {Profile} from "./Profile.js";
@@ -18,11 +18,11 @@ export class ProfileTool extends EventDispatcher {
 			});
 		});
 
-		this.scene = new THREE.Scene();
+		this.scene = new Scene();
 		this.scene.name = 'scene_profile';
-		//this.light = new THREE.PointLight(0xffffff, 1.0);
-		//this.light = new THREE.AmbientLight(0xffffff, 1.5);
-		this.light = new THREE.DirectionalLight(0xffffff, 2.5);
+		//this.light = new PointLight(0xffffff, 1.0);
+		//this.light = new AmbientLight(0xffffff, 1.5);
+		this.light = new DirectionalLight(0xffffff, 2.5);
 		this.light.position.copy(viewer.scene.getActiveCamera().position);
 		this.light.position.z += 1000;
 
@@ -73,11 +73,11 @@ export class ProfileTool extends EventDispatcher {
 		};
 
 		let insertionCallback = (e) => {
-			if(e.button === THREE.MOUSE.LEFT){
+			if(e.button === MOUSE.LEFT){
 				if(profile.points.length <= 1){
 					let camera = this.viewer.scene.getActiveCamera();
 					let distance = camera.position.distanceTo(profile.points[0]);
-					let clientSize = this.viewer.renderer.getSize(new THREE.Vector2());
+					let clientSize = this.viewer.renderer.getSize(new Vector2());
 					let pr = Utils.projectedRadius(1, camera, distance, clientSize.width, clientSize.height);
 					let width = (10 / pr);
 
@@ -88,7 +88,7 @@ export class ProfileTool extends EventDispatcher {
 
 				this.viewer.inputHandler.startDragging(
 					profile.spheres[profile.spheres.length - 1]);
-			} else if (e.button === THREE.MOUSE.RIGHT) {
+			} else if (e.button === MOUSE.RIGHT) {
 				cancel.callback();
 			}
 		};
@@ -102,7 +102,7 @@ export class ProfileTool extends EventDispatcher {
 		this.viewer.addEventListener('cancel_insertions', cancel.callback);
 		domElement.addEventListener('mouseup', insertionCallback, false);
 
-		profile.addMarker(new THREE.Vector3(0, 0, 0));
+		profile.addMarker(new Vector3(0, 0, 0));
 		this.viewer.inputHandler.startDragging(
 			profile.spheres[profile.spheres.length - 1]);
 
@@ -114,7 +114,7 @@ export class ProfileTool extends EventDispatcher {
 	update(){
 		let camera = this.viewer.scene.getActiveCamera();
 		let profiles = this.viewer.scene.profiles;
-		let renderAreaSize = this.viewer.renderer.getSize(new THREE.Vector2());
+		let renderAreaSize = this.viewer.renderer.getSize(new Vector2());
 		let clientWidth = renderAreaSize.width;
 		let clientHeight = renderAreaSize.height;
 
@@ -123,7 +123,7 @@ export class ProfileTool extends EventDispatcher {
 		// make size independant of distance
 		for(let profile of profiles){
 			for(let sphere of profile.spheres){
-				let distance = camera.position.distanceTo(sphere.getWorldPosition(new THREE.Vector3()));
+				let distance = camera.position.distanceTo(sphere.getWorldPosition(new Vector3()));
 				let pr = Utils.projectedRadius(1, camera, distance, clientWidth, clientHeight);
 				let scale = (15 / pr);
 				sphere.scale.set(scale, scale, scale);

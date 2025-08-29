@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {FloatType, NearestFilter, RGBAFormat, UnsignedIntType, Vector2, Vector3} from 'three';
 import {EyeDomeLightingMaterial} from "../materials/EyeDomeLightingMaterial.js";
 import {Utils} from "../utils.js";
 import {PointCloudSM} from "../utils/PointCloudSM.js";
@@ -29,19 +30,19 @@ export class EDLRenderer{
 		this.edlMaterial.depthWrite = true;
 		this.edlMaterial.transparent = true;
 
-		this.rtEDL = new THREE.WebGLRenderTarget(1024, 1024, {
-			minFilter: THREE.NearestFilter,
-			magFilter: THREE.NearestFilter,
-			format: THREE.RGBAFormat,
-			type: THREE.FloatType,
-			depthTexture: new THREE.DepthTexture(undefined, undefined, THREE.UnsignedIntType)
+		this.rtEDL = new WebGLRenderTarget(1024, 1024, {
+			minFilter: NearestFilter,
+			magFilter: NearestFilter,
+			format: RGBAFormat,
+			type: FloatType,
+			depthTexture: new DepthTexture(undefined, undefined, UnsignedIntType)
 		});
 
-		this.rtRegular = new THREE.WebGLRenderTarget(1024, 1024, {
-			minFilter: THREE.NearestFilter,
-			magFilter: THREE.NearestFilter,
-			format: THREE.RGBAFormat,
-			depthTexture: new THREE.DepthTexture(undefined, undefined, THREE.UnsignedIntType)
+		this.rtRegular = new WebGLRenderTarget(1024, 1024, {
+			minFilter: NearestFilter,
+			magFilter: NearestFilter,
+			format: RGBAFormat,
+			depthTexture: new DepthTexture(undefined, undefined, UnsignedIntType)
 		});
 	};
 
@@ -62,7 +63,7 @@ export class EDLRenderer{
 		}
 
 		if(size === undefined || size === null){
-			size = this.viewer.renderer.getSize(new THREE.Vector2());
+			size = this.viewer.renderer.getSize(new Vector2());
 		}
 
 		let {width, height} = size;
@@ -72,8 +73,8 @@ export class EDLRenderer{
 		width = 2 * width;
 		height = 2 * height;
 
-		let target = new THREE.WebGLRenderTarget(width, height, {
-			format: THREE.RGBAFormat,
+		let target = new WebGLRenderTarget(width, height, {
+			format: RGBAFormat,
 		});
 
 		this.screenshot = {
@@ -189,7 +190,7 @@ export class EDLRenderer{
 
 		const viewer = this.viewer;
 		let camera = params.camera ? params.camera : viewer.scene.getActiveCamera();
-		const {width, height} = this.viewer.renderer.getSize(new THREE.Vector2());
+		const {width, height} = this.viewer.renderer.getSize(new Vector2());
 
 
 		viewer.dispatchEvent({type: "render.pass.begin",viewer: viewer});
@@ -235,7 +236,7 @@ export class EDLRenderer{
 
 		{ // COLOR & DEPTH PASS
 			for (let pointcloud of visiblePointClouds) {
-				let octreeSize = pointcloud.pcoGeometry.boundingBox.getSize(new THREE.Vector3()).x;
+				let octreeSize = pointcloud.pcoGeometry.boundingBox.getSize(new Vector3()).x;
 
 				let material = pointcloud.material;
 				material.weighted = false;
@@ -266,7 +267,7 @@ export class EDLRenderer{
 
 				// //test.updateMatrixWorld = () => {};
 
-				// let mat = new THREE.Matrix4().set(
+				// let mat = new Matrix4().set(
 				// 	1, 0, 0, 0,
 				// 	0, 0, 1, 0,
 				// 	0, -1, 0, 0,

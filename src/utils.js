@@ -1,5 +1,6 @@
 
-import * as THREE from "../libs/three.js/build/three.module.js";
+import {Box3, BoxGeometry, BufferGeometry, Camera, DataTexture, Line, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, NearestFilter, Object3D, PerspectiveCamera, Ray, Raycaster, RGBAFormat, RGBFormat, Scene, SphereGeometry, TextureLoader, Vector3, Vector4} from 'three';
+
 import {XHRFactory} from "./XHRFactory.js";
 import {Measure} from "./utils/Measure.js";
 import {PolygonClipVolume} from "./utils/PolygonClipVolume.js";
@@ -63,15 +64,15 @@ export class Utils {
 	};
 
 	static debugSphere(parent, position, scale, color) {
-		let geometry = new THREE.SphereGeometry(1, 8, 8);
+		let geometry = new SphereGeometry(1, 8, 8);
 		let material;
 
 		if (color !== undefined) {
-			material = new THREE.MeshBasicMaterial({color: color});
+			material = new MeshBasicMaterial({color: color});
 		} else {
-			material = new THREE.MeshNormalMaterial();
+			material = new MeshNormalMaterial();
 		}
-		let sphere = new THREE.Mesh(geometry, material);
+		let sphere = new Mesh(geometry, material);
 		sphere.position.copy(position);
 		sphere.scale.set(scale, scale, scale);
 		parent.add(sphere);
@@ -81,16 +82,16 @@ export class Utils {
 
 	static debugLine(parent, start, end, color) {
 
-		let material = new THREE.LineBasicMaterial({color: color});
-		//let geometry = new THREE.Geometry();
-		let geometry = new THREE.BufferGeometry();
+		let material = new LineBasicMaterial({color: color});
+		//let geometry = new Geometry();
+		let geometry = new BufferGeometry();
 
-		const p1 = new THREE.Vector3(0, 0, 0);
+		const p1 = new Vector3(0, 0, 0);
 		const p2 = end.clone().sub(start);
 
 		geometry.vertices.push(p1, p2);
 
-		let tl = new THREE.Line(geometry, material);
+		let tl = new Line(geometry, material);
 		tl.position.copy(start);
 
 		parent.add(tl);
@@ -108,23 +109,23 @@ export class Utils {
 	}
 
 	static debugCircle(parent, center, radius, normal, color) {
-		let material = new THREE.LineBasicMaterial({color: color});
+		let material = new LineBasicMaterial({color: color});
 
-		//let geometry = new THREE.Geometry();
-		let geometry = new THREE.BufferGeometry();
+		//let geometry = new Geometry();
+		let geometry = new BufferGeometry();
 
 		let n = 32;
 		for (let i = 0;i <= n;i++) {
 			let u0 = 2 * Math.PI * (i / n);
 			let u1 = 2 * Math.PI * (i + 1) / n;
 
-			let p0 = new THREE.Vector3(
+			let p0 = new Vector3(
 				Math.cos(u0),
 				Math.sin(u0),
 				0
 			);
 
-			let p1 = new THREE.Vector3(
+			let p1 = new Vector3(
 				Math.cos(u1),
 				Math.sin(u1),
 				0
@@ -133,14 +134,14 @@ export class Utils {
 			geometry.vertices.push(p0, p1);
 		}
 
-		let tl = new THREE.Line(geometry, material);
+		let tl = new Line(geometry, material);
 		tl.position.copy(center);
 		tl.scale.set(radius, radius, radius);
 
 		parent.add(tl);
 	}
 
-	static debugBox(parent, box, transform = new THREE.Matrix4(), color = 0xFFFF00) {
+	static debugBox(parent, box, transform = new Matrix4(), color = 0xFFFF00) {
 
 		let vertices = [
 			[box.min.x, box.min.y, box.min.z],
@@ -152,7 +153,7 @@ export class Utils {
 			[box.max.x, box.min.y, box.max.z],
 			[box.max.x, box.max.y, box.min.z],
 			[box.max.x, box.max.y, box.max.z],
-		].map(v => new THREE.Vector3(...v));
+		].map(v => new Vector3(...v));
 
 		let edges = [
 			[0, 4], [4, 5], [5, 1], [1, 0],
@@ -160,7 +161,7 @@ export class Utils {
 			[0, 2], [4, 6], [5, 7], [1, 3]
 		];
 
-		let center = box.getCenter(new THREE.Vector3());
+		let center = box.getCenter(new Vector3());
 
 		let centroids = [
 			{position: [box.min.x, center.y, center.z], color: 0xFF0000},
@@ -187,7 +188,7 @@ export class Utils {
 		}
 
 		for (let centroid of centroids) {
-			let pos = new THREE.Vector3(...centroid.position).applyMatrix4(transform);
+			let pos = new Vector3(...centroid.position).applyMatrix4(transform);
 
 			Utils.debugSphere(parent, pos, 0.1, centroid.color);
 		}
@@ -195,29 +196,29 @@ export class Utils {
 
 	static debugPlane(parent, plane, size = 1, color = 0x0000FF) {
 
-		let planehelper = new THREE.PlaneHelper(plane, size, color);
+		let planehelper = new PlaneHelper(plane, size, color);
 
 		parent.add(planehelper);
 
 	}
 
 	/**
-	 * adapted from mhluska at https://github.com/mrdoob/three.js/issues/1561
+	 * adapted from mhluska at https://github.com/mrdoob/js/issues/1561
 	 */
 	static computeTransformedBoundingBox(box, transform) {
 		let vertices = [
-			new THREE.Vector3(box.min.x, box.min.y, box.min.z).applyMatrix4(transform),
-			new THREE.Vector3(box.min.x, box.min.y, box.min.z).applyMatrix4(transform),
-			new THREE.Vector3(box.max.x, box.min.y, box.min.z).applyMatrix4(transform),
-			new THREE.Vector3(box.min.x, box.max.y, box.min.z).applyMatrix4(transform),
-			new THREE.Vector3(box.min.x, box.min.y, box.max.z).applyMatrix4(transform),
-			new THREE.Vector3(box.min.x, box.max.y, box.max.z).applyMatrix4(transform),
-			new THREE.Vector3(box.max.x, box.max.y, box.min.z).applyMatrix4(transform),
-			new THREE.Vector3(box.max.x, box.min.y, box.max.z).applyMatrix4(transform),
-			new THREE.Vector3(box.max.x, box.max.y, box.max.z).applyMatrix4(transform)
+			new Vector3(box.min.x, box.min.y, box.min.z).applyMatrix4(transform),
+			new Vector3(box.min.x, box.min.y, box.min.z).applyMatrix4(transform),
+			new Vector3(box.max.x, box.min.y, box.min.z).applyMatrix4(transform),
+			new Vector3(box.min.x, box.max.y, box.min.z).applyMatrix4(transform),
+			new Vector3(box.min.x, box.min.y, box.max.z).applyMatrix4(transform),
+			new Vector3(box.min.x, box.max.y, box.max.z).applyMatrix4(transform),
+			new Vector3(box.max.x, box.max.y, box.min.z).applyMatrix4(transform),
+			new Vector3(box.max.x, box.min.y, box.max.z).applyMatrix4(transform),
+			new Vector3(box.max.x, box.max.y, box.max.z).applyMatrix4(transform)
 		];
 
-		let boundingBox = new THREE.Box3();
+		let boundingBox = new Box3();
 		boundingBox.setFromPoints(vertices);
 
 		return boundingBox;
@@ -272,9 +273,9 @@ export class Utils {
 
 		{ // animate camera target
 			let camTargetDistance = camera.position.distanceTo(endTarget);
-			let target = new THREE.Vector3().addVectors(
+			let target = new Vector3().addVectors(
 				camera.position,
-				camera.getWorldDirection(new THREE.Vector3()).clone().multiplyScalar(camTargetDistance)
+				camera.getWorldDirection(new Vector3()).clone().multiplyScalar(camTargetDistance)
 			);
 			let tween = new TWEEN.Tween(target).to(endTarget, animationDuration);
 			tween.easing(easing);
@@ -290,11 +291,11 @@ export class Utils {
 	}
 
 	static loadSkybox(path) {
-		let parent = new THREE.Object3D("skybox_root");
+		let parent = new Object3D("skybox_root");
 
-		let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 100000);
+		let camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 100000);
 		camera.up.set(0, 0, 1);
-		let scene = new THREE.Scene();
+		let scene = new Scene();
 
 		let format = '.jpg';
 		let urls = [
@@ -306,9 +307,9 @@ export class Utils {
 		let materialArray = [];
 		{
 			for (let i = 0;i < 6;i++) {
-				let material = new THREE.MeshBasicMaterial({
+				let material = new MeshBasicMaterial({
 					map: null,
-					side: THREE.BackSide,
+					side: BackSide,
 					depthTest: false,
 					depthWrite: false,
 					color: 0x424556
@@ -316,7 +317,7 @@ export class Utils {
 
 				materialArray.push(material);
 
-				let loader = new THREE.TextureLoader();
+				let loader = new TextureLoader();
 				loader.load(urls[i],
 					function loaded(texture) {
 						material.map = texture;
@@ -331,9 +332,9 @@ export class Utils {
 			}
 		}
 
-		//let skyGeometry = new THREE.CubeGeometry(700, 700, 700);
-		let skyGeometry = new THREE.BoxGeometry(700, 700, 700);//renamed
-		let skybox = new THREE.Mesh(skyGeometry, materialArray);
+		//let skyGeometry = new CubeGeometry(700, 700, 700);
+		let skyGeometry = new BoxGeometry(700, 700, 700);//renamed
+		let skybox = new Mesh(skyGeometry, materialArray);
 
 		scene.add(skybox);
 
@@ -349,24 +350,24 @@ export class Utils {
 	};
 
 	static createGrid(width, length, spacing, color) {
-		let material = new THREE.LineBasicMaterial({
+		let material = new LineBasicMaterial({
 			color: color || 0x888888
 		});
 
-		//let geometry = new THREE.Geometry();
-		let geometry = new THREE.BufferGeometry();
+		//let geometry = new Geometry();
+		let geometry = new BufferGeometry();
 		for (let i = 0;i <= length;i++) {
-			geometry.vertices.push(new THREE.Vector3(-(spacing * width) / 2, i * spacing - (spacing * length) / 2, 0));
-			geometry.vertices.push(new THREE.Vector3(+(spacing * width) / 2, i * spacing - (spacing * length) / 2, 0));
+			geometry.vertices.push(new Vector3(-(spacing * width) / 2, i * spacing - (spacing * length) / 2, 0));
+			geometry.vertices.push(new Vector3(+(spacing * width) / 2, i * spacing - (spacing * length) / 2, 0));
 		}
 
 		for (let i = 0;i <= width;i++) {
-			geometry.vertices.push(new THREE.Vector3(i * spacing - (spacing * width) / 2, -(spacing * length) / 2, 0));
-			geometry.vertices.push(new THREE.Vector3(i * spacing - (spacing * width) / 2, +(spacing * length) / 2, 0));
+			geometry.vertices.push(new Vector3(i * spacing - (spacing * width) / 2, -(spacing * length) / 2, 0));
+			geometry.vertices.push(new Vector3(i * spacing - (spacing * width) / 2, +(spacing * length) / 2, 0));
 		}
 
-		//let line = new THREE.LineSegments(geometry, material, THREE.LinePieces);
-		let line = new THREE.LineSegments(geometry, material, LINEPIECES);
+		//let line = new LineSegments(geometry, material, LinePieces);
+		let line = new LineSegments(geometry, material, LINEPIECES);
 		line.receiveShadow = true;
 		return line;
 	}
@@ -376,7 +377,7 @@ export class Utils {
 			return (1 / (2 * Math.PI)) * Math.exp(-(x * x + y * y) / 2);
 		};
 
-		// map.magFilter = THREE.NearestFilter;
+		// map.magFilter = NearestFilter;
 		let size = width * height;
 		let data = new Uint8Array(3 * size);
 
@@ -402,7 +403,7 @@ export class Utils {
 			}
 		}
 
-		let texture = new THREE.DataTexture(data, width, height, THREE.RGBFormat);
+		let texture = new DataTexture(data, width, height, RGBFormat);
 		texture.needsUpdate = true;
 
 		return texture;
@@ -426,7 +427,7 @@ export class Utils {
 		pickParams.x = mouse.x;
 		pickParams.y = renderer.domElement.clientHeight - mouse.y;
 
-		let raycaster = new THREE.Raycaster();
+		let raycaster = new Raycaster();
 		raycaster.setFromCamera(nmouse, camera);
 		let ray = raycaster.ray;
 
@@ -562,7 +563,7 @@ export class Utils {
 		};
 
 		// Create a vector in normalized device coordinates
-		let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
+		let vector = new Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
 		vector.unproject(camera); // Convert to world space but is far, so it must be placed closer to camera
 
 		// For orthographic camera, the ray origin is the unprojected vector
@@ -571,7 +572,7 @@ export class Utils {
 
 
 		// Ray direction is the camera's forward vector
-		let direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+		let direction = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
 		//TODO replace with analytical solution
 		let dist = camera.position.distanceTo(origin);
@@ -628,8 +629,8 @@ export class Utils {
 
 
 		// console.log("Min Distance to Camera: " , minDist , " @ ", origin.x , origin.y, origin.z);
-		// return new THREE.Ray(origin, direction);
-		return new THREE.Ray(intersectionPoint, direction);
+		// return new Ray(origin, direction);
+		return new Ray(intersectionPoint, direction);
 	};
 
 	//TODO. Works but produces coordinates far away from camera.
@@ -641,22 +642,22 @@ export class Utils {
 		};
 
 		// Create a vector in normalized device coordinates
-		//let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
-		let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
+		//let vector = new Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
+		let vector = new Vector3(normalizedMouse.x, normalizedMouse.y, -1); // Near plane
 		vector.unproject(camera); // Convert to world space
 
 		// For orthographic camera, the ray origin is the unprojected vector
 		let origin = vector.clone();
 
 		// Ray direction is the camera's forward vector
-		let direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+		let direction = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
-		return new THREE.Ray(origin, direction);
+		return new Ray(origin, direction);
 	};
 
 	static mouseToRay(mouse, camera, width, height) {
 
-		if (camera instanceof THREE.OrthographicCamera) {
+		if (camera instanceof OrthographicCamera) {
 			return Utils.mouseToRayOrtho(mouse, camera, width, height);//what changes is the direction vector,
 
 		} else {
@@ -667,12 +668,12 @@ export class Utils {
 				y: -(mouse.y / height) * 2 + 1
 			};
 
-			let vector = new THREE.Vector3(normalizedMouse.x, normalizedMouse.y, 0.5);
+			let vector = new Vector3(normalizedMouse.x, normalizedMouse.y, 0.5);
 			let origin = camera.position.clone();
 			vector.unproject(camera);
-			let direction = new THREE.Vector3().subVectors(vector, origin).normalize();
+			let direction = new Vector3().subVectors(vector, origin).normalize();
 
-			let ray = new THREE.Ray(origin, direction);
+			let ray = new Ray(origin, direction);
 
 			return ray;
 
@@ -683,9 +684,9 @@ export class Utils {
 	}
 
 	static projectedRadius(radius, camera, distance, screenWidth, screenHeight) {
-		if (camera instanceof THREE.OrthographicCamera) {
+		if (camera instanceof OrthographicCamera) {
 			return Utils.projectedRadiusOrtho(radius, camera.projectionMatrix, screenWidth, screenHeight);
-		} else if (camera instanceof THREE.PerspectiveCamera) {
+		} else if (camera instanceof PerspectiveCamera) {
 			return Utils.projectedRadiusPerspective(radius, camera.fov * Math.PI / 180, distance, screenHeight);
 		} else {
 			throw new Error("invalid parameters");
@@ -700,13 +701,13 @@ export class Utils {
 	}
 
 	static projectedRadiusOrtho(radius, proj, screenWidth, screenHeight) {
-		let p1 = new THREE.Vector4(0);
-		let p2 = new THREE.Vector4(radius);
+		let p1 = new Vector4(0);
+		let p2 = new Vector4(radius);
 
 		p1.applyMatrix4(proj);
 		p2.applyMatrix4(proj);
-		p1 = new THREE.Vector3(p1.x, p1.y, p1.z);
-		p2 = new THREE.Vector3(p2.x, p2.y, p2.z);
+		p1 = new Vector3(p1.x, p1.y, p1.z);
+		p2 = new Vector3(p2.x, p2.y, p2.z);
 		p1.x = (p1.x + 1.0) * 0.5 * screenWidth;
 		p1.y = (p1.y + 1.0) * 0.5 * screenHeight;
 		p2.x = (p2.x + 1.0) * 0.5 * screenWidth;
@@ -789,7 +790,7 @@ export class Utils {
 		}
 
 		const geometry = closestNode.geometryNode.geometry;
-		const position = new THREE.Vector3(
+		const position = new Vector3(
 			geometry.attributes.position.array[3 * closestIndex + 0],
 			geometry.attributes.position.array[3 * closestIndex + 1],
 			geometry.attributes.position.array[3 * closestIndex + 2],
@@ -834,7 +835,7 @@ export class Utils {
 		return (minDistance >= sphere.radius) ? 2 : 1;
 	}
 
-	// code taken from three.js
+	// code taken from js
 	// ImageUtils - generateDataTexture()
 	static generateDataTexture(width, height, color) {
 		let size = width * height;
@@ -850,9 +851,9 @@ export class Utils {
 			data[i * 3 + 2] = b;
 		}
 
-		let texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
+		let texture = new DataTexture(data, width, height, RGBAFormat);
 		texture.needsUpdate = true;
-		texture.magFilter = THREE.NearestFilter;
+		texture.magFilter = NearestFilter;
 
 		return texture;
 	}
@@ -891,7 +892,7 @@ export class Utils {
 	static createChildAABB(aabb, index) {
 		let min = aabb.min.clone();
 		let max = aabb.max.clone();
-		let size = new THREE.Vector3().subVectors(max, min);
+		let size = new Vector3().subVectors(max, min);
 
 		if ((index & 0b0001) > 0) {
 			min.z += size.z / 2;
@@ -911,7 +912,7 @@ export class Utils {
 			max.x -= size.x / 2;
 		}
 
-		return new THREE.Box3(min, max);
+		return new Box3(min, max);
 	}
 
 	// see https://stackoverflow.com/questions/400212/how-do-i-copy-to-the-clipboard-in-javascript
@@ -1041,7 +1042,7 @@ export class Utils {
 		// Potree.Utils.debugSphere(viewer.scene.scene, center, 0.03, 0xff00ff);
 
 		// const radius = center.distanceTo(A);
-		// Potree.Utils.debugCircle(viewer.scene.scene, center, radius, new THREE.Vector3(0, 0, 1), 0xff00ff);
+		// Potree.Utils.debugCircle(viewer.scene.scene, center, radius, new Vector3(0, 0, 1), 0xff00ff);
 	}
 
 	static getNorthVec(p1, distance, projection) {
@@ -1059,11 +1060,11 @@ export class Utils {
 
 			const northVec = transform.inverse(llP2);
 
-			return new THREE.Vector3(...northVec, p1.z).sub(p1);
+			return new Vector3(...northVec, p1.z).sub(p1);
 		} else {
 			// if there is no projection, assume [0, 1, 0] as north direction
 
-			const vec = new THREE.Vector3(0, 1, 0).multiplyScalar(distance);
+			const vec = new Vector3(0, 1, 0).multiplyScalar(distance);
 
 			return vec;
 		}
@@ -1205,14 +1206,14 @@ export class Utils {
 }
 
 Utils.screenPass = new function () {
-	this.screenScene = new THREE.Scene();
-	this.screenQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2, 1));
-	//this.screenQuad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2, 1));
+	this.screenScene = new Scene();
+	this.screenQuad = new Mesh(new PlaneGeometry(2, 2, 1));
+	//this.screenQuad = new Mesh(new PlaneBufferGeometry(2, 2, 1));
 	this.screenQuad.material.depthTest = true;
 	this.screenQuad.material.depthWrite = true;
 	this.screenQuad.material.transparent = true;
 	this.screenScene.add(this.screenQuad);
-	this.camera = new THREE.Camera();
+	this.camera = new Camera();
 
 	this.render = function (renderer, material, target) {
 		this.screenQuad.material = material;

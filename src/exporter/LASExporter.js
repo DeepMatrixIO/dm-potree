@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Vector3} from 'three';
 
 export class LASExporter {
 	static toLAS (points) {
@@ -8,11 +9,11 @@ export class LASExporter {
 		let boundingBox = points.boundingBox;
 		let offset = boundingBox.min.clone();
 		let diagonal = boundingBox.min.distanceTo(boundingBox.max);
-		let scale = new THREE.Vector3(0.001, 0.001, 0.001);
+		let scale = new Vector3(0.001, 0.001, 0.001);
 		if (diagonal > 1000 * 1000) {
-			scale = new THREE.Vector3(0.01, 0.01, 0.01);
+			scale = new Vector3(0.01, 0.01, 0.01);
 		} else {
-			scale = new THREE.Vector3(0.001, 0.001, 0.001);
+			scale = new Vector3(0.001, 0.001, 0.001);
 		}
 
 		let setString = function (string, offset, buffer) {
@@ -146,5 +147,5 @@ export class LASExporter {
 
 		return buffer;
 	}
-	
+
 }

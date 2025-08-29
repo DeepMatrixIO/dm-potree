@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {BoxGeometry, BufferAttribute, BufferGeometry, Color, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, Object3D, SphereGeometry, Vector3} from 'three';
 import {Utils} from "../utils.js";
 
 const LineStrip = 0;
@@ -8,7 +9,7 @@ const NoColors = 0;
 const FaceColors = 1;
 const VERTEXCOLORS = 2;
 
-export class Profile extends THREE.Object3D {
+export class Profile extends Object3D {
 
 	constructor() {
 		super();
@@ -24,27 +25,27 @@ export class Profile extends THREE.Object3D {
 		this.height = 20;
 		this._modifiable = true;
 
-		this.sphereGeometry = new THREE.SphereGeometry(0.4, 10, 10);
-		this.color = new THREE.Color(0xff0000);
-		this.lineColor = new THREE.Color(0xff0000);
+		this.sphereGeometry = new SphereGeometry(0.4, 10, 10);
+		this.color = new Color(0xff0000);
+		this.lineColor = new Color(0xff0000);
 
-		//this.add(new THREE.AmbientLight(0xffffff,0.2));
+		//this.add(new AmbientLight(0xffffff,0.2));
 
-		// this.light=new THREE.DirectionalLight(0xffffff,0.7);
+		// this.light=new DirectionalLight(0xffffff,0.7);
 		// this.add(this.light);
 	}
 
 	createSphereMaterial() {
-		let sphereMaterial = new THREE.MeshLambertMaterial({
-			//shading: THREE.SmoothShading,
+		let sphereMaterial = new MeshLambertMaterial({
+			//shading: SmoothShading,
 			color: 0xff0000,
 			depthTest: false,
 			depthWrite: false
 		}
 		);
 
-	// let sphereMaterial2 = new THREE.MeshBasicMaterial({
-	// 		//shading: THREE.SmoothShading,
+	// let sphereMaterial2 = new MeshBasicMaterial({
+	// 		//shading: SmoothShading,
 	// 		color: 0xff0000,
 	// 		depthTest: false,
 	// 		depthWrite: false
@@ -74,15 +75,15 @@ export class Profile extends THREE.Object3D {
 		for (let segment of segments) {
 			let {start, end} = segment;
 
-			let box = new THREE.Object3D();
+			let box = new Object3D();
 
 			let length = start.clone().setZ(0).distanceTo(end.clone().setZ(0));
 			box.scale.set(length, 10000, this.width);
 			box.up.set(0, 0, 1);
 
-			let center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-			let diff = new THREE.Vector3().subVectors(end, start);
-			let target = new THREE.Vector3(diff.y, -diff.x, 0);
+			let center = new Vector3().addVectors(start, end).multiplyScalar(0.5);
+			let diff = new Vector3().subVectors(end, start);
+			let target = new Vector3(diff.y, -diff.x, 0);
 
 			box.position.set(0, 0, 0);
 			box.lookAt(target);
@@ -102,18 +103,18 @@ export class Profile extends THREE.Object3D {
 
 		this.points.push(point);
 
-		let sphere = new THREE.Mesh(this.sphereGeometry, this.createSphereMaterial());
+		let sphere = new Mesh(this.sphereGeometry, this.createSphereMaterial());
 
 		this.add(sphere);
 		this.spheres.push(sphere);
 
 		// edges & boxes
 		if (this.points.length > 1) {
-			//let lineGeometry = new THREE.Geometry();
-			let lineGeometry = new THREE.BufferGeometry();
+			//let lineGeometry = new Geometry();
+			let lineGeometry = new BufferGeometry();
 
-			lineGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(2 * 3), 3));
-			//lineGeometry.vertices.push(new THREE.Vector3(), new THREE.Vector3());
+			lineGeometry.setAttribute('position', new BufferAttribute(new Float32Array(2 * 3), 3));
+			//lineGeometry.vertices.push(new Vector3(), new Vector3());
 
 			let colors = new Float32Array([
 				this.lineColor.r, this.lineColor.g, this.lineColor.b,
@@ -121,26 +122,26 @@ export class Profile extends THREE.Object3D {
 			]);
 
 
-			lineGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+			lineGeometry.setAttribute('color', new BufferAttribute(colors, 3));
 			//lineGeometry.colors.push(this.lineColor, this.lineColor, this.lineColor);
 
-			let lineMaterial = new THREE.LineBasicMaterial({
-				//vertexColors: THREE.VertexColors,
+			let lineMaterial = new LineBasicMaterial({
+				//vertexColors: VertexColors,
 				vertexColors: VERTEXCOLORS,//2
 				linewidth: 2,
 				transparent: true,
 				opacity: 0.4
 			});
 			lineMaterial.depthTest = false;
-			let edge = new THREE.Line(lineGeometry, lineMaterial);
+			let edge = new Line(lineGeometry, lineMaterial);
 			edge.visible = false;
 
 			this.add(edge);
 			this.edges.push(edge);
 
-			let boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-			let boxMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.2});
-			let box = new THREE.Mesh(boxGeometry, boxMaterial);
+			let boxGeometry = new BoxGeometry(1, 1, 1);
+			let boxMaterial = new MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.2});
+			let box = new Mesh(boxGeometry, boxMaterial);
 			box.visible = false;
 
 			this.add(box);
@@ -267,7 +268,7 @@ export class Profile extends THREE.Object3D {
 
 		let min = this.points[0].clone();
 		let max = this.points[0].clone();
-		let centroid = new THREE.Vector3();
+		let centroid = new Vector3();
 		let lastIndex = this.points.length - 1;
 		for (let i = 0; i <= lastIndex; i++) {
 			let point = this.points[i];
@@ -283,8 +284,8 @@ export class Profile extends THREE.Object3D {
 
 			// let leftEdgeLength = point.distanceTo(leftVertex);
 			// let rightEdgeLength = point.distanceTo(rightVertex);
-			// let leftEdgeCenter = new THREE.Vector3().addVectors(leftVertex, point).multiplyScalar(0.5);
-			// let rightEdgeCenter = new THREE.Vector3().addVectors(point, rightVertex).multiplyScalar(0.5);
+			// let leftEdgeCenter = new Vector3().addVectors(leftVertex, point).multiplyScalar(0.5);
+			// let rightEdgeCenter = new Vector3().addVectors(point, rightVertex).multiplyScalar(0.5);
 
 			sphere.position.copy(point);
 
@@ -316,9 +317,9 @@ export class Profile extends THREE.Object3D {
 				leftBox.scale.set(length, 1000000, this.width);
 				leftBox.up.set(0, 0, 1);
 
-				let center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-				let diff = new THREE.Vector3().subVectors(end, start);
-				let target = new THREE.Vector3(diff.y, -diff.x, 0);
+				let center = new Vector3().addVectors(start, end).multiplyScalar(0.5);
+				let diff = new Vector3().subVectors(end, start);
+				let target = new Vector3(diff.y, -diff.x, 0);
 
 				leftBox.position.set(0, 0, 0);
 				leftBox.lookAt(target);
@@ -347,7 +348,7 @@ export class Profile extends THREE.Object3D {
 
 		// recalculate distances because they are not necessarely correct
 		// for scaled objects.
-		// see https://github.com/mrdoob/three.js/issues/5827
+		// see https://github.com/mrdoob/js/issues/5827
 		// TODO: remove this once the bug has been fixed
 		for (let i = 0; i < intersects.length; i++) {
 			let I = intersects[i];

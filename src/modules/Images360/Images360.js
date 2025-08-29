@@ -1,15 +1,16 @@
 
-import * as THREE from "../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../libs/js/build/module.js";
+import {MathUtils, Mesh, MeshBasicMaterial, Object3D, Raycaster, RepeatWrapping, SphereGeometry, TextureLoader, Vector3} from 'three';
 import {EventDispatcher} from "../../EventDispatcher.js";
 import {updateFetchToken} from "../../tokenUpdater.js"; //added by jguerrer
 
-let sg = new THREE.SphereGeometry(1, 8, 8);
-let sgHigh = new THREE.SphereGeometry(1, 128, 128);
+let sg = new SphereGeometry(1, 8, 8);
+let sgHigh = new SphereGeometry(1, 128, 128);
 
-let sm = new THREE.MeshBasicMaterial({side: THREE.BackSide});
-let smHovered = new THREE.MeshBasicMaterial({side: THREE.BackSide, color: 0xff0000});
+let sm = new MeshBasicMaterial({side: BackSide});
+let smHovered = new MeshBasicMaterial({side: BackSide, color: 0xff0000});
 
-let raycaster = new THREE.Raycaster();
+let raycaster = new Raycaster();
 let currentlyHovered = null;
 
 let previousView = {
@@ -43,9 +44,9 @@ export class Images360 extends EventDispatcher {
 		this.selectingEnabled = true;
 
 		this.images = [];
-		this.node = new THREE.Object3D();
+		this.node = new Object3D();
 
-		this.sphere = new THREE.Mesh(sgHigh, sm);
+		this.sphere = new Mesh(sgHigh, sm);
 		this.sphere.visible = false;
 		this.sphere.scale.set(1000, 1000, 1000);
 		this.node.add(this.sphere);
@@ -135,16 +136,16 @@ export class Images360 extends EventDispatcher {
 		{ // orientation
 			let {course, pitch, roll} = image360;
 			this.sphere.rotation.set(
-				THREE.MathUtils.degToRad(+roll + 90),
-				THREE.MathUtils.degToRad(-pitch),
-				THREE.MathUtils.degToRad(-course + 90),
+				MathUtils.degToRad(+roll + 90),
+				MathUtils.degToRad(-pitch),
+				MathUtils.degToRad(-course + 90),
 				"ZYX"
 			);
 		}
 
 		this.sphere.position.set(...image360.position);
 
-		let target = new THREE.Vector3(...image360.position);
+		let target = new Vector3(...image360.position);
 		let dir = target.clone().sub(viewer.scene.view.position).normalize();
 		let move = dir.multiplyScalar(0.000001);
 		let newCamPos = target.clone().sub(move);
@@ -202,8 +203,8 @@ export class Images360 extends EventDispatcher {
 	load(image360) {
 
 		return new Promise(resolve => {
-			let texture = new THREE.TextureLoader().load(image360.file, resolve);
-			texture.wrapS = THREE.RepeatWrapping;
+			let texture = new TextureLoader().load(image360.file, resolve);
+			texture.wrapS = RepeatWrapping;
 			texture.repeat.x = -1;
 
 			image360.texture = texture;
@@ -317,7 +318,7 @@ export class Images360Loader {
 			let {longitude, latitude, altitude} = image360;
 			let xy = transform.forward([longitude, latitude]);
 
-			let mesh = new THREE.Mesh(sg, sm);
+			let mesh = new Mesh(sg, sm);
 			mesh.position.set(...xy, altitude);
 			mesh.scale.set(1, 1, 1);
 			mesh.material.transparent = true;
@@ -327,9 +328,9 @@ export class Images360Loader {
 			{ // orientation
 				var {course, pitch, roll} = image360;
 				mesh.rotation.set(
-					THREE.MathUtils.degToRad(+roll + 90),
-					THREE.MathUtils.degToRad(-pitch),
-					THREE.MathUtils.degToRad(-course + 90),
+					MathUtils.degToRad(+roll + 90),
+					MathUtils.degToRad(-pitch),
+					MathUtils.degToRad(-course + 90),
 					"ZYX"
 				);
 			}

@@ -1,20 +1,18 @@
-
-
 // /**
-//  * adapted from http://stemkoski.github.io/Three.js/Sprite-Text-Labels.html
+//  * adapted from http://stemkoski.github.io/js/Sprite-Text-Labels.html
 //  */
 
-import * as THREE from "../libs/three.js/build/three.module.js";
+import {Texture,   LinearFilter,  SpriteMaterial, Sprite} from 'three'
 
-export class TextSprite extends THREE.Object3D{
-	
+export class TextSprite extends Sprite{
+
 	constructor(text){
 		super();
 
-		let texture = new THREE.Texture();
-		texture.minFilter = THREE.LinearFilter;
-		texture.magFilter = THREE.LinearFilter;
-		let spriteMaterial = new THREE.SpriteMaterial({
+		let texture = new Texture();
+		texture.minFilter = LinearFilter;
+		texture.magFilter = LinearFilter;
+		let spriteMaterial = new SpriteMaterial({
 			map: texture,
 			depthTest: false,
 			depthWrite: false});
@@ -23,7 +21,7 @@ export class TextSprite extends THREE.Object3D{
 
 		this.material = spriteMaterial;
 		//this.material = getRawMaterial(texture);
-		this.sprite = new THREE.Sprite(this.material);
+		this.sprite = new Sprite(this.material);
 		this.add(this.sprite);
 
 		this.borderThickness = 4;
@@ -98,9 +96,9 @@ export class TextSprite extends THREE.Object3D{
 			this.textColor.b + ',' + this.textColor.a + ')';
 		context.fillText(this.text, this.borderThickness + margin, this.fontsize + this.borderThickness);
 
-		let texture = new THREE.Texture(canvas);
-		texture.minFilter = THREE.LinearFilter;
-		texture.magFilter = THREE.LinearFilter;
+		let texture = new Texture(canvas);
+		texture.minFilter = LinearFilter;
+		texture.magFilter = LinearFilter;
 		texture.needsUpdate = true;
 		//this.material.needsUpdate = true;
 

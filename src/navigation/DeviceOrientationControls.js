@@ -5,7 +5,7 @@
  *
  * @author mschuetz / http://mschuetz.at
  *
- * and THREE.DeviceOrientationControls  by
+ * and DeviceOrientationControls  by
  *
  * @author richt / http://richt.me
  * @author WestLangley / http://github.com/WestLangley
@@ -14,7 +14,8 @@
  *
  */
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {MathUtils, Quaternion, Scene, Vector3} from "three";
 import {EventDispatcher} from "../EventDispatcher.js";
 
 export class DeviceOrientationControls extends EventDispatcher {
@@ -25,7 +26,7 @@ export class DeviceOrientationControls extends EventDispatcher {
 		this.renderer = viewer.renderer;
 
 		this.scene = null;
-		this.sceneControls = new THREE.Scene();
+		this.sceneControls = new Scene();
 
 		this.screenOrientation = window.orientation || 0;
 
@@ -54,11 +55,11 @@ export class DeviceOrientationControls extends EventDispatcher {
 
 	update(delta) {
 		let computeQuaternion = function (alpha, beta, gamma, orient) {
-			let quaternion = new THREE.Quaternion();
+			let quaternion = new Quaternion();
 
-			let zee = new THREE.Vector3(0, 0, 1);
-			let euler = new THREE.Euler();
-			let q0 = new THREE.Quaternion();
+			let zee = new Vector3(0, 0, 1);
+			let euler = new Euler();
+			let q0 = new Quaternion();
 
 			euler.set(beta, gamma, alpha, 'ZXY');
 			quaternion.setFromEuler(euler);
@@ -68,10 +69,10 @@ export class DeviceOrientationControls extends EventDispatcher {
 		};
 
 		if (typeof this.deviceOrientation !== 'undefined') {
-			let alpha = this.deviceOrientation.alpha ? THREE.MathUtils.degToRad(this.deviceOrientation.alpha) : 0;
-			let beta = this.deviceOrientation.beta ? THREE.MathUtils.degToRad(this.deviceOrientation.beta) : 0;
-			let gamma = this.deviceOrientation.gamma ? THREE.MathUtils.degToRad(this.deviceOrientation.gamma) : 0;
-			let orient = this.screenOrientation ? THREE.MathUtils.degToRad(this.screenOrientation) : 0;
+			let alpha = this.deviceOrientation.alpha ? MathUtils.degToRad(this.deviceOrientation.alpha) : 0;
+			let beta = this.deviceOrientation.beta ? MathUtils.degToRad(this.deviceOrientation.beta) : 0;
+			let gamma = this.deviceOrientation.gamma ? MathUtils.degToRad(this.deviceOrientation.gamma) : 0;
+			let orient = this.screenOrientation ? MathUtils.degToRad(this.screenOrientation) : 0;
 
 			let quaternion = computeQuaternion(alpha, beta, gamma, orient);
 			viewer.scene.cameraP.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);

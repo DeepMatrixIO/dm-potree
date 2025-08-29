@@ -1,11 +1,13 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Box3, Sphere, Vector3} from 'three';
+
 import {PointCloudOctreeGeometry, PointCloudOctreeGeometryNode} from "../PointCloudOctreeGeometry.js";
+import {Utils} from "../utils.js";
 import {Version} from "../Version.js";
 import {XHRFactory} from "../XHRFactory.js";
-import {LasLazLoader} from "./LasLazLoader.js";
 import {BinaryLoader} from "./BinaryLoader.js";
-import {Utils} from "../utils.js";
+import {LasLazLoader} from "./LasLazLoader.js";
 import {PointAttribute, PointAttributes, PointAttributeTypes} from "./PointAttributes.js";
 
 function parseAttributes(cloudjs){
@@ -30,7 +32,7 @@ function parseAttributes(cloudjs){
 
 	const pointAttributes = [];
 	if(version.upTo('1.7')){
-		
+
 		for(let attributeName of cloudjs.pointAttributes){
 			const oldAttribute = PointAttribute[attributeName];
 
@@ -80,7 +82,7 @@ function parseAttributes(cloudjs){
 
 		{
 			// check if it has normals
-			let hasNormals = 
+			let hasNormals =
 				pointAttributes.find(a => a.name === "NormalX") !== undefined &&
 				pointAttributes.find(a => a.name === "NormalY") !== undefined &&
 				pointAttributes.find(a => a.name === "NormalZ") !== undefined;
@@ -143,14 +145,14 @@ export class POCLoader {
 
 					pco.pointAttributes = fMno.pointAttributes;
 
-					let min = new THREE.Vector3(fMno.boundingBox.lx, fMno.boundingBox.ly, fMno.boundingBox.lz);
-					let max = new THREE.Vector3(fMno.boundingBox.ux, fMno.boundingBox.uy, fMno.boundingBox.uz);
-					let boundingBox = new THREE.Box3(min, max);
+					let min = new Vector3(fMno.boundingBox.lx, fMno.boundingBox.ly, fMno.boundingBox.lz);
+					let max = new Vector3(fMno.boundingBox.ux, fMno.boundingBox.uy, fMno.boundingBox.uz);
+					let boundingBox = new Box3(min, max);
 					let tightBoundingBox = boundingBox.clone();
 
 					if (fMno.tightBoundingBox) {
-						tightBoundingBox.min.copy(new THREE.Vector3(fMno.tightBoundingBox.lx, fMno.tightBoundingBox.ly, fMno.tightBoundingBox.lz));
-						tightBoundingBox.max.copy(new THREE.Vector3(fMno.tightBoundingBox.ux, fMno.tightBoundingBox.uy, fMno.tightBoundingBox.uz));
+						tightBoundingBox.min.copy(new Vector3(fMno.tightBoundingBox.lx, fMno.tightBoundingBox.ly, fMno.tightBoundingBox.lz));
+						tightBoundingBox.max.copy(new Vector3(fMno.tightBoundingBox.ux, fMno.tightBoundingBox.uy, fMno.tightBoundingBox.uz));
 					}
 
 					let offset = min.clone();
@@ -164,8 +166,8 @@ export class POCLoader {
 					pco.projection = fMno.projection;
 					pco.boundingBox = boundingBox;
 					pco.tightBoundingBox = tightBoundingBox;
-					pco.boundingSphere = boundingBox.getBoundingSphere(new THREE.Sphere());
-					pco.tightBoundingSphere = tightBoundingBox.getBoundingSphere(new THREE.Sphere());
+					pco.boundingSphere = boundingBox.getBoundingSphere(new Sphere());
+					pco.tightBoundingSphere = tightBoundingBox.getBoundingSphere(new Sphere());
 					pco.offset = offset;
 					if (fMno.pointAttributes === 'LAS') {
 						pco.loader = new LasLazLoader(fMno.version, "las");
@@ -248,7 +250,7 @@ export class POCLoader {
 	createChildAABB(aabb, index){
 		let min = aabb.min.clone();
 		let max = aabb.max.clone();
-		let size = new THREE.Vector3().subVectors(max, min);
+		let size = new Vector3().subVectors(max, min);
 
 		if ((index & 0b0001) > 0) {
 			min.z += size.z / 2;
@@ -268,7 +270,7 @@ export class POCLoader {
 			max.x -= size.x / 2;
 		}
 
-		return new THREE.Box3(min, max);
+		return new Box3(min, max);
 	}
 }
 

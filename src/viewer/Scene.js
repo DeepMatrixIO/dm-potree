@@ -1,6 +1,4 @@
-
-
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Box3, Camera, LinearFilter, Mesh, MeshBasicMaterial, NearestFilter, Object3D, OrthographicCamera, PerspectiveCamera, Ray, Scene, Vector3} from 'three';
 import {Annotation} from "../Annotation.js";
 import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
@@ -11,23 +9,22 @@ import {PolygonClipVolume} from "../utils/PolygonClipVolume.js";
 import {BoxVolume} from "../utils/Volume.js";
 import {View} from "./View.js";
 
-
-export class Scene extends EventDispatcher {
+export class PScene extends EventDispatcher {
 
 	constructor() {
 		super();
 
 		this.annotations = new Annotation();
 
-		this.scene = new THREE.Scene();
-		this.sceneBG = new THREE.Scene();
-		this.scenePointCloud = new THREE.Scene();
+		this.scene = new Scene();
+		this.sceneBG = new Scene();
+		this.scenePointCloud = new Scene();
 
-		this.cameraP = new THREE.PerspectiveCamera(this.fov, 1, 0.1, 1000 * 1000);
-		this.cameraO = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000 * 1000);
-		this.cameraVR = new THREE.PerspectiveCamera();
-		this.cameraBG = new THREE.Camera();
-		this.cameraScreenSpace = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+		this.cameraP = new PerspectiveCamera(this.fov, 1, 0.1, 1000 * 1000);
+		this.cameraO = new OrthographicCamera(-1, 1, 1, -1, 0.1, 1000 * 1000);
+		this.cameraVR = new PerspectiveCamera();
+		this.cameraBG = new Camera();
+		this.cameraScreenSpace = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
 		this.cameraMode = CameraMode.PERSPECTIVE;
 		this.overrideCamera = null;
 		this.pointclouds = [];
@@ -106,7 +103,7 @@ export class Scene extends EventDispatcher {
 
 			let lpos = position.clone().sub(pointcloud.position);
 			lpos.z = 0;
-			let ray = new THREE.Ray(lpos, new THREE.Vector3(0, 0, 1));
+			let ray = new Ray(lpos, new Vector3(0, 0, 1));
 
 			let stack = [pointcloud.root];
 			while (stack.length > 0) {
@@ -146,7 +143,7 @@ export class Scene extends EventDispatcher {
 	}
 
 	getBoundingBox(pointclouds = this.pointclouds) {
-		let box = new THREE.Box3();
+		let box = new Box3();
 
 		this.scenePointCloud.updateMatrixWorld(true);
 		this.referenceFrame.updateMatrixWorld(true);
@@ -751,7 +748,7 @@ export class Scene extends EventDispatcher {
 
 	initialize() {
 
-		this.referenceFrame = new THREE.Object3D();
+		this.referenceFrame = new Object3D();
 		this.referenceFrame.matrixAutoUpdate = false;
 		this.scenePointCloud.add(this.referenceFrame);
 
@@ -761,25 +758,25 @@ export class Scene extends EventDispatcher {
 		this.cameraO.position.set(1000, 1000, 1000);
 		//this.camera.rotation.y = -Math.PI / 4;
 		//this.camera.rotation.x = -Math.PI / 6;
-		this.cameraScreenSpace.lookAt(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0));
+		this.cameraScreenSpace.lookAt(new Vector3(0, 0, 0), new Vector3(0, 0, -1), new Vector3(0, 1, 0));
 
-		this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+		this.directionalLight = new DirectionalLight(0xffffff, 0.5);
 		this.directionalLight.position.set(10, 10, 10);
-		this.directionalLight.lookAt(new THREE.Vector3(0, 0, 0));
+		this.directionalLight.lookAt(new Vector3(0, 0, 0));
 		this.scenePointCloud.add(this.directionalLight);
 
-		let light = new THREE.AmbientLight(0x555555); // soft white light
+		let light = new AmbientLight(0x555555); // soft white light
 		this.scenePointCloud.add(light);
 
 		{ // background
 			let texture = Utils.createBackgroundTexture(512, 512);
 
-			texture.minFilter = texture.magFilter = THREE.NearestFilter;
-			texture.minFilter = texture.magFilter = THREE.LinearFilter;
-			let bg = new THREE.Mesh(
-				//new THREE.PlaneBufferGeometry(2, 2, 1),
-				new THREE.PlaneGeometry(2, 2, 1),
-				new THREE.MeshBasicMaterial({
+			texture.minFilter = texture.magFilter = NearestFilter;
+			texture.minFilter = texture.magFilter = LinearFilter;
+			let bg = new Mesh(
+				//new PlaneBufferGeometry(2, 2, 1),
+				new PlaneGeometry(2, 2, 1),
+				new MeshBasicMaterial({
 					map: texture
 				})
 			);
@@ -790,21 +787,21 @@ export class Scene extends EventDispatcher {
 
 		// { // lights
 		// 	{
-		// 		let light = new THREE.DirectionalLight(0xffffff);
+		// 		let light = new DirectionalLight(0xffffff);
 		// 		light.position.set(10, 10, 1);
 		// 		light.target.position.set(0, 0, 0);
 		// 		this.scene.add(light);
 		// 	}
 
 		// 	{
-		// 		let light = new THREE.DirectionalLight(0xffffff);
+		// 		let light = new DirectionalLight(0xffffff);
 		// 		light.position.set(-10, 10, 1);
 		// 		light.target.position.set(0, 0, 0);
 		// 		this.scene.add(light);
 		// 	}
 
 		// 	{
-		// 		let light = new THREE.DirectionalLight(0xffffff);
+		// 		let light = new DirectionalLight(0xffffff);
 		// 		light.position.set(0, -10, 20);
 		// 		light.target.position.set(0, 0, 0);
 		// 		this.scene.add(light);
@@ -814,7 +811,7 @@ export class Scene extends EventDispatcher {
 
 	addAnnotation(position, args = {}) {
 		if (position instanceof Array) {
-			args.position = new THREE.Vector3().fromArray(position);
+			args.position = new Vector3().fromArray(position);
 		} else if (position.x != null) {
 			args.position = position;
 		}

@@ -1,6 +1,7 @@
 
 import {Shaders} from "../../build/shaders/shaders.js";
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {RawShaderMaterial} from 'three'
 
 //
 // Algorithm by Christian Boucheny
@@ -11,11 +12,11 @@ import * as THREE from "../../libs/three.js/build/three.module.js";
 // http://www.kitware.com/source/home/post/9
 // https://tel.archives-ouvertes.fr/tel-00438464/document p. 115+ (french)
 
-export class EyeDomeLightingMaterial extends THREE.RawShaderMaterial {
+export class EyeDomeLightingMaterial extends RawShaderMaterial {
 
 	constructor(parameters = {}) {
 		super();
-		this.glslVersion = THREE.GLSL3;//required for webgl2 and esgl 3
+		this.glslVersion = GLSL3;//required for webgl2 and esgl 3
 		let uniforms = {
 			screenWidth: {type: 'f', value: 0},
 			screenHeight: {type: 'f', value: 0},

@@ -1,5 +1,7 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+
+import {Vector4} from "three";
 
 export const ClassificationScheme = {
 
@@ -20,15 +22,15 @@ export const ClassificationScheme = {
 };
 
 Object.defineProperty(ClassificationScheme, 'RANDOM', {
-	get: function() { 
+	get: function() {
 
 		let scheme = {};
 
 		for(let i = 0; i <= 255; i++){
-			scheme[i] = new THREE.Vector4(Math.random(), Math.random(), Math.random());
+			scheme[i] = new Vector4(Math.random(), Math.random(), Math.random());
 		}
 
-		scheme["DEFAULT"] = new THREE.Vector4(Math.random(), Math.random(), Math.random());
+		scheme["DEFAULT"] = new Vector4(Math.random(), Math.random(), Math.random());
 
 		return scheme;
 	}

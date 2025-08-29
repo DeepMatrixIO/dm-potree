@@ -1,7 +1,8 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Vector3,Sphere} from 'three'
 
-THREE.PerspectiveCamera.prototype.zoomTo = function (node, factor) {
+PerspectiveCamera.prototype.zoomTo = function (node, factor) {
 	if (!node.geometry && !node.boundingSphere && !node.boundingBox) {
 		return;
 	}
@@ -19,7 +20,7 @@ THREE.PerspectiveCamera.prototype.zoomTo = function (node, factor) {
 	} else if (node.geometry && node.geometry.boundingSphere) {
 		bs = node.geometry.boundingSphere;
 	} else {
-		bs = node.boundingBox.getBoundingSphere(new THREE.Sphere());
+		bs = node.boundingBox.getBoundingSphere(new Sphere());
 	}
 
 	let _factor = factor || 1;
@@ -34,6 +35,6 @@ THREE.PerspectiveCamera.prototype.zoomTo = function (node, factor) {
 
 	let distanceFactor = Math.abs(radius / Math.sin(fovr / 2)) * _factor;
 
-	let offset = this.getWorldDirection(new THREE.Vector3()).multiplyScalar(-distanceFactor);
+	let offset = this.getWorldDirection(new Vector3()).multiplyScalar(-distanceFactor);
 	this.position.copy(bs.center.clone().add(offset));
 };

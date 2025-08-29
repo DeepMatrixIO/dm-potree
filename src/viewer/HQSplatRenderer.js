@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {FloatType, UnsignedIntType, Vector2, Vector3,RGBAFormat, NearestFilter} from 'three';
 import {PointShape} from "../defines.js";
 import {NormalizationEDLMaterial} from "../materials/NormalizationEDLMaterial.js";
 import {NormalizationMaterial} from "../materials/NormalizationMaterial.js";
@@ -39,19 +40,19 @@ export class HQSplatRenderer{
 		this.normalizationEDLMaterial.depthWrite = true;
 		this.normalizationEDLMaterial.transparent = true;
 
-		this.rtDepth = new THREE.WebGLRenderTarget(1024, 1024, {
-			minFilter: THREE.NearestFilter,
-			magFilter: THREE.NearestFilter,
-			format: THREE.RGBAFormat,
-			type: THREE.FloatType,
-			depthTexture: new THREE.DepthTexture(undefined, undefined, THREE.UnsignedIntType)
+		this.rtDepth = new WebGLRenderTarget(1024, 1024, {
+			minFilter: NearestFilter,
+			magFilter: NearestFilter,
+			format: RGBAFormat,
+			type: FloatType,
+			depthTexture: new DepthTexture(undefined, undefined, UnsignedIntType)
 		});
 
-		this.rtAttribute = new THREE.WebGLRenderTarget(1024, 1024, {
-			minFilter: THREE.NearestFilter,
-			magFilter: THREE.NearestFilter,
-			format: THREE.RGBAFormat,
-			type: THREE.FloatType,
+		this.rtAttribute = new WebGLRenderTarget(1024, 1024, {
+			minFilter: NearestFilter,
+			magFilter: NearestFilter,
+			format: RGBAFormat,
+			type: FloatType,
 			depthTexture: this.rtDepth.depthTexture,
 		});
 
@@ -108,7 +109,7 @@ export class HQSplatRenderer{
 
 		const viewer = this.viewer;
 		const camera = params.camera ? params.camera : viewer.scene.getActiveCamera();
-		const {width, height} = this.viewer.renderer.getSize(new THREE.Vector2());
+		const {width, height} = this.viewer.renderer.getSize(new Vector2());
 
 		viewer.dispatchEvent({type: "render.pass.begin",viewer: viewer});
 
@@ -141,7 +142,7 @@ export class HQSplatRenderer{
 
 		{ // DEPTH PASS
 			for (let pointcloud of visiblePointClouds) {
-				let octreeSize = pointcloud.pcoGeometry.boundingBox.getSize(new THREE.Vector3()).x;
+				let octreeSize = pointcloud.pcoGeometry.boundingBox.getSize(new Vector3()).x;
 
 				let material = originalMaterials.get(pointcloud);
 				let depthMaterial = this.depthMaterials.get(pointcloud);
@@ -183,7 +184,7 @@ export class HQSplatRenderer{
 
 		{ // ATTRIBUTE PASS
 			for (let pointcloud of visiblePointClouds) {
-				let octreeSize = pointcloud.pcoGeometry.boundingBox.getSize(new THREE.Vector3()).x;
+				let octreeSize = pointcloud.pcoGeometry.boundingBox.getSize(new Vector3()).x;
 
 				let material = originalMaterials.get(pointcloud);
 				let attributeMaterial = this.attributeMaterials.get(pointcloud);

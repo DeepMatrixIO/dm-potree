@@ -1,4 +1,5 @@
-import * as THREE from "../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../libs/js/build/module.js";
+import {Box3, BufferAttribute, BufferGeometry, Vector3} from 'three';
 import {updateFetchToken} from "../../tokenUpdater.js"; //added by jguerrer
 
 export class EptLaszipLoader {
@@ -53,7 +54,7 @@ export class CopcLaszipLoader {
 		// however we must split things out a bit to accommodate the expensive
 		// calls to go in the worker.  So in this non-worker context, we just
 		// isolate the compressed data buffer, which is passed to the worker.
-		// The time-consuming decompression and extracting the data into 
+		// The time-consuming decompression and extracting the data into
 		// GPU-compatible buffers happens in the worker.
 		const {pointCount, pointDataOffset, pointDataLength} = node.nodeinfo
 
@@ -97,7 +98,7 @@ export class EptLazBatcher {
 		const pointAttributes = this.node.owner.pointAttributes;
 
 		worker.onmessage = (e) => {
-			let g = new THREE.BufferGeometry();
+			let g = new BufferGeometry();
 
 			let positions = new Float32Array(e.data.position);
 			let colors = new Uint8Array(e.data.color);
@@ -111,23 +112,23 @@ export class EptLazBatcher {
 			let gpsTime = new Float32Array(e.data.gpsTime);
 
 			g.setAttribute('position',
-				new THREE.BufferAttribute(positions, 3));
+				new BufferAttribute(positions, 3));
 			g.setAttribute('rgba',
-				new THREE.BufferAttribute(colors, 4, true));
+				new BufferAttribute(colors, 4, true));
 			g.setAttribute('intensity',
-				new THREE.BufferAttribute(intensities, 1));
+				new BufferAttribute(intensities, 1));
 			g.setAttribute('classification',
-				new THREE.BufferAttribute(classifications, 1));
+				new BufferAttribute(classifications, 1));
 			g.setAttribute('return number',
-				new THREE.BufferAttribute(returnNumbers, 1));
+				new BufferAttribute(returnNumbers, 1));
 			g.setAttribute('number of returns',
-				new THREE.BufferAttribute(numberOfReturns, 1));
+				new BufferAttribute(numberOfReturns, 1));
 			g.setAttribute('source id',
-				new THREE.BufferAttribute(pointSourceIds, 1));
+				new BufferAttribute(pointSourceIds, 1));
 			g.setAttribute('indices',
-				new THREE.BufferAttribute(indices, 4));
+				new BufferAttribute(indices, 4));
 			g.setAttribute('gps-time',
-				new THREE.BufferAttribute(gpsTime, 1));
+				new BufferAttribute(gpsTime, 1));
 			this.node.gpsTime = e.data.gpsMeta;
 
 			g.attributes.indices.normalized = true;
@@ -146,16 +147,16 @@ export class EptLazBatcher {
 				}
 			}
 
-			let tightBoundingBox = new THREE.Box3(
-				new THREE.Vector3().fromArray(e.data.tightBoundingBox.min),
-				new THREE.Vector3().fromArray(e.data.tightBoundingBox.max)
+			let tightBoundingBox = new Box3(
+				new Vector3().fromArray(e.data.tightBoundingBox.min),
+				new Vector3().fromArray(e.data.tightBoundingBox.max)
 			);
 
 			this.node.doneLoading(
 				g,
 				tightBoundingBox,
 				pointCount,
-				new THREE.Vector3(...e.data.mean));
+				new Vector3(...e.data.mean));
 
 			Potree.workerPool.returnWorker(workerPath, worker);
 		};

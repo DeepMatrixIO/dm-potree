@@ -3,12 +3,13 @@ import {
 	AdditiveBlending,
 	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
 	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
-// } from "../../libs/three.js/build/three.core.js";
-} from "../../libs/three.js/build/three.module.js";
+// } from "../../libs/js/build/core.js";
+} from "three";
+// } from "../../libs/three.js/build/module.jsthre";
 import {ElevationGradientRepeat, PointShape, PointSizeType, TreeType} from "../defines.js";
 import {Utils} from "../utils.js";
 import {PointCloudFilterList} from "../utils/Filter.js";
-import {FilterConstListType, FilterIntType} from "../utils/FilterConsts.js";
+import {FilterIntType} from "../utils/FilterConsts.js";
 import {ClassificationScheme} from "./ClassificationScheme.js";
 import {Gradients} from "./Gradients.js";
 
@@ -1505,7 +1506,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		context.fillStyle = ctxGradient;
 		context.fill();
 
-		//let texture = new THREE.Texture(canvas);
+		//let texture = new Texture(canvas);
 		let texture = new CanvasTexture(canvas);
 		texture.needsUpdate = true;
 

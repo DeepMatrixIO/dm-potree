@@ -1,42 +1,43 @@
 
 // import {max, mix} from "three/tsl";
-import * as THREE from "../libs/three.js/build/three.module.js";
+import {Matrix4,Texture, LinearFilter, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipMapNearestFilter, NearestMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipMapLinearFilter, UnsignedByteType, UnsignedShort4444Type, UnsignedShort5551Type, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, AddEquation, SubtractEquation, ReverseSubtractEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, MinEquation, MaxEquation, UnsignedInt248Type, DataTexture, CanvasTexture, OrthographicCamera} from 'three'
 import {PointCloudTree} from "./PointCloudTree.js";
 import {ClipTask, ElevationGradientRepeat, PointSizeType} from "./defines.js";
 import {FilterConstListType, FilterIntType} from "./utils/FilterConsts.js";
 import {PointCloudFilterList} from "./utils/Filter.js";
+import {LuminanceAlphaFormat, LuminanceFormat} from 'three';
 
-// Copied from three.js: WebGLRenderer.js
+// Copied from js: WebGLRenderer.js
 function paramThreeToGL(_gl, p) {
 
 	let extension;
 
-	if (p === THREE.RepeatWrapping) return _gl.REPEAT;
-	if (p === THREE.ClampToEdgeWrapping) return _gl.CLAMP_TO_EDGE;
-	if (p === THREE.MirroredRepeatWrapping) return _gl.MIRRORED_REPEAT;
+	if (p === RepeatWrapping) return _gl.REPEAT;
+	if (p === ClampToEdgeWrapping) return _gl.CLAMP_TO_EDGE;
+	if (p === MirroredRepeatWrapping) return _gl.MIRRORED_REPEAT;
 
-	if (p === THREE.NearestFilter) return _gl.NEAREST;
-	if (p === THREE.NearestMipMapNearestFilter) return _gl.NEAREST_MIPMAP_NEAREST;
-	if (p === THREE.NearestMipMapLinearFilter) return _gl.NEAREST_MIPMAP_LINEAR;
+	if (p === NearestFilter) return _gl.NEAREST;
+	if (p === NearestMipMapNearestFilter) return _gl.NEAREST_MIPMAP_NEAREST;
+	if (p === NearestMipMapLinearFilter) return _gl.NEAREST_MIPMAP_LINEAR;
 
-	if (p === THREE.LinearFilter) return _gl.LINEAR;
-	if (p === THREE.LinearMipMapNearestFilter) return _gl.LINEAR_MIPMAP_NEAREST;
-	if (p === THREE.LinearMipMapLinearFilter) return _gl.LINEAR_MIPMAP_LINEAR;
+	if (p === LinearFilter) return _gl.LINEAR;
+	if (p === LinearMipMapNearestFilter) return _gl.LINEAR_MIPMAP_NEAREST;
+	if (p === LinearMipMapLinearFilter) return _gl.LINEAR_MIPMAP_LINEAR;
 
-	if (p === THREE.UnsignedByteType) return _gl.UNSIGNED_BYTE;
-	if (p === THREE.UnsignedShort4444Type) return _gl.UNSIGNED_SHORT_4_4_4_4;
-	if (p === THREE.UnsignedShort5551Type) return _gl.UNSIGNED_SHORT_5_5_5_1;
-	//if (p === THREE.UnsignedShort565Type) return _gl.UNSIGNED_SHORT_5_6_5;// removed from 136 to 137, use UnsignedShort5551Type isntead
+	if (p === UnsignedByteType) return _gl.UNSIGNED_BYTE;
+	if (p === UnsignedShort4444Type) return _gl.UNSIGNED_SHORT_4_4_4_4;
+	if (p === UnsignedShort5551Type) return _gl.UNSIGNED_SHORT_5_5_5_1;
+	//if (p === UnsignedShort565Type) return _gl.UNSIGNED_SHORT_5_6_5;// removed from 136 to 137, use UnsignedShort5551Type isntead
 
 
-	if (p === THREE.ByteType) return _gl.BYTE;
-	if (p === THREE.ShortType) return _gl.SHORT;
-	if (p === THREE.UnsignedShortType) return _gl.UNSIGNED_SHORT;
-	if (p === THREE.IntType) return _gl.INT;
-	if (p === THREE.UnsignedIntType) return _gl.UNSIGNED_INT;
-	if (p === THREE.FloatType) return _gl.FLOAT;
+	if (p === ByteType) return _gl.BYTE;
+	if (p === ShortType) return _gl.SHORT;
+	if (p === UnsignedShortType) return _gl.UNSIGNED_SHORT;
+	if (p === IntType) return _gl.INT;
+	if (p === UnsignedIntType) return _gl.UNSIGNED_INT;
+	if (p === FloatType) return _gl.FLOAT;
 
-	if (p === THREE.HalfFloatType) {
+	if (p === HalfFloatType) {
 
 		extension = extensions.get('OES_texture_half_float');
 
@@ -44,64 +45,64 @@ function paramThreeToGL(_gl, p) {
 
 	}
 
-	if (p === THREE.AlphaFormat) return _gl.ALPHA;
-	if (p === THREE.RGBFormat) return _gl.RGB;
-	if (p === THREE.RGBAFormat) return _gl.RGBA;
-	if (p === THREE.LuminanceFormat) return _gl.LUMINANCE;
-	if (p === THREE.LuminanceAlphaFormat) return _gl.LUMINANCE_ALPHA;
-	if (p === THREE.DepthFormat) return _gl.DEPTH_COMPONENT;
-	if (p === THREE.DepthStencilFormat) return _gl.DEPTH_STENCIL;
+	if (p === AlphaFormat) return _gl.ALPHA;
+	if (p === RGBFormat) return _gl.RGB;
+	if (p === RGBAFormat) return _gl.RGBA;
+	if (p === LuminanceFormat) return _gl.LUMINANCE;
+	if (p === LuminanceAlphaFormat) return _gl.LUMINANCE_ALPHA;
+	if (p === DepthFormat) return _gl.DEPTH_COMPONENT;
+	if (p === DepthStencilFormat) return _gl.DEPTH_STENCIL;
 
-	if (p === THREE.AddEquation) return _gl.FUNC_ADD;
-	if (p === THREE.SubtractEquation) return _gl.FUNC_SUBTRACT;
-	if (p === THREE.ReverseSubtractEquation) return _gl.FUNC_REVERSE_SUBTRACT;
+	if (p === AddEquation) return _gl.FUNC_ADD;
+	if (p === SubtractEquation) return _gl.FUNC_SUBTRACT;
+	if (p === ReverseSubtractEquation) return _gl.FUNC_REVERSE_SUBTRACT;
 
-	if (p === THREE.ZeroFactor) return _gl.ZERO;
-	if (p === THREE.OneFactor) return _gl.ONE;
-	if (p === THREE.SrcColorFactor) return _gl.SRC_COLOR;
-	if (p === THREE.OneMinusSrcColorFactor) return _gl.ONE_MINUS_SRC_COLOR;
-	if (p === THREE.SrcAlphaFactor) return _gl.SRC_ALPHA;
-	if (p === THREE.OneMinusSrcAlphaFactor) return _gl.ONE_MINUS_SRC_ALPHA;
-	if (p === THREE.DstAlphaFactor) return _gl.DST_ALPHA;
-	if (p === THREE.OneMinusDstAlphaFactor) return _gl.ONE_MINUS_DST_ALPHA;
+	if (p === ZeroFactor) return _gl.ZERO;
+	if (p === OneFactor) return _gl.ONE;
+	if (p === SrcColorFactor) return _gl.SRC_COLOR;
+	if (p === OneMinusSrcColorFactor) return _gl.ONE_MINUS_SRC_COLOR;
+	if (p === SrcAlphaFactor) return _gl.SRC_ALPHA;
+	if (p === OneMinusSrcAlphaFactor) return _gl.ONE_MINUS_SRC_ALPHA;
+	if (p === DstAlphaFactor) return _gl.DST_ALPHA;
+	if (p === OneMinusDstAlphaFactor) return _gl.ONE_MINUS_DST_ALPHA;
 
-	if (p === THREE.DstColorFactor) return _gl.DST_COLOR;
-	if (p === THREE.OneMinusDstColorFactor) return _gl.ONE_MINUS_DST_COLOR;
-	if (p === THREE.SrcAlphaSaturateFactor) return _gl.SRC_ALPHA_SATURATE;
+	if (p === DstColorFactor) return _gl.DST_COLOR;
+	if (p === OneMinusDstColorFactor) return _gl.ONE_MINUS_DST_COLOR;
+	if (p === SrcAlphaSaturateFactor) return _gl.SRC_ALPHA_SATURATE;
 
-	if (p === THREE.RGB_S3TC_DXT1_Format || p === RGBA_S3TC_DXT1_Format ||
-		p === THREE.RGBA_S3TC_DXT3_Format || p === RGBA_S3TC_DXT5_Format) {
+	if (p === RGB_S3TC_DXT1_Format || p === RGBA_S3TC_DXT1_Format ||
+		p === RGBA_S3TC_DXT3_Format || p === RGBA_S3TC_DXT5_Format) {
 
 		extension = extensions.get('WEBGL_compressed_texture_s3tc');
 
 		if (extension !== null) {
 
-			if (p === THREE.RGB_S3TC_DXT1_Format) return extension.COMPRESSED_RGB_S3TC_DXT1_EXT;
-			if (p === THREE.RGBA_S3TC_DXT1_Format) return extension.COMPRESSED_RGBA_S3TC_DXT1_EXT;
-			if (p === THREE.RGBA_S3TC_DXT3_Format) return extension.COMPRESSED_RGBA_S3TC_DXT3_EXT;
-			if (p === THREE.RGBA_S3TC_DXT5_Format) return extension.COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			if (p === RGBA_S3TC_DXT1_Format) return extension.COMPRESSED_RGB_S3TC_DXT1_EXT;
+			if (p === RGBA_S3TC_DXT1_Format) return extension.COMPRESSED_RGBA_S3TC_DXT1_EXT;
+			if (p === RGBA_S3TC_DXT3_Format) return extension.COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			if (p === RGBA_S3TC_DXT5_Format) return extension.COMPRESSED_RGBA_S3TC_DXT5_EXT;
 
 		}
 
 	}
 
-	if (p === THREE.RGB_PVRTC_4BPPV1_Format || p === THREE.RGB_PVRTC_2BPPV1_Format ||
-		p === THREE.RGBA_PVRTC_4BPPV1_Format || p === THREE.RGBA_PVRTC_2BPPV1_Format) {
+	if (p === RGB_PVRTC_4BPPV1_Format || p === RGB_PVRTC_2BPPV1_Format ||
+		p === RGBA_PVRTC_4BPPV1_Format || p === RGBA_PVRTC_2BPPV1_Format) {
 
 		extension = extensions.get('WEBGL_compressed_texture_pvrtc');
 
 		if (extension !== null) {
 
-			if (p === THREE.RGB_PVRTC_4BPPV1_Format) return extension.COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
-			if (p === THREE.RGB_PVRTC_2BPPV1_Format) return extension.COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
-			if (p === THREE.RGBA_PVRTC_4BPPV1_Format) return extension.COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
-			if (p === THREE.RGBA_PVRTC_2BPPV1_Format) return extension.COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
+			if (p === RGB_PVRTC_4BPPV1_Format) return extension.COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
+			if (p === RGB_PVRTC_2BPPV1_Format) return extension.COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
+			if (p === RGBA_PVRTC_4BPPV1_Format) return extension.COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
+			if (p === RGBA_PVRTC_2BPPV1_Format) return extension.COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
 
 		}
 
 	}
 
-	if (p === THREE.RGB_ETC1_Format) {
+	if (p === RGB_ETC1_Format) {
 
 		extension = extensions.get('WEBGL_compressed_texture_etc1');
 
@@ -109,14 +110,14 @@ function paramThreeToGL(_gl, p) {
 
 	}
 
-	if (p === THREE.MinEquation || p === THREE.MaxEquation) {
+	if (p === MinEquation || p === MaxEquation) {
 
 		extension = extensions.get('EXT_blend_minmax');
 
 		if (extension !== null) {
 
-			if (p === THREE.MinEquation) return extension.MIN_EXT;
-			if (p === THREE.MaxEquation) return extension.MAX_EXT;
+			if (p === MinEquation) return extension.MIN_EXT;
+			if (p === MaxEquation) return extension.MAX_EXT;
 
 		}
 
@@ -426,7 +427,7 @@ class Shader {
 
 	setUniform(name, value) {
 
-		if (value.constructor === THREE.Matrix4) {
+		if (value.constructor === Matrix4) {
 			this.setUniformMatrix4(name, value);
 		} else if (typeof value === "number") {
 			this.setUniform1f(name, value);
@@ -508,7 +509,7 @@ class WebGLTexture {
 		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, texture.premultiplyAlpha);
 		gl.pixelStorei(gl.UNPACK_ALIGNMENT, texture.unpackAlignment);
 
-		if (texture instanceof THREE.DataTexture) {
+		if (texture instanceof DataTexture) {
 			data = texture.image.data;
 
 			gl.texParameteri(this.target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -520,7 +521,7 @@ class WebGLTexture {
 			gl.texImage2D(this.target, level, internalFormat,
 				width, height, border, srcFormat, srcType,
 				data);
-		} else if ((texture instanceof THREE.CanvasTexture) || (texture instanceof THREE.Texture)) {
+		} else if ((texture instanceof CanvasTexture) || (texture instanceof Texture)) {
 			data = texture.image;
 
 			gl.texParameteri(this.target, gl.TEXTURE_WRAP_S, paramThreeToGL(gl, texture.wrapS));
@@ -532,7 +533,7 @@ class WebGLTexture {
 			gl.texImage2D(this.target, level, internalFormat,
 				internalFormat, srcType, data);
 
-			if (texture instanceof THREE.Texture) {gl.generateMipmap(gl.TEXTURE_2D);}
+			if (texture instanceof Texture) {gl.generateMipmap(gl.TEXTURE_2D);}
 		}
 
 		gl.bindTexture(this.target, null);
@@ -817,7 +818,7 @@ export class Renderer {
 			view = params.viewOverride;
 		}
 
-		let worldView = new THREE.Matrix4();
+		let worldView = new Matrix4();
 
 		let mat4holder = new Float32Array(16);
 
@@ -985,7 +986,7 @@ export class Renderer {
 
 					let worldViewMatrices = shadowMaps
 						.map(sm => sm.camera.matrixWorldInverse)
-						.map(view => new THREE.Matrix4().multiplyMatrices(view, world))
+						.map(view => new Matrix4().multiplyMatrices(view, world))
 
 					let flattenedMatrices = [].concat(...worldViewMatrices.map(c => c.elements));
 					const lWorldView = shader.uniformLocations["uShadowWorldView[0]"];
@@ -1376,7 +1377,7 @@ export class Renderer {
 
 		let proj = camera.projectionMatrix;
 		let projInv = proj.clone().invert();
-		//let worldView = new THREE.Matrix4();
+		//let worldView = new Matrix4();
 
 		let shader = null;
 		let visibilityTextureData = null;
@@ -1564,7 +1565,7 @@ export class Renderer {
 			shader.setUniform1f("near", camera.near);
 			shader.setUniform1f("far", camera.far);
 
-			if (camera instanceof THREE.OrthographicCamera) {
+			if (camera instanceof OrthographicCamera) {
 				shader.setUniform("uUseOrthographicCamera", true);
 				shader.setUniform("uOrthoWidth", camera.right - camera.left);
 				shader.setUniform("uOrthoHeight", camera.top - camera.bottom);
@@ -1744,15 +1745,15 @@ export class Renderer {
 
 				let matrices = [];
 				for (let clipSphere of clipSpheres) {
-					//let mScale = new THREE.Matrix4().makeScale(...clipSphere.scale.toArray());
-					//let mTranslate = new THREE.Matrix4().makeTranslation(...clipSphere.position.toArray());
+					//let mScale = new Matrix4().makeScale(...clipSphere.scale.toArray());
+					//let mTranslate = new Matrix4().makeTranslation(...clipSphere.position.toArray());
 
-					//let clipToWorld = new THREE.Matrix4().multiplyMatrices(mTranslate, mScale);
+					//let clipToWorld = new Matrix4().multiplyMatrices(mTranslate, mScale);
 					let clipToWorld = clipSphere.matrixWorld;
 					let viewToWorld = camera.matrixWorld
 					let worldToClip = clipToWorld.clone().invert();
 
-					let viewToClip = new THREE.Matrix4().multiplyMatrices(worldToClip, viewToWorld);
+					let viewToClip = new Matrix4().multiplyMatrices(worldToClip, viewToWorld);
 
 					matrices.push(viewToClip);
 				}

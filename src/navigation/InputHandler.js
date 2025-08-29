@@ -4,7 +4,8 @@
  *
  */
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Raycaster, Vector2} from 'three'
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";
 import {Utils} from "../utils.js";
@@ -26,7 +27,7 @@ export class InputHandler extends EventDispatcher {
 		this.blacklist = new Set();
 
 		this.drag = null;
-		this.mouse = new THREE.Vector2(0, 0);
+		this.mouse = new Vector2(0, 0);
 
 		this.selection = [];
 
@@ -593,7 +594,7 @@ export class InputHandler extends EventDispatcher {
 		}
 
 		if (!consumed) {
-			if (e.button === THREE.MOUSE.LEFT) {
+			if (e.button === MOUSE.LEFT) {
 				if (noMovement) {
 					let selectable = this.hoveredElements
 						.find(el => el.object._listeners && el.object._listeners['select']);
@@ -613,7 +614,7 @@ export class InputHandler extends EventDispatcher {
 						this.deselectAll();
 					}
 				}
-			} else if ((e.button === THREE.MOUSE.RIGHT) && noMovement) {
+			} else if ((e.button === MOUSE.RIGHT) && noMovement) {
 				this.deselectAll();
 			}
 		}
@@ -776,7 +777,7 @@ export class InputHandler extends EventDispatcher {
 
 		//TAKEN BACK FROM ORIGINAL CODE
 		if (!consumed) {
-			if (e.button === THREE.MOUSE.LEFT) {
+			if (e.button === MOUSE.LEFT) {
 				if (noMovement) {
 					let selectable = this.hoveredElements
 						.find(el => el.object._listeners && el.object._listeners['select']);
@@ -796,7 +797,7 @@ export class InputHandler extends EventDispatcher {
 						this.deselectAll();
 					}
 				}
-			} else if ((e.button === THREE.MOUSE.RIGHT) && noMovement) {
+			} else if ((e.button === MOUSE.RIGHT) && noMovement) {
 				this.deselectAll();
 			}
 		}
@@ -1123,7 +1124,7 @@ export class InputHandler extends EventDispatcher {
 		this.drag = {
 			start: this.mouse.clone(),
 			end: this.mouse.clone(),
-			lastDrag: new THREE.Vector2(0, 0),
+			lastDrag: new Vector2(0, 0),
 			startView: this.scene.view.clone(),
 			object: object
 		};
@@ -1265,7 +1266,7 @@ export class InputHandler extends EventDispatcher {
 		let camera = this.scene.getActiveCamera();
 		let ray = Utils.mouseToRay(this.mouse, camera, this.domElement.clientWidth, this.domElement.clientHeight);
 
-		let raycaster = new THREE.Raycaster();
+		let raycaster = new Raycaster();
 		raycaster.ray.set(ray.origin, ray.direction);
 		raycaster.params.Line.threshold = 0.2;
 
@@ -1312,7 +1313,7 @@ export class InputHandler extends EventDispatcher {
 
 		// code for regular UTM cameras or native projection
 		if (scenesWithoutTransformCamera.length > 0) {
-			let raycaster = new THREE.Raycaster();
+			let raycaster = new Raycaster();
 			raycaster.ray.set(ray.origin, ray.direction);
 			raycaster.params.Line.threshold = 0.2;
 
@@ -1328,7 +1329,7 @@ export class InputHandler extends EventDispatcher {
 					let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
 					let ray = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);
 
-					let raycaster = new THREE.Raycaster();
+					let raycaster = new Raycaster();
 					raycaster.params.Line.threshold = 0.4;
 					raycaster.ray.set(ray.origin, ray.direction);
 					let intersect = raycaster.intersectObject(scene, true);
@@ -1340,7 +1341,7 @@ export class InputHandler extends EventDispatcher {
 			})
 
 		}
-		// let raycaster = new THREE.Raycaster();
+		// let raycaster = new Raycaster();
 		// raycaster.ray.set(ray.origin, ray.direction);
 		// raycaster.params.Line.threshold = 0.2;
 
@@ -1360,10 +1361,10 @@ export class InputHandler extends EventDispatcher {
 
 	getNormalizedDrag() {
 		if (!this.drag) {
-			return new THREE.Vector2(0, 0);
+			return new Vector2(0, 0);
 		}
 
-		let diff = new THREE.Vector2().subVectors(this.drag.end, this.drag.start);
+		let diff = new Vector2().subVectors(this.drag.end, this.drag.start);
 
 		diff.x = diff.x / this.domElement.clientWidth;
 		diff.y = diff.y / this.domElement.clientHeight;
@@ -1373,7 +1374,7 @@ export class InputHandler extends EventDispatcher {
 
 	getNormalizedLastDrag() {
 		if (!this.drag) {
-			return new THREE.Vector2(0, 0);
+			return new Vector2(0, 0);
 		}
 
 		let lastDrag = this.drag.lastDrag.clone();

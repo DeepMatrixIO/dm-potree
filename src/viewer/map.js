@@ -1,5 +1,8 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Vector2, Vector3} from 'three'
+
+
 import {updateFetchToken} from "../tokenUpdater.js";
 
 // http://epsg.io/
@@ -781,17 +784,17 @@ export class MapView {
 
 		let scale = this.map.getView().getResolution();
 		let campos = camera.position;
-		let camdir = camera.getWorldDirection(new THREE.Vector3());
+		let camdir = camera.getWorldDirection(new Vector3());
 		let sceneLookAt = camdir.clone().multiplyScalar(30 * scale).add(campos);
 		let geoPos = camera.position;
 		let geoLookAt = sceneLookAt;
-		let mapPos = new THREE.Vector2().fromArray(this.toMap.forward([geoPos.x, geoPos.y]));
-		let mapLookAt = new THREE.Vector2().fromArray(this.toMap.forward([geoLookAt.x, geoLookAt.y]));
-		let mapDir = new THREE.Vector2().subVectors(mapLookAt, mapPos).normalize();
+		let mapPos = new Vector2().fromArray(this.toMap.forward([geoPos.x, geoPos.y]));
+		let mapLookAt = new Vector2().fromArray(this.toMap.forward([geoLookAt.x, geoLookAt.y]));
+		let mapDir = new Vector2().subVectors(mapLookAt, mapPos).normalize();
 
 		mapLookAt = mapPos.clone().add(mapDir.clone().multiplyScalar(30 * scale));
 		let mapLength = mapPos.distanceTo(mapLookAt);
-		let mapSide = new THREE.Vector2(-mapDir.y, mapDir.x);
+		let mapSide = new Vector2(-mapDir.y, mapDir.x);
 
 		let p1 = mapPos.toArray();
 		let p2 = mapLookAt.clone().sub(mapSide.clone().multiplyScalar(0.3 * mapLength)).toArray();

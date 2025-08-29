@@ -1,8 +1,9 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
 import {MOUSE} from "../defines.js";
 import {Utils} from "../utils.js";
 import {EventDispatcher} from "../EventDispatcher.js";
+import {Mesh, MeshNormalMaterial, Scene, Sphere, SphereGeometry, Vector3} from "three";
 
 export class EarthControls extends EventDispatcher {
 	constructor (viewer) {
@@ -12,21 +13,21 @@ export class EarthControls extends EventDispatcher {
 		this.renderer = viewer.renderer;
 
 		this.scene = null;
-		this.sceneControls = new THREE.Scene();
+		this.sceneControls = new Scene();
 
 		this.rotationSpeed = 10;
 
 		this.fadeFactor = 20;
 		this.wheelDelta = 0;
-		this.zoomDelta = new THREE.Vector3();
+		this.zoomDelta = new Vector3();
 		this.camStart = null;
 
 		this.tweens = [];
 
 		{
-			let sg = new THREE.SphereGeometry(1, 16, 16);
-			let sm = new THREE.MeshNormalMaterial();
-			this.pivotIndicator = new THREE.Mesh(sg, sm);
+			let sg = new SphereGeometry(1, 16, 16);
+			let sm = new MeshNormalMaterial();
+			this.pivotIndicator = new Mesh(sg, sm);
 			this.pivotIndicator.visible = false;
 			this.sceneControls.add(this.pivotIndicator);
 		}
@@ -57,18 +58,18 @@ export class EarthControls extends EventDispatcher {
 			if (e.drag.mouse === MOUSE.LEFT) {
 
 				let ray = Utils.mouseToRay(mouse, camera, domElement.clientWidth, domElement.clientHeight);
-				let plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-					new THREE.Vector3(0, 0, 1),
+				let plane = new Plane().setFromNormalAndCoplanarPoint(
+					new Vector3(0, 0, 1),
 					this.pivot);
 
 				let distanceToPlane = ray.distanceToPlane(plane);
 
 				if (distanceToPlane > 0) {
-					let I = new THREE.Vector3().addVectors(
+					let I = new Vector3().addVectors(
 						camStart.position,
 						ray.direction.clone().multiplyScalar(distanceToPlane));
 
-					let movedBy = new THREE.Vector3().subVectors(
+					let movedBy = new Vector3().subVectors(
 						I, this.pivot);
 
 					let newCamPos = camStart.position.clone().sub(movedBy);
@@ -96,18 +97,18 @@ export class EarthControls extends EventDispatcher {
 				tmpView.pitch = tmpView.pitch + pitchDelta;
 				pitchDelta = tmpView.pitch - originalPitch;
 
-				let pivotToCam = new THREE.Vector3().subVectors(view.position, this.pivot);
-				let pivotToCamTarget = new THREE.Vector3().subVectors(view.getPivot(), this.pivot);
+				let pivotToCam = new Vector3().subVectors(view.position, this.pivot);
+				let pivotToCamTarget = new Vector3().subVectors(view.getPivot(), this.pivot);
 				let side = view.getSide();
 
 				pivotToCam.applyAxisAngle(side, pitchDelta);
 				pivotToCamTarget.applyAxisAngle(side, pitchDelta);
 
-				pivotToCam.applyAxisAngle(new THREE.Vector3(0, 0, 1), yawDelta);
-				pivotToCamTarget.applyAxisAngle(new THREE.Vector3(0, 0, 1), yawDelta);
+				pivotToCam.applyAxisAngle(new Vector3(0, 0, 1), yawDelta);
+				pivotToCamTarget.applyAxisAngle(new Vector3(0, 0, 1), yawDelta);
 
-				let newCam = new THREE.Vector3().addVectors(this.pivot, pivotToCam);
-				// TODO: Unused: let newCamTarget = new THREE.Vector3().addVectors(this.pivot, pivotToCamTarget);
+				let newCam = new Vector3().addVectors(this.pivot, pivotToCam);
+				// TODO: Unused: let newCamTarget = new Vector3().addVectors(this.pivot, pivotToCamTarget);
 
 				view.position.copy(newCam);
 				view.yaw += yawDelta;
@@ -117,10 +118,10 @@ export class EarthControls extends EventDispatcher {
 
 		let onMouseDown = e => {
 			let I = Utils.getMousePointCloudIntersection(
-				e.mouse, 
-				this.scene.getActiveCamera(), 
-				this.viewer, 
-				this.scene.pointclouds, 
+				e.mouse,
+				this.scene.getActiveCamera(),
+				this.viewer,
+				this.scene.pointclouds,
 				{pickClipped: false});
 
 			if (I) {
@@ -165,10 +166,10 @@ export class EarthControls extends EventDispatcher {
 		this.wheelDelta = 0;
 		this.zoomDelta.set(0, 0, 0);
 	}
-	
+
 	zoomToLocation(mouse){
 		let camera = this.scene.getActiveCamera();
-		
+
 		let I = Utils.getMousePointCloudIntersection(
 			mouse,
 			camera,
@@ -188,13 +189,13 @@ export class EarthControls extends EventDispatcher {
 
 			let nodes = I.pointcloud.nodesOnRay(I.pointcloud.visibleNodes, ray);
 			let lastNode = nodes[nodes.length - 1];
-			let radius = lastNode.getBoundingSphere(new THREE.Sphere()).radius;
+			let radius = lastNode.getBoundingSphere(new Sphere()).radius;
 			targetRadius = Math.min(this.scene.view.radius, radius);
 			targetRadius = Math.max(minimumJumpDistance, targetRadius);
 		}
 
 		let d = this.scene.view.direction.multiplyScalar(-1);
-		let cameraTargetPosition = new THREE.Vector3().addVectors(I.location, d.multiplyScalar(targetRadius));
+		let cameraTargetPosition = new Vector3().addVectors(I.location, d.multiplyScalar(targetRadius));
 		// TODO Unused: let controlsTargetPosition = I.location;
 
 		let animationDuration = 600;
@@ -234,20 +235,20 @@ export class EarthControls extends EventDispatcher {
 		let fade = Math.pow(0.5, this.fadeFactor * delta);
 		let progression = 1 - fade;
 		let camera = this.scene.getActiveCamera();
-		
+
 		// compute zoom
 		if (this.wheelDelta !== 0) {
 			let I = Utils.getMousePointCloudIntersection(
-				this.viewer.inputHandler.mouse, 
-				this.scene.getActiveCamera(), 
-				this.viewer, 
+				this.viewer.inputHandler.mouse,
+				this.scene.getActiveCamera(),
+				this.viewer,
 				this.scene.pointclouds);
 
 			if (I) {
-				let resolvedPos = new THREE.Vector3().addVectors(view.position, this.zoomDelta);
+				let resolvedPos = new Vector3().addVectors(view.position, this.zoomDelta);
 				let distance = I.location.distanceTo(resolvedPos);
 				let jumpDistance = distance * 0.2 * this.wheelDelta;
-				let targetDir = new THREE.Vector3().subVectors(I.location, view.position);
+				let targetDir = new Vector3().subVectors(I.location, view.position);
 				targetDir.normalize();
 
 				resolvedPos.add(targetDir.multiplyScalar(jumpDistance));
@@ -266,7 +267,7 @@ export class EarthControls extends EventDispatcher {
 		if (this.zoomDelta.length() !== 0) {
 			let p = this.zoomDelta.clone().multiplyScalar(progression);
 
-			let newPos = new THREE.Vector3().addVectors(view.position, p);
+			let newPos = new Vector3().addVectors(view.position, p);
 			view.position.copy(newPos);
 		}
 

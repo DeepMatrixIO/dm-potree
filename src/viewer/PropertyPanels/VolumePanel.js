@@ -1,5 +1,6 @@
 
-import * as THREE from "../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../libs/js/build/module.js";
+import {Vector3,Matrix4} from 'three'
 import {updateFetchToken} from "../../tokenUpdater.js";
 import {Utils} from "../../utils.js";
 import {BoxVolume, SphereVolume} from "../../utils/Volume.js";
@@ -177,27 +178,27 @@ export class VolumePanel extends MeasurePanel {
 		{
 			let toClip = clipBox.matrixWorld;
 
-			let px = new THREE.Vector3(+0.5, 0, 0).applyMatrix4(toClip);
-			let nx = new THREE.Vector3(-0.5, 0, 0).applyMatrix4(toClip);
-			let py = new THREE.Vector3(0, +0.5, 0).applyMatrix4(toClip);
-			let ny = new THREE.Vector3(0, -0.5, 0).applyMatrix4(toClip);
-			let pz = new THREE.Vector3(0, 0, +0.5).applyMatrix4(toClip);
-			let nz = new THREE.Vector3(0, 0, -0.5).applyMatrix4(toClip);
+			let px = new Vector3(+0.5, 0, 0).applyMatrix4(toClip);
+			let nx = new Vector3(-0.5, 0, 0).applyMatrix4(toClip);
+			let py = new Vector3(0, +0.5, 0).applyMatrix4(toClip);
+			let ny = new Vector3(0, -0.5, 0).applyMatrix4(toClip);
+			let pz = new Vector3(0, 0, +0.5).applyMatrix4(toClip);
+			let nz = new Vector3(0, 0, -0.5).applyMatrix4(toClip);
 
-			let pxN = new THREE.Vector3().subVectors(nx, px).normalize();
+			let pxN = new Vector3().subVectors(nx, px).normalize();
 			let nxN = pxN.clone().multiplyScalar(-1);
-			let pyN = new THREE.Vector3().subVectors(ny, py).normalize();
+			let pyN = new Vector3().subVectors(ny, py).normalize();
 			let nyN = pyN.clone().multiplyScalar(-1);
-			let pzN = new THREE.Vector3().subVectors(nz, pz).normalize();
+			let pzN = new Vector3().subVectors(nz, pz).normalize();
 			let nzN = pzN.clone().multiplyScalar(-1);
 
 			let planes = [
-				new THREE.Plane().setFromNormalAndCoplanarPoint(pxN, px),
-				new THREE.Plane().setFromNormalAndCoplanarPoint(nxN, nx),
-				new THREE.Plane().setFromNormalAndCoplanarPoint(pyN, py),
-				new THREE.Plane().setFromNormalAndCoplanarPoint(nyN, ny),
-				new THREE.Plane().setFromNormalAndCoplanarPoint(pzN, pz),
-				new THREE.Plane().setFromNormalAndCoplanarPoint(nzN, nz),
+				new Plane().setFromNormalAndCoplanarPoint(pxN, px),
+				new Plane().setFromNormalAndCoplanarPoint(nxN, nx),
+				new Plane().setFromNormalAndCoplanarPoint(pyN, py),
+				new Plane().setFromNormalAndCoplanarPoint(nyN, ny),
+				new Plane().setFromNormalAndCoplanarPoint(pzN, pz),
+				new Plane().setFromNormalAndCoplanarPoint(nzN, nz),
 			];
 
 			let planeQueryParts = [];
@@ -219,10 +220,10 @@ export class VolumePanel extends MeasurePanel {
 			}
 
 			let offset = pointcloud.pcoGeometry.offset.clone();
-			let negateOffset = new THREE.Matrix4().makeTranslation(...offset.multiplyScalar(-1).toArray());
+			let negateOffset = new Matrix4().makeTranslation(...offset.multiplyScalar(-1).toArray());
 			let matrixWorld = pointcloud.matrixWorld;
 
-			let transform = new THREE.Matrix4().multiplyMatrices(matrixWorld, negateOffset);
+			let transform = new Matrix4().multiplyMatrices(matrixWorld, negateOffset);
 
 			let path = `${window.location.pathname}/../${pointcloud.pcoGeometry.url}`;
 
@@ -357,7 +358,7 @@ export class VolumePanel extends MeasurePanel {
 		{
 			let euler= this.measurement.rotation;
 
-			let angles =new THREE.Vector3(euler.x, euler.y, euler.z);
+			let angles =new Vector3(euler.x, euler.y, euler.z);
 			angles = angles.toArray();
 			//angles = [angles.z, angles.x, angles.y];
 			angles = angles.map(v => 180 * v / Math.PI);

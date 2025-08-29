@@ -1,6 +1,7 @@
 
 
-import * as THREE from "../libs/three.js/build/three.module.js";
+import {Sphere} from 'three'
+
 import {PointCloudTreeNode} from "./PointCloudTree.js";
 import {XHRFactory} from "./XHRFactory.js";
 import {Utils} from "./utils.js";
@@ -18,7 +19,7 @@ export class PointCloudOctreeGeometry{
 		this.hierarchyStepSize = -1;
 		this.loader = null;
 	}
-	
+
 }
 
 export class PointCloudOctreeGeometryNode extends PointCloudTreeNode{
@@ -32,7 +33,7 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode{
 		this.pcoGeometry = pcoGeometry;
 		this.geometry = null;
 		this.boundingBox = boundingBox;
-		this.boundingSphere = boundingBox.getBoundingSphere(new THREE.Sphere());
+		this.boundingSphere = boundingBox.getBoundingSphere(new Sphere());
 		this.children = {};
 		this.numPoints = 0;
 		this.level = null;
@@ -255,7 +256,7 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode{
 			this.loaded = false;
 
 			this.dispatchEvent( { type: 'dispose' } );
-			
+
 			for (let i = 0; i < this.oneTimeDisposeHandlers.length; i++) {
 				let handler = this.oneTimeDisposeHandlers[i];
 				handler();
@@ -263,7 +264,7 @@ export class PointCloudOctreeGeometryNode extends PointCloudTreeNode{
 			this.oneTimeDisposeHandlers = [];
 		}
 	}
-	
+
 }
 
 PointCloudOctreeGeometryNode.IDCount = 0;

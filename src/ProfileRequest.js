@@ -1,5 +1,6 @@
 
-import * as THREE from "../libs/three.js/build/three.module.js";
+import {Vector3,Matrix4,Sphere,  Box3, Line3} from 'three'
+import {BinaryHeap} from "./BinaryHeap.js";
 import {Points} from "./Points.js";
 
 export class ProfileData {
@@ -7,23 +8,23 @@ export class ProfileData {
 		this.profile = profile;
 
 		this.segments = [];
-		this.boundingBox = new THREE.Box3();
+		this.boundingBox = new Box3();
 
 		for (let i = 0; i < profile.points.length - 1; i++) {
 			let start = profile.points[i];
 			let end = profile.points[i + 1];
 
-			let startGround = new THREE.Vector3(start.x, start.y, 0);
-			let endGround = new THREE.Vector3(end.x, end.y, 0);
+			let startGround = new Vector3(start.x, start.y, 0);
+			let endGround = new Vector3(end.x, end.y, 0);
 
-			let center = new THREE.Vector3().addVectors(endGround, startGround).multiplyScalar(0.5);
+			let center = new Vector3().addVectors(endGround, startGround).multiplyScalar(0.5);
 			let length = startGround.distanceTo(endGround);
-			let side = new THREE.Vector3().subVectors(endGround, startGround).normalize();
-			let up = new THREE.Vector3(0, 0, 1);
-			let forward = new THREE.Vector3().crossVectors(side, up).normalize();
+			let side = new Vector3().subVectors(endGround, startGround).normalize();
+			let up = new Vector3(0, 0, 1);
+			let forward = new Vector3().crossVectors(side, up).normalize();
 			let N = forward;
-			let cutPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(N, startGround);
-			let halfPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(side, center);
+			let cutPlane = new Plane().setFromNormalAndCoplanarPoint(N, startGround);
+			let halfPlane = new Plane().setFromNormalAndCoplanarPoint(side, center);
 
 			let segment = {
 				start: start,
@@ -189,8 +190,8 @@ export class ProfileRequest {
 		let acceptedPositions = new Float32Array(numPoints * 3);
 		let numAccepted = 0;
 
-		let pos = new THREE.Vector3();
-		let svp = new THREE.Vector3();
+		let pos = new Vector3();
+		let svp = new Vector3();
 
 		let view = new Float32Array(node.geometry.attributes.position.array);
 
@@ -262,12 +263,12 @@ export class ProfileRequest {
 
 				{ // skip if current node doesn't intersect current segment
 					let bbWorld = node.boundingBox.clone().applyMatrix4(this.pointcloud.matrixWorld);
-					let bsWorld = bbWorld.getBoundingSphere(new THREE.Sphere());
+					let bsWorld = bbWorld.getBoundingSphere(new Sphere());
 
-					let start = new THREE.Vector3(segment.start.x, segment.start.y, bsWorld.center.z);
-					let end = new THREE.Vector3(segment.end.x, segment.end.y, bsWorld.center.z);
+					let start = new Vector3(segment.start.x, segment.start.y, bsWorld.center.z);
+					let end = new Vector3(segment.end.x, segment.end.y, bsWorld.center.z);
 
-					let closest = new THREE.Line3(start, end).closestPointToPoint(bsWorld.center, true, new THREE.Vector3());
+					let closest = new Line3(start, end).closestPointToPoint(bsWorld.center, true, new Vector3());
 					let distance = closest.distanceTo(bsWorld.center);
 
 					let intersects = (distance < (bsWorld.radius + target.profile.width));
@@ -285,14 +286,14 @@ export class ProfileRequest {
 				//	viewer.scene.scene.add(boxHelper);
 				//}
 
-				let sv = new THREE.Vector3().subVectors(segment.end, segment.start).setZ(0);
+				let sv = new Vector3().subVectors(segment.end, segment.start).setZ(0);
 				let segmentDir = sv.clone().normalize();
 
 				let points = new Points();
 
-				let nodeMatrix = new THREE.Matrix4().makeTranslation(...node.boundingBox.min.toArray());
+				let nodeMatrix = new Matrix4().makeTranslation(...node.boundingBox.min.toArray());
 
-				let matrix = new THREE.Matrix4().multiplyMatrices(
+				let matrix = new Matrix4().multiplyMatrices(
 					this.pointcloud.matrixWorld, nodeMatrix);
 
 				pointsProcessed = pointsProcessed + numPoints;

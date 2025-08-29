@@ -1,5 +1,19 @@
+import {
+	Clock,
+	Matrix4,
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+	Object3D,
+	OrthographicCamera,
+	PerspectiveCamera,
+	REVISION,
+	Scene ,
+	Sphere,
+
+	Vector2,
+	Vector3,
+	Vector4,
+	WebGLRenderer
+} from "three";
 import {CameraMode, ClipMethod, ClipTask, ElevationGradientRepeat, LengthUnits} from "../defines.js";
 import {Features} from "../Features.js";
 import {Renderer} from "../PotreeRenderer.js";
@@ -13,7 +27,7 @@ import {HQSplatRenderer} from "./HQSplatRenderer.js";
 import {MapView} from "./map.js";
 import {PotreeRenderer} from "./PotreeRenderer.js";
 import {ProfileWindow, ProfileWindowController} from "./profile.js";
-import {Scene} from "./Scene.js";
+import {PScene} from "./Scene.js";
 import {Sidebar} from "./sidebar.js";
 
 import {AnnotationTool} from "../utils/AnnotationTool.js";
@@ -54,7 +68,7 @@ export class Viewer extends EventDispatcher {
 
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
 		this.isFootBasedProjection = false;
-		this.ecefCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
+		this.ecefCamera = new PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 
 
 
@@ -194,7 +208,7 @@ export class Viewer extends EventDispatcher {
 			this.compass = null;
 
 			this.skybox = null;
-			this.clock = new THREE.Clock();
+			this.clock = new Clock();
 			this.background = null;
 
 			this.initThree();
@@ -224,8 +238,8 @@ export class Viewer extends EventDispatcher {
 			}
 
 			{
-				this.overlay = new THREE.Scene();
-				this.overlayCamera = new THREE.OrthographicCamera(
+				this.overlay = new Scene();
+				this.overlayCamera = new OrthographicCamera(
 					0, 1,
 					1, 0,
 					-1000, 1000
@@ -239,22 +253,22 @@ export class Viewer extends EventDispatcher {
 				let far = 10.0;
 				let fov = 90;
 
-				this.shadowTestCam = new THREE.PerspectiveCamera(90, 1, near, far);
+				this.shadowTestCam = new PerspectiveCamera(90, 1, near, far);
 				this.shadowTestCam.position.set(3.50, -2.80, 8.561);
-				this.shadowTestCam.lookAt(new THREE.Vector3(0, 0, 4.87));
+				this.shadowTestCam.lookAt(new Vector3(0, 0, 4.87));
 			}
 
 
-			let scene = new Scene(this.renderer);
+			let scene = new PScene(this.renderer);
 
 			{ // create VR scene
-				this.sceneVR = new THREE.Scene();
+				this.sceneVR = new Scene();
 
-				// let texture = new THREE.TextureLoader().load(`${Potree.resourcePath}/images/vr_controller_help.jpg`);
+				// let texture = new TextureLoader().load(`${Potree.resourcePath}/images/vr_controller_help.jpg`);
 
-				// let plane = new THREE.PlaneBufferGeometry(1, 1, 1, 1);
-				// let infoMaterial = new THREE.MeshBasicMaterial({map: texture});
-				// let infoNode = new THREE.Mesh(plane, infoMaterial);
+				// let plane = new PlaneBufferGeometry(1, 1, 1, 1);
+				// let infoMaterial = new MeshBasicMaterial({map: texture});
+				// let infoNode = new Mesh(plane, infoMaterial);
 				// infoNode.position.set(-0.5, 1, 0);
 				// infoNode.scale.set(0.4, 0.3, 1);
 				// infoNode.lookAt(0, 1, 0)
@@ -282,7 +296,7 @@ export class Viewer extends EventDispatcher {
 
 				let onPointcloudAdded = (e) => {
 					if (this.scene.pointclouds.length === 1) {
-						let speed = e.pointcloud.boundingBox.getSize(new THREE.Vector3()).length();
+						let speed = e.pointcloud.boundingBox.getSize(new Vector3()).length();
 						speed = speed / 5;
 						this.setMoveSpeed(speed);
 					}
@@ -462,15 +476,15 @@ export class Viewer extends EventDispatcher {
 				//let pPos = new Vector3(0, 0, 0).applyMatrix4(camera.matrixWorld);
 				let cmw = camera.matrixWorld; //brings the transformation of the camera from 0 to world in utm as potree
 
-				let t = new THREE.Matrix4().makeTranslation(0, 0, groundOffset); //translate to the given offset in z
+				let t = new Matrix4().makeTranslation(0, 0, groundOffset); //translate to the given offset in z
 
-				let n = new THREE.Matrix4();
+				let n = new Matrix4();
 				n.multiplyMatrices(t, cmw); //apply the translation to the camera matrix to get the new position offset
 
-				let o = new THREE.Vector3(0, 0, 0).applyMatrix4(n); //origin
+				let o = new Vector3(0, 0, 0).applyMatrix4(n); //origin
 
-				let pRight = new THREE.Vector3(600, 0, 0).applyMatrix4(n);
-				let pUp = new THREE.Vector3(0, 600, 0).applyMatrix4(n);
+				let pRight = new Vector3(600, 0, 0).applyMatrix4(n);
+				let pUp = new Vector3(0, 600, 0).applyMatrix4(n);
 				let pTarget = this.scene.view.getPivot();
 				pTarget.z = pTarget.z + groundOffset;
 				//
@@ -514,7 +528,7 @@ export class Viewer extends EventDispatcher {
 				//   //window.cesiumViewer.camera.frustum.fov = fovx;
 				// }
 
-				if (camera instanceof THREE.PerspectiveCamera) {
+				if (camera instanceof PerspectiveCamera) {
 					this.ecefCamera.fov = camera.fov;
 
 					//	this.ecefCamera.aspect = aspect;
@@ -523,7 +537,7 @@ export class Viewer extends EventDispatcher {
 					// this.ecefCamera.height = window.innerHeight;
 
 
-				} else if (camera instanceof THREE.OrthographicCamera) {
+				} else if (camera instanceof OrthographicCamera) {
 					let frustumHeight = camera.top - camera.bottom;
 					let frustumWidth = camera.right - camera.left;
 					this.ecefCamera.zoom = camera.zoom;
@@ -594,7 +608,7 @@ export class Viewer extends EventDispatcher {
 
 
 		//return { x, y, z };
-		return new THREE.Vector3(x, y, z);
+		return new Vector3(x, y, z);
 	}
 
 
@@ -1159,7 +1173,7 @@ export class Viewer extends EventDispatcher {
 		} else if (node.geometry && node.geometry.boundingSphere) {
 			bs = node.geometry.boundingSphere;
 		} else {
-			bs = node.boundingBox.getBoundingSphere(new THREE.Sphere());
+			bs = node.boundingBox.getBoundingSphere(new Sphere());
 		}
 		bs = bs.clone().applyMatrix4(node.matrixWorld);
 
@@ -1208,7 +1222,7 @@ export class Viewer extends EventDispatcher {
 		const diameter = box.min.distanceTo(box.max);
 
 		const camera = this.scene.getActiveCamera();
-		const offset = camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(diameter);
+		const offset = camera.getWorldDirection(new Vector3()).multiplyScalar(diameter);
 		const newCamPos = result.position.clone().sub(offset);
 
 		this.scene.view.position.copy(newCamPos);
@@ -1244,7 +1258,7 @@ export class Viewer extends EventDispatcher {
 	fitToScreen(factor = 1, animationDuration = 0) {
 		let box = this.getBoundingBox(this.scene.pointclouds);
 
-		let node = new THREE.Object3D();
+		let node = new Object3D();
 		node.boundingBox = box;
 
 		this.zoomTo(node, factor, animationDuration);
@@ -1460,7 +1474,7 @@ export class Viewer extends EventDispatcher {
 			let y = parseFloat(tokens[1]);
 			let z = parseFloat(tokens[2]);
 
-			this.scene.view.lookAt(new THREE.Vector3(x, y, z));
+			this.scene.view.lookAt(new Vector3(x, y, z));
 		}
 
 		if (Utils.getParameterByName('background')) {
@@ -1777,7 +1791,7 @@ export class Viewer extends EventDispatcher {
 
 	initThree() {
 
-		console.log(`initializing three.js ${THREE.REVISION}`);
+		console.log(`initializing js ${REVISION}`);
 
 		let width = this.renderArea.clientWidth;
 		let height = this.renderArea.clientHeight;
@@ -1812,7 +1826,7 @@ export class Viewer extends EventDispatcher {
 		//let context = canvas.getContext('webgl', contextAttributes );//up to 124 webgl 1 was supported
 		let context = canvas.getContext('webgl2', contextAttributes);//to be tested as glsl functions changed
 
-		this.renderer = new THREE.WebGLRenderer({
+		this.renderer = new WebGLRenderer({
 			alpha: true,
 			premultipliedAlpha: false,
 			canvas: canvas,
@@ -1861,7 +1875,7 @@ export class Viewer extends EventDispatcher {
 
 		let distances = [];
 
-		let renderAreaSize = this.renderer.getSize(new THREE.Vector2());
+		let renderAreaSize = this.renderer.getSize(new Vector2());
 
 		let viewer = this;
 
@@ -1883,13 +1897,13 @@ export class Viewer extends EventDispatcher {
 			let position = annotation.position.clone();
 			position.add(annotation.offset);
 			if (!position) {
-				position = annotation.boundingBox.getCenter(new THREE.Vector3());
+				position = annotation.boundingBox.getCenter(new Vector3());
 			}
 
 			let distance = viewer.scene.cameraP.position.distanceTo(position);
-			let radius = annotation.boundingBox.getBoundingSphere(new THREE.Sphere()).radius;
+			let radius = annotation.boundingBox.getBoundingSphere(new Sphere()).radius;
 
-			let screenPos = new THREE.Vector3();
+			let screenPos = new Vector3();
 			let screenSize = 0;
 
 			{
@@ -2014,7 +2028,7 @@ export class Viewer extends EventDispatcher {
 
 		const lTarget = camera.position
 			.clone()
-			.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1000));
+			.add(camera.getWorldDirection(new Vector3()).multiplyScalar(1000));
 		this.scene.directionalLight.position.copy(camera.position);
 		this.scene.directionalLight.lookAt(lTarget);
 
@@ -2047,7 +2061,7 @@ export class Viewer extends EventDispatcher {
 				let bbRoot = this.scene.scene.getObjectByName(
 					"potree_bounding_box_root");
 				if (!bbRoot) {
-					let node = new THREE.Object3D();
+					let node = new Object3D();
 					node.name = "potree_bounding_box_root";
 					this.scene.scene.add(node);
 					bbRoot = node;
@@ -2093,7 +2107,7 @@ export class Viewer extends EventDispatcher {
 			//	pickParams.x = mouse.x;
 			//	pickParams.y = renderer.domElement.clientHeight - mouse.y;
 
-			//	let raycaster = new THREE.Raycaster();
+			//	let raycaster = new Raycaster();
 			//	raycaster.setFromCamera(nmouse, camera);
 			//	let ray = raycaster.ray;
 
@@ -2105,8 +2119,8 @@ export class Viewer extends EventDispatcher {
 			//}
 
 			// const tStart = performance.now();
-			// const worldPos = new THREE.Vector3();
-			// const camPos = viewer.scene.getActiveCamera().getWorldPosition(new THREE.Vector3());
+			// const worldPos = new Vector3();
+			// const camPos = viewer.scene.getActiveCamera().getWorldPosition(new Vector3());
 			// let lowestDistance = Infinity;
 			// let numNodes = 0;
 
@@ -2257,7 +2271,7 @@ export class Viewer extends EventDispatcher {
 				box.updateMatrixWorld();
 
 				let boxInverse = box.matrixWorld.clone().invert();
-				let boxPosition = box.getWorldPosition(new THREE.Vector3());
+				let boxPosition = box.getWorldPosition(new Vector3());
 
 				return {box: box, inverse: boxInverse, position: boxPosition};
 			});
@@ -2472,7 +2486,7 @@ export class Viewer extends EventDispatcher {
 		renderer.clear();
 
 		let xr = renderer.xr;
-		let dbg = new THREE.PerspectiveCamera();
+		let dbg = new PerspectiveCamera();
 		let xrCameras = xr.getCamera(dbg);
 
 		if (xrCameras.cameras.length !== 2) {
@@ -2506,7 +2520,7 @@ export class Viewer extends EventDispatcher {
 			skybox.camera.fov = cam.fov;
 			skybox.camera.aspect = cam.aspect;
 
-			// let dbg = new THREE.Object3D();
+			// let dbg = new Object3D();
 			let dbg = skybox.parent;
 			// dbg.up.set(0, 0, 1);
 			dbg.rotation.x = Math.PI / 2;
@@ -2591,7 +2605,7 @@ export class Viewer extends EventDispatcher {
 				let proj = xrCamera.projectionMatrix;
 				let inv = proj.clone().invert();
 
-				let p1 = new THREE.Vector4(0, 1, -1, 1).applyMatrix4(inv);
+				let p1 = new Vector4(0, 1, -1, 1).applyMatrix4(inv);
 				let rad = p1.y
 				let fov = 180 * (rad / Math.PI);
 

@@ -6,7 +6,9 @@
  *
  */
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Vector3} from 'three';
+
 import {Measure} from "../utils/Measure.js";
 
 export class DXFExporter {
@@ -116,8 +118,8 @@ SEQEND
 			.reduce((a, v) => a.concat(v))
 			.map(p => p.position);
 
-		let min = new THREE.Vector3(Infinity, Infinity, Infinity);
-		let max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+		let min = new Vector3(Infinity, Infinity, Infinity);
+		let max = new Vector3(-Infinity, -Infinity, -Infinity);
 		for (let point of points) {
 			min.min(point);
 			max.max(point);

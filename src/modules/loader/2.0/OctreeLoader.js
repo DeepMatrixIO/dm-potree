@@ -1,5 +1,6 @@
 
-import * as THREE from "../../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../../libs/js/build/module.js";
+import {Box3, BufferAttribute, BufferGeometry, Sphere, Vector3} from 'three';
 import {PointAttribute, PointAttributes, PointAttributeTypes} from "../../../loader/PointAttributes.js";
 import {updateFetchToken} from "../../../tokenUpdater.js"; //added by jguerrer
 import {OctreeGeometry, OctreeGeometryNode} from "./OctreeGeometry.js";
@@ -127,25 +128,25 @@ export class NodeLoader {
 
 				Potree.workerPool.returnWorker(workerPath, worker);
 
-				let geometry = new THREE.BufferGeometry();
+				let geometry = new BufferGeometry();
 
 				for (let property in buffers) {
 
 					let buffer = buffers[property].buffer;
 
 					if (property === "position") {
-						geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(buffer), 3));
+						geometry.setAttribute('position', new BufferAttribute(new Float32Array(buffer), 3));
 					} else if (property === "rgba") {
-						geometry.setAttribute('rgba', new THREE.BufferAttribute(new Uint8Array(buffer), 4, true));
+						geometry.setAttribute('rgba', new BufferAttribute(new Uint8Array(buffer), 4, true));
 					} else if (property === "NORMAL") {
-						//geometry.setAttribute('rgba', new THREE.BufferAttribute(new Uint8Array(buffer), 4, true));
-						geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(buffer), 3));
+						//geometry.setAttribute('rgba', new BufferAttribute(new Uint8Array(buffer), 4, true));
+						geometry.setAttribute('normal', new BufferAttribute(new Float32Array(buffer), 3));
 					} else if (property === "INDICES") {
-						let bufferAttribute = new THREE.BufferAttribute(new Uint8Array(buffer), 4);
+						let bufferAttribute = new BufferAttribute(new Uint8Array(buffer), 4);
 						bufferAttribute.normalized = true;
 						geometry.setAttribute('indices', bufferAttribute);
 					} else {
-						const bufferAttribute = new THREE.BufferAttribute(new Float32Array(buffer), 1);
+						const bufferAttribute = new BufferAttribute(new Float32Array(buffer), 1);
 
 						let batchAttribute = buffers[property].attribute;
 						bufferAttribute.potree = {
@@ -436,7 +437,7 @@ export class NodeLoader {
 
 }
 
-let tmpVec3 = new THREE.Vector3();
+let tmpVec3 = new Vector3();
 function createChildAABB(aabb, index) {
 	let min = aabb.min.clone();
 	let max = aabb.max.clone();
@@ -460,7 +461,7 @@ function createChildAABB(aabb, index) {
 		max.x -= size.x / 2;
 	}
 
-	return new THREE.Box3(min, max);
+	return new Box3(min, max);
 }
 
 let typenameTypeattributeMap = {
@@ -555,9 +556,9 @@ export class OctreeLoader {
 		// let aPosition = metadata.attributes.find(a => a.name === "position");
 		// octree
 
-		let min = new THREE.Vector3(...metadata.boundingBox.min);
-		let max = new THREE.Vector3(...metadata.boundingBox.max);
-		let boundingBox = new THREE.Box3(min, max);
+		let min = new Vector3(...metadata.boundingBox.min);
+		let max = new Vector3(...metadata.boundingBox.max);
+		let boundingBox = new Box3(min, max);
 
 		let offset = min.clone();
 		boundingBox.min.sub(offset);
@@ -566,8 +567,8 @@ export class OctreeLoader {
 		octree.projection = metadata.projection;
 		octree.boundingBox = boundingBox;
 		octree.tightBoundingBox = boundingBox.clone();
-		octree.boundingSphere = boundingBox.getBoundingSphere(new THREE.Sphere());
-		octree.tightBoundingSphere = boundingBox.getBoundingSphere(new THREE.Sphere());
+		octree.boundingSphere = boundingBox.getBoundingSphere(new Sphere());
+		octree.tightBoundingSphere = boundingBox.getBoundingSphere(new Sphere());
 		octree.offset = offset;
 		octree.pointAttributes = OctreeLoader.parseAttributes(metadata.attributes);
 		octree.loader = loader;

@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Color, Mesh, MeshBasicMaterial, MeshNormalMaterial, Object3D, SphereGeometry, Vector2, Vector3} from 'three';
 import {Line2} from "../../libs/three.js/lines/Line2.js";
 import {LineGeometry} from "../../libs/three.js/lines/LineGeometry.js";
 import {LineMaterial} from "../../libs/three.js/lines/LineMaterial.js";
@@ -19,7 +20,7 @@ function createHeightLine() {
 		dashSize: 5,
 		gapSize: 2,
 		linewidth: 2,
-		resolution: new THREE.Vector2(1000, 1000),
+		resolution: new Vector2(1000, 1000),
 	});
 
 	lineMaterial.depthTest = false;
@@ -84,7 +85,7 @@ function createCircleRadiusLine() {
 	const lineMaterial = new LineMaterial({
 		color: 0xff0000,
 		linewidth: 2,
-		resolution: new THREE.Vector2(1000, 1000),
+		resolution: new Vector2(1000, 1000),
 		gapSize: 1,
 		dashed: true,
 	});
@@ -105,13 +106,13 @@ function createCircleLine() {
 		let u0 = 2 * Math.PI * (i / n);
 		let u1 = 2 * Math.PI * (i + 1) / n;
 
-		let p0 = new THREE.Vector3(
+		let p0 = new Vector3(
 			Math.cos(u0),
 			Math.sin(u0),
 			0
 		);
 
-		let p1 = new THREE.Vector3(
+		let p1 = new Vector3(
 			Math.cos(u1),
 			Math.sin(u1),
 			0
@@ -131,7 +132,7 @@ function createCircleLine() {
 		dashSize: 5,
 		gapSize: 2,
 		linewidth: 2,
-		resolution: new THREE.Vector2(1000, 1000),
+		resolution: new Vector2(1000, 1000),
 	});
 
 	material.depthTest = false;
@@ -144,10 +145,10 @@ function createCircleLine() {
 }
 
 function createCircleCenter() {
-	const sg = new THREE.SphereGeometry(1, 32, 32);
-	const sm = new THREE.MeshNormalMaterial();
+	const sg = new SphereGeometry(1, 32, 32);
+	const sm = new MeshNormalMaterial();
 
-	const circleCenter = new THREE.Mesh(sg, sm);
+	const circleCenter = new Mesh(sg, sm);
 	circleCenter.visible = true;
 
 	return circleCenter;
@@ -164,7 +165,7 @@ function createLine() {
 	const material = new LineMaterial({
 		color: 0xff0000,
 		linewidth: 2,
-		resolution: new THREE.Vector2(1000, 1000),
+		resolution: new Vector2(1000, 1000),
 		gapSize: 1,
 		dashed: true,
 	});
@@ -185,13 +186,13 @@ function createCircle() {
 		let u0 = 2 * Math.PI * (i / n);
 		let u1 = 2 * Math.PI * (i + 1) / n;
 
-		let p0 = new THREE.Vector3(
+		let p0 = new Vector3(
 			Math.cos(u0),
 			Math.sin(u0),
 			0
 		);
 
-		let p1 = new THREE.Vector3(
+		let p1 = new Vector3(
 			Math.cos(u1),
 			Math.sin(u1),
 			0
@@ -211,7 +212,7 @@ function createCircle() {
 		dashSize: 5,
 		gapSize: 2,
 		linewidth: 2,
-		resolution: new THREE.Vector2(1000, 1000),
+		resolution: new Vector2(1000, 1000),
 	});
 
 	material.depthTest = false;
@@ -239,8 +240,8 @@ function createAzimuth() {
 		node: null,
 	};
 
-	const sg = new THREE.SphereGeometry(1, 32, 32);
-	const sm = new THREE.MeshNormalMaterial();
+	const sg = new SphereGeometry(1, 32, 32);
+	const sm = new MeshNormalMaterial();
 
 	{
 		const label = new TextSprite("");
@@ -255,16 +256,16 @@ function createAzimuth() {
 		azimuth.label = label;
 	}
 
-	azimuth.center = new THREE.Mesh(sg, sm);
-	azimuth.target = new THREE.Mesh(sg, sm);
-	azimuth.north = new THREE.Mesh(sg, sm);
+	azimuth.center = new Mesh(sg, sm);
+	azimuth.target = new Mesh(sg, sm);
+	azimuth.north = new Mesh(sg, sm);
 	azimuth.centerToNorth = createLine();
 	azimuth.centerToTarget = createLine();
 	azimuth.centerToTargetground = createLine();
 	azimuth.targetgroundToTarget = createLine();
 	azimuth.circle = createCircle();
 
-	azimuth.node = new THREE.Object3D();
+	azimuth.node = new Object3D();
 	azimuth.node.add(
 		azimuth.centerToNorth,
 		azimuth.centerToTarget,
@@ -280,7 +281,7 @@ function createAzimuth() {
 	return azimuth;
 }
 
-export class Measure extends THREE.Object3D {
+export class Measure extends Object3D {
 	constructor() {
 		super();
 
@@ -299,8 +300,8 @@ export class Measure extends THREE.Object3D {
 		this._showAzimuth = false;
 		this.maxMarkers = Number.MAX_SAFE_INTEGER;
 
-		this.sphereGeometry = new THREE.SphereGeometry(0.4, 5, 5);//from 10 to 5
-		this.color = new THREE.Color(0xff0000);
+		this.sphereGeometry = new SphereGeometry(0.4, 5, 5);//from 10 to 5
+		this.color = new Color(0xff0000);
 
 		this.spheres = [];
 		this.edges = [];
@@ -319,7 +320,7 @@ export class Measure extends THREE.Object3D {
 
 		this.azimuth = createAzimuth();
 		/**
-		let dl = new THREE.DirectionalLight(0xdddddd, 1.0)
+		let dl = new DirectionalLight(0xdddddd, 1.0)
 		dl.position.set(1, 1, 5000)
 		dl.target.position.set(0, 0, 0)
 		this.add(dl);
@@ -342,16 +343,16 @@ export class Measure extends THREE.Object3D {
 
 	createSphereMaterial() {
 		//With no illumination the sphere will be black, changing to something else
-		let sphereMaterial = new THREE.MeshLambertMaterial({
-			//shading: THREE.SmoothShading,
+		let sphereMaterial = new MeshLambertMaterial({
+			//shading: SmoothShading,
 			color: this.color,
 			depthTest: false,
 			depthWrite: false
 		}
 		);
 
-		let sphereMaterial2 = new THREE.MeshBasicMaterial({
-			//shading: THREE.SmoothShading,
+		let sphereMaterial2 = new MeshBasicMaterial({
+			//shading: SmoothShading,
 			color: this.color,
 			depthTest: false,
 			depthWrite: false
@@ -365,16 +366,16 @@ export class Measure extends THREE.Object3D {
 		if (point.x != null) {
 			point = {position: point};
 		} else if (point instanceof Array) {
-			point = {position: new THREE.Vector3(...point)};
+			point = {position: new Vector3(...point)};
 		}
 		this.points.push(point);
 
 		// sphere
-		let sphere = new THREE.Mesh(this.sphereGeometry, this.createSphereMaterial());
+		let sphere = new Mesh(this.sphereGeometry, this.createSphereMaterial());
 
 		this.add(sphere);
-		//this.add(new THREE.AmbientLight(0xffffff, 0.3));
-		//let dl = new THREE.DirectionalLight(0xffffff, 0.5)
+		//this.add(new AmbientLight(0xffffff, 0.3));
+		//let dl = new DirectionalLight(0xffffff, 0.5)
 		//dl.position.set(1, 1, 5000)
 		//dl.target.position.set(0, 0, 0)
 		//this.add(dl);
@@ -390,7 +391,7 @@ export class Measure extends THREE.Object3D {
 			let lineMaterial = new LineMaterial({
 				color: 0xff0000,
 				linewidth: 2,
-				resolution: new THREE.Vector2(1000, 1000),
+				resolution: new Vector2(1000, 1000),
 			});
 
 			lineMaterial.depthTest = false;
@@ -590,8 +591,8 @@ export class Measure extends THREE.Object3D {
 	}
 
 	getAngleBetweenLines(cornerPoint, point1, point2) {
-		let v1 = new THREE.Vector3().subVectors(point1.position, cornerPoint.position);
-		let v2 = new THREE.Vector3().subVectors(point2.position, cornerPoint.position);
+		let v1 = new Vector3().subVectors(point1.position, cornerPoint.position);
+		let v2 = new Vector3().subVectors(point2.position, cornerPoint.position);
 
 		// avoid the error printed by threejs if denominator is 0
 		const denominator = Math.sqrt(v1.lengthSq() * v2.lengthSq());
@@ -649,7 +650,7 @@ export class Measure extends THREE.Object3D {
 
 		let lastIndex = this.points.length - 1;
 
-		let centroid = new THREE.Vector3();
+		let centroid = new Vector3();
 		for (let i = 0; i <= lastIndex; i++) {
 			let point = this.points[i];
 			centroid.add(point.position);
@@ -696,7 +697,7 @@ export class Measure extends THREE.Object3D {
 			{ // edge labels
 				let edgeLabel = this.edgeLabels[i];
 
-				let center = new THREE.Vector3().add(point.position);
+				let center = new Vector3().add(point.position);
 				center.add(nextPoint.position);
 				center = center.multiplyScalar(0.5);
 				let distance = point.position.distanceTo(nextPoint.position);
@@ -748,8 +749,8 @@ export class Measure extends THREE.Object3D {
 				let max = highPoint.z;
 				let height = max - min;
 
-				let start = new THREE.Vector3(highPoint.x, highPoint.y, min);
-				let end = new THREE.Vector3(highPoint.x, highPoint.y, max);
+				let start = new Vector3(highPoint.x, highPoint.y, min);
+				let end = new Vector3(highPoint.x, highPoint.y, max);
 
 				heightEdge.position.copy(lowPoint);
 
@@ -867,7 +868,7 @@ export class Measure extends THREE.Object3D {
 
 		// recalculate distances because they are not necessarely correct
 		// for scaled objects.
-		// see https://github.com/mrdoob/three.js/issues/5827
+		// see https://github.com/mrdoob/js/issues/5827
 		// TODO: remove this once the bug has been fixed
 		for (let i = 0; i < intersects.length; i++) {
 			let I = intersects[i];

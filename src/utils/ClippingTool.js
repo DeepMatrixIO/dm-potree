@@ -1,6 +1,8 @@
 
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import { Vector2, Scene} from 'three'
+
 import {ClipVolume} from "./ClipVolume.js";
 import {PolygonClipVolume} from "./PolygonClipVolume.js";
 import {EventDispatcher} from "../EventDispatcher.js";
@@ -22,8 +24,8 @@ export class ClippingTool extends EventDispatcher {
 
 		});
 
-		this.sceneMarker = new THREE.Scene();
-		this.sceneVolume = new THREE.Scene();
+		this.sceneMarker = new Scene();
+		this.sceneVolume = new Scene();
 		this.sceneVolume.name = "scene_clip_volume";
 		this.viewer.inputHandler.registerInteractiveScene(this.sceneVolume);
 
@@ -74,7 +76,7 @@ export class ClippingTool extends EventDispatcher {
 		if (!type) return null;
 
 		let domElement = this.viewer.renderer.domElement;
-		let canvasSize = this.viewer.renderer.getSize(new THREE.Vector2());
+		let canvasSize = this.viewer.renderer.getSize(new Vector2());
 
 		let svg = $(`
 		<svg height="${canvasSize.height}" width="${canvasSize.width}" style="position:absolute; pointer-events: none">
@@ -122,7 +124,7 @@ export class ClippingTool extends EventDispatcher {
 		};
 
 		let insertionCallback = (e) => {
-			if (e.button === THREE.MOUSE.LEFT) {
+			if (e.button === MOUSE.LEFT) {
 
 				polyClipVol.addMarker();
 
@@ -141,7 +143,7 @@ export class ClippingTool extends EventDispatcher {
 
 				this.viewer.inputHandler.startDragging(
 					polyClipVol.markers[polyClipVol.markers.length - 1]);
-			} else if (e.button === THREE.MOUSE.RIGHT) {
+			} else if (e.button === MOUSE.RIGHT) {
 
 				cancel.callback(e);
 			}

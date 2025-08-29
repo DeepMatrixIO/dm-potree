@@ -1,5 +1,5 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Box3, Camera, Object3D, PerspectiveCamera, Vector2, Vector3} from 'three';
 import {Annotation} from "../Annotation.js";
 import {CameraMode, ClipMethod, ClipTask} from "../defines.js";
 import {DXFExporter} from "../exporter/DXFExporter.js";
@@ -460,22 +460,22 @@ export class Sidebar {
 
 			if (object instanceof PointCloudTree) {
 				let box = this.viewer.getBoundingBox([object]);
-				let node = new THREE.Object3D();
+				let node = new Object3D();
 				node.boundingBox = box;
 				this.viewer.zoomTo(node, 1, 500);
 			} else if (object instanceof Measure) {
 				let points = object.points.map(p => p.position);
-				let box = new THREE.Box3().setFromPoints(points);
-				if (box.getSize(new THREE.Vector3()).length() > 0) {
-					let node = new THREE.Object3D();
+				let box = new Box3().setFromPoints(points);
+				if (box.getSize(new Vector3()).length() > 0) {
+					let node = new Object3D();
 					node.boundingBox = box;
 					this.viewer.zoomTo(node, 2, 500);
 				}
 			} else if (object instanceof Profile) {
 				let points = object.points;
-				let box = new THREE.Box3().setFromPoints(points);
-				if (box.getSize(new THREE.Vector3()).length() > 0) {
-					let node = new THREE.Object3D();
+				let box = new Box3().setFromPoints(points);
+				if (box.getSize(new Vector3()).length() > 0) {
+					let node = new Object3D();
 					node.boundingBox = box;
 					this.viewer.zoomTo(node, 1, 500);
 				}
@@ -483,24 +483,24 @@ export class Sidebar {
 
 				let box = object.boundingBox.clone().applyMatrix4(object.matrixWorld);
 
-				if (box.getSize(new THREE.Vector3()).length() > 0) {
-					let node = new THREE.Object3D();
+				if (box.getSize(new Vector3()).length() > 0) {
+					let node = new Object3D();
 					node.boundingBox = box;
 					this.viewer.zoomTo(node, 1, 500);
 				}
 			} else if (object instanceof Annotation) {
 				object.moveHere(this.viewer.scene.getActiveCamera());
 			} else if (object instanceof PolygonClipVolume) {
-				let dir = object.camera.getWorldDirection(new THREE.Vector3());
+				let dir = object.camera.getWorldDirection(new Vector3());
 				let target;
 
-				if (object.camera instanceof THREE.OrthographicCamera) {
+				if (object.camera instanceof OrthographicCamera) {
 					dir.multiplyScalar(object.camera.right)
-					target = new THREE.Vector3().addVectors(object.camera.position, dir);
+					target = new Vector3().addVectors(object.camera.position, dir);
 					this.viewer.setCameraMode(CameraMode.ORTHOGRAPHIC);
-				} else if (object.camera instanceof THREE.PerspectiveCamera) {
+				} else if (object.camera instanceof PerspectiveCamera) {
 					dir.multiplyScalar(this.viewer.scene.view.radius);
-					target = new THREE.Vector3().addVectors(object.camera.position, dir);
+					target = new Vector3().addVectors(object.camera.position, dir);
 					this.viewer.setCameraMode(CameraMode.PERSPECTIVE);
 				}
 
@@ -509,27 +509,27 @@ export class Sidebar {
 			} else if (object.type === "SpotLight") {
 				let distance = (object.distance > 0) ? object.distance / 4 : 5 * 1000;
 				let position = object.position;
-				let target = new THREE.Vector3().addVectors(
+				let target = new Vector3().addVectors(
 					position,
-					object.getWorldDirection(new THREE.Vector3()).multiplyScalar(distance));
+					object.getWorldDirection(new Vector3()).multiplyScalar(distance));
 
 				this.viewer.scene.view.position.copy(object.position);
 				this.viewer.scene.view.lookAt(target);
-			} else if (object instanceof THREE.Object3D) {
-				let box = new THREE.Box3().setFromObject(object);
+			} else if (object instanceof Object3D) {
+				let box = new Box3().setFromObject(object);
 
-				if (box.getSize(new THREE.Vector3()).length() > 0) {
-					let node = new THREE.Object3D();
+				if (box.getSize(new Vector3()).length() > 0) {
+					let node = new Object3D();
 					node.boundingBox = box;
 					this.viewer.zoomTo(node, 1, 500);
 				}
 			} else if (object instanceof OrientedImage) {
 				// TODO zoom to images
 
-				// let box = new THREE.Box3().setFromObject(object);
+				// let box = new Box3().setFromObject(object);
 
-				// if(box.getSize(new THREE.Vector3()).length() > 0){
-				// 	let node = new THREE.Object3D();
+				// if(box.getSize(new Vector3()).length() > 0){
+				// 	let node = new Object3D();
 				// 	node.boundingBox = box;
 				// 	this.viewer.zoomTo(node, 1, 500);
 				// }
@@ -778,7 +778,7 @@ export class Sidebar {
 		}
 
 		{
-			createNode(otherID, "Camera", null, new THREE.Camera());
+			createNode(otherID, "Camera", null, new Camera());
 		}
 
 		this.viewer.addEventListener("scene_changed", (e) => {
@@ -882,7 +882,7 @@ export class Sidebar {
 				Potree.resourcePath + "/icons/clip-screen.svg",
 				"[title]tt.screen_clip_box",
 				() => {
-					if (!(this.viewer.scene.getActiveCamera() instanceof THREE.OrthographicCamera)) {
+					if (!(this.viewer.scene.getActiveCamera() instanceof OrthographicCamera)) {
 						this.viewer.postMessage(`Switch to Orthographic Camera Mode before using the Screen-Box-Select tool.`,
 							{duration: 2000});
 						return;
@@ -1524,7 +1524,7 @@ export class Sidebar {
 			.filter(key => CameraMode[key] === this.viewer.scene.cameraMode);
 		elCameraProjection.find(`input[value=${cameraMode}]`).trigger("click");
 
-		let speedRange = new THREE.Vector2(1, 10 * 1000);
+		let speedRange = new Vector2(1, 10 * 1000);
 
 		let toLinearSpeed = (value) => {
 			return Math.pow(value, 4) * speedRange.y + speedRange.x;

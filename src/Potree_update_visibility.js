@@ -1,6 +1,8 @@
 
-import * as THREE from "../libs/three.js/build/three.module.js";
-import {ClipTask, ClipMethod} from "./defines.js";
+
+import {Matrix4, Vector3} from 'three';
+
+import {ClipMethod, ClipTask} from "./defines.js";
 import {Box3Helper} from "./utils/Box3Helper.js";
 
 export function updatePointClouds(pointclouds, camera, renderer){
@@ -54,25 +56,25 @@ export function updateVisibilityStructures(pointclouds, camera, renderer) {
 
 		// frustum in object space
 		camera.updateMatrixWorld();
-		let frustum = new THREE.Frustum();
+		let frustum = new Frustum();
 		let viewI = camera.matrixWorldInverse;
 		let world = pointcloud.matrixWorld;
-		
+
 		// use close near plane for frustum intersection
 		let frustumCam = camera.clone();
 		frustumCam.near = Math.min(camera.near, 0.1);
 		frustumCam.updateProjectionMatrix();
 		let proj = camera.projectionMatrix;
 
-		let fm = new THREE.Matrix4().multiply(proj).multiply(viewI).multiply(world);
+		let fm = new Matrix4().multiply(proj).multiply(viewI).multiply(world);
 		frustum.setFromProjectionMatrix(fm);
 		frustums.push(frustum);
 
 		// camera position in object space
 		let view = camera.matrixWorld;
 		let worldI = world.clone().invert();
-		let camMatrixObject = new THREE.Matrix4().multiply(worldI).multiply(view);
-		let camObjPos = new THREE.Vector3().setFromMatrixPosition(camMatrixObject);
+		let camMatrixObject = new Matrix4().multiply(worldI).multiply(view);
+		let camObjPos = new Vector3().setFromMatrixPosition(camMatrixObject);
 		camObjPositions.push(camObjPos);
 
 		if (pointcloud.visible && pointcloud.root !== null) {
@@ -120,7 +122,7 @@ export function updateVisibility(pointclouds, camera, renderer){
 	let priorityQueue = s.priorityQueue;
 
 	let loadedToGPUThisFrame = 0;
-	
+
 	let domWidth = renderer.domElement.clientWidth;
 	let domHeight = renderer.domElement.clientHeight;
 
@@ -198,26 +200,26 @@ export function updateVisibility(pointclouds, camera, renderer){
 				let pcWorldInverse = pointcloud.matrixWorld.clone().invert();
 				let toPCObject = pcWorldInverse.multiply(clipBox.box.matrixWorld);
 
-				let px = new THREE.Vector3(+0.5, 0, 0).applyMatrix4(pcWorldInverse);
-				let nx = new THREE.Vector3(-0.5, 0, 0).applyMatrix4(pcWorldInverse);
-				let py = new THREE.Vector3(0, +0.5, 0).applyMatrix4(pcWorldInverse);
-				let ny = new THREE.Vector3(0, -0.5, 0).applyMatrix4(pcWorldInverse);
-				let pz = new THREE.Vector3(0, 0, +0.5).applyMatrix4(pcWorldInverse);
-				let nz = new THREE.Vector3(0, 0, -0.5).applyMatrix4(pcWorldInverse);
+				let px = new Vector3(+0.5, 0, 0).applyMatrix4(pcWorldInverse);
+				let nx = new Vector3(-0.5, 0, 0).applyMatrix4(pcWorldInverse);
+				let py = new Vector3(0, +0.5, 0).applyMatrix4(pcWorldInverse);
+				let ny = new Vector3(0, -0.5, 0).applyMatrix4(pcWorldInverse);
+				let pz = new Vector3(0, 0, +0.5).applyMatrix4(pcWorldInverse);
+				let nz = new Vector3(0, 0, -0.5).applyMatrix4(pcWorldInverse);
 
-				let pxN = new THREE.Vector3().subVectors(nx, px).normalize();
+				let pxN = new Vector3().subVectors(nx, px).normalize();
 				let nxN = pxN.clone().multiplyScalar(-1);
-				let pyN = new THREE.Vector3().subVectors(ny, py).normalize();
+				let pyN = new Vector3().subVectors(ny, py).normalize();
 				let nyN = pyN.clone().multiplyScalar(-1);
-				let pzN = new THREE.Vector3().subVectors(nz, pz).normalize();
+				let pzN = new Vector3().subVectors(nz, pz).normalize();
 				let nzN = pzN.clone().multiplyScalar(-1);
 
-				let pxPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(pxN, px);
-				let nxPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(nxN, nx);
-				let pyPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(pyN, py);
-				let nyPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(nyN, ny);
-				let pzPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(pzN, pz);
-				let nzPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(nzN, nz);
+				let pxPlane = new Plane().setFromNormalAndCoplanarPoint(pxN, px);
+				let nxPlane = new Plane().setFromNormalAndCoplanarPoint(nxN, nx);
+				let pyPlane = new Plane().setFromNormalAndCoplanarPoint(pyN, py);
+				let nyPlane = new Plane().setFromNormalAndCoplanarPoint(nyN, ny);
+				let pzPlane = new Plane().setFromNormalAndCoplanarPoint(pzN, pz);
+				let nzPlane = new Plane().setFromNormalAndCoplanarPoint(nzN, nz);
 
 				//if(window.debugdraw !== undefined && window.debugdraw === true && node.name === "r60"){
 
@@ -228,14 +230,14 @@ export function updateVisibility(pointclouds, camera, renderer){
 				//	Potree.utils.debugPlane(viewer.scene.scene, pzPlane, 1, 0x0000FF);
 				//	Potree.utils.debugPlane(viewer.scene.scene, nzPlane, 1, 0x000099);
 
-				//	Potree.utils.debugBox(viewer.scene.scene, box, new THREE.Matrix4(), 0x00FF00);
+				//	Potree.utils.debugBox(viewer.scene.scene, box, new Matrix4(), 0x00FF00);
 				//	Potree.utils.debugBox(viewer.scene.scene, box, pointcloud.matrixWorld, 0xFF0000);
 				//	Potree.utils.debugBox(viewer.scene.scene, clipBox.box.boundingBox, clipBox.box.matrixWorld, 0xFF0000);
 
 				//	window.debugdraw = false;
 				//}
 
-				let frustum = new THREE.Frustum(pxPlane, nxPlane, pyPlane, nyPlane, pzPlane, nzPlane);
+				let frustum = new Frustum(pxPlane, nxPlane, pyPlane, nyPlane, pzPlane, nzPlane);
 				let intersects = frustum.intersectsBox(box);
 
 				if(intersects){
@@ -266,7 +268,7 @@ export function updateVisibility(pointclouds, camera, renderer){
 				//	visible = false;
 				//}
 			}
-			
+
 
 		}
 
@@ -320,7 +322,7 @@ export function updateVisibility(pointclouds, camera, renderer){
 			let transformVersion = pointcloudTransformVersion.get(pointcloud);
 			if(node._transformVersion !== transformVersion.number){
 				node.sceneNode.updateMatrix();
-				node.sceneNode.matrixWorld.multiplyMatrices(pointcloud.matrixWorld, node.sceneNode.matrix);	
+				node.sceneNode.matrixWorld.multiplyMatrices(pointcloud.matrixWorld, node.sceneNode.matrix);
 				node._transformVersion = transformVersion.number;
 			}
 
@@ -349,31 +351,31 @@ export function updateVisibility(pointclouds, camera, renderer){
 		for (let i = 0; i < children.length; i++) {
 			let child = children[i];
 
-			let weight = 0; 
+			let weight = 0;
 			if(camera.isPerspectiveCamera){
 				let sphere = child.getBoundingSphere();
 				let center = sphere.center;
 				//let distance = sphere.center.distanceTo(camObjPos);
-				
+
 				let dx = camObjPos.x - center.x;
 				let dy = camObjPos.y - center.y;
 				let dz = camObjPos.z - center.z;
-				
+
 				let dd = dx * dx + dy * dy + dz * dz;
 				let distance = Math.sqrt(dd);
-				
-				
+
+
 				let radius = sphere.radius;
-				
+
 				let fov = (camera.fov * Math.PI) / 180;
 				let slope = Math.tan(fov / 2);
 				let projFactor = (0.5 * domHeight) / (slope * distance);
 				let screenPixelRadius = radius * projFactor;
-				
+
 				if(screenPixelRadius < pointcloud.minimumNodePixelSize){
 					continue;
 				}
-			
+
 				weight = screenPixelRadius;
 
 				if(distance - radius < 0){
@@ -381,7 +383,7 @@ export function updateVisibility(pointclouds, camera, renderer){
 				}
 			} else {
 				// TODO ortho visibility
-				let bb = child.getBoundingBox();				
+				let bb = child.getBoundingBox();
 				let distance = child.getBoundingSphere().center.distanceTo(camObjPos);
 				let diagonal = bb.max.clone().sub(bb.min).length();
 				//weight = diagonal / distance;

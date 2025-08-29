@@ -1,8 +1,8 @@
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Vector3} from 'three';
 
 export class View{
 	constructor () {
-		this.position = new THREE.Vector3(0, 0, 0);
+		this.position = new Vector3(0, 0, 0);
 
 		this.yaw = Math.PI / 4;
 		this._pitch = -Math.PI / 4;
@@ -32,10 +32,10 @@ export class View{
 	}
 
 	get direction () {
-		let dir = new THREE.Vector3(0, 1, 0);
+		let dir = new Vector3(0, 1, 0);
 
-		dir.applyAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
-		dir.applyAxisAngle(new THREE.Vector3(0, 0, 1), this.yaw);
+		dir.applyAxisAngle(new Vector3(1, 0, 0), this.pitch);
+		dir.applyAxisAngle(new Vector3(0, 0, 1), this.yaw);
 
 		return dir;
 	}
@@ -52,15 +52,15 @@ export class View{
 			this.yaw = yaw;
 			this.pitch = pitch;
 		}
-		
+
 	}
 
 	lookAt(t){
 		let V;
 		if(arguments.length === 1){
-			V = new THREE.Vector3().subVectors(t, this.position);
+			V = new Vector3().subVectors(t, this.position);
 		}else if(arguments.length === 3){
-			V = new THREE.Vector3().subVectors(new THREE.Vector3(...arguments), this.position);
+			V = new Vector3().subVectors(new Vector3(...arguments), this.position);
 		}
 
 		let radius = V.length();
@@ -71,23 +71,23 @@ export class View{
 	}
 
 	getPivot () {
-		return new THREE.Vector3().addVectors(this.position, this.direction.multiplyScalar(this.radius));
+		return new Vector3().addVectors(this.position, this.direction.multiplyScalar(this.radius));
 	}
 
 	getSide () {
-		let side = new THREE.Vector3(1, 0, 0);
-		side.applyAxisAngle(new THREE.Vector3(0, 0, 1), this.yaw);
+		let side = new Vector3(1, 0, 0);
+		side.applyAxisAngle(new Vector3(0, 0, 1), this.yaw);
 
 		return side;
 	}
 
 	pan (x, y) {
-		let dir = new THREE.Vector3(0, 1, 0);
-		dir.applyAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
-		dir.applyAxisAngle(new THREE.Vector3(0, 0, 1), this.yaw);
+		let dir = new Vector3(0, 1, 0);
+		dir.applyAxisAngle(new Vector3(1, 0, 0), this.pitch);
+		dir.applyAxisAngle(new Vector3(0, 0, 1), this.yaw);
 
-		// let side = new THREE.Vector3(1, 0, 0);
-		// side.applyAxisAngle(new THREE.Vector3(0, 0, 1), this.yaw);
+		// let side = new Vector3(1, 0, 0);
+		// side.applyAxisAngle(new Vector3(0, 0, 1), this.yaw);
 
 		let side = this.getSide();
 
@@ -100,12 +100,12 @@ export class View{
 	}
 
 	translate (x, y, z) {
-		let dir = new THREE.Vector3(0, 1, 0);
-		dir.applyAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
-		dir.applyAxisAngle(new THREE.Vector3(0, 0, 1), this.yaw);
+		let dir = new Vector3(0, 1, 0);
+		dir.applyAxisAngle(new Vector3(1, 0, 0), this.pitch);
+		dir.applyAxisAngle(new Vector3(0, 0, 1), this.yaw);
 
-		let side = new THREE.Vector3(1, 0, 0);
-		side.applyAxisAngle(new THREE.Vector3(0, 0, 1), this.yaw);
+		let side = new Vector3(1, 0, 0);
+		side.applyAxisAngle(new Vector3(0, 0, 1), this.yaw);
 
 		let up = side.clone().cross(dir);
 
@@ -126,18 +126,18 @@ export class View{
 
 		let endPosition = null;
 		if(position instanceof Array){
-			endPosition = new THREE.Vector3(...position);
+			endPosition = new Vector3(...position);
 		}else if(position.x != null){
 			endPosition = position.clone();
 		}
 
 		let endTarget = null;
 		if(target instanceof Array){
-			endTarget = new THREE.Vector3(...target);
+			endTarget = new Vector3(...target);
 		}else if(target.x != null){
 			endTarget = target.clone();
 		}
-		
+
 		const startPosition = this.position.clone();
 		const startTarget = this.getPivot();
 
@@ -160,13 +160,13 @@ export class View{
 
 				//console.log(t);
 
-				const pos = new THREE.Vector3(
+				const pos = new Vector3(
 					(1 - t) * startPosition.x + t * endPosition.x,
 					(1 - t) * startPosition.y + t * endPosition.y,
 					(1 - t) * startPosition.z + t * endPosition.z,
 				);
 
-				const target = new THREE.Vector3(
+				const target = new Vector3(
 					(1 - t) * startTarget.x + t * endTarget.x,
 					(1 - t) * startTarget.y + t * endTarget.y,
 					(1 - t) * startTarget.z + t * endTarget.z,

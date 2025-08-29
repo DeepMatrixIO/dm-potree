@@ -1,12 +1,12 @@
 
-//import * as THREE from "../../libs/three.js/build/three.module.js";
+import {BoxGeometry, BufferAttribute, BufferGeometry, Color, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, Object3D, Sphere, SphereGeometry, Vector3} from 'three';
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
 
 import {TextSprite} from "../TextSprite.js";
 import {FilterIntType} from "./FilterConsts.js";
 
-export class Volume extends THREE.Object3D {
+export class Volume extends Object3D {
 	constructor(args = {}) {
 		super();
 		this._intType = FilterIntType.NONE; //default value, can be set by user
@@ -34,7 +34,7 @@ export class Volume extends THREE.Object3D {
 		this.add(this.label);
 
 		this.label.updateMatrixWorld = () => {
-			let volumeWorldPos = new THREE.Vector3();
+			let volumeWorldPos = new Vector3();
 			volumeWorldPos.setFromMatrixPosition(this.matrixWorld);
 			this.label.position.copy(volumeWorldPos);
 			this.label.updateMatrix();
@@ -153,13 +153,13 @@ export class BoxVolume extends Volume {
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = 'box_' + this.constructor.counter;
 		this.visible= true;
-		let boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+		let boxGeometry = new BoxGeometry(1, 1, 1);
 		boxGeometry.computeBoundingBox();
 
-		//let boxFrameGeometry = new THREE.Geometry();
-		let boxFrameGeometry = new THREE.BufferGeometry();
+		//let boxFrameGeometry = new Geometry();
+		let boxFrameGeometry = new BufferGeometry();
 		{
-			let Vector3 = THREE.Vector3;
+			let Vector3 = Vector3;
 
 			let vertices = [
 
@@ -199,25 +199,25 @@ export class BoxVolume extends Volume {
 			}
 
 
-			boxFrameGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+			boxFrameGeometry.setAttribute('position', new BufferAttribute(positions, 3));
 
 
 		}
 
-		this.material = new THREE.MeshBasicMaterial({
+		this.material = new MeshBasicMaterial({
 			color: 0x0000ff,
 			transparent: true,
 			opacity: 0.3,
 			depthTest: true,
 			depthWrite: false
 		});
-		this.box = new THREE.Mesh(boxGeometry, this.material);
+		this.box = new Mesh(boxGeometry, this.material);
 		this.box.geometry.computeBoundingBox();
 
 		//may use a blend or opacity to make selection transparent
 		//add next in custom volume class
 		//next two lines assign the highlight color  of the box
-		this.color = new THREE.Color(1.0, 0.0, 1.0);//this is the default color, magenta
+		this.color = new Color(1.0, 0.0, 1.0);//this is the default color, magenta
 		this.actualClipTask = 1;//testing,  the highlighting color was never applied because the task was not set
 		//now need to set the boxcolor array to handle multiple boxes
 		//
@@ -226,8 +226,8 @@ export class BoxVolume extends Volume {
 		this.boundingBox = this.box.geometry.boundingBox;
 		this.add(this.box);
 
-		this.frame = new THREE.LineSegments(boxFrameGeometry, new THREE.LineBasicMaterial({color: 0x000000}));
-		// this.frame.mode = THREE.Lines;
+		this.frame = new LineSegments(boxFrameGeometry, new LineBasicMaterial({color: 0x000000}));
+		// this.frame.mode = Lines;
 		this.add(this.frame);
 
 		this.update();
@@ -235,7 +235,7 @@ export class BoxVolume extends Volume {
 
 	update() {
 		this.boundingBox = this.box.geometry.boundingBox;
-		this.boundingSphere = this.boundingBox.getBoundingSphere(new THREE.Sphere());
+		this.boundingSphere = this.boundingBox.getBoundingSphere(new Sphere());
 
 		if (this._clip) {
 			this.box.visible = false;
@@ -317,7 +317,7 @@ toJSON() {
 
 
 
-	volume.color = new THREE.Color(data.color || 0x0000ff); // restore color, default to blue if not set
+	volume.color = new Color(data.color || 0x0000ff); // restore color, default to blue if not set
 	// volume.box.material.color.set(volume.color);
     // Important: Call update to refresh visibility and geometry
     volume.update();
@@ -344,17 +344,17 @@ export class SphereVolume extends Volume {
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = 'sphere_' + this.constructor.counter;
 
-		let sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+		let sphereGeometry = new SphereGeometry(1, 32, 32);
 		sphereGeometry.computeBoundingBox();
 
-		this.material = new THREE.MeshBasicMaterial({
+		this.material = new MeshBasicMaterial({
 			color: 0x00ff00,
 			transparent: true,
 			opacity: 0.3,
 			depthTest: true,
 			depthWrite: false
 		});
-		this.sphere = new THREE.Mesh(sphereGeometry, this.material);
+		this.sphere = new Mesh(sphereGeometry, this.material);
 		this.sphere.visible = false;
 		this.sphere.geometry.computeBoundingBox();
 		this.boundingBox = this.sphere.geometry.boundingBox;
@@ -363,8 +363,8 @@ export class SphereVolume extends Volume {
 		this.label.visible = false;
 
 
-		//let frameGeometry = new THREE.Geometry();
-		let frameGeometry = new THREE.BufferGeometry();
+		//let frameGeometry = new Geometry();
+		let frameGeometry = new BufferGeometry();
 
 		{
 			let steps = 64;
@@ -388,10 +388,10 @@ export class SphereVolume extends Volume {
 					let heightNext = Math.sin(vNext);
 					let xyAmountNext = Math.cos(vNext);
 
-					let vertex = new THREE.Vector3(dirx * xyAmount, diry * xyAmount, height);
+					let vertex = new Vector3(dirx * xyAmount, diry * xyAmount, height);
 					frameGeometry.vertices.push(vertex);
 
-					let vertexNext = new THREE.Vector3(dirx * xyAmountNext, diry * xyAmountNext, heightNext);
+					let vertexNext = new Vector3(dirx * xyAmountNext, diry * xyAmountNext, heightNext);
 					frameGeometry.vertices.push(vertexNext);
 				}
 			}
@@ -418,24 +418,24 @@ export class SphereVolume extends Volume {
 
 					let xyAmount = Math.sqrt(1 - height * height);
 
-					let vertex = new THREE.Vector3(dirx * xyAmount, diry * xyAmount, height);
+					let vertex = new Vector3(dirx * xyAmount, diry * xyAmount, height);
 					frameGeometry.vertices.push(vertex);
 
-					let vertexNext = new THREE.Vector3(dirxNext * xyAmount, diryNext * xyAmount, height);
+					let vertexNext = new Vector3(dirxNext * xyAmount, diryNext * xyAmount, height);
 					frameGeometry.vertices.push(vertexNext);
 				}
 			}
 		}
 
-		this.frame = new THREE.LineSegments(frameGeometry, new THREE.LineBasicMaterial({color: 0x000000}));
+		this.frame = new LineSegments(frameGeometry, new LineBasicMaterial({color: 0x000000}));
 		this.add(this.frame);
 
-		let frameMaterial = new THREE.MeshBasicMaterial({wireframe: true, color: 0x000000});
-		this.frame = new THREE.Mesh(sphereGeometry, frameMaterial);
+		let frameMaterial = new MeshBasicMaterial({wireframe: true, color: 0x000000});
+		this.frame = new Mesh(sphereGeometry, frameMaterial);
 		//this.add(this.frame);
 
-		//this.frame = new THREE.LineSegments(boxFrameGeometry, new THREE.LineBasicMaterial({color: 0x000000}));
-		// this.frame.mode = THREE.Lines;
+		//this.frame = new LineSegments(boxFrameGeometry, new LineBasicMaterial({color: 0x000000}));
+		// this.frame.mode = Lines;
 		//this.add(this.frame);
 
 		this.update();
@@ -443,7 +443,7 @@ export class SphereVolume extends Volume {
 
 	update() {
 		this.boundingBox = this.sphere.geometry.boundingBox;
-		this.boundingSphere = this.boundingBox.getBoundingSphere(new THREE.Sphere());
+		this.boundingSphere = this.boundingBox.getBoundingSphere(new Sphere());
 
 		//if (this._clip) {
 		//	this.sphere.visible = false;

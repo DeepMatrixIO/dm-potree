@@ -1,12 +1,11 @@
 
+import {RawShaderMaterial} from "three";
 import {Shaders} from "../../build/shaders/shaders.js";
-import * as THREE from "../../libs/three.js/build/three.module.js";
-
-export class NormalizationMaterial extends THREE.RawShaderMaterial {
+export class NormalizationMaterial extends RawShaderMaterial {
 
 	constructor(parameters = {}) {
 		super();
-		this.glslVersion = THREE.GLSL3;//webgl 2.0
+		this.glslVersion = GLSL3;//webgl 2.0
 		let uniforms = {
 			uDepthMap: {type: 't', value: null},
 			uWeightMap: {type: 't', value: null},

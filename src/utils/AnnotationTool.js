@@ -1,9 +1,9 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Mesh, MeshNormalMaterial, SphereGeometry} from 'three';
 import {Annotation} from "../Annotation.js";
-import {Utils} from "../utils.js";
-import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
+import {Utils} from "../utils.js";
 
 export class AnnotationTool extends EventDispatcher{
 	constructor (viewer) {
@@ -12,9 +12,9 @@ export class AnnotationTool extends EventDispatcher{
 		this.viewer = viewer;
 		this.renderer = viewer.renderer;
 
-		this.sg = new THREE.SphereGeometry(0.1);
-		this.sm = new THREE.MeshNormalMaterial();
-		this.s = new THREE.Mesh(this.sg, this.sm);
+		this.sg = new SphereGeometry(0.1);
+		this.sm = new MeshNormalMaterial();
+		this.s = new Mesh(this.sg, this.sm);
 	}
 
 	startInsertion (args = {}) {
@@ -36,9 +36,9 @@ export class AnnotationTool extends EventDispatcher{
 		};
 
 		let insertionCallback = (e) => {
-			if (e.button === THREE.MOUSE.LEFT) {
+			if (e.button === MOUSE.LEFT) {
 				callbacks.finish();
-			} else if (e.button === THREE.MOUSE.RIGHT) {
+			} else if (e.button === MOUSE.RIGHT) {
 				callbacks.cancel();
 			}
 		};
@@ -57,9 +57,9 @@ export class AnnotationTool extends EventDispatcher{
 
 		let drag = (e) => {
 			let I = Utils.getMousePointCloudIntersection(
-				e.drag.end, 
-				e.viewer.scene.getActiveCamera(), 
-				e.viewer, 
+				e.drag.end,
+				e.viewer.scene.getActiveCamera(),
+				e.viewer,
 				e.viewer.scene.pointclouds,
 				{pickClipped: true});
 
@@ -84,13 +84,13 @@ export class AnnotationTool extends EventDispatcher{
 
 		return annotation;
 	}
-	
+
 	update(){
 		// let camera = this.viewer.scene.getActiveCamera();
 		// let domElement = this.renderer.domElement;
 		// let measurements = this.viewer.scene.measurements;
 
-		// const renderAreaSize = this.renderer.getSize(new THREE.Vector2());
+		// const renderAreaSize = this.renderer.getSize(new Vector2());
 		// let clientWidth = renderAreaSize.width;
 		// let clientHeight = renderAreaSize.height;
 

@@ -1,8 +1,9 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
-import {Volume, BoxVolume} from "./Volume.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Scene, Vector2, Vector3} from 'three';
+import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
-import { EventDispatcher } from "../EventDispatcher.js";
+import {BoxVolume, Volume} from "./Volume.js";
 
 // Takes mouse raycast to intersect point cloud and set volume position based on that intersection.
 // different from ScreenBoxSelectTool in the startInsertion, drag and drop methods.
@@ -19,7 +20,7 @@ export class VolumeTool extends EventDispatcher{
 			});
 		});
 
-		this.scene = new THREE.Scene();
+		this.scene = new Scene();
 		this.scene.name = 'scene_volume';
 
 		this.viewer.inputHandler.registerInteractiveScene(this.scene);
@@ -98,8 +99,8 @@ export class VolumeTool extends EventDispatcher{
 			if (I) {
 				volume.position.copy(I.location);
 
-				let wp = volume.getWorldPosition(new THREE.Vector3()).applyMatrix4(camera.matrixWorldInverse);
-				// let pp = new THREE.Vector4(wp.x, wp.y, wp.z).applyMatrix4(camera.projectionMatrix);
+				let wp = volume.getWorldPosition(new Vector3()).applyMatrix4(camera.matrixWorldInverse);
+				// let pp = new Vector4(wp.x, wp.y, wp.z).applyMatrix4(camera.projectionMatrix);
 				let w = Math.abs((wp.z / 5));
 				volume.scale.set(w, w, w);
 			}
@@ -133,7 +134,7 @@ export class VolumeTool extends EventDispatcher{
 		}
 
 		let camera = this.viewer.scene.getActiveCamera();
-		let renderAreaSize = this.viewer.renderer.getSize(new THREE.Vector2());
+		let renderAreaSize = this.viewer.renderer.getSize(new Vector2());
 		let clientWidth = renderAreaSize.width;
 		let clientHeight = renderAreaSize.height;
 

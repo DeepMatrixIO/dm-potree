@@ -1,5 +1,6 @@
 
-import * as THREE from "../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../libs/js/build/module.js";
+import {BufferGeometry, DoubleSide, Line, LineBasicMaterial, MathUtils, Mesh, Object3D, PerspectiveCamera, Raycaster, ShaderMaterial, Texture, TextureLoader, Vector2, Vector3} from 'three';
 import {EventDispatcher} from "../../EventDispatcher.js";
 import {updateFetchToken} from "../../tokenUpdater.js";
 import {OrientedImageControls} from "./OrientedImageControls.js";
@@ -13,7 +14,7 @@ function createMaterial() {
 	uniform float uNear;
 	varying vec2 vUV;
 	varying vec4 vDebug;
-	
+
 	void main(){
 		vDebug = vec4(0.0, 1.0, 0.0, 1.0);
 		vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
@@ -35,35 +36,35 @@ function createMaterial() {
 		gl_FragColor.a = uOpacity;
 	}
 	`;
-	const material = new THREE.ShaderMaterial({
+	const material = new ShaderMaterial({
 		uniforms: {
 			// time: { value: 1.0 },
-			// resolution: { value: new THREE.Vector2() }
-			tColor: {value: new THREE.Texture()},
+			// resolution: { value: new Vector2() }
+			tColor: {value: new Texture()},
 			uNear: {value: 0.0},
 			uOpacity: {value: 1.0},
 		},
 		vertexShader: vertexShader,
 		fragmentShader: fragmentShader,
-		side: THREE.DoubleSide,
+		side: DoubleSide,
 	});
 
-	material.side = THREE.DoubleSide;
+	material.side = DoubleSide;
 
 	return material;
 }
 
-const planeGeometry = new THREE.PlaneGeometry(1, 1);
-//const lineGeometry = new THREE.Geometry();//replacing with BufferGeometry requires to create a list of vertices and add it to bufferGeometry
-const lineGeometry = new THREE.BufferGeometry();
+const planeGeometry = new PlaneGeometry(1, 1);
+//const lineGeometry = new Geometry();//replacing with BufferGeometry requires to create a list of vertices and add it to bufferGeometry
+const lineGeometry = new BufferGeometry();
 let vertices = [];
 
 vertices.push(
-	new THREE.Vector3(-0.5, -0.5, 0),
-	new THREE.Vector3(0.5, -0.5, 0),
-	new THREE.Vector3(0.5, 0.5, 0),
-	new THREE.Vector3(-0.5, 0.5, 0),
-	new THREE.Vector3(-0.5, -0.5, 0),
+	new Vector3(-0.5, -0.5, 0),
+	new Vector3(0.5, -0.5, 0),
+	new Vector3(0.5, 0.5, 0),
+	new Vector3(-0.5, 0.5, 0),
+	new Vector3(-0.5, -0.5, 0),
 );
 lineGeometry.setFromPoints(vertices);//replacing with BufferGeometry requires to create a list of vertices and addint to bufferGeometry
 
@@ -73,16 +74,16 @@ export class OrientedImage {
 
 		this.id = id;
 		this.fov = 1.0;
-		this.position = new THREE.Vector3();
-		this.rotation = new THREE.Vector3();
+		this.position = new Vector3();
+		this.rotation = new Vector3();
 		this.width = 0;
 		this.height = 0;
 		this.fov = 1.0;
 
 		const material = createMaterial();
-		const lineMaterial = new THREE.LineBasicMaterial({color: 0x00ff00});
-		this.mesh = new THREE.Mesh(planeGeometry, material);
-		this.line = new THREE.Line(lineGeometry, lineMaterial);
+		const lineMaterial = new LineBasicMaterial({color: 0x00ff00});
+		this.mesh = new Mesh(planeGeometry, material);
+		this.line = new Line(lineGeometry, lineMaterial);
 		this.texture = null;
 
 		this.mesh.orientedImage = this;
@@ -90,7 +91,7 @@ export class OrientedImage {
 
 	set(position, rotation, dimension, fov) {
 
-		let radians = rotation.map(THREE.MathUtils.degToRad);
+		let radians = rotation.map(MathUtils.degToRad);
 
 		this.position.set(...position);
 		this.mesh.position.set(...position);
@@ -111,12 +112,12 @@ export class OrientedImage {
 
 
 
-		let target = new THREE.Vector3();
+		let target = new Vector3();
 		//why the target was added?
-		mesh.updateMatrixWorld();//target was added as newer version of three.js requires it
+		mesh.updateMatrixWorld();//target was added as newer version of js requires it
 		const dir = mesh.getWorldDirection(target);//is crashing here
 		//const dir = mesh.getWorldDirection();//is crashing here
-		const alpha = THREE.MathUtils.degToRad(fov / 2);
+		const alpha = MathUtils.degToRad(fov / 2);
 		const d = -0.5 / Math.tan(alpha);
 		const move = dir.clone().multiplyScalar(d);
 		mesh.position.add(move);
@@ -182,7 +183,7 @@ export class OrientedImageLoader {
 		const f = parseFloat(doc.getElementsByTagName("f")[0].textContent);
 
 		let a = (height / 2) / f;
-		let fov = 2 * THREE.MathUtils.radToDeg(Math.atan(a));
+		let fov = 2 * MathUtils.radToDeg(Math.atan(a));
 
 		const params = {
 			path: path,
@@ -253,36 +254,36 @@ export class OrientedImageLoader {
 		]);
 
 		const orientedImageControls = new OrientedImageControls(viewer);
-		const raycaster = new THREE.Raycaster();
+		const raycaster = new Raycaster();
 
 		const tEnd = performance.now();
 		console.log(tEnd - tStart);
 
-		// const sp = new THREE.PlaneGeometry(1, 1);
-		// const lg = new THREE.Geometry();
+		// const sp = new PlaneGeometry(1, 1);
+		// const lg = new Geometry();
 
 		// lg.vertices.push(
-		// 	new THREE.Vector3(-0.5, -0.5, 0),
-		// 	new THREE.Vector3( 0.5, -0.5, 0),
-		// 	new THREE.Vector3( 0.5,  0.5, 0),
-		// 	new THREE.Vector3(-0.5,  0.5, 0),
-		// 	new THREE.Vector3(-0.5, -0.5, 0),
+		// 	new Vector3(-0.5, -0.5, 0),
+		// 	new Vector3( 0.5, -0.5, 0),
+		// 	new Vector3( 0.5,  0.5, 0),
+		// 	new Vector3(-0.5,  0.5, 0),
+		// 	new Vector3(-0.5, -0.5, 0),
 		// );
 
 		const {width, height} = cameraParams;
 		const orientedImages = [];
-		const sceneNode = new THREE.Object3D();
+		const sceneNode = new Object3D();
 		sceneNode.name = "oriented_images";
 
 		for (const params of imageParams) {
 
 			// const material = createMaterial();
-			// const lm = new THREE.LineBasicMaterial( { color: 0x00ff00 } );
-			// const mesh = new THREE.Mesh(sp, material);
+			// const lm = new LineBasicMaterial( { color: 0x00ff00 } );
+			// const mesh = new Mesh(sp, material);
 
 			const {x, y, z, omega, phi, kappa} = params;
 			// const [rx, ry, rz] = [omega, phi, kappa]
-			// 	.map(THREE.Math.degToRad);
+			// 	.map(Math.degToRad);
 
 			// mesh.position.set(x, y, z);
 			// mesh.scale.set(width / height, 1, 1);
@@ -290,14 +291,14 @@ export class OrientedImageLoader {
 			// {
 			// 	mesh.updateMatrixWorld();
 			// 	const dir = mesh.getWorldDirection();
-			// 	const alpha = THREE.Math.degToRad(cameraParams.fov / 2);
+			// 	const alpha = Math.degToRad(cameraParams.fov / 2);
 			// 	const d = -0.5 / Math.tan(alpha);
 			// 	const move = dir.clone().multiplyScalar(d);
 			// 	mesh.position.add(move);
 			// }
 			// sceneNode.add(mesh);
 
-			// const line = new THREE.Line(lg, lm);
+			// const line = new Line(lg, lm);
 			// line.position.copy(mesh.position);
 			// line.scale.copy(mesh.scale);
 			// line.rotation.copy(mesh.rotation);
@@ -336,10 +337,10 @@ export class OrientedImageLoader {
 				(x - rect.left) / rect.width,
 				(y - rect.top) / rect.height
 			];
-			const onClickPosition = new THREE.Vector2(...array);
+			const onClickPosition = new Vector2(...array);
 			//const intersects = getIntersects(onClickPosition, scene.children);
 			const camera = viewer.scene.getActiveCamera();
-			const mouse = new THREE.Vector3(
+			const mouse = new Vector3(
 				+ (onClickPosition.x * 2) - 1,
 				- (onClickPosition.y * 2) + 1);
 			const objects = orientedImages.map(i => i.mesh);
@@ -373,27 +374,27 @@ export class OrientedImageLoader {
 				const aspect = cameraParams.width / cameraParams.height;
 				const near = 1.0;
 				const far = 1000 * 1000;
-				const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+				const camera = new PerspectiveCamera(fov, aspect, near, far);
 				camera.rotation.order = viewer.scene.getActiveCamera().rotation.order;
 				camera.rotation.copy(img.mesh.rotation);
 				{
 					const mesh = img.mesh;
-					const dir = mesh.getWorldDirection(new THREE.Vector3());//fixed for the new version
+					const dir = mesh.getWorldDirection(new Vector3());//fixed for the new version
 					const pos = mesh.position;
-					const alpha = THREE.MathUtils.degToRad(fov / 2);
+					const alpha = MathUtils.degToRad(fov / 2);
 					const d = 0.5 / Math.tan(alpha);
 					const newCamPos = pos.clone().add(dir.clone().multiplyScalar(d));
 					const newCamDir = pos.clone().sub(newCamPos);
-					const newCamTarget = new THREE.Vector3().addVectors(
+					const newCamTarget = new Vector3().addVectors(
 						newCamPos,
 						newCamDir.clone().multiplyScalar(viewer.getMoveSpeed()));
 					camera.position.copy(newCamPos);
 				}
 				let volume = new Potree.PolygonClipVolume(camera);
-				let m0 = new THREE.Mesh();
-				let m1 = new THREE.Mesh();
-				let m2 = new THREE.Mesh();
-				let m3 = new THREE.Mesh();
+				let m0 = new Mesh();
+				let m1 = new Mesh();
+				let m2 = new Mesh();
+				let m3 = new Mesh();
 				m0.position.set(-1, -1, 0);
 				m1.position.set(1, -1, 0);
 				m2.position.set(1, 1, 0);
@@ -424,7 +425,7 @@ export class OrientedImageLoader {
 				const target = image;
 
 				const tmpImagePath = `${Potree.resourcePath}/images/loading.jpg`;
-				new THREE.TextureLoader().load(tmpImagePath,
+				new TextureLoader().load(tmpImagePath,
 					(texture) => {
 						if (target.texture === null) {
 							target.texture = texture;
@@ -435,7 +436,7 @@ export class OrientedImageLoader {
 				);
 
 				const imagePath = `${imageParamsPath}/../${target.id}`;
-				new THREE.TextureLoader().load(imagePath,
+				new TextureLoader().load(imagePath,
 					(texture) => {
 						target.texture = texture;
 						target.mesh.material.uniforms.tColor.value = texture;
@@ -469,12 +470,12 @@ export class OrientedImageLoader {
 
 				const camera = viewer.scene.getActiveCamera();
 
-				const imgPos = image.mesh.getWorldPosition(new THREE.Vector3());
+				const imgPos = image.mesh.getWorldPosition(new Vector3());
 				const camPos = camera.position;
 				const d = camPos.distanceTo(imgPos);
 
 				const minSize = 1; // in degrees of fov
-				const a = THREE.MathUtils.degToRad(minSize);
+				const a = MathUtils.degToRad(minSize);
 				let r = d * Math.tan(a);
 				r = Math.max(r, 1);
 

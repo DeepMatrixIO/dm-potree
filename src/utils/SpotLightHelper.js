@@ -1,7 +1,7 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
-
-export class SpotLightHelper extends THREE.Object3D{
+// import * as THREE from "../../libs/js/build/module.js";
+import {Vector3,Matrix4,BufferGeometry, Mesh, LineBasicMaterial,  LineSegments, BufferAttribute, Object3D, SphereGeometry, Quaternion, MeshNormalMaterial} from 'three'
+export class SpotLightHelper extends Object3D{
 
 	constructor(light, color){
 		super();
@@ -14,15 +14,15 @@ export class SpotLightHelper extends THREE.Object3D{
 		this.updateMatrixWorld();
 
 		{ // SPHERE
-			let sg = new THREE.SphereGeometry(1, 32, 32);
-			let sm = new THREE.MeshNormalMaterial();
-			this.sphere = new THREE.Mesh(sg, sm);
+			let sg = new SphereGeometry(1, 32, 32);
+			let sm = new MeshNormalMaterial();
+			this.sphere = new Mesh(sg, sm);
 			this.sphere.scale.set(0.5, 0.5, 0.5);
 			this.add(this.sphere);
 		}
 
 		{ // LINES
-			
+
 
 			let positions = new Float32Array([
 				+0, +0, +0,     +0, +0, -1,
@@ -38,12 +38,12 @@ export class SpotLightHelper extends THREE.Object3D{
 				-1, +1, -1,     -1, -1, -1,
 			]);
 
-			let geometry = new THREE.BufferGeometry();
-			geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+			let geometry = new BufferGeometry();
+			geometry.setAttribute("position", new BufferAttribute(positions, 3));
 
-			let material = new THREE.LineBasicMaterial();
+			let material = new LineBasicMaterial();
 
-			this.frustum = new THREE.LineSegments(geometry, material);
+			this.frustum = new LineSegments(geometry, material);
 			this.add(this.frustum);
 
 		}
@@ -57,11 +57,11 @@ export class SpotLightHelper extends THREE.Object3D{
 		this.light.updateMatrixWorld();
 
 		let position = this.light.position;
-		let target = new THREE.Vector3().addVectors(
-			this.light.position, this.light.getWorldDirection(new THREE.Vector3()).multiplyScalar(-1));
-		
-		let quat = new THREE.Quaternion().setFromRotationMatrix(
-			new THREE.Matrix4().lookAt( position, target, new THREE.Vector3( 0, 0, 1 ) )
+		let target = new Vector3().addVectors(
+			this.light.position, this.light.getWorldDirection(new Vector3()).multiplyScalar(-1));
+
+		let quat = new Quaternion().setFromRotationMatrix(
+			new Matrix4().lookAt( position, target, new Vector3( 0, 0, 1 ) )
 		);
 
 		this.setRotationFromQuaternion(quat);

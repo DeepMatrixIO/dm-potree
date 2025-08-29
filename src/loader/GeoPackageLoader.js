@@ -1,5 +1,6 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Vector3, Mesh, Vector2,  Color, Object3D, SphereGeometry, MeshNormalMaterial} from 'three'
+
 import {Line2} from "../../libs/three.js/lines/Line2.js";
 import {LineGeometry} from "../../libs/three.js/lines/LineGeometry.js";
 import {LineMaterial} from "../../libs/three.js/lines/LineMaterial.js";
@@ -85,7 +86,7 @@ export class GeoPackageLoader {
 			const data = await geopackage.open(u8);
 			window.data = data;
 
-			const geopackageNode = new THREE.Object3D();
+			const geopackageNode = new Object3D();
 			geopackageNode.name = params.source;
 			geopackageNode.potree = {
 				source: params.source,
@@ -105,13 +106,13 @@ export class GeoPackageLoader {
 				const geoJson = data.queryForGeoJSONFeaturesInTable(table, boundingBox);
 
 				const matLine = new LineMaterial({
-					color: new THREE.Color().setRGB(...getColor(table)),
+					color: new Color().setRGB(...getColor(table)),
 					linewidth: 2,
-					resolution: new THREE.Vector2(1000, 1000),
+					resolution: new Vector2(1000, 1000),
 					dashed: false
 				});
 
-				const node = new THREE.Object3D();
+				const node = new Object3D();
 				node.name = table;
 				geo.node.add(node);
 
@@ -131,12 +132,12 @@ export class GeoPackageLoader {
 	static featureToSceneNode(feature, matLine, geopackageProjection, transform) {
 		let geometry = feature.geometry;
 
-		let color = new THREE.Color(1, 1, 1);
+		let color = new Color(1, 1, 1);
 
 		if (feature.geometry.type === "Point") {
-			let sg = new THREE.SphereGeometry(1, 18, 18);
-			let sm = new THREE.MeshNormalMaterial();
-			let s = new THREE.Mesh(sg, sm);
+			let sg = new SphereGeometry(1, 18, 18);
+			let sm = new MeshNormalMaterial();
+			let s = new Mesh(sg, sm);
 
 			let [long, lat] = geometry.coordinates;
 			let pos = transform.forward(geopackageProjection.forward([long, lat]));
@@ -149,7 +150,7 @@ export class GeoPackageLoader {
 		} else if (geometry.type === "LineString") {
 			let coordinates = [];
 
-			let min = new THREE.Vector3(Infinity, Infinity, Infinity);
+			let min = new Vector3(Infinity, Infinity, Infinity);
 			for (let i = 0; i < geometry.coordinates.length; i++) {
 				let [long, lat] = geometry.coordinates[i];
 				let pos = transform.forward(geopackageProjection.forward([long, lat]));
@@ -183,7 +184,7 @@ export class GeoPackageLoader {
 			for (let pc of geometry.coordinates) {
 				let coordinates = [];
 
-				let min = new THREE.Vector3(Infinity, Infinity, Infinity);
+				let min = new Vector3(Infinity, Infinity, Infinity);
 				for (let i = 0; i < pc.length; i++) {
 					let [long, lat] = pc[i];
 

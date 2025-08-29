@@ -1,9 +1,11 @@
 
-import * as THREE from "../libs/three.js/build/three.module.js";
-import {PointCloudTree, PointCloudTreeNode} from "./PointCloudTree.js";
-import {PointCloudOctreeGeometryNode} from "./PointCloudOctreeGeometry.js";
-import {Utils} from "./utils.js";
+
+import {Box3, Line3, LinearFilter, Matrix4, NearestFilter, NoBlending, Object3D, RGBAFormat, Scene, Sphere, Vector2, Vector3, Vector4} from 'three';
+
 import {PointCloudMaterial} from "./materials/PointCloudMaterial.js";
+import {PointCloudOctreeGeometryNode} from "./PointCloudOctreeGeometry.js";
+import {PointCloudTree, PointCloudTreeNode} from "./PointCloudTree.js";
+import {Utils} from "./utils.js";
 
 
 export class PointCloudOctreeNode extends PointCloudTreeNode {
@@ -69,11 +71,11 @@ export class PointCloudOctreeNode extends PointCloudTreeNode {
 		let view = new DataView(buffer.data);
 
 		let worldToBox = boxNode.matrixWorld.clone().invert();
-		let objectToBox = new THREE.Matrix4().multiplyMatrices(worldToBox, this.sceneNode.matrixWorld);
+		let objectToBox = new Matrix4().multiplyMatrices(worldToBox, this.sceneNode.matrixWorld);
 
 		let inBox = [];
 
-		let pos = new THREE.Vector4();
+		let pos = new Vector4();
 		for (let i = 0;i < buffer.numElements;i++) {
 			let x = view.getFloat32(i * stride + posOffset + 0, true);
 			let y = view.getFloat32(i * stride + posOffset + 4, true);
@@ -86,7 +88,7 @@ export class PointCloudOctreeNode extends PointCloudTreeNode {
 				if (-0.5 < pos.y && pos.y < 0.5) {
 					if (-0.5 < pos.z && pos.z < 0.5) {
 						pos.set(x, y, z, 1).applyMatrix4(this.sceneNode.matrixWorld);
-						inBox.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+						inBox.push(new Vector3(pos.x, pos.y, pos.z));
 					}
 				}
 			}
@@ -107,7 +109,7 @@ export class PointCloudOctree extends PointCloudTree {
 		this.pointBudget = Infinity;
 		this.pcoGeometry = geometry;
 		this.boundingBox = this.pcoGeometry.boundingBox;
-		this.boundingSphere = this.boundingBox.getBoundingSphere(new THREE.Sphere());
+		this.boundingSphere = this.boundingBox.getBoundingSphere(new Sphere());
 		this.material = material || new PointCloudMaterial();
 		this.visiblePointsTarget = 2 * 1000 * 1000;
 		this.minimumNodePixelSize = 150;
@@ -130,8 +132,8 @@ export class PointCloudOctree extends PointCloudTree {
 				let min = attribute.range[0].constructor.name === "Array" ? attribute.range[0] : [attribute.range[0]];
 				let max = attribute.range[1].constructor.name === "Array" ? attribute.range[1] : [attribute.range[1]];
 
-				let range_min = new THREE.Vector3(...min);
-				let range_max = new THREE.Vector3(...max);
+				let range_min = new Vector3(...min);
+				let range_max = new Vector3(...max);
 				let range = range_min.distanceTo(range_max);
 
 				if (range === 0) {
@@ -148,7 +150,7 @@ export class PointCloudOctree extends PointCloudTree {
 		this.showBoundingBox = false;
 		this.boundingBoxNodes = [];
 		this.loadQueue = [];
-		this.visibleBounds = new THREE.Box3();
+		this.visibleBounds = new Box3();
 		this.visibleNodes = [];
 		this.visibleGeometry = [];
 		this.generateDEM = false;
@@ -208,7 +210,7 @@ export class PointCloudOctree extends PointCloudTree {
 		// if(geometryNode.name === "r40206"){
 		//	console.log("creating node for r40206");
 		// }
-		let sceneNode = new THREE.Points(geometryNode.geometry, this.material);
+		let sceneNode = new Points(geometryNode.geometry, this.material);
 		sceneNode.name = geometryNode.name;
 		sceneNode.position.copy(geometryNode.boundingBox.min);
 		sceneNode.frustumCulled = false;
@@ -237,9 +239,9 @@ export class PointCloudOctree extends PointCloudTree {
 		};
 
 		// { // DEBUG
-		//	let sg = new THREE.SphereGeometry(1, 16, 16);
-		//	let sm = new THREE.MeshNormalMaterial();
-		//	let s = new THREE.Mesh(sg, sm);
+		//	let sg = new SphereGeometry(1, 16, 16);
+		//	let sm = new MeshNormalMaterial();
+		//	let s = new Mesh(sg, sm);
 		//	s.scale.set(5, 5, 5);
 		//	s.position.copy(geometryNode.mean)
 		//		.add(this.position)
@@ -298,8 +300,8 @@ export class PointCloudOctree extends PointCloudTree {
 			}
 		}
 
-		this.visibleBounds.min = new THREE.Vector3(Infinity, Infinity, Infinity);
-		this.visibleBounds.max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+		this.visibleBounds.min = new Vector3(Infinity, Infinity, Infinity);
+		this.visibleBounds.max = new Vector3(-Infinity, -Infinity, -Infinity);
 		for (let i = 0;i < leafNodes.length;i++) {
 			let node = leafNodes[i];
 
@@ -315,7 +317,7 @@ export class PointCloudOctree extends PointCloudTree {
 		material.spacing = this.pcoGeometry.spacing; // * Math.max(this.scale.x, this.scale.y, this.scale.z);
 		material.near = camera.near;
 		material.far = camera.far;
-		material.uniforms.octreeSize.value = this.pcoGeometry.boundingBox.getSize(new THREE.Vector3()).x;
+		material.uniforms.octreeSize.value = this.pcoGeometry.boundingBox.getSize(new Vector3()).x;
 	}
 
 	computeVisibilityTextureData(nodes, camera) {
@@ -339,7 +341,7 @@ export class PointCloudOctree extends PointCloudTree {
 		};
 		nodes.sort(sort);
 
-		let worldDir = new THREE.Vector3();
+		let worldDir = new Vector3();
 
 		let nodeMap = new Map();
 		let offsetsToChild = new Array(nodes.length).fill(Infinity);
@@ -392,16 +394,16 @@ export class PointCloudOctree extends PointCloudTree {
 
 	nodeIntersectsProfile(node, profile) {
 		let bbWorld = node.boundingBox.clone().applyMatrix4(this.matrixWorld);
-		let bsWorld = bbWorld.getBoundingSphere(new THREE.Sphere());
+		let bsWorld = bbWorld.getBoundingSphere(new Sphere());
 
 		let intersects = false;
 
 		for (let i = 0;i < profile.points.length - 1;i++) {
 
-			let start = new THREE.Vector3(profile.points[i + 0].x, profile.points[i + 0].y, bsWorld.center.z);
-			let end = new THREE.Vector3(profile.points[i + 1].x, profile.points[i + 1].y, bsWorld.center.z);
+			let start = new Vector3(profile.points[i + 0].x, profile.points[i + 0].y, bsWorld.center.z);
+			let end = new Vector3(profile.points[i + 1].x, profile.points[i + 1].y, bsWorld.center.z);
 
-			let closest = new THREE.Line3(start, end).closestPointToPoint(bsWorld.center, true, new THREE.Vector3());
+			let closest = new Line3(start, end).closestPointToPoint(bsWorld.center, true, new Vector3());
 			let distance = closest.distanceTo(bsWorld.center);
 
 			intersects = intersects || (distance < (bsWorld.radius + profile.width));
@@ -505,7 +507,7 @@ export class PointCloudOctree extends PointCloudTree {
 		let box = this.boundingBox;
 		let transform = this.matrixWorld;
 		let tBox = Utils.computeTransformedBoundingBox(box, transform);
-		this.position.set(0, 0, 0).sub(tBox.getCenter(new THREE.Vector3()));
+		this.position.set(0, 0, 0).sub(tBox.getCenter(new Vector3()));
 	};
 
 	moveToGroundPlane() {
@@ -533,8 +535,8 @@ export class PointCloudOctree extends PointCloudTree {
 	 *
 	 * The return value is an array with all segments of the profile path
 	 *	let segment = {
-	 *		start:	THREE.Vector3,
-	 *		end:	THREE.Vector3,
+	 *		start:	Vector3,
+	 *		end:	Vector3,
 	 *		points: {}
 	 *		project: function()
 	 *	};
@@ -554,8 +556,8 @@ export class PointCloudOctree extends PointCloudTree {
 
 		let points = {
 			segments: [],
-			boundingBox: new THREE.Box3(),
-			projectedBoundingBox: new THREE.Box2()
+			boundingBox: new Box3(),
+			projectedBoundingBox: new Box2()
 		};
 
 		// evaluate segments
@@ -578,7 +580,7 @@ export class PointCloudOctree extends PointCloudTree {
 		}
 
 		// add projection functions to the segments
-		let mileage = new THREE.Vector3();
+		let mileage = new Vector3();
 		for (let i = 0;i < points.segments.length;i++) {
 			let segment = points.segments[i];
 			let start = segment.start;
@@ -590,8 +592,8 @@ export class PointCloudOctree extends PointCloudTree {
 				let mileage = _mileage;
 				let boundingBox = _boundingBox;
 
-				let xAxis = new THREE.Vector3(1, 0, 0);
-				let dir = new THREE.Vector3().subVectors(end, start);
+				let xAxis = new Vector3(1, 0, 0);
+				let dir = new Vector3().subVectors(end, start);
 				dir.y = 0;
 				dir.normalize();
 				let alpha = Math.acos(xAxis.dot(dir));
@@ -600,9 +602,9 @@ export class PointCloudOctree extends PointCloudTree {
 				}
 
 				return function (position) {
-					let toOrigin = new THREE.Matrix4().makeTranslation(-start.x, -boundingBox.min.y, -start.z);
-					let alignWithX = new THREE.Matrix4().makeRotationY(-alpha);
-					let applyMileage = new THREE.Matrix4().makeTranslation(mileage.x, 0, 0);
+					let toOrigin = new Matrix4().makeTranslation(-start.x, -boundingBox.min.y, -start.z);
+					let alignWithX = new Matrix4().makeRotationY(-alpha);
+					let applyMileage = new Matrix4().makeTranslation(mileage.x, 0, 0);
 
 					let pos = position.clone();
 					pos.applyMatrix4(toOrigin);
@@ -615,7 +617,7 @@ export class PointCloudOctree extends PointCloudTree {
 
 			segment.project = project;
 
-			mileage.x += new THREE.Vector3(start.x, 0, start.z).distanceTo(new THREE.Vector3(end.x, 0, end.z));
+			mileage.x += new Vector3(start.x, 0, start.z).distanceTo(new Vector3(end.x, 0, end.z));
 			mileage.y += end.y - start.y;
 		}
 
@@ -754,7 +756,7 @@ export class PointCloudOctree extends PointCloudTree {
 		let pickWindowSize = getVal(params.pickWindowSize, 65);
 		let pickOutsideClipRegion = getVal(params.pickOutsideClipRegion, false);//not in use
 
-		let size = renderer.getSize(new THREE.Vector2());
+		let size = renderer.getSize(new Vector2());
 
 		let width = Math.ceil(getVal(params.width, size.width));
 		let height = Math.ceil(getVal(params.height, size.height));
@@ -769,17 +771,17 @@ export class PointCloudOctree extends PointCloudTree {
 		}
 
 		if (!this.pickState) {
-			let scene = new THREE.Scene();
+			let scene = new Scene();
 
 			let material = new Potree.PointCloudMaterial();
 			material.activeAttributeName = "indices";//triggers the rendering on that
 
-			let renderTarget = new THREE.WebGLRenderTarget(
+			let renderTarget = new WebGLRenderTarget(
 				1, 1,
 				{
-					minFilter: THREE.LinearFilter,
-					magFilter: THREE.NearestFilter,
-					format: THREE.RGBAFormat
+					minFilter: LinearFilter,
+					magFilter: NearestFilter,
+					format: RGBAFormat
 				}
 			);
 
@@ -831,7 +833,7 @@ export class PointCloudOctree extends PointCloudTree {
 		pickState.renderTarget.setSize(width, height);
 
 
-		let pixelPos = new THREE.Vector2(params.x, params.y);
+		let pixelPos = new Vector2(params.x, params.y);
 		//TODO, fix for mac
 		// if (isMac) {
 		// 	pixelPos.y = height - pixelPos.y;
@@ -859,7 +861,7 @@ export class PointCloudOctree extends PointCloudTree {
 
 		renderer.state.buffers.depth.setTest(pickMaterial.depthTest);
 		renderer.state.buffers.depth.setMask(pickMaterial.depthWrite);
-		renderer.state.setBlending(THREE.NoBlending);
+		renderer.state.setBlending(NoBlending);
 
 		{ // RENDER
 			renderer.setRenderTarget(pickState.renderTarget);
@@ -1003,7 +1005,7 @@ export class PointCloudOctree extends PointCloudTree {
 					let y = attribute.array[3 * hit.pIndex + 1];
 					let z = attribute.array[3 * hit.pIndex + 2];
 
-					let position = new THREE.Vector3(x, y, z);
+					let position = new Vector3(x, y, z);
 					position.applyMatrix4(pc.matrixWorld);
 
 					point[attributeName] = position;
@@ -1058,7 +1060,7 @@ export class PointCloudOctree extends PointCloudTree {
 	* getFittedBoxGen(boxNode) {
 		let start = performance.now();
 
-		let shrinkedLocalBounds = new THREE.Box3();
+		let shrinkedLocalBounds = new Box3();
 		let worldToBox = boxNode.matrixWorld.clone().invert();
 
 		for (let node of this.visibleNodes) {
@@ -1072,9 +1074,9 @@ export class PointCloudOctree extends PointCloudTree {
 			let stride = buffer.stride;
 			let view = new DataView(buffer.data);
 
-			let objectToBox = new THREE.Matrix4().multiplyMatrices(worldToBox, node.sceneNode.matrixWorld);
+			let objectToBox = new Matrix4().multiplyMatrices(worldToBox, node.sceneNode.matrixWorld);
 
-			let pos = new THREE.Vector4();
+			let pos = new Vector4();
 			for (let i = 0;i < buffer.numElements;i++) {
 				let x = view.getFloat32(i * stride + posOffset + 0, true);
 				let y = view.getFloat32(i * stride + posOffset + 4, true);
@@ -1095,14 +1097,14 @@ export class PointCloudOctree extends PointCloudTree {
 			yield;
 		}
 
-		let fittedPosition = shrinkedLocalBounds.getCenter(new THREE.Vector3()).applyMatrix4(boxNode.matrixWorld);
+		let fittedPosition = shrinkedLocalBounds.getCenter(new Vector3()).applyMatrix4(boxNode.matrixWorld);
 
-		let fitted = new THREE.Object3D();
+		let fitted = new Object3D();
 		fitted.position.copy(fittedPosition);
 		fitted.scale.copy(boxNode.scale);
 		fitted.rotation.copy(boxNode.rotation);
 
-		let ds = new THREE.Vector3().subVectors(shrinkedLocalBounds.max, shrinkedLocalBounds.min);
+		let ds = new Vector3().subVectors(shrinkedLocalBounds.max, shrinkedLocalBounds.min);
 		fitted.scale.multiply(ds);
 
 		let duration = performance.now() - start;
@@ -1117,7 +1119,7 @@ export class PointCloudOctree extends PointCloudTree {
 
 		let start = performance.now();
 
-		let shrinkedLocalBounds = new THREE.Box3();
+		let shrinkedLocalBounds = new Box3();
 		let worldToBox = boxNode.matrixWorld.clone().invert();
 
 		for (let node of this.visibleNodes) {
@@ -1131,9 +1133,9 @@ export class PointCloudOctree extends PointCloudTree {
 			let stride = buffer.stride;
 			let view = new DataView(buffer.data);
 
-			let objectToBox = new THREE.Matrix4().multiplyMatrices(worldToBox, node.sceneNode.matrixWorld);
+			let objectToBox = new Matrix4().multiplyMatrices(worldToBox, node.sceneNode.matrixWorld);
 
-			let pos = new THREE.Vector4();
+			let pos = new Vector4();
 			for (let i = 0;i < buffer.numElements;i++) {
 				let x = view.getFloat32(i * stride + posOffset + 0, true);
 				let y = view.getFloat32(i * stride + posOffset + 4, true);
@@ -1152,14 +1154,14 @@ export class PointCloudOctree extends PointCloudTree {
 			}
 		}
 
-		let fittedPosition = shrinkedLocalBounds.getCenter(new THREE.Vector3()).applyMatrix4(boxNode.matrixWorld);
+		let fittedPosition = shrinkedLocalBounds.getCenter(new Vector3()).applyMatrix4(boxNode.matrixWorld);
 
-		let fitted = new THREE.Object3D();
+		let fitted = new Object3D();
 		fitted.position.copy(fittedPosition);
 		fitted.scale.copy(boxNode.scale);
 		fitted.rotation.copy(boxNode.rotation);
 
-		let ds = new THREE.Vector3().subVectors(shrinkedLocalBounds.max, shrinkedLocalBounds.min);
+		let ds = new Vector3().subVectors(shrinkedLocalBounds.max, shrinkedLocalBounds.min);
 		fitted.scale.multiply(ds);
 
 		let duration = performance.now() - start;

@@ -1,12 +1,13 @@
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
-import {Line2} from "../../libs/three.js/lines/Line2.js";
-import {LineGeometry} from "../../libs/three.js/lines/LineGeometry.js";
-import {LineMaterial} from "../../libs/three.js/lines/LineMaterial.js";
-import {XRControllerModelFactory} from '../../libs/three.js/webxr/XRControllerModelFactory.js'; //not in extra
+// import * as THREE from "../../libs/js/build/module.js";
+import {CylinderGeometry, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, Object3D, PerspectiveCamera, Quaternion, SphereGeometry, Vector2, Vector3} from 'three';
+import {Line2} from "../../libs/js/lines/Line2.js";
+import {LineGeometry} from "../../libs/js/lines/LineGeometry.js";
+import {LineMaterial} from "../../libs/js/lines/LineMaterial.js";
+import {XRControllerModelFactory} from '../../libs/js/webxr/XRControllerModelFactory.js'; //not in extra
 import {EventDispatcher} from "../EventDispatcher.js";
 
-let fakeCam = new THREE.PerspectiveCamera();
+let fakeCam = new PerspectiveCamera();
 
 function toScene(vec, ref) {
 	let node = ref.clone();
@@ -50,8 +51,8 @@ function computeMove(vrControls, controller) {
 	let amount = multiplicator * y * (moveSpeed ** 0.5) / scale;
 
 
-	let rotation = new THREE.Quaternion().setFromEuler(controller.rotation);
-	let dir = new THREE.Vector3(0, 0, -1);
+	let rotation = new Quaternion().setFromEuler(controller.rotation);
+	let dir = new Vector3(0, 0, -1);
 	dir.applyQuaternion(rotation);
 
 	let move = dir.clone().multiplyScalar(amount);
@@ -95,11 +96,11 @@ class FlyMode {
 
 
 		if (!move1) {
-			move1 = new THREE.Vector3();
+			move1 = new Vector3();
 		}
 
 		if (!move2) {
-			move2 = new THREE.Vector3();
+			move2 = new Vector3();
 		}
 
 		let move = move1.clone().add(move2);
@@ -112,8 +113,8 @@ class FlyMode {
 
 		let camVR = vrControls.viewer.renderer.xr.getCamera(fakeCam);
 
-		let vrPos = camVR.getWorldPosition(new THREE.Vector3());
-		let vrDir = camVR.getWorldDirection(new THREE.Vector3());
+		let vrPos = camVR.getWorldPosition(new Vector3());
+		let vrDir = camVR.getWorldDirection(new Vector3());
 		let vrTarget = vrPos.clone().add(vrDir.multiplyScalar(scale));
 
 		let scenePos = toScene(vrPos, vrControls.node);
@@ -160,7 +161,7 @@ class TranslationMode {
 		let diff = end.clone().sub(start);
 		diff.set(-diff.x, -diff.y, -diff.z);
 
-		let pos = new THREE.Vector3().addVectors(this.startPos, diff);
+		let pos = new Vector3().addVectors(this.startPos, diff);
 
 		vrControls.node.position.copy(pos);
 	}
@@ -178,8 +179,8 @@ class RotScaleMode {
 		if (!this.line) {
 			this.line = Potree.Utils.debugLine(
 				vrControls.viewer.sceneVR,
-				new THREE.Vector3(0, 0, 0),
-				new THREE.Vector3(0, 0, 0),
+				new Vector3(0, 0, 0),
+				new Vector3(0, 0, 0),
 				0xffff00,
 			);
 
@@ -212,8 +213,8 @@ class RotScaleMode {
 		let d1 = start_c1_c2.length();
 		let d2 = end_c1_c2.length();
 
-		let angleStart = new THREE.Vector2(start_c1_c2.x, start_c1_c2.z).angle();
-		let angleEnd = new THREE.Vector2(end_c1_c2.x, end_c1_c2.z).angle();
+		let angleStart = new Vector2(start_c1_c2.x, start_c1_c2.z).angle();
+		let angleEnd = new Vector2(end_c1_c2.x, end_c1_c2.z).angle();
 		let angleDiff = angleEnd - angleStart;
 
 		let scale = d2 / d1;
@@ -222,10 +223,10 @@ class RotScaleMode {
 		node.updateMatrix();
 		node.matrixAutoUpdate = false;
 
-		let mToOrigin = new THREE.Matrix4().makeTranslation(...toScene(start_center, this.startState).multiplyScalar(-1).toArray());
-		let mToStart = new THREE.Matrix4().makeTranslation(...toScene(start_center, this.startState).toArray());
-		let mRotate = new THREE.Matrix4().makeRotationZ(angleDiff);
-		let mScale = new THREE.Matrix4().makeScale(1 / scale, 1 / scale, 1 / scale);
+		let mToOrigin = new Matrix4().makeTranslation(...toScene(start_center, this.startState).multiplyScalar(-1).toArray());
+		let mToStart = new Matrix4().makeTranslation(...toScene(start_center, this.startState).toArray());
+		let mRotate = new Matrix4().makeRotationZ(angleDiff);
+		let mScale = new Matrix4().makeScale(1 / scale, 1 / scale, 1 / scale);
 
 		node.applyMatrix4(mToOrigin);
 		node.applyMatrix4(mRotate);
@@ -235,7 +236,7 @@ class RotScaleMode {
 		let oldScenePos = toScene(start_center, this.startState);
 		let newScenePos = toScene(end_center, node);
 		let toNew = oldScenePos.clone().sub(newScenePos);
-		let mToNew = new THREE.Matrix4().makeTranslation(...toNew.toArray());
+		let mToNew = new Matrix4().makeTranslation(...toNew.toArray());
 		node.applyMatrix4(mToNew);
 
 		node.matrix.decompose(node.position, node.quaternion, node.scale);
@@ -249,8 +250,8 @@ class RotScaleMode {
 			let scale = vrControls.node.scale.x;
 			let camVR = vrControls.viewer.renderer.xr.getCamera(fakeCam);
 
-			let vrPos = camVR.getWorldPosition(new THREE.Vector3());
-			let vrDir = camVR.getWorldDirection(new THREE.Vector3());
+			let vrPos = camVR.getWorldPosition(new Vector3());
+			let vrDir = camVR.getWorldDirection(new Vector3());
 			let vrTarget = vrPos.clone().add(vrDir.multiplyScalar(scale));
 
 			let scenePos = toScene(vrPos, this.startState);
@@ -287,7 +288,7 @@ export class VRControls extends EventDispatcher {
 		viewer.addEventListener("vr_start", this.onStart.bind(this));
 		viewer.addEventListener("vr_end", this.onEnd.bind(this));
 
-		this.node = new THREE.Object3D();
+		this.node = new Object3D();
 		this.node.up.set(0, 0, 1);
 		this.triggered = new Set();
 
@@ -295,7 +296,7 @@ export class VRControls extends EventDispatcher {
 
 		{ // lights
 
-			const light = new THREE.PointLight(0xffffff, 5, 0, 1);
+			const light = new PointLight(0xffffff, 5, 0, 1);
 			light.position.set(0, 2, 0);
 			this.viewer.sceneVR.add(light)
 		}
@@ -304,8 +305,8 @@ export class VRControls extends EventDispatcher {
 
 		const controllerModelFactory = new XRControllerModelFactory();
 
-		let sg = new THREE.SphereGeometry(1, 32, 32);
-		let sm = new THREE.MeshNormalMaterial();
+		let sg = new SphereGeometry(1, 32, 32);
+		let sm = new MeshNormalMaterial();
 
 		{ // setup primary controller
 			let controller = xr.getController(0);
@@ -318,7 +319,7 @@ export class VRControls extends EventDispatcher {
 			this.viewer.sceneVR.add(grip);
 
 			// ADD SPHERE
-			let sphere = new THREE.Mesh(sg, sm);
+			let sphere = new Mesh(sg, sm);
 			sphere.scale.set(0.005, 0.005, 0.005);
 
 			controller.add(sphere);
@@ -337,7 +338,7 @@ export class VRControls extends EventDispatcher {
 				let lineMaterial = new LineMaterial({
 					color: 0xff0000,
 					linewidth: 2,
-					resolution: new THREE.Vector2(1000, 1000),
+					resolution: new Vector2(1000, 1000),
 				});
 
 				const line = new Line2(lineGeometry, lineMaterial);
@@ -370,7 +371,7 @@ export class VRControls extends EventDispatcher {
 			this.viewer.sceneVR.add(grip);
 
 			// ADD SPHERE
-			let sphere = new THREE.Mesh(sg, sm);
+			let sphere = new Mesh(sg, sm);
 			sphere.scale.set(0.005, 0.005, 0.005);
 			controller.add(sphere);
 			controller.visible = true;
@@ -388,7 +389,7 @@ export class VRControls extends EventDispatcher {
 				let lineMaterial = new LineMaterial({
 					color: 0xff0000,
 					linewidth: 2,
-					resolution: new THREE.Vector2(1000, 1000),
+					resolution: new Vector2(1000, 1000),
 				});
 
 				const line = new Line2(lineGeometry, lineMaterial);
@@ -416,18 +417,18 @@ export class VRControls extends EventDispatcher {
 
 	createSlider(label, min, max) {
 
-		let sg = new THREE.SphereGeometry(1, 8, 8);
-		let cg = new THREE.CylinderGeometry(1, 1, 1, 8);
-		let matHandle = new THREE.MeshBasicMaterial({color: 0xff0000});
-		let matScale = new THREE.MeshBasicMaterial({color: 0xff4444});
-		let matValue = new THREE.MeshNormalMaterial();
+		let sg = new SphereGeometry(1, 8, 8);
+		let cg = new CylinderGeometry(1, 1, 1, 8);
+		let matHandle = new MeshBasicMaterial({color: 0xff0000});
+		let matScale = new MeshBasicMaterial({color: 0xff4444});
+		let matValue = new MeshNormalMaterial();
 
-		let node = new THREE.Object3D("slider");
+		let node = new Object3D("slider");
 		let nLabel = new Potree.TextSprite(`${label}: 0`);
-		let nMax = new THREE.Mesh(sg, matHandle);
-		let nMin = new THREE.Mesh(sg, matHandle);
-		let nValue = new THREE.Mesh(sg, matValue);
-		let nScale = new THREE.Mesh(cg, matScale);
+		let nMax = new Mesh(sg, matHandle);
+		let nMin = new Mesh(sg, matHandle);
+		let nValue = new Mesh(sg, matValue);
+		let nScale = new Mesh(cg, matScale);
 
 		nLabel.scale.set(0.2, 0.2, 0.2);
 		nLabel.position.set(0, 0.35, 0);
@@ -454,11 +455,11 @@ export class VRControls extends EventDispatcher {
 
 	createInfo() {
 
-		let texture = new THREE.TextureLoader().load(`${Potree.resourcePath}/images/vr_controller_help.jpg`);
-		//let plane = new THREE.PlaneBufferGeometry(1, 1, 1, 1);
-		let plane = new THREE.PlaneGeometry(1, 1, 1, 1);
-		let infoMaterial = new THREE.MeshBasicMaterial({map: texture});
-		let infoNode = new THREE.Mesh(plane, infoMaterial);
+		let texture = new TextureLoader().load(`${Potree.resourcePath}/images/vr_controller_help.jpg`);
+		//let plane = new PlaneBufferGeometry(1, 1, 1, 1);
+		let plane = new PlaneGeometry(1, 1, 1, 1);
+		let infoMaterial = new MeshBasicMaterial({map: texture});
+		let infoNode = new Mesh(plane, infoMaterial);
 
 		return infoNode;
 	}
@@ -469,7 +470,7 @@ export class VRControls extends EventDispatcher {
 			return;
 		}
 
-		let node = new THREE.Object3D("vr menu");
+		let node = new Object3D("vr menu");
 
 		// let nSlider = this.createSlider("speed", 0, 1);
 		// let nInfo = this.createInfo();
@@ -490,7 +491,7 @@ export class VRControls extends EventDispatcher {
 
 		// node.position.set(-0.3, 1.2, 0.2);
 		// node.scale.set(0.3, 0.2, 0.3);
-		// node.lookAt(new THREE.Vector3(0, 1.5, 0.1));
+		// node.lookAt(new Vector3(0, 1.5, 0.1));
 
 		// this.viewer.sceneVR.add(node);
 
@@ -598,7 +599,7 @@ export class VRControls extends EventDispatcher {
 
 	getCamera() {
 		let reference = this.viewer.scene.getActiveCamera();
-		let camera = new THREE.PerspectiveCamera();
+		let camera = new PerspectiveCamera();
 
 		// let scale = this.node.scale.x;
 		let scale = this.viewer.getMoveSpeed();
@@ -608,7 +609,7 @@ export class VRControls extends EventDispatcher {
 		// camera.near = reference.near / scale;
 		// camera.far = reference.far / scale;
 		camera.up.set(0, 0, 1);
-		camera.lookAt(new THREE.Vector3(0, -1, 0));
+		camera.lookAt(new Vector3(0, -1, 0));
 		camera.updateMatrix();
 		camera.updateMatrixWorld();
 
@@ -628,7 +629,7 @@ export class VRControls extends EventDispatcher {
 
 
 		// if(this.mode === this.mode_fly){
-		// 	let ray = new THREE.Ray(origin, direction);
+		// 	let ray = new Ray(origin, direction);
 
 		// 	for(let object of this.selectables){
 

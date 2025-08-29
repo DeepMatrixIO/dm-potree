@@ -1,6 +1,7 @@
 
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Box3, BufferAttribute, BufferGeometry, Vector3} from 'three';
+
 import {Version} from "../Version.js";
 import {XHRFactory} from "../XHRFactory.js";
 
@@ -44,7 +45,7 @@ export class BinaryLoader{
 				}
 			}
 		};
-		
+
 		try {
 			xhr.send(null);
 		} catch (e) {
@@ -67,38 +68,38 @@ export class BinaryLoader{
 
 			let data = e.data;
 			let buffers = data.attributeBuffers;
-			let tightBoundingBox = new THREE.Box3(
-				new THREE.Vector3().fromArray(data.tightBoundingBox.min),
-				new THREE.Vector3().fromArray(data.tightBoundingBox.max)
+			let tightBoundingBox = new Box3(
+				new Vector3().fromArray(data.tightBoundingBox.min),
+				new Vector3().fromArray(data.tightBoundingBox.max)
 			);
 
 			Potree.workerPool.returnWorker(workerPath, worker);
 
-			let geometry = new THREE.BufferGeometry();
+			let geometry = new BufferGeometry();
 
 			for(let property in buffers){
 				let buffer = buffers[property].buffer;
 				let batchAttribute = buffers[property].attribute;
 
 				if (property === "POSITION_CARTESIAN") {
-					geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(buffer), 3));
+					geometry.setAttribute('position', new BufferAttribute(new Float32Array(buffer), 3));
 				} else if (property === "rgba") {
-					geometry.setAttribute("rgba", new THREE.BufferAttribute(new Uint8Array(buffer), 4, true));
+					geometry.setAttribute("rgba", new BufferAttribute(new Uint8Array(buffer), 4, true));
 				} else if (property === "NORMAL_SPHEREMAPPED") {
-					geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(buffer), 3));
+					geometry.setAttribute('normal', new BufferAttribute(new Float32Array(buffer), 3));
 				} else if (property === "NORMAL_OCT16") {
-					geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(buffer), 3));
+					geometry.setAttribute('normal', new BufferAttribute(new Float32Array(buffer), 3));
 				} else if (property === "NORMAL") {
-					geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(buffer), 3));
+					geometry.setAttribute('normal', new BufferAttribute(new Float32Array(buffer), 3));
 				} else if (property === "INDICES") {
-					let bufferAttribute = new THREE.BufferAttribute(new Uint8Array(buffer), 4);
+					let bufferAttribute = new BufferAttribute(new Uint8Array(buffer), 4);
 					bufferAttribute.normalized = true;
 					geometry.setAttribute('indices', bufferAttribute);
 				} else if (property === "SPACING") {
-					let bufferAttribute = new THREE.BufferAttribute(new Float32Array(buffer), 1);
+					let bufferAttribute = new BufferAttribute(new Float32Array(buffer), 1);
 					geometry.setAttribute('spacing', bufferAttribute);
 				} else {
-					const bufferAttribute = new THREE.BufferAttribute(new Float32Array(buffer), 1);
+					const bufferAttribute = new BufferAttribute(new Float32Array(buffer), 1);
 
 					bufferAttribute.potree = {
 						offset: buffers[property].offset,
@@ -124,10 +125,10 @@ export class BinaryLoader{
 			tightBoundingBox.min.set(0, 0, 0);
 
 			let numPoints = e.data.buffer.byteLength / pointAttributes.byteSize;
-			
+
 			node.numPoints = numPoints;
 			node.geometry = geometry;
-			node.mean = new THREE.Vector3(...data.mean);
+			node.mean = new Vector3(...data.mean);
 			node.tightBoundingBox = tightBoundingBox;
 			node.loaded = true;
 			node.loading = false;
@@ -149,6 +150,6 @@ export class BinaryLoader{
 		worker.postMessage(message, [message.buffer]);
 	};
 
-	
+
 }
 

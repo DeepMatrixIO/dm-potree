@@ -1,5 +1,6 @@
 
-import * as THREE from "../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../libs/js/build/module.js";
+import {Vector3,Matrix4} from 'three'
 import {MeasurePanel} from "./MeasurePanel.js";
 
 export class ProfilePanel extends MeasurePanel{
@@ -118,30 +119,30 @@ export class ProfilePanel extends MeasurePanel{
 		{
 			let segments = profile.getSegments();
 			let width = profile.width;
-			
+
 			for(let segment of segments){
-				let start = segment.start.clone().multiply(new THREE.Vector3(1, 1, 0));
-				let end = segment.end.clone().multiply(new THREE.Vector3(1, 1, 0));
-				let center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-				
-				let startEndDir = new THREE.Vector3().subVectors(end, start).normalize();
-				let endStartDir = new THREE.Vector3().subVectors(start, end).normalize();
-				let upDir = new THREE.Vector3(0, 0, 1);
-				let rightDir = new THREE.Vector3().crossVectors(startEndDir, upDir);
-				let leftDir = new THREE.Vector3().crossVectors(endStartDir, upDir);
-				
+				let start = segment.start.clone().multiply(new Vector3(1, 1, 0));
+				let end = segment.end.clone().multiply(new Vector3(1, 1, 0));
+				let center = new Vector3().addVectors(start, end).multiplyScalar(0.5);
+
+				let startEndDir = new Vector3().subVectors(end, start).normalize();
+				let endStartDir = new Vector3().subVectors(start, end).normalize();
+				let upDir = new Vector3(0, 0, 1);
+				let rightDir = new Vector3().crossVectors(startEndDir, upDir);
+				let leftDir = new Vector3().crossVectors(endStartDir, upDir);
+
 				console.log(leftDir);
-				
+
 				let right = rightDir.clone().multiplyScalar(width * 0.5).add(center);
 				let left = leftDir.clone().multiplyScalar(width * 0.5).add(center);
-				
+
 				let planes = [
-					new THREE.Plane().setFromNormalAndCoplanarPoint(startEndDir, start),
-					new THREE.Plane().setFromNormalAndCoplanarPoint(endStartDir, end),
-					new THREE.Plane().setFromNormalAndCoplanarPoint(leftDir, right),
-					new THREE.Plane().setFromNormalAndCoplanarPoint(rightDir, left),
+					new Plane().setFromNormalAndCoplanarPoint(startEndDir, start),
+					new Plane().setFromNormalAndCoplanarPoint(endStartDir, end),
+					new Plane().setFromNormalAndCoplanarPoint(leftDir, right),
+					new Plane().setFromNormalAndCoplanarPoint(rightDir, left),
 				];
-				
+
 				let planeQueryParts = [];
 				for(let plane of planes){
 					let part = [plane.normal.toArray(), plane.constant].join(",");
@@ -162,10 +163,10 @@ export class ProfilePanel extends MeasurePanel{
 			}
 
 			let offset = pointcloud.pcoGeometry.offset.clone();
-			let negateOffset = new THREE.Matrix4().makeTranslation(...offset.multiplyScalar(-1).toArray());
+			let negateOffset = new Matrix4().makeTranslation(...offset.multiplyScalar(-1).toArray());
 			let matrixWorld = pointcloud.matrixWorld;
 
-			let transform = new THREE.Matrix4().multiplyMatrices(matrixWorld, negateOffset);
+			let transform = new Matrix4().multiplyMatrices(matrixWorld, negateOffset);
 
 			let path = `${window.location.pathname}/../${pointcloud.pcoGeometry.url}`;
 
@@ -192,7 +193,7 @@ export class ProfilePanel extends MeasurePanel{
 		let handle = null;
 		{ // START FILTER
 			let url = `${viewer.server}/create_regions_filter?pointclouds=[${pointcloudsArg}]&regions=[${regionsArg}]`;
-			
+
 			//console.log(url);
 
 			info("estimating results ...");

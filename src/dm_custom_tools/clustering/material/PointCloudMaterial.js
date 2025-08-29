@@ -1,5 +1,5 @@
-import {RawShaderMaterial} from "../../../../libs/three.js/build/three.core"; //can be changed to three.module.js
-
+import {CanvasTexture, DataTexture, NearestFilter, NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader} from "three"; //can be changed to three.module.js
+import {Utils} from '../../../utils.js';
 class PointCloudMaterial extends RawShaderMaterial {
 	constructor(parameters = {}) {
 		super();

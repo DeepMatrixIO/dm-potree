@@ -4,7 +4,8 @@
  *
  */
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../libs/js/build/module.js";
+import {Raycaster, Vector2} from 'three';
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";
 import {Utils} from "../utils.js";
@@ -25,7 +26,7 @@ export class InputHandler extends EventDispatcher {
 		this.blacklist = new Set();
 
 		this.drag = null;
-		this.mouse = new THREE.Vector2(0, 0);
+		this.mouse = new Vector2(0, 0);
 
 		this.selection = [];
 
@@ -235,7 +236,7 @@ export class InputHandler extends EventDispatcher {
 
 		let consumed = false;
 		for (let hovered of this.hoveredElements) {
-			//if (hovered._listeners && hovered._listeners['dblclick']) {//getHoveredElements does not return the object but the event 
+			//if (hovered._listeners && hovered._listeners['dblclick']) {//getHoveredElements does not return the object but the event
 			if (hovered.object._listeners && hovered.object._listeners['dblclick']) {//fixed to listen to the object
 				hovered.object.dispatchEvent({
 					type: 'dblclick',
@@ -691,7 +692,7 @@ export class InputHandler extends EventDispatcher {
 		let camera = this.scene.getActiveCamera();
 		let ray = Utils.mouseToRay(this.mouse, camera, this.domElement.clientWidth, this.domElement.clientHeight);
 
-		let raycaster = new THREE.Raycaster();
+		let raycaster = new Raycaster();
 		raycaster.ray.set(ray.origin, ray.direction);
 		raycaster.params.Line.threshold = 0.2;
 
@@ -712,10 +713,10 @@ export class InputHandler extends EventDispatcher {
 
 	getNormalizedDrag() {
 		if (!this.drag) {
-			return new THREE.Vector2(0, 0);
+			return new Vector2(0, 0);
 		}
 
-		let diff = new THREE.Vector2().subVectors(this.drag.end, this.drag.start);
+		let diff = new Vector2().subVectors(this.drag.end, this.drag.start);
 
 		diff.x = diff.x / this.domElement.clientWidth;
 		diff.y = diff.y / this.domElement.clientHeight;
@@ -725,7 +726,7 @@ export class InputHandler extends EventDispatcher {
 
 	getNormalizedLastDrag() {
 		if (!this.drag) {
-			return new THREE.Vector2(0, 0);
+			return new Vector2(0, 0);
 		}
 
 		let lastDrag = this.drag.lastDrag.clone();

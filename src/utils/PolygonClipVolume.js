@@ -1,12 +1,8 @@
 
-//import {modelWorldMatrix} from "three/tsl";
-import * as THREE from "../../libs/three.js/build/three.module.js";
+import {Color, Mesh, Object3D, OrthographicCamera, PerspectiveCamera, Vector2, Vector3} from 'three';
 import {FilterIntType} from "./FilterConsts.js";
 
-
-
-
-export class PolygonClipVolume extends THREE.Object3D {
+export class PolygonClipVolume extends Object3D {
 
 	//may be removed
 	NONE_TASK = 0;
@@ -40,7 +36,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 				// this.maxPolygonVertices = 16;//also in Clipping Tool.js, update in potreeRenderer
 
 		//adding color per PolygonClipVolume
-		this.color = new THREE.Color(0xff0000); // default color
+		this.color = new Color(0xff0000); // default color
 
 		this.task = this.SELECTION_TASK; // default task, selection, used for subcode
 		this.visible = true; // default visibility
@@ -57,13 +53,13 @@ export class PolygonClipVolume extends THREE.Object3D {
 
 	addMarker() {
 
-		let marker = new THREE.Mesh();
+		let marker = new Mesh();
 
 		let cancel;
 
 		let drag = e => {
-			let size = e.viewer.renderer.getSize(new THREE.Vector2());
-			let projectedPos = new THREE.Vector3(
+			let size = e.viewer.renderer.getSize(new Vector2());
+			let projectedPos = new Vector3(
 				2.0 * (e.drag.end.x / size.width) - 1.0,
 				-2.0 * (e.drag.end.y / size.height) + 1.0,
 				0
@@ -184,7 +180,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 	static fromJSON(data) {
 		let newCamera = null;
 		if (data.camera.type === "PerspectiveCamera") {
-			newCamera = new THREE.PerspectiveCamera(
+			newCamera = new PerspectiveCamera(
 				data.camera.fov,
 				data.camera.aspect,
 				data.camera.near,
@@ -192,7 +188,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 			);
 		} else if (data.camera.type == "OrthographicCamera") {
 			// Ortho cameras need different parameters
-			newCamera = new THREE.OrthographicCamera(
+			newCamera = new OrthographicCamera(
 				data.camera.left,
 				data.camera.right,
 				data.camera.top,
@@ -232,7 +228,7 @@ export class PolygonClipVolume extends THREE.Object3D {
 
 		tmp.markers = [];
 		for (let markerData of data.markers) {
-			let marker = new THREE.Mesh();
+			let marker = new Mesh();
 			marker.position.fromArray(markerData);
 			tmp.markers.push(marker);
 			console.log(marker)

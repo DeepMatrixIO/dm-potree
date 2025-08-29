@@ -1,6 +1,6 @@
 
-import * as THREE from "../../../../libs/three.js/build/three.module.js";
-
+// import * as THREE from "../../../../libs/js/build/module.js";
+import {Sphere} from 'three';
 export class OctreeGeometry{
 
 	constructor(){
@@ -22,7 +22,7 @@ export class OctreeGeometryNode{
 		this.index = parseInt(name.charAt(name.length - 1));
 		this.octreeGeometry = octreeGeometry;
 		this.boundingBox = boundingBox;
-		this.boundingSphere = boundingBox.getBoundingSphere(new THREE.Sphere());
+		this.boundingSphere = boundingBox.getBoundingSphere(new Sphere());
 		this.children = {};
 		this.numPoints = 0;
 		this.level = null;

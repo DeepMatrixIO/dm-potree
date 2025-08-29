@@ -1,13 +1,13 @@
 
 // see http://john-chapman-graphics.blogspot.co.at/2013/01/ssao-tutorial.html
 
-import * as THREE from "../../libs/three.js/build/three.module.js";
-
-Potree.BlurMaterial = class BlurMaterial extends THREE.ShaderMaterial {
+// import * as THREE from "../../libs/js/build/module.js";
+import {ShaderMaterial} from 'three';
+Potree.BlurMaterial = class BlurMaterial extends ShaderMaterial {
 
 	constructor(parameters = {}) {
 		super();
-		this.glslVersion = THREE.GLSL3;
+		this.glslVersion = GLSL3;
 		let uniforms = {
 			near: {type: 'f', value: 0},
 			far: {type: 'f', value: 0},

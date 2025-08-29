@@ -1,5 +1,6 @@
 
-import * as THREE from "../../../libs/three.js/build/three.module.js";
+// import * as THREE from "../../../libs/js/build/module.js";
+import {MathUtils, Matrix4, Scene, Vector2} from 'three';
 import {EventDispatcher} from "../../EventDispatcher.js";
 
 
@@ -42,30 +43,30 @@ export class OrientedImageControls extends EventDispatcher {
 
 		this.elUp.click(() => {
 			const fovY = viewer.getFOV();
-			const top = Math.tan(THREE.MathUtils.degToRad(fovY / 2));
+			const top = Math.tan(MathUtils.degToRad(fovY / 2));
 			this.shear[1] += 0.1 * top;
 		});
 
 		this.elRight.click(() => {
 			const fovY = viewer.getFOV();
-			const top = Math.tan(THREE.MathUtils.degToRad(fovY / 2));
+			const top = Math.tan(MathUtils.degToRad(fovY / 2));
 			this.shear[0] += 0.1 * top;
 		});
 
 		this.elDown.click(() => {
 			const fovY = viewer.getFOV();
-			const top = Math.tan(THREE.MathUtils.degToRad(fovY / 2));
+			const top = Math.tan(MathUtils.degToRad(fovY / 2));
 			this.shear[1] -= 0.1 * top;
 		});
 
 		this.elLeft.click(() => {
 			const fovY = viewer.getFOV();
-			const top = Math.tan(THREE.MathUtils.degToRad(fovY / 2));
+			const top = Math.tan(MathUtils.degToRad(fovY / 2));
 			this.shear[0] -= 0.1 * top;
 		});
 
 		this.scene = null;
-		this.sceneControls = new THREE.Scene();
+		this.sceneControls = new Scene();
 
 		let scroll = (e) => {
 			this.fovDelta += -e.delta * 1.0;
@@ -144,7 +145,7 @@ export class OrientedImageControls extends EventDispatcher {
 		let diff = newFov / oldFov;
 
 		const mouse = this.viewer.inputHandler.mouse;
-		const canvasSize = this.viewer.renderer.getSize(new THREE.Vector2());
+		const canvasSize = this.viewer.renderer.getSize(new Vector2());
 		const uv = [
 			(mouse.x / canvasSize.x),
 			((canvasSize.y - mouse.y) / canvasSize.y)
@@ -152,7 +153,7 @@ export class OrientedImageControls extends EventDispatcher {
 
 		const fovY = newFov;
 		const aspect = canvasSize.x / canvasSize.y;
-		const top = Math.tan(THREE.MathUtils.degToRad(fovY / 2));
+		const top = Math.tan(MathUtils.degToRad(fovY / 2));
 		const height = 2 * top;
 		const width = aspect * height;
 
@@ -191,7 +192,7 @@ export class OrientedImageControls extends EventDispatcher {
 		shearCam.projectionMatrix.copy(originalCam.projectionMatrix);
 
 		const [sx, sy] = this.shear;
-		const mShear = new THREE.Matrix4().set(
+		const mShear = new Matrix4().set(
 			1, 0, sx, 0,
 			0, 1, sy, 0,
 			0, 0, 1, 0,
