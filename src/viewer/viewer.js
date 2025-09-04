@@ -640,7 +640,9 @@ export class Viewer extends EventDispatcher {
 	triggerUpdates() {
 		try {
 			this.customUpdates.forEach((item) => {
-				item.refresh(this);
+				if (item.visible) {
+					item.refresh(this);
+				}
 			});
 		} catch (e) {
 			console.error(e);
@@ -784,16 +786,16 @@ export class Viewer extends EventDispatcher {
 
 	enableControls() {
 
-			this.controls.stop();
+		this.controls.stop();
 
-			this.controls.enabled=true;
+		this.controls.enabled = true;
 
 	}
 
 	disableControls() {
 
-			this.controls.enabled=false;
-			this.controls.stop();
+		this.controls.enabled = false;
+		this.controls.stop();
 
 	}
 
