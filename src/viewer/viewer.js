@@ -54,7 +54,10 @@ export class Viewer extends EventDispatcher {
 
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
 		this.isFootBasedProjection = false;
-		this.ecefCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
+
+		this._ecefPerspectiveCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
+		this._ecefOrthographicCamera = new THREE.OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
+
 
 
 
@@ -362,6 +365,24 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+
+	//so we dont care about persoective or orthographic, as it depends on current projection and both have position
+	get ecefCamera() {
+		if (this.scene.getActiveCamera().isPerspectiveCamera) {
+			return this._ecefPerspectiveCamera;
+		} else {
+			return this._ecefOrthographicCamera;
+		}
+	}
+
+	set ecefCamera(value) {
+		if (value.isPerspectiveCamera) {
+			this._ecefPerspectiveCamera = value;
+		} else {
+			this._ecefOrthographicCamera = value;
+		}
+	}
+
 	get projection() {
 		return this._projection;
 	}
@@ -379,6 +400,12 @@ export class Viewer extends EventDispatcher {
 				this._projection.includes('ft') ||
 				this._projection.includes('feet');
 
+			if(this.isFootBasedProjection){
+				this.setLengthUnitAndDisplayUnit(LengthUnits.FEET);
+				console.log("Setting feet as length and display unit based on projection definition");
+			}else{
+				this.setLengthUnitAndDisplayUnit(LengthUnits.METER);
+			}
 			console.log('setting potree current projection')
 		}
 
@@ -439,8 +466,9 @@ export class Viewer extends EventDispatcher {
 
 
 
+	//not in use anymore as cameras ara updated everyu frame for pointcloud projection and ecef
 
-	updateCameraPosition(customCamera) {
+	updateCameraPosition_deprecated(customCamera) {
 		//const groundOffset = -40;
 		const groundOffset = 0;
 
@@ -497,6 +525,15 @@ export class Viewer extends EventDispatcher {
 					cDir.z = 0;
 				}
 
+				///// only updating if it is different
+				if (camera.type != this.ecefCamera.type) {//TODO check if is camera std method
+					if (camera.isPerspectiveCamera) {
+						this.ecefCamera = this._ecefPerspectiveCamera;
+					} else if (camera.isOrthographicCamera) {
+						this.ecefCamera = this._ecefOrthographicCamera;
+					}
+				}
+
 				this.ecefCamera.position.set(cPos.x, cPos.y, cPos.z);
 				this.ecefCamera.up.set(cUp.x, cUp.y, cUp.z);
 				this.ecefCamera.lookAt(cTarget.x, cTarget.y, cTarget.z);
@@ -514,16 +551,19 @@ export class Viewer extends EventDispatcher {
 				//   //window.cesiumViewer.camera.frustum.fov = fovx;
 				// }
 
-				if (camera instanceof THREE.PerspectiveCamera) {
+				if (camera.isPerspectiveCamera) {
+					// if (camera instanceof THREE.PerspectiveCamera) {
 					this.ecefCamera.fov = camera.fov;
 
-					//	this.ecefCamera.aspect = aspect;
-					// this.ecefCamera.setFocalLength(camera.getFocalLength());
-					// this.ecefCamera.width = window.innerWidth;//to remove warnings
-					// this.ecefCamera.height = window.innerHeight;
+					// this.ecefCamera.aspect = aspect;
+					this.ecefCamera.setFocalLength(camera.getFocalLength());
+					this.ecefCamera.width = window.innerWidth;//to remove warnings
+					this.ecefCamera.height = window.innerHeight;
+					this.ecefCamera.near = camera.near;
+					this.ecefCamera.far = camera.far;
 
-
-				} else if (camera instanceof THREE.OrthographicCamera) {
+					// } else if (camera instanceof THREE.OrthographicCamera) {
+				} else if (camera.isOrthographicCamera) {
 					let frustumHeight = camera.top - camera.bottom;
 					let frustumWidth = camera.right - camera.left;
 					this.ecefCamera.zoom = camera.zoom;
@@ -531,6 +571,9 @@ export class Viewer extends EventDispatcher {
 					this.ecefCamera.right = frustumWidth / 2;
 					this.ecefCamera.top = frustumHeight / 2;
 					this.ecefCamera.bottom = -frustumHeight / 2;
+					this.ecefCamera.near = -50000;
+					this.ecefCamera.far = 80000000;
+
 				}
 
 				this.ecefCamera.aspect = aspect;
@@ -1339,15 +1382,36 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+
+	getProjection() {
+			let proj=this.projection
+			if(!proj || proj === null){
+				proj = this.getFirstValidProjection();
+			}
+			return proj;
+	}
+
 	/**
 	 * Set the viewer default projection based on the first pointcloud, otherwise null.
 	 * Another option is to scroll and assign the first valid projection.
 	 *
 	 */
 
-	getProjection() {
-		const pointcloud = this.scene.pointclouds[0];
+	getFirstValidProjection() {
+			// const pointcloud = this.scene.pointclouds[0];//sometimes fails if pointclouds is empty
+			let pc = this.scene.pointclouds.find((pc) => pc.projection && pc.projection != '');
+			if( pc && pc.projection){
+				console.log(pc.projection);
+				return pc.projection;
+			}
+			return null;
 
+		}
+
+
+	//if not null, returns it, otherwise null
+	getFirstProjection() {
+		const pointcloud = this.scene.pointclouds[0];//sometimes fails if pointclouds is empty
 		if (pointcloud) {
 			return pointcloud.projection;
 		} else {
@@ -1753,7 +1817,7 @@ export class Viewer extends EventDispatcher {
 					} else {
 
 						proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-						proj4.defs("pointcloud", this.getProjection());
+						proj4.defs("pointcloud", this.getFirstValidProjection());
 						let transform = proj4("WGS84", "pointcloud");
 
 						const buffer = await file.arrayBuffer();
@@ -1818,7 +1882,8 @@ export class Viewer extends EventDispatcher {
 			alpha: true,
 			premultipliedAlpha: false,
 			canvas: canvas,
-			context: context
+			context: context,
+			antialias: true, //reduce jagged edges on shapes
 		});
 		this.renderer.sortObjects = false;
 		this.renderer.setSize(width, height);
