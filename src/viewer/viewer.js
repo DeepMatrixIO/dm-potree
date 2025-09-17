@@ -40,6 +40,9 @@ import {ClusterTool} from "../dm_custom_tools/clustering/ClusterTool.js"; //JUST
 import {SelectionTool} from "../dm_custom_tools/clustering/SelectionTool.js"; //JUST A REFERENCE
 export class Viewer extends EventDispatcher {
 
+	ecef = 'EPSG:4978'; // ECEF
+	wgs84 = 'EPSG:4326'; // WGS84
+
 	constructor(domElement, args = {}) {
 		super();
 
@@ -53,7 +56,7 @@ export class Viewer extends EventDispatcher {
 		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
 
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
-		this.isFootBasedProjection = false;
+		this.isFeetBasedProjection = false;
 
 		this._ecefPerspectiveCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 		this._ecefOrthographicCamera = new THREE.OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
@@ -394,26 +397,26 @@ export class Viewer extends EventDispatcher {
 
 			this._projection = value;
 
-			this.isFootBasedProjection =
+			this.isFeetBasedProjection =
 
 				this._projection.includes('us-ft') ||
 				this._projection.includes('ft') ||
 				this._projection.includes('feet');
 
-			if(this.isFootBasedProjection){
-				this.setLengthUnitAndDisplayUnit(LengthUnits.FEET);
+			if(this.isFeetBasedProjection){
+				this.setLengthUnit(LengthUnits.FEET.code);
 				console.log("Setting feet as length and display unit based on projection definition");
 			}else{
-				this.setLengthUnitAndDisplayUnit(LengthUnits.METER);
+				this.setLengthUnit(LengthUnits.METER.code);
 			}
 			console.log('setting potree current projection')
 		}
 
 	}
 
-	ecef = 'EPSG:4978'; // ECEF
-	wgs84 = 'EPSG:4326'; // WGS84
 
+
+	//should be deprecated
 	updateCurrentPosition() {
 		try {
 
@@ -466,9 +469,9 @@ export class Viewer extends EventDispatcher {
 
 
 
-	//not in use anymore as cameras ara updated everyu frame for pointcloud projection and ecef
 
-	updateCameraPosition_deprecated(customCamera) {
+
+	updateCameraPosition(customCamera) {
 		//const groundOffset = -40;
 		const groundOffset = 0;
 
