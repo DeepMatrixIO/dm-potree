@@ -46,8 +46,8 @@ export class Viewer extends EventDispatcher {
 	constructor(domElement, args = {}) {
 		super();
 
+		// interacting with ECEF datasets require ECEF definitions and custom functions
 		proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-
 		//wont break if not provided
 		this.customUpdates = []; //ADDED by  @jguerrer // runs on each  loop before general update.i.e. viewer.scene.scene  or others. Check also Input Handler for other ways
 		this.ecefRenderers = [];//ADDED by  @jguerrer // To render it before all other
@@ -55,9 +55,10 @@ export class Viewer extends EventDispatcher {
 		this.currentWGS84Position = {lat: 0, lon: 0, alt: 0};//ADDED by  @jguerrer // updated on each loop before general update.
 		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
 
+
+		//spatial information
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
 		this.isFeetBasedProjection = false;
-
 		this._ecefPerspectiveCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 		this._ecefOrthographicCamera = new THREE.OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
 
@@ -275,9 +276,17 @@ export class Viewer extends EventDispatcher {
 				this.inputHandler = new InputHandler(this);
 				this.inputHandler.setScene(this.scene);
 
-				this.clippingTool = new ClippingTool(this);
-				this.transformationTool = new TransformationTool(this);
-				this.navigationCube = new NavigationCube(this);
+
+				//where are these being rendered and  updated?
+				//within viewer.update are being update as result of camera changes
+				//later rendered within potreeRenderer
+				this.annotationTool = new AnnotationTool(this);//has its own render method and update method but no real implementation
+				this.measuringTool = new MeasuringTool(this);//line, point, height, etc, they create measures
+				this.profileTool = new ProfileTool(this);//Creates profile.js profiles
+				this.volumeTool = new VolumeTool(this);//has its own update and render methods . Creates Box or SPhere volumes
+				this.clippingTool = new ClippingTool(this);//for polygon clips and polygonClipVolume
+				this.transformationTool = new TransformationTool(this);//persistent handler attached per object to rotate and translate 3d object s
+				this.navigationCube = new NavigationCube(this);//currently not attached nor used
 				this.navigationCube.visible = false;
 
 				this.compass = new Compass(this);
@@ -344,13 +353,7 @@ export class Viewer extends EventDispatcher {
 
 			this.loadGUI = this.loadGUI.bind(this);
 
-			//where are these being rendered and  updated?
-			//within viewer.update are being update as result of camera changes
-			//later rendered within potreeRenderer
-			this.annotationTool = new AnnotationTool(this);//has its own render method and update method but no real implementation
-			this.measuringTool = new MeasuringTool(this);//has its own render method and update method
-			this.profileTool = new ProfileTool(this);//has its own update and render methods. Its object a raycaster
-			this.volumeTool = new VolumeTool(this);//has its own update and render methods
+
 
 
 
@@ -358,9 +361,7 @@ export class Viewer extends EventDispatcher {
 			this.extraTools = []
 			//			this.selectionTool = new SelectionTool(this);
 			this.clusterTool = new ClusterTool(this);
-			this.selectionTool = new SelectionTool(this);
-
-			//this.addTool
+			this.selectionTool = new SelectionTool(this);//volume and polygon based
 
 
 		} catch (e) {
@@ -403,10 +404,10 @@ export class Viewer extends EventDispatcher {
 				this._projection.includes('ft') ||
 				this._projection.includes('feet');
 
-			if(this.isFeetBasedProjection){
+			if (this.isFeetBasedProjection) {
 				this.setLengthUnit(LengthUnits.FEET.code);
 				console.log("Setting feet as length and display unit based on projection definition");
-			}else{
+			} else {
 				this.setLengthUnit(LengthUnits.METER.code);
 			}
 			console.log('setting potree current projection')
@@ -1303,6 +1304,7 @@ export class Viewer extends EventDispatcher {
 		this.navigationCube.visible = !this.navigationCube.visible;
 	}
 
+	//set current view from any of the 6 axis views
 	setView(view) {
 		if (!view) return;
 
@@ -1370,6 +1372,7 @@ export class Viewer extends EventDispatcher {
 		this.fitToScreen();
 	};
 
+	// for non world apps
 	flipYZ() {
 		this.isFlipYZ = !this.isFlipYZ;
 
@@ -1386,12 +1389,13 @@ export class Viewer extends EventDispatcher {
 	}
 
 
+	//enforcing an proj4 projection definition for the first valid def
 	getProjection() {
-			let proj=this.projection
-			if(!proj || proj === null){
-				proj = this.getFirstValidProjection();
-			}
-			return proj;
+		let proj = this.projection
+		if (!proj || proj === null) {
+			proj = this.getFirstValidProjection();
+		}
+		return proj;
 	}
 
 	/**
@@ -1401,15 +1405,15 @@ export class Viewer extends EventDispatcher {
 	 */
 
 	getFirstValidProjection() {
-			// const pointcloud = this.scene.pointclouds[0];//sometimes fails if pointclouds is empty
-			let pc = this.scene.pointclouds.find((pc) => pc.projection && pc.projection != '');
-			if( pc && pc.projection){
-				console.log(pc.projection);
-				return pc.projection;
-			}
-			return null;
-
+		// const pointcloud = this.scene.pointclouds[0];//sometimes fails if pointclouds is empty
+		let pc = this.scene.pointclouds.find((pc) => pc.projection && pc.projection != '');
+		if (pc && pc.projection) {
+			console.log(pc.projection);
+			return pc.projection;
 		}
+		return null;
+
+	}
 
 
 	//if not null, returns it, otherwise null
@@ -1422,7 +1426,7 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
-
+	//returns a list of all projections in the scene
 	getProjectionsList() {
 
 		let projectionsList = this.scene.pointclouds.map((pointcloud) => {
@@ -1433,7 +1437,7 @@ export class Viewer extends EventDispatcher {
 		return projectionsList
 	}
 
-
+	//retrieve the project options  from an url
 	async loadProject(url) {
 
 		const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
@@ -1456,6 +1460,9 @@ export class Viewer extends EventDispatcher {
 		return Potree.saveProject(this);
 	}
 
+	/**
+	 * Load potree project from url
+	 */
 	loadSettingsFromURL() {
 		if (Utils.getParameterByName("pointSize")) {
 			this.setPointSize(parseFloat(Utils.getParameterByName("pointSize")));
@@ -2064,7 +2071,7 @@ export class Viewer extends EventDispatcher {
 
 	}
 
-	//checking and updating all items in the scene
+	//checking and updating all items in the scene according to the viewer app
 	update(delta, timestamp) {
 
 		if (Potree.measureTimings) performance.mark("update-start");

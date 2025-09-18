@@ -10,7 +10,7 @@ export class NavigationCube extends THREE.Object3D {
 
 		let createPlaneMaterial = (img) => {
 			let material = new THREE.MeshBasicMaterial( {
-				depthTest: true, 
+				depthTest: true,
 				depthWrite: true,
 				side: THREE.DoubleSide
 			});
@@ -66,7 +66,7 @@ export class NavigationCube extends THREE.Object3D {
 		this.top.name = "U";
 		this.add(this.top);
 
-		this.width = 150; // in px
+		this.width = 150; // in px  //hardcoded as an icon in screen but not usefull.
 
 		this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
 		this.camera.position.copy(new THREE.Vector3(0, 0, 0));
@@ -78,13 +78,17 @@ export class NavigationCube extends THREE.Object3D {
 			if (!this.visible) {
 				return;
 			}
-			
+
 			this.pickedFace = null;
+
+			// this code is not working as it depends on a fixed screen position
 			let mouse = new THREE.Vector2();
 			mouse.x = event.clientX - (window.innerWidth - this.width);
 			mouse.y = event.clientY;
 
-			if(mouse.x < 0 || mouse.y > this.width) return;
+
+
+			if(mouse.x < 0 || mouse.y > this.width) return;// needs to be reworked as it is tied to a fixed screen position
 
 			mouse.x = (mouse.x / this.width) * 2 - 1;
 			mouse.y = -(mouse.y / this.width) * 2 + 1;
@@ -93,7 +97,7 @@ export class NavigationCube extends THREE.Object3D {
 			raycaster.setFromCamera(mouse, this.camera);
 			raycaster.ray.origin.sub(this.camera.getWorldDirection(new THREE.Vector3()));
 
-			let intersects = raycaster.intersectObjects(this.children);
+			let intersects = raycaster.intersectObjects(this.children);//find which plane was intersected
 
 			let minDistance = 1000;
 			for (let i = 0; i < intersects.length; i++) {
@@ -102,13 +106,13 @@ export class NavigationCube extends THREE.Object3D {
 					minDistance = intersects[i].distance;
 				}
 			}
-			
+
 			if(this.pickedFace) {
-				this.viewer.setView(this.pickedFace);
+				this.viewer.setView(this.pickedFace);//sets a given view
 			}
 		};
 
-		this.viewer.renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+		this.viewer.renderer.domElement.addEventListener('mousedown', onMouseDown, false);//all mouse clicks are dispatched to this
 	}
 
 	update(rotation) {
