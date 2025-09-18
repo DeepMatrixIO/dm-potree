@@ -1605,12 +1605,12 @@ export class Renderer {
 				//const lClipBoxes = shader.uniformLocations["clipBoxes[0]"];
 				//gl.uniformMatrix4fv(lClipBoxes, false, flattenedMatrices);
 
-				const lClipBoxes = shader.uniformLocations["clipBoxes[0]"];
+				const lClipBoxes = shader.uniformLocations["clipBoxes[0]"];//now profiles are commited as clipboxes
 				gl.uniformMatrix4fv(lClipBoxes, false, material.uniforms.clipBoxes.value);
 
 
 
-
+				// this code was modified to store
 				//// TODO CHECK using some variable or some other element clipboxes used for clustering tool, which are stored
 				let clusterToolClipBoxes = true;
 				if (clusterToolClipBoxes) {//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes

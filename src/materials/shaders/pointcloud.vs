@@ -1405,6 +1405,32 @@ void doClipping(bool inside) {
 	}
 #endif
 
+
+	//profile clipping variables
+	int clipVolumesCount = 0;
+	int insideCount = 0;
+
+
+	//profile clipboxes
+	#if defined(num_clipboxes) && num_clipboxes > 0
+		for(int i = 0; i < num_clipboxes; i++){
+			vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4( position, 1.0 );
+			bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
+			inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
+			inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+
+			insideCount = insideCount + (inside ? 1 : 0);
+			clipVolumesCount++;
+		}
+	#endif
+
+	if(insideCount > 0){
+
+		//some color
+			vColor.r += 0.5;
+			return;
+	}
+
 	//bool active_ = false;//now global
 	//bool visible = true;//now global
 
