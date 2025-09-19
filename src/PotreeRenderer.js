@@ -685,12 +685,12 @@ export class Renderer {
 
 				}
 				//}
-			// } else {
+				// } else {
 
-			// 	for (let i = 0;i < numVertices;i++) {
-			// 		packedData[i * totalAttributes + j] = 0.0;
+				// 	for (let i = 0;i < numVertices;i++) {
+				// 		packedData[i * totalAttributes + j] = 0.0;
 
-			// 	}
+				// 	}
 			}
 
 
@@ -1418,6 +1418,8 @@ export class Renderer {
 			let numClipSpheres = (params.clipSpheres && params.clipSpheres.length) ? params.clipSpheres.length : 0;
 			let numClipPolygons = (material.clipPolygons && material.clipPolygons.length) ? material.clipPolygons.length : 0;
 
+			let numClipProfileBoxes = (material.clipProfileBoxes && material.clipProfileBoxes.length) ? material.clipProfileBoxes.length : 0;
+
 
 
 			let defines = [
@@ -1426,6 +1428,9 @@ export class Renderer {
 				`#define num_clipboxes ${numClipBoxes}`,
 				`#define num_clipspheres ${numClipSpheres}`,
 				`#define num_clippolygons ${numClipPolygons}`,
+
+				`#define num_clipprofileboxes ${numClipProfileBoxes}`,//profiles being taken out
+
 			];
 			////////////////////////////////////////////////////
 			//{//block for point clusters  DEFINES
@@ -1587,7 +1592,7 @@ export class Renderer {
 			// if (material.mixedFilters.length === 0) {
 			// 	shader.setUniform1i("clipTask", ClipTask.NONE);//this is not correct
 			// } else {
-				shader.setUniform1i("clipTask", material.clipTask);
+			shader.setUniform1i("clipTask", material.clipTask);
 			// }
 
 
@@ -1684,7 +1689,52 @@ export class Renderer {
 						console.log("PotreeRenderer.js Error in in BoxSelectionClusterTool clipBoxes added code");
 					}
 				}
+
+
 			}
+
+
+			/////////////////////////////////////////////////////////////////
+			//code for clip profile boxes
+			if (material.clipProfileBoxes && material.clipProfileBoxes.length > 0) {
+				const lClipProfileBoxes = shader.uniformLocations["clipProfileBoxes[0]"];//now profiles are commited as clipboxes
+				gl.uniformMatrix4fv(lClipProfileBoxes, false, material.uniforms.clipProfileBoxes.value);
+
+				//////////////////////////////////////////////////////////
+				//profile clip boxes task and colors
+				let profileToolCipBoxes = true;
+				if (profileToolCipBoxes) {
+					try {
+						//per box clptask
+						const clipTasks = material.clipProfileBoxes.map(
+							(clipbox) => clipbox.box.actualClipTask
+						);
+						const lClipTasks = shader.uniformLocations['clipProfileTasks[0]'];
+						gl.uniform1iv(lClipTasks, clipTasks);
+
+						const boxColors = material.clipProfileBoxes
+							.map((clipbox) => {
+
+								if (clipbox.box.color !== undefined) {
+									return [clipbox.box.color.r, clipbox.box.color.g, clipbox.box.color.b]//check why they store materials in such way when using cluster tool
+								} else {
+									return [clipbox.box.material.color.r, clipbox.box.material.color.g, clipbox.box.material.color.b]
+								}
+
+							})
+							.flat();
+
+						const lBoxColors = shader.uniformLocations['boxProfileColors[0]'];
+						gl.uniform3fv(lBoxColors, boxColors);
+
+
+					} catch (error) {
+						console.log("PotreeRenderer.js Error in in ClusterTool clipBoxes added code");
+					}
+				}// require a define with num_clipProfileBoxes
+
+			}
+
 
 			/////////////////////////////////////////////////////////////////
 			// CODE for CLUSTERING ()
@@ -1909,7 +1959,7 @@ export class Renderer {
 
 
 			// WIP as 24 jun 2025
-			let customFiltering =  false;
+			let customFiltering = false;
 			if (customFiltering) {
 
 				//all enabled by FILTER_PC defines

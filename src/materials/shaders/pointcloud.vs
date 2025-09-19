@@ -122,10 +122,14 @@ uniform int clipMethod;
 
 #if defined(num_clipboxes) && num_clipboxes > 0
 uniform mat4 clipBoxes[num_clipboxes];
-//uniform int selectionClipTasks[num_clipboxes];
 uniform vec3 boxColors[num_clipboxes];
 uniform int clipTasks[num_clipboxes];
-// uniform vec3 selectionBoxColors[num_clipboxes];
+#endif
+
+#if defined(num_clipprofileboxes) && num_clipprofileboxes > 0
+uniform mat4 clipProfileBoxes[num_clipprofileboxes];
+uniform vec3 boxProfileColors[num_clipprofileboxes];
+uniform int clipProfileTasks[num_clipprofileboxes];
 #endif
 
 // distance rendering requires a position and an array of min max ranges
@@ -1410,26 +1414,49 @@ void doClipping(bool inside) {
 	int clipVolumesCount = 0;
 	int insideCount = 0;
 
+	int clipProfileBoxesCount = 0;
+	int insideProfileCount = 0;
 
 	//profile clipboxes
-	#if defined(num_clipboxes) && num_clipboxes > 0
-		for(int i = 0; i < num_clipboxes; i++){
-			vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4( position, 1.0 );
+	#if defined(num_clipprofileboxes) && num_clipprofileboxes > 0
+		for(int i = 0; i < num_clipprofileboxes; i++){
+			vec4 clipPosition = clipProfileBoxes[i] * modelMatrix * vec4( position, 1.0 );
 			bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
 			inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
 			inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
 
-			insideCount = insideCount + (inside ? 1 : 0);
-			clipVolumesCount++;
+			insideProfileCount = insideProfileCount + (inside ? 1 : 0);
+			clipProfileBoxesCount++;
 		}
 	#endif
-
-	if(insideCount > 0){
+	if(insideProfileCount > 0){
 
 		//some color
-			vColor.r += 0.5;
-			return;
+			vColor.r += 0.5; // or colorize later
+			return;//if return, means profile goes on top
 	}
+
+
+	// #if defined(num_clipboxes) && num_clipboxes > 0
+	// 	for(int i = 0; i < num_clipboxes; i++){
+	// 		vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4( position, 1.0 );
+	// 		bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
+	// 		inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
+	// 		inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+
+	// 		insideCount = insideCount + (inside ? 1 : 0);
+	// 		clipVolumesCount++;
+	// 	}
+	// #endif
+	// if(insideCount > 0){
+
+	// 	//some color
+	// 		vColor.r += 0.5; // or colorize later
+	// 		return;
+	// }
+
+
+
 
 	//bool active_ = false;//now global
 	//bool visible = true;//now global
@@ -1978,7 +2005,7 @@ void main() {
 	#endif
 
 	// CLIPPING
-	doClipping(isInside);//requires inside
+	doClipping(isInside);//requires inside, also deals with profile clip boxes, which should be changed
 
 #if defined(num_clipspheres) && num_clipspheres > 0
 	for(int i = 0; i < num_clipspheres; i++) {

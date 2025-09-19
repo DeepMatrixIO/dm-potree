@@ -2309,22 +2309,17 @@ export class Viewer extends EventDispatcher {
 			// volumes with clipping enabled
 			//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
 			boxes.push(...this.scene.volumes.filter(v => (v.clip && v.visible && v instanceof BoxVolume)));//for in built boxes
-			// boxes.push(...this.scene.volumes.filter(v => (v.clip && true && v instanceof BoxVolume)));//added to check its visibility
-
-			//let customBoxes = [];
 
 			// volumes with clipping enabled
 			//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
 			boxes.push(...this.scene.volumes.filter(v => (v.clip && v.visible && !(v instanceof BoxVolume))));//add non built in boxes
 
-
 			//only if custom boxes are present, this applies, but must change it.
 
-
-
 			// profile segments
+			let profileBoxes = [];
 			for (let profile of this.scene.profiles) {
-				boxes.push(...profile.boxes);
+				profileBoxes.push(...profile.boxes);
 			}
 
 			// Needed for .getInverse(), pre-empt a determinant of 0, see #815 / #816
@@ -2332,12 +2327,21 @@ export class Viewer extends EventDispatcher {
 
 			let clipBoxes = boxes.filter(degenerate).map(box => {
 				box.updateMatrixWorld();
-
 				let boxInverse = box.matrixWorld.clone().invert();
 				let boxPosition = box.getWorldPosition(new THREE.Vector3());
 
 				return {box: box, inverse: boxInverse, position: boxPosition};
 			});
+
+			let clipProfileBoxes = profileBoxes.filter(degenerate).map(box => {
+				box.updateMatrixWorld();
+				let boxInverse = box.matrixWorld.clone().invert();
+				let boxPosition = box.getWorldPosition(new THREE.Vector3());
+
+				return {box: box, inverse: boxInverse, position: boxPosition};
+			});
+
+			//////////////
 
 			let clipPolygons = this.scene.polygonClipVolumes.filter(vol => vol.initialized && vol.visible);//checking visilibity to avoid/ignore it. Works on std or not std clip polygon
 
@@ -2362,8 +2366,12 @@ export class Viewer extends EventDispatcher {
 
 			// set clip volumes in material
 			for (let pointcloud of visiblePointClouds) {
-				pointcloud.material.setClipBoxes(clipBoxes);//profiles and std volumes but not updating mixed profiles
-				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//updated but not updating mixed profiles
+				pointcloud.material.setClipBoxes(clipBoxes);//selection std volumes only
+				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//selection polygons only
+				//additional clipping must be added here
+
+				pointcloud.material.setClipProfileBoxes(clipProfileBoxes);//profiles only, taken out from clipBoxes
+
 				pointcloud.material.clipTask = this.clipTask;
 				pointcloud.material.clipMethod = this.clipMethod;
 

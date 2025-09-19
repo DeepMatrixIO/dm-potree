@@ -100,6 +100,7 @@ export class PotreeRenderer {
 		// renderer.render(viewer.clippingTool.sceneVolume, camera);
 		renderer.render(viewer.transformationTool.scene, camera); //Put back to be displayed on all qualities
 
+		//navigation cube used to
 		// renderer.setViewport(width - viewer.navigationCube.width,
 		// 							height - viewer.navigationCube.width,
 		// 							viewer.navigationCube.width, viewer.navigationCube.width);

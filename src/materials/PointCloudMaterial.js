@@ -43,15 +43,16 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this._shape = PointShape.SQUARE;
 		this._useClipBox = false;
 
+		//left for pointcloud selections based on clips and filters
 		this.clipBoxes = [];
 		this.clipPolygons = [];
 		this.pointClusters = [];
 
-
-
 		// adding all extra arrays for filtering and custom  rendering order for clips
 		this.mixedFilters = [];//arbitrary array to store either box clips, polygon clips or even filters to be applied in order, each returns true false
 
+		//special container for profile clipping
+		this.clipProfileBoxes = [];//from profiles clipboxes only
 
 		//adding the custom filter
 		//////////////////////////////  added in viewer.update and retrieved in potreeRenderer
@@ -151,13 +152,22 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			elevationRange: {type: '2fv', value: [0, 0]},
 
 			clipBoxCount: {type: 'f', value: 0},
-			//clipSphereCount:	{ type: "f", value: 0 },
-			clipPolygonCount: {type: 'i', value: 0},
 			clipBoxes: {type: 'Matrix4fv', value: []},
-			//clipSpheres:		{ type: "Matrix4fv", value: [] },
+
+			clipProfileBoxCount: {type: 'f', value: 0},
+			clipProfileBoxes: {type: 'Matrix4fv', value: []},
+
+
+			clipPolygonCount: {type: 'i', value: 0},
 			clipPolygons: {type: '3fv', value: []},
+
 			clipPolygonVCount: {type: 'iv', value: []},
 			clipPolygonVP: {type: 'Matrix4fv', value: []},
+
+			//clipSphereCount:	{ type: "f", value: 0 },
+			//clipSpheres:		{ type: "Matrix4fv", value: [] },
+
+
 
 			visibleNodes: {type: 't', value: this.visibleNodesTexture},
 			pcIndex: {type: 'f', value: 0},
@@ -493,6 +503,44 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		return defines.join('\n');
 	}
+
+	//receive material info for profiles clipboxes,
+	setClipProfileBoxes(clipProfileBoxes) {
+		if (!clipProfileBoxes) {
+			return;
+		}
+
+		let doUpdate =
+			this.clipProfileBoxes.length !== clipProfileBoxes.length &&
+			(clipProfileBoxes.length === 0 || this.clipProfileBoxes.length === 0);
+
+		this.uniforms.clipProfileBoxCount.value = this.clipProfileBoxes.length;
+		this.clipProfileBoxes = clipProfileBoxes;
+
+		if (doUpdate) {
+			this.updateShaderSource();
+		}
+
+		//why 16? MAtrix size 4x4
+		this.uniforms.clipProfileBoxes.value = new Float32Array(
+			this.clipProfileBoxes.length * 16
+		);
+
+
+
+		for (let i = 0;i < this.clipProfileBoxes.length;i++) {
+			let box = clipProfileBoxes[i];
+
+			this.uniforms.clipProfileBoxes.value.set(box.inverse.elements, 16 * i);
+		}
+
+		for (let i = 0;i < this.uniforms.clipProfileBoxes.value.length;i++) {
+			if (Number.isNaN(this.uniforms.clipProfileBoxes.value[i])) {
+				this.uniforms.clipProfileBoxes.value[i] = Infinity;
+			}
+		}
+	}
+
 
 	setClipBoxes(clipBoxes) {
 		if (!clipBoxes) {
@@ -1196,19 +1244,19 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		});
 	}
 
-	get nonVisibleColorMax(){
+	get nonVisibleColorMax() {
 		return this.customUniforms.nonVisibleColorMax.value;
 	}
 
-	set nonVisibleColorMax(value){
+	set nonVisibleColorMax(value) {
 		this.customUniforms.nonVisibleColorMax.value = value;
 	}
 
-	get nonVisibleColorMin(){
+	get nonVisibleColorMin() {
 		return this.customUniforms.nonVisibleColorMin.value;
 	}
 
-	set nonVisibleColorMin(value){
+	set nonVisibleColorMin(value) {
 		//add checkups on color
 		this.customUniforms.nonVisibleColorMin.value = value;
 	}
