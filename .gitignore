@@ -39,3 +39,4 @@ libs/giro3d
 /examples/persisted*
 /pointclouds/*
 /example/data/*
+/dist/*

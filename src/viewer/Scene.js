@@ -1,4 +1,4 @@
-import {Box3, Camera, LinearFilter, Mesh, MeshBasicMaterial, NearestFilter, Object3D, OrthographicCamera, PerspectiveCamera, Ray, Scene, Vector3} from 'three';
+import {DirectionalLight, AmbientLight, PlaneGeometry,Box3, Camera, LinearFilter, Mesh, MeshBasicMaterial, NearestFilter, Object3D, OrthographicCamera, PerspectiveCamera, Ray, Scene, Vector3} from 'three';
 import {Annotation} from "../Annotation.js";
 import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";

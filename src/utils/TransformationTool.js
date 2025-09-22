@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {BoxGeometry, BufferGeometry, Float32BufferAttribute, Line3, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, Object3D, Raycaster, Scene, SphereGeometry, TextureLoader, Vector3, Vector4} from 'three';
+import {TorusGeometry, PlaneGeometry, BackSide, BoxGeometry, BufferGeometry, Float32BufferAttribute, Line3, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, Object3D, Raycaster, Scene, SphereGeometry, TextureLoader, Vector3, Vector4} from 'three';
 import {Utils} from "../utils.js";
 
 export class TransformationTool {
@@ -191,7 +191,8 @@ export class TransformationTool {
 		let sgPlane = new PlaneGeometry(4, 4, 1, 1);
 		let sgLowPolySphere = new SphereGeometry(1, 16, 16);
 
-		let texture = new TextureLoader().load(`${exports.resourcePath}/icons/eye_2.png`);
+		// let texture = new TextureLoader().load(`${exports.resourcePath}/icons/eye_2.png`);
+		let texture = new TextureLoader().load(`/icons/eye_2.png`);//todo fix this path
 
 		for (let handleName of Object.keys(this.focusHandles)) {
 			let handle = this.focusHandles[handleName];

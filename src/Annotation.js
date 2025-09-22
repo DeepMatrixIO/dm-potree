@@ -1,8 +1,9 @@
-import {Vector3,Matrix4,Vector4, Vector2, Box3} from 'three'
+import {Vector3, Matrix4, Vector4, Vector2, Box3} from 'three'
 import {Action} from "./Actions.js";
 import {EventDispatcher} from "./EventDispatcher.js";
 import {Utils} from "./utils.js";
 // import {Math} from 'three';
+import * as uuid from 'uuid';
 
 export class Annotation extends EventDispatcher {
 	constructor(args = {}) {
@@ -13,7 +14,7 @@ export class Annotation extends EventDispatcher {
 		this._description = args.description || '';
 		this.offset = new Vector3();
 		//this.uuid = Math.generateUUID();
-		this.uuid = Math.generateUUID();
+		this.uuid = uuid.v4();
 
 		if (!args.position) {
 			this.position = null;
@@ -44,28 +45,29 @@ export class Annotation extends EventDispatcher {
 		this.parent = null;
 		this.boundingBox = new Box3();
 
-		let iconClose = exports.resourcePath + '/icons/close.svg';
+		// let iconClose = exports.resourcePath + '/icons/close.svg';
+		let iconClose = '/icons/close.svg';
 
-		this.domElement = $(`
-			<div class="annotation" oncontextmenu="return false;">
-				<div class="annotation-titlebar">
-					<span class="annotation-label"></span>
-				</div>
-				<div class="annotation-description">
-					<span class="annotation-description-close">
-						<img src="${iconClose}" width="16px">
-					</span>
-					<span class="annotation-description-content">${this._description}</span>
-				</div>
-			</div>
-		`);
+		this.domElement = document.createElement('div');
+		this.domElement.className = 'annotation';
+		this.domElement.setAttribute('oncontextmenu', 'return false;');
+		this.domElement.innerHTML = `
+    <div class="annotation-titlebar">
+        <span class="annotation-label"></span>
+    </div>
+    <div class="annotation-description">
+        <span class="annotation-description-close">
+            <img src="${iconClose}" width="16px">
+        </span>
+        <span class="annotation-description-content">${this._description}</span>
+    </div>
+`;
+        this.elTitlebar = this.domElement.querySelector('.annotation-titlebar');
+        this.elTitle = this.elTitlebar.querySelector('.annotation-label');
+        this.elTitle.innerHTML = this._title;
+        this.elDescription = this.domElement.querySelector('.annotation-description');
+        this.elDescriptionClose = this.elDescription.querySelector('.annotation-description-close');
 
-		this.elTitlebar = this.domElement.find('.annotation-titlebar');
-		this.elTitle = this.elTitlebar.find('.annotation-label');
-		this.elTitle.append(this._title);
-		this.elDescription = this.domElement.find('.annotation-description');
-		this.elDescriptionClose = this.elDescription.find('.annotation-description-close');
-		// this.elDescriptionContent = this.elDescription.find(".annotation-description-content");
 
 		this.clickTitle = () => {
 			if (this.hasView()) {
@@ -91,28 +93,26 @@ export class Annotation extends EventDispatcher {
 		let actions = this.actions.filter(
 			a => a.showIn === undefined || a.showIn.includes('scene'));
 
-		for (let action of actions) {
-			let elButton = $(`<img src="${action.icon}" class="annotation-action-icon">`);
-			this.elTitlebar.append(elButton);
-			elButton.click(() => action.onclick({annotation: this}));
-		}
+		        for (let action of actions) {
+            let elButton = document.createElement('img');
+            elButton.src = action.icon;
+            elButton.className = 'annotation-action-icon';
+            this.elTitlebar.appendChild(elButton);
+            elButton.addEventListener('click', () => action.onclick({annotation: this}));
+        }
 
-		this.elDescriptionClose.hover(
-			e => this.elDescriptionClose.css('opacity', '1'),
-			e => this.elDescriptionClose.css('opacity', '0.5')
-		);
-		this.elDescriptionClose.click(e => this.setHighlighted(false));
-		// this.elDescriptionContent.html(this._description);
+        this.elDescriptionClose.addEventListener('mouseenter', e => this.elDescriptionClose.style.opacity = '1');
+        this.elDescriptionClose.addEventListener('mouseleave', e => this.elDescriptionClose.style.opacity = '0.5');
+        this.elDescriptionClose.addEventListener('click', e => this.setHighlighted(false));
 
-		this.domElement.mouseenter(e => this.setHighlighted(true));
-		this.domElement.mouseleave(e => this.setHighlighted(false));
+        this.domElement.addEventListener('mouseenter', e => this.setHighlighted(true));
+        this.domElement.addEventListener('mouseleave', e => this.setHighlighted(false));
 
-		this.domElement.on('touchstart', e => {
-			this.setHighlighted(!this.isHighlighted);
-		});
+        this.domElement.addEventListener('touchstart', e => {
+            this.setHighlighted(!this.isHighlighted);
+        });
 
-		this.display = false;
-		//this.display = true;
+        this.display = false;
 
 	}
 
@@ -121,20 +121,23 @@ export class Annotation extends EventDispatcher {
 			return;
 		}
 
-		let domElement = $(`
-			<div style="position: absolute; left: 300; top: 200; pointer-events: none">
-				<svg width="300" height="600">
-					<line x1="0" y1="0" x2="1200" y2="200" style="stroke: black; stroke-width:2" />
-					<circle cx="50" cy="50" r="4" stroke="black" stroke-width="2" fill="gray" />
-					<circle cx="150" cy="50" r="4" stroke="black" stroke-width="2" fill="gray" />
-				</svg>
-			</div>
-		`);
+		let domElement = document.createElement('div');
+		domElement.style.position = 'absolute';
+		domElement.style.left = '300px';
+		domElement.style.top = '200px';
+		domElement.style.pointerEvents = 'none';
+		domElement.innerHTML = `
+        <svg width="300" height="600">
+            <line x1="0" y1="0" x2="1200" y2="200" style="stroke: black; stroke-width:2" />
+            <circle cx="50" cy="50" r="4" stroke="black" stroke-width="2" fill="gray" />
+            <circle cx="150" cy="50" r="4" stroke="black" stroke-width="2" fill="gray" />
+        </svg>
+    `;
 
-		let svg = domElement.find("svg")[0];
-		let elLine = domElement.find("line")[0];
-		let elStart = domElement.find("circle")[0];
-		let elEnd = domElement.find("circle")[1];
+		let svg = domElement.querySelector("svg");
+		let elLine = domElement.querySelector("line");
+		let elStart = domElement.querySelectorAll("circle")[0];
+		let elEnd = domElement.querySelectorAll("circle")[1];
 
 		let setCoordinates = (start, end) => {
 			elStart.setAttribute("cx", `${start.x}`);
@@ -168,52 +171,59 @@ export class Annotation extends EventDispatcher {
 
 		};
 
-		$(viewer.renderArea).append(domElement);
+		viewer.renderArea.appendChild(domElement);
 
 
 		let annotationStartPos = this.position.clone();
 		let annotationStartOffset = this.offset.clone();
 
-		$(this.domElement).draggable({
-			start: (event, ui) => {
-				annotationStartPos = this.position.clone();
-				annotationStartOffset = this.offset.clone();
-				$(this.domElement).find(".annotation-titlebar").css("pointer-events", "none");
+		// Replace jQuery UI draggable with interact.js (install via npm)
+		import('interactjs').then(interact => {
+			interact(this.domElement)
+				.draggable({
+					onstart: (event) => {
+						annotationStartPos = this.position.clone();
+						annotationStartOffset = this.offset.clone();
+						let titlebar = this.domElement.querySelector(".annotation-titlebar");
+						if (titlebar) {
+							titlebar.style.pointerEvents = 'none';
+						}
+					},
+					onend: () => {
+						let titlebar = this.domElement.querySelector(".annotation-titlebar");
+						if (titlebar) {
+							titlebar.style.pointerEvents = '';
+						}
+					},
+					onmove: (event) => {
+						let renderAreaWidth = viewer.renderer.getSize(new Vector2()).width;
 
-				console.log($(this.domElement).find(".annotation-titlebar"));
-			},
-			stop: () => {
-				$(this.domElement).find(".annotation-titlebar").css("pointer-events", "");
-			},
-			drag: (event, ui) => {
-				let renderAreaWidth = viewer.renderer.getSize(new Vector2()).width;
-				//let renderAreaHeight = viewer.renderer.getSize().height;
+						let diff = {
+							x: event.dx,
+							y: event.dy
+						};
 
-				let diff = {
-					x: ui.originalPosition.left - ui.position.left,
-					y: ui.originalPosition.top - ui.position.top
-				};
+						let nDiff = {
+							x: -(diff.x / renderAreaWidth) * 2,
+							y: (diff.y / renderAreaWidth) * 2
+						};
 
-				let nDiff = {
-					x: -(diff.x / renderAreaWidth) * 2,
-					y: (diff.y / renderAreaWidth) * 2
-				};
+						let camera = viewer.scene.getActiveCamera();
+						let oldScreenPos = new Vector3()
+							.addVectors(annotationStartPos, annotationStartOffset)
+							.project(camera);
 
-				let camera = viewer.scene.getActiveCamera();
-				let oldScreenPos = new Vector3()
-					.addVectors(annotationStartPos, annotationStartOffset)
-					.project(camera);
+						let newScreenPos = oldScreenPos.clone();
+						newScreenPos.x += nDiff.x;
+						newScreenPos.y += nDiff.y;
 
-				let newScreenPos = oldScreenPos.clone();
-				newScreenPos.x += nDiff.x;
-				newScreenPos.y += nDiff.y;
+						let newPos = newScreenPos.clone();
+						newPos.unproject(camera);
 
-				let newPos = newScreenPos.clone();
-				newPos.unproject(camera);
-
-				let newOffset = new Vector3().subVectors(newPos, this.position);
-				this.offset.copy(newOffset);
-			}
+						let newOffset = new Vector3().subVectors(newPos, this.position);
+						this.offset.copy(newOffset);
+					}
+				});
 		});
 
 		let updateCallback = () => {
@@ -294,24 +304,22 @@ export class Annotation extends EventDispatcher {
 	}
 
 	get display() {
-		return this._display;
-	}
+        return this._display;
+    }
 
-	set display(display) {
-		if (this._display === display) {
-			return;
-		}
+    set display(display) {
+        if (this._display === display) {
+            return;
+        }
 
-		this._display = display;
+        this._display = display;
 
-		if (display) {
-			// this.domElement.fadeIn(200);
-			this.domElement.show();
-		} else {
-			// this.domElement.fadeOut(200);
-			this.domElement.hide();
-		}
-	}
+        if (display) {
+            this.domElement.style.display = 'block';
+        } else {
+            this.domElement.style.display = 'none';
+        }
+    }
 
 	get expand() {
 		return this._expand;

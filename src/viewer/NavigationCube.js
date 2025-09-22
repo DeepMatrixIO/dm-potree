@@ -1,5 +1,5 @@
 // import * as THREE from "../../libs/js/build/module.js";
-import {DoubleSide, Mesh, MeshBasicMaterial, Object3D, Raycaster, TextureLoader, Vector2, Vector3} from 'three';
+import {OrthographicCamera, PlaneGeometry, DoubleSide, Mesh, MeshBasicMaterial, Object3D, Raycaster, TextureLoader, Vector2, Vector3} from 'three';
 
 export class NavigationCube extends Object3D {
 
@@ -15,7 +15,8 @@ export class NavigationCube extends Object3D {
 				side: DoubleSide
 			});
 			new TextureLoader().load(
-				exports.resourcePath + '/textures/navigation/' + img,
+				// exports.resourcePath + '/textures/navigation/' + img,
+				 '/textures/navigation/' + img,
 				function(texture) {
 					texture.anisotropy = viewer.renderer.capabilities.getMaxAnisotropy();
 					material.map = texture;
