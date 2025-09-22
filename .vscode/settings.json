@@ -1,7 +1,7 @@
 {
 	"workbench.editor.enablePreview": false,
 	"files.associations": {
-		"*.vs": "glsl",
+		"*.vs": "ignore",
 		"*.fs": "glsl"
 	},
 	"files.trimTrailingWhitespace": true,

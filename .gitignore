@@ -36,3 +36,6 @@ libs/giro3d
 .vscode/settings.json
 .prettierrc
 .settings.json
+/examples/persisted*
+/pointclouds/*
+/example/data/*

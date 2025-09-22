@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../../libs/js/build/module.js";
-import {BufferGeometry, DoubleSide, Line, LineBasicMaterial, MathUtils, Mesh, Object3D, PerspectiveCamera, Raycaster, ShaderMaterial, Texture, TextureLoader, Vector2, Vector3} from 'three';
+import {PlaneGeometry,BufferGeometry, DoubleSide, Line, LineBasicMaterial, MathUtils, Mesh, Object3D, PerspectiveCamera, Raycaster, ShaderMaterial, Texture, TextureLoader, Vector2, Vector3} from 'three';
 import {EventDispatcher} from "../../EventDispatcher.js";
 import {updateFetchToken} from "../../tokenUpdater.js";
 import {OrientedImageControls} from "./OrientedImageControls.js";

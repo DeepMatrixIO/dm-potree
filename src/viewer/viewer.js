@@ -35,7 +35,7 @@ import {MeasuringTool} from "../utils/MeasuringTool.js";
 import {ProfileTool} from "../utils/ProfileTool.js";
 import {VolumeTool} from "../utils/VolumeTool.js";
 
-import {VRButton} from '../../libs/three.js/extra/VRButton.js';
+// import {VRButton} from '../../libs/three.js/extra/VRButton.js';
 import {EventDispatcher} from "../EventDispatcher.js";
 import {ClassificationScheme} from "../materials/ClassificationScheme.js";
 import {DeviceOrientationControls} from "../navigation/DeviceOrientationControls.js";
@@ -57,8 +57,8 @@ export class Viewer extends EventDispatcher {
 	constructor(domElement, args = {}) {
 		super();
 
+		////// additions
 		proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-
 		//wont break if not provided
 		this.customUpdates = []; //ADDED by  @jguerrer // runs on each  loop before general update.i.e. viewer.scene.scene  or others. Check also Input Handler for other ways
 		this.ecefRenderers = [];//ADDED by  @jguerrer // To render it before all other
@@ -69,7 +69,7 @@ export class Viewer extends EventDispatcher {
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
 		this.isFootBasedProjection = false;
 		this.ecefCamera = new PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
-
+		///////
 
 
 		this.renderArea = domElement;
@@ -1619,39 +1619,39 @@ export class Viewer extends EventDispatcher {
 			elButtons.append(imgMapToggle);
 
 
-			false && VRButton.createButton(this.renderer).then(vrButton => {
+			// false && VRButton.createButton(this.renderer).then(vrButton => {
 
-				if (vrButton == null) {
-					console.log("VR not supported or active.");
+			// 	if (vrButton == null) {
+			// 		console.log("VR not supported or active.");
 
-					return;
-				}
+			// 		return;
+			// 	}
 
-				this.renderer.xr.enabled = true;
+			// 	this.renderer.xr.enabled = true;
 
-				let element = vrButton.element;
+			// 	let element = vrButton.element;
 
-				element.style.position = "";
-				element.style.bottom = "";
-				element.style.left = "";
-				element.style.margin = "4px";
-				element.style.fontSize = "100%";
-				element.style.width = "2.5em";
-				element.style.height = "2.5em";
-				element.style.padding = "0";
-				element.style.textShadow = "black 2px 2px 2px";
-				element.style.display = "block";
+			// 	element.style.position = "";
+			// 	element.style.bottom = "";
+			// 	element.style.left = "";
+			// 	element.style.margin = "4px";
+			// 	element.style.fontSize = "100%";
+			// 	element.style.width = "2.5em";
+			// 	element.style.height = "2.5em";
+			// 	element.style.padding = "0";
+			// 	element.style.textShadow = "black 2px 2px 2px";
+			// 	element.style.display = "block";
 
-				elButtons.append(element);
+			// 	elButtons.append(element);
 
-				vrButton.onStart(() => {
-					this.dispatchEvent({type: "vr_start"});
-				});
+			// 	vrButton.onStart(() => {
+			// 		this.dispatchEvent({type: "vr_start"});
+			// 	});
 
-				vrButton.onEnd(() => {
-					this.dispatchEvent({type: "vr_end"});
-				});
-			});
+			// 	vrButton.onEnd(() => {
+			// 		this.dispatchEvent({type: "vr_end"});
+			// 	});
+			// });
 
 			this.mapView = new MapView(this);
 			this.mapView.init();

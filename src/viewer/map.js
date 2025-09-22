@@ -1,5 +1,9 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
+// import * as proj4 from 'proj4';
+import proj4 from 'proj4';
+
+
 import {Vector2, Vector3} from 'three'
 
 

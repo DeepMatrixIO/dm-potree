@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {Vector3,Sphere} from 'three'
+import {PerspectiveCamera,Vector3,Sphere} from 'three'
 
 PerspectiveCamera.prototype.zoomTo = function (node, factor) {
 	if (!node.geometry && !node.boundingSphere && !node.boundingBox) {

@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../../libs/js/build/module.js";
-import {MathUtils, Mesh, MeshBasicMaterial, Object3D, Raycaster, RepeatWrapping, SphereGeometry, TextureLoader, Vector3} from 'three';
+import {BackSide,MathUtils, Mesh, MeshBasicMaterial, Object3D, Raycaster, RepeatWrapping, SphereGeometry, TextureLoader, Vector3} from 'three';
 import {EventDispatcher} from "../../EventDispatcher.js";
 import {updateFetchToken} from "../../tokenUpdater.js"; //added by jguerrer
 
