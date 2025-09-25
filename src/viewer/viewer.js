@@ -43,6 +43,7 @@ export class Viewer extends EventDispatcher {
 	ecef = 'EPSG:4978'; // ECEF
 	wgs84 = 'EPSG:4326'; // WGS84
 
+
 	constructor(domElement, args = {}) {
 		super();
 
@@ -54,7 +55,7 @@ export class Viewer extends EventDispatcher {
 		this.extraRenders = [];//ADDED by  @jguerrer // runs on each loop after potree  render loop
 		this.currentWGS84Position = {lat: 0, lon: 0, alt: 0};//ADDED by  @jguerrer // updated on each loop before general update.
 		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
-
+		this.unitConversionFactor = 1.0;//
 
 		//spatial information
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
@@ -411,6 +412,8 @@ export class Viewer extends EventDispatcher {
 				this.setLengthUnit(LengthUnits.METER.code);
 			}
 			console.log('setting potree current projection')
+
+			this.unitConversionFactor = this.isFeetBasedProjection ? 0.3048 : 1.0;
 		}
 
 	}
@@ -475,7 +478,7 @@ export class Viewer extends EventDispatcher {
 	updateCameraPosition(customCamera) {
 		//const groundOffset = -40;
 		const groundOffset = 0;
-
+		this.unitConversionFactor = this.isFeetBasedProjection ? 0.3048 : 1.0;
 		try {
 			if (!this.scene || !this.scene.getActiveCamera()) {
 				return;
@@ -516,7 +519,7 @@ export class Viewer extends EventDispatcher {
 
 				//@ts-ignore
 				let projectProj = this.projection; //
-				let cPos = this.toECEF(o, projectProj); //offending line
+				let cPos = this.toECEF(o, projectProj ); //offending line
 
 				let cUpTarget = this.toECEF(pUp, projectProj);
 				let cTarget = this.toECEF(pTarget, projectProj);
@@ -624,7 +627,7 @@ export class Viewer extends EventDispatcher {
 
 	//takes the current projection and turns into ECEF. Requires WGS84 as intermediary
 	//pos is Vector3
-	toECEF(vector3, sourceProj) {
+	toECEF(vector3, sourceProj ) {
 		// Define the source projection
 		//const source = proj4.defs(sourceProj);
 
@@ -637,7 +640,7 @@ export class Viewer extends EventDispatcher {
 		// Convert the WGS84 coordinates to ECEF
 		//const [x, y, z] = proj4(this.wgs84, this.ecef, [lon, lat, alt]);
 
-		const [x, y, z] = proj4(sourceProj, this.ecef, [vector3.x, vector3.y, vector3.z]);
+		const [x, y, z] = proj4(sourceProj, this.ecef, [vector3.x, vector3.y, vector3.z*this.unitConversionFactor]);
 
 
 		//return { x, y, z };
