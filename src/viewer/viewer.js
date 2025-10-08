@@ -40,9 +40,9 @@ import {ClusterTool} from "../dm_custom_tools/clustering/ClusterTool.js"; //JUST
 import {SelectionTool} from "../dm_custom_tools/clustering/SelectionTool.js"; //JUST A REFERENCE
 export class Viewer extends EventDispatcher {
 
-	ecef = 'EPSG:4978'; // ECEF
-	wgs84 = 'EPSG:4326'; // WGS84
-
+	ecef = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'; // ECEF
+	wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
+	webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
 
 	constructor(domElement, args = {}) {
 		super();

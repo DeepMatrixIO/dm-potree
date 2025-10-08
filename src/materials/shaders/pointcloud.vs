@@ -624,10 +624,9 @@ vec3 getGpsTime() {
 
 vec3 getElevation() {
 	vec4 world = modelMatrix * vec4(position, 1.0f);
-	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);//value is scaled to range
-	vec3 cElevation = texture(gradient, vec2(w, 1.0f - w)).rgb;
 
-#if defined(custom_range) && custom_range > 0
+
+#if defined(custom_range) && custom_range > 0 && defined(visibleRange)
 	vec3 color;
 	//work on visible range
 	float val = world.z;
@@ -673,6 +672,8 @@ vec3 getElevation() {
 
 #endif
 
+	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);//value is scaled to range
+	vec3 cElevation = texture(gradient, vec2(w, 1.0f - w)).rgb;
 	return cElevation;
 }
 
@@ -1057,8 +1058,9 @@ vec3 getColor() {
 	color = vec3(linearDepth, expDepth, 0.0f);
 	// color = vec3(1.0, 0.5, 0.3);
 #elif defined color_type_intensity
-	float w = getIntensity();
-	color = vec3(w, w, w);
+	// float w = getIntensity();
+	// color = vec3(w, w, w);
+	color = customIntensity();//replaces default grayscale behaviour
 #elif defined color_type_gps_time
 	color = getGpsTime();
 #elif defined color_type_intensity_gradient
