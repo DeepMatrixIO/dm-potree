@@ -294,7 +294,7 @@ export class EDLRenderer{
 
 		viewer.dispatchEvent({type: "render.pass.scene", viewer: viewer, renderTarget: this.rtRegular});
 		viewer.renderer.setRenderTarget(null);
-		viewer.renderer.render(viewer.scene.scene, camera);
+		// viewer.renderer.render(viewer.scene.scene, camera);
 
 		{ // EDL PASS
 
@@ -326,6 +326,9 @@ export class EDLRenderer{
 		}
 
 		viewer.dispatchEvent({type: "render.pass.scene", viewer: viewer});
+
+		viewer.renderer.render(viewer.scene.scene, camera);//testing render position after edl
+
 
 		viewer.renderer.clearDepth();
 

@@ -627,10 +627,16 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 			this.filterPackedAttributesUpdated = true;
 
-			this.setCustomDefine("mixed_filters", this.mixedFilters.length);//set the define for filtering, 0 non
-			this.setCustomDefine("num_logical_filters", logicalFilters.length);//set the define for filtering, 0 non
-			this.setCustomDefine("num_int_values", flat.integer_filter_values.length);//set the define for filtering, 0 non
-			this.setCustomDefine("num_float_values", flat.float_filter_values.length);//set the define for filtering, 0 non
+			// this.setCustomDefine("mixed_filters", this.mixedFilters.length);//set the define for filtering, 0 non
+			// this.setCustomDefine("num_logical_filters", logicalFilters.length);//set the define for filtering, 0 non
+			// this.setCustomDefine("num_int_values", flat.integer_filter_values.length);//set the define for filtering, 0 non
+			// this.setCustomDefine("num_float_values", flat.float_filter_values.length);//set the define for filtering, 0 non
+
+
+			this.setDefine("mixed_filters", "#define mixed_filters " + this.mixedFilters.length);//set the define for filtering, 0 non
+			this.setDefine("num_logical_filters", "#define num_logical_filters " + logicalFilters.length);//set the define for filtering, 0 non
+			this.setDefine("num_int_values", "#define num_int_values " + flat.integer_filter_values.length);//set the define for filtering, 0 non
+			this.setDefine("num_float_values", "#define num_float_values " + flat.float_filter_values.length);//set the define for filtering, 0 non
 
 			// this.setCustomDefine("num_filter_attributes", logicalFilters.length);//set the define for filtering, 0 non
 
