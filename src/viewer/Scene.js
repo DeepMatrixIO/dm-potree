@@ -256,14 +256,26 @@ export class Scene extends EventDispatcher {
 	}
 
 
-	addStaticFilterColor(r, g, b) {//filter i set of objects containing all items, making easier to manage items
+	//color filters are also tied to classification in potree cotext.
+	//colors are stored into the floatList as r,g,b
+	//by default index 1, index2 are set to zero, meaning
+	//index 1, from the attribute list, where to start, but it is always 0 and ignored. Free to store info
+	// index 2 , from the compare value, no real comparison exists, so it is also set to 0 and ignored. Is free to store info
+	//  index 3  Index of the compare value or attribute value. Not set here and free to use
+	//index4 . end value, but not in use, so set to -1
+
+
+	addStaticFilterColor(r, g, b, classification_value=0) {//filter i set of objects containing all items, making easier to manage items
 
 		let filter = new PointCloudFilter(
-			FilterOperationType.COLORIZE,
-			0, 0, -1, 1,
-			[],
-			[],
-			[r, g, b]
+			FilterOperationType.COLORIZE,//operator value
+			classification_value, //attribute index, not used as color is no attribute here. Set to 0. Can be used to store classification
+			0, //optional second attribute index or value index, not used. Set to 0
+			 -1, //
+			  1,//float array is used
+			[],//attribute list
+			[],//integer list not used
+			[r, g, b]//float list with color values
 
 		);
 

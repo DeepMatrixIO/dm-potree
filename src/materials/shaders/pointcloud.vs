@@ -18,6 +18,8 @@ vec3 assignedColor = vec3(1.0f, 0.0f, 0.0f); //not in use, as it is always overw
 vec3 olderColor = vec3(0.0f, 0.0f, 1.0f); //
 vec3 activeColor = vec3(0.0f, 1.0f, 0.15f); // green
 
+int lastClassification = -1;//assigned based on the last valid filter operation with points inside. Colorize extracts the attribute index or first index as assigned classification. If the uniform contains it, visible, otherwise not.
+int currentClassification = -1;
 bool clip = false;
 	// bool showAll = false;//?????
 	// bool showThis = false;//?????
@@ -209,6 +211,11 @@ uniform int uIntegerFilterValues[num_int_values];
 #if defined(mixed_filters) && mixed_filters > 0 // means something is commited to filtering
 uniform int uMixedFilters[mixed_filters];		// list of filters encoded with indices, extra variables are checked independently
 // uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters, so they are indices
+#endif
+
+#if defined(visible_classes) && visible_classes > 0 // an array of visible classes 0 or 1
+uniform int uVisibleClasses[visible_classes];
+
 #endif
 
 uniform float size;
@@ -624,7 +631,6 @@ vec3 getGpsTime() {
 
 vec3 getElevation() {
 	vec4 world = modelMatrix * vec4(position, 1.0f);
-
 
 #if defined(custom_range) && custom_range > 0 && defined(visibleRange)
 	vec3 color;
@@ -1238,7 +1244,7 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point) {
  * HAve two options, one is to directly extract a filter from all arrays. other is to explicitely receive the values
  */
 
-bool doLogicalEval(int operator, float attributeValue, float compareValue, int startIndex, int endIndex) {
+bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float compareValue, int startIndex, int endIndex) {
 
 	bool result = false;
 #if defined(num_float_values) && num_float_values > 0
@@ -1254,6 +1260,15 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 
 		result = true;
 
+		//have to store the last
+
+		#if defined(visible_classes) && visible_classes > 0
+		//  //takes as classification value
+		lastClassification = currentClassification;
+		currentClassification = attributeIdx;
+		// isVisible = uVisibleClasses[attributeIdx];// == 0 ? 0 :1;
+		// // isVisibleClassification=true;
+		#endif
 		//clipTask= CLIPTASK_COLORIZE;
 
 	} else if(operator == OP_EQUALS_CONST) {
@@ -1411,7 +1426,6 @@ void doClipping(bool inside) {
 	}
 #endif
 
-
 	//profile clipping variables
 	int clipVolumesCount = 0;
 	int insideCount = 0;
@@ -1421,23 +1435,22 @@ void doClipping(bool inside) {
 
 	//profile clipboxes
 	#if defined(num_clipprofileboxes) && num_clipprofileboxes > 0
-		for(int i = 0; i < num_clipprofileboxes; i++){
-			vec4 clipPosition = clipProfileBoxes[i] * modelMatrix * vec4( position, 1.0 );
-			bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
-			inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
-			inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+	for(int i = 0; i < num_clipprofileboxes; i++) {
+		vec4 clipPosition = clipProfileBoxes[i] * modelMatrix * vec4(position, 1.0f);
+		bool inside = -0.5f <= clipPosition.x && clipPosition.x <= 0.5f;
+		inside = inside && -0.5f <= clipPosition.y && clipPosition.y <= 0.5f;
+		inside = inside && -0.5f <= clipPosition.z && clipPosition.z <= 0.5f;
 
-			insideProfileCount = insideProfileCount + (inside ? 1 : 0);
-			clipProfileBoxesCount++;
-		}
+		insideProfileCount = insideProfileCount + (inside ? 1 : 0);
+		clipProfileBoxesCount++;
+	}
 	#endif
-	if(insideProfileCount > 0){
+	if(insideProfileCount > 0) {
 
 		//some color
-			vColor.r += 0.5; // or colorize later
-			return;//if return, means profile goes on top
+		vColor.r += 0.5f; // or colorize later
+		return;//if return, means profile goes on top
 	}
-
 
 	// #if defined(num_clipboxes) && num_clipboxes > 0
 	// 	for(int i = 0; i < num_clipboxes; i++){
@@ -1456,9 +1469,6 @@ void doClipping(bool inside) {
 	// 		vColor.r += 0.5; // or colorize later
 	// 		return;
 	// }
-
-
-
 
 	//bool active_ = false;//now global
 	//bool visible = true;//now global
@@ -1877,19 +1887,18 @@ bool doFiltering(bool isInside) {
 
 					if(currentFilterChainValue) {//if point is here, assignedColor is the current Color
 						olderColor = assignedColor;
+						lastClassification = currentClassification;
 					} else {
 						assignedColor = olderColor;//current block failed and must return to older color if any, but better
+						currentClassification = lastClassification;
 					}
 
-
-					if(stopped){//if i just came from a stop
-						currentFilterChainValue=false;
+					if(stopped) {//if i just came from a stop
+						currentFilterChainValue = false;
 					}
 
 					globalValue = globalValue || currentFilterChainValue; // OR operation
 					currentFilterChainValue = true;						 // reset for next filter
-
-
 
 					// skip = false;									 // reset skip for next filter
 					stopped = true;
@@ -1898,7 +1907,8 @@ bool doFiltering(bool isInside) {
 				} else {
 /////////////logical
 					#if defined(num_float_values) && num_float_values > 0
-					isIn = doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+					isIn = doLogicalEval(currentOperator, attribIdx, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+
 					currentFilterChainValue = currentFilterChainValue && isIn;
 
 					#endif
@@ -2002,6 +2012,14 @@ void main() {
 	//doFiltering
 	#if defined(mixed_filters) && mixed_filters > 0
 	isInside = doFiltering(isInside); // position is in world space, so pass it as parameter
+
+		#if defined(visible_classes) && visible_classes > 0
+		if(isInside && currentClassification > -1) {
+				isVisible = uVisibleClasses[currentClassification];// == 0 ? 0 :1;
+			}
+
+		#endif
+
 	// if(res) {vColor = vec3(1.0f, 1.0f, 0.0f); // yellow highlight on selection
 	// }
 	#endif

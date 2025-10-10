@@ -1,5 +1,7 @@
 //Initial proposal for filtering points at shader level.
 //contains all the requires methods
+//in particular, each filter contains a code to enablie disable visibility based on a commited list of classes ASPRS classification like.
+// to allow visibility of a particular class,
 
 import {FilterConstListType, FilterIntType, FilterOperationType} from "./FilterConsts";
 
@@ -12,6 +14,7 @@ import {FilterConstListType, FilterIntType, FilterOperationType} from "./FilterC
 
 //each filter implements its own logic, for integer of float attributes selection, the last attribute indicates details always.
 //Single filter
+//example,
 export class PointCloudFilter {
 	_intType = FilterIntType.LOGICAL;//
 	_groupId = 0;
@@ -62,11 +65,12 @@ export class PointCloudFilter {
 			return;
 		}
 		if (operator === FilterOperationType.COLORIZE) {
-
+			//colorize is tied to agiven list of classes and visiblity.
 
 			this.filterList.push([
 				operator,
-				-1,
+				// -1,
+				index1,
 				0,
 				-1,
 				1])

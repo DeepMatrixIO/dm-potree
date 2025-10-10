@@ -1884,7 +1884,7 @@ export class Renderer {
 			}
 
 			let mixedFilters = true;
-			//defines should be defined before updating shader, i.e. begininng of method
+			//defines should be set before updating shader, i.e. begininng of method
 			//locations and material.uniform.values set per node and material
 			if (mixedFilters && material.mixedFilters && material.mixedFilters.length > 0) {
 
@@ -1914,6 +1914,7 @@ export class Renderer {
 					let pcfilterlist = new PointCloudFilterList()
 					filters.forEach((filter) => {pcfilterlist.addFilter(filter)});
 					let flat = pcfilterlist.flatten();
+					let visibleClasses = [];
 
 
 					if (flat.integer_filter_values.length > 0) {
@@ -1927,7 +1928,18 @@ export class Renderer {
 					if (flat.float_filter_values.length > 0) {
 						gl.uniform1fv(lFloatFilterValues, flat.float_filter_values);//setting
 					}
+
+					const lVisibleClasses = shader.uniformLocations["uVisibleClasses[0]"];//packed attributes per point, indexed
+					Object.keys(viewer.classifications).forEach(k => k !== 'DEFAULT' && (visibleClasses[k] = viewer.classifications[k].visible ? 1:0));//avoid updating on each frame
+
+					gl.uniform1iv(lVisibleClasses, visibleClasses);//setting the visible classes
+
 				}
+
+				//commiting the classification visiblity
+
+
+
 				//now commit the rest of items
 
 				// //mixed list

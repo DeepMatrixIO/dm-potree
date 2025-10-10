@@ -633,10 +633,13 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			// this.setCustomDefine("num_float_values", flat.float_filter_values.length);//set the define for filtering, 0 non
 
 
-			this.setDefine("mixed_filters", "#define mixed_filters " + this.mixedFilters.length);//set the define for filtering, 0 non
-			this.setDefine("num_logical_filters", "#define num_logical_filters " + logicalFilters.length);//set the define for filtering, 0 non
-			this.setDefine("num_int_values", "#define num_int_values " + flat.integer_filter_values.length);//set the define for filtering, 0 non
-			this.setDefine("num_float_values", "#define num_float_values " + flat.float_filter_values.length);//set the define for filtering, 0 non
+
+
+			this.setDefine("mixed_filters", "#define mixed_filters " + this.mixedFilters.length);//enable disable mixed filters
+			this.setDefine("num_logical_filters", "#define num_logical_filters " + logicalFilters.length);//logical filter arrays
+			this.setDefine("num_int_values", "#define num_int_values " + flat.integer_filter_values.length);//required for integer value lists
+			this.setDefine("num_float_values", "#define num_float_values " + flat.float_filter_values.length);//required for float value lists. More common
+			this.setDefine("visible_classes", "#define visible_classes " + Object.keys(viewer.classifications).filter(k => k !== 'DEFAULT').length);//classes and its visibility are always committed
 
 			// this.setCustomDefine("num_filter_attributes", logicalFilters.length);//set the define for filtering, 0 non
 
