@@ -962,6 +962,8 @@ export class Renderer {
 			shader.setUniform1f("uPCIndex", i);
 			// uBBSize
 
+			///////////////////////////////////////////
+			//shadow maps
 			if (shadowMaps.length > 0) {
 
 				const lShadowMap = shader.uniformLocations["uShadowMap[0]"];
@@ -1002,6 +1004,9 @@ export class Renderer {
 			const geometry = node.geometryNode.geometry;
 
 			if (!geometry) console.log('Missing geometry', node)
+
+			///////////////////////////////////////////
+			// gps time
 			if (geometry.attributes["gps-time"]) {
 				const bufferAttribute = geometry.attributes["gps-time"];
 				const attGPS = octree.getAttribute("gps-time");
@@ -1115,10 +1120,17 @@ export class Renderer {
 					let uValue = customUniforms[uniformName].value;
 
 
+					// for now ignore the types and set directly as float array
 					const customLocation =
 						shader.uniformLocations[`${uniformName}[0]`];
 					gl.uniform1fv(customLocation, uValue);//directly setting
 
+
+
+					//  if (uType === "fv" ){
+					// 	shader.setUniform1f(`${uniformName}[0]`,uValue);
+					// 	// return;
+					// }
 
 
 					// if (uType === "f") {

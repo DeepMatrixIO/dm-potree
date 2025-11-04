@@ -262,9 +262,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		}
 
-
-
-
+	//copy them
+		// for (let key in this.customUniforms) {
+		// 	let uniform = this.customUniforms[key];
+		// 	// this.shader.setUniform(key, uniform.type, uniform.value);
+		// 	this.uniforms[key] = uniform;
+		// }
 
 		this.updateShaderSource();
 	}

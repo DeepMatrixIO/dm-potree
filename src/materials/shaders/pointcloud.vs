@@ -632,7 +632,7 @@ vec3 getGpsTime() {
 vec3 getElevation() {
 	vec4 world = modelMatrix * vec4(position, 1.0f);
 
-#if defined(custom_range) && custom_range > 0 && defined(visibleRange)
+#if defined(custom_range) && custom_range > 0
 	vec3 color;
 	//work on visible range
 	float val = world.z;

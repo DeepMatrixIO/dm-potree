@@ -222,12 +222,16 @@ export class Viewer extends EventDispatcher {
 			{
 				let canvas = this.renderer.domElement;
 				canvas.addEventListener("webglcontextlost", (e) => {
-					console.log(e);
-					this.postMessage("WebGL context lost. \u2639");
+					try {
+						console.log(e);
+						// this.postMessage("WebGL context lost. \u2639");
 
-					let gl = this.renderer.getContext();
-					let error = gl.getError();
-					console.log(error);
+						let gl = this.renderer.getContext();
+						let error = gl.getError();
+						console.log(error);
+					} catch (error) {
+						console.error("Error handling webglcontextlost:", error);
+					}
 				}, false);
 			}
 
@@ -416,6 +420,7 @@ export class Viewer extends EventDispatcher {
 			this.unitConversionFactor = this.isFeetBasedProjection ? 0.3048 : 1.0;
 		}
 
+
 	}
 
 
@@ -519,7 +524,7 @@ export class Viewer extends EventDispatcher {
 
 				//@ts-ignore
 				let projectProj = this.projection; //
-				let cPos = this.toECEF(o, projectProj ); //offending line
+				let cPos = this.toECEF(o, projectProj); //offending line
 
 				let cUpTarget = this.toECEF(pUp, projectProj);
 				let cTarget = this.toECEF(pTarget, projectProj);
@@ -627,7 +632,7 @@ export class Viewer extends EventDispatcher {
 
 	//takes the current projection and turns into ECEF. Requires WGS84 as intermediary
 	//pos is Vector3
-	toECEF(vector3, sourceProj ) {
+	toECEF(vector3, sourceProj) {
 		// Define the source projection
 		//const source = proj4.defs(sourceProj);
 
@@ -640,7 +645,7 @@ export class Viewer extends EventDispatcher {
 		// Convert the WGS84 coordinates to ECEF
 		//const [x, y, z] = proj4(this.wgs84, this.ecef, [lon, lat, alt]);
 
-		const [x, y, z] = proj4(sourceProj, this.ecef, [vector3.x, vector3.y, vector3.z*this.unitConversionFactor]);
+		const [x, y, z] = proj4(sourceProj, this.ecef, [vector3.x, vector3.y, vector3.z * this.unitConversionFactor]);
 
 
 		//return { x, y, z };
@@ -1165,6 +1170,51 @@ export class Viewer extends EventDispatcher {
 		this.dispatchEvent({'type': 'length_unit_changed', 'viewer': this, value: value});
 	};
 
+	// setLengthUnitAndDisplayUnit(lengthUnitValue, lengthUnitDisplayValue) {
+	// 	switch (lengthUnitValue) {
+	// 		case 'm':
+	// 			this.lengthUnit = LengthUnits.METER;
+	// 			break;
+	// 		case 'ft':
+	// 			this.lengthUnit = LengthUnits.FEET;
+	// 			break;
+	// 		case 'in':
+	// 			this.lengthUnit = LengthUnits.INCH;
+	// 			break;
+	// 	}
+
+	// 	switch (lengthUnitDisplayValue) {
+	// 		case 'm':
+	// 			this.lengthUnitDisplay = LengthUnits.METER;
+	// 			break;
+	// 		case 'ft':
+	// 			this.lengthUnitDisplay = LengthUnits.FEET;
+	// 			break;
+	// 		case 'in':
+	// 			this.lengthUnitDisplay = LengthUnits.INCH;
+	// 			break;
+	// 	}
+
+	// 	this.dispatchEvent({'type': 'length_unit_changed', 'viewer': this, value: lengthUnitValue});
+	// };
+
+	setLengthDisplayUnit(value) {
+		switch (value) {
+			case 'm':
+				this.lengthUnitDisplay = LengthUnits.METER;
+				break;
+			case 'ft':
+				this.lengthUnitDisplay = LengthUnits.FEET;
+				break;
+			case 'in':
+				this.lengthUnitDisplay = LengthUnits.INCH;
+				break;
+		}
+
+		this.dispatchEvent({'type': 'length_unit_display_changed', 'viewer': this, value: value});
+	}
+
+
 	setLengthUnitAndDisplayUnit(lengthUnitValue, lengthUnitDisplayValue) {
 		switch (lengthUnitValue) {
 			case 'm':
@@ -1178,20 +1228,11 @@ export class Viewer extends EventDispatcher {
 				break;
 		}
 
-		switch (lengthUnitDisplayValue) {
-			case 'm':
-				this.lengthUnitDisplay = LengthUnits.METER;
-				break;
-			case 'ft':
-				this.lengthUnitDisplay = LengthUnits.FEET;
-				break;
-			case 'in':
-				this.lengthUnitDisplay = LengthUnits.INCH;
-				break;
-		}
+		this.setLengthDisplayUnit(lengthUnitDisplayValue);
 
 		this.dispatchEvent({'type': 'length_unit_changed', 'viewer': this, value: lengthUnitValue});
 	};
+
 
 	zoomTo(node, factor, animationDuration = 0) {
 		let view = this.scene.view;
@@ -2962,4 +3003,334 @@ export class Viewer extends EventDispatcher {
 
 		return message;
 	}
+
+
+	dispose() {
+		try {
+			console.log('Disposing viewer...');
+
+			// Stop animation loop
+			this.renderer.setAnimationLoop(null);
+
+			// Dispose of controls
+			if (this.controls) {
+				this.controls.enabled = false;
+				if (this.controls.dispose) this.controls.dispose();
+			}
+			if (this.fpControls) {
+				this.fpControls.enabled = false;
+				if (this.fpControls.dispose) this.fpControls.dispose();
+			}
+			if (this.orbitControls) {
+				this.orbitControls.enabled = false;
+				if (this.orbitControls.dispose) this.orbitControls.dispose();
+			}
+			if (this.earthControls) {
+				this.earthControls.enabled = false;
+				if (this.earthControls.dispose) this.earthControls.dispose();
+			}
+			if (this.deviceControls) {
+				this.deviceControls.enabled = false;
+				if (this.deviceControls.dispose) this.deviceControls.dispose();
+			}
+			if (this.vrControls) {
+				this.vrControls.enabled = false;
+				if (this.vrControls.dispose) this.vrControls.dispose();
+			}
+
+			// Clear TWEEN animations
+			TWEEN.removeAll();
+
+			// Dispose of scene and its contents recursively
+			if (this.scene) {
+				// Dispose point clouds with their geometries and materials
+				for (let pointcloud of this.scene.pointclouds) {
+					if (pointcloud.dispose) {
+						pointcloud.dispose();
+					}
+					// Dispose geometry
+					if (pointcloud.geometry && pointcloud.geometry.dispose) {
+						pointcloud.geometry.dispose();
+					}
+					// Dispose material
+					if (pointcloud.material && pointcloud.material.dispose) {
+						pointcloud.material.dispose();
+					}
+				}
+				this.scene.pointclouds = [];
+
+				// Dispose Three.js scenes recursively
+				this.disposeSceneRecursive(this.scene.scene);
+				this.disposeSceneRecursive(this.scene.scenePointCloud);
+				this.disposeSceneRecursive(this.scene.sceneBG);
+				this.disposeSceneRecursive(this.overlay);
+				this.disposeSceneRecursive(this.sceneVR);
+
+				// Clear scene references
+				this.scene.scene = null;
+				this.scene.scenePointCloud = null;
+				this.scene.sceneBG = null;
+			}
+
+			// Dispose VR scene
+			if (this.sceneVR) {
+				this.disposeSceneRecursive(this.sceneVR);
+				this.sceneVR = null;
+			}
+
+			// Dispose overlay scene
+			if (this.overlay) {
+				this.disposeSceneRecursive(this.overlay);
+				this.overlay = null;
+			}
+
+			// Dispose renderers
+			if (this.potreeRenderer && this.potreeRenderer.dispose) {
+				this.potreeRenderer.dispose();
+			}
+			if (this.edlRenderer && this.edlRenderer.dispose) {
+				this.edlRenderer.dispose();
+			}
+			if (this.hqRenderer && this.hqRenderer.dispose) {
+				this.hqRenderer.dispose();
+			}
+			if (this.pRenderer && this.pRenderer.dispose) {
+				this.pRenderer.dispose();
+			}
+
+			// Dispose WebGL renderer thoroughly
+			if (this.renderer) {
+				// Dispose render targets
+				this.renderer.getRenderTarget()?.dispose();
+
+				// Clear WebGL state
+				this.renderer.state.reset();
+
+				// Dispose WebGL renderer
+				this.renderer.dispose();
+
+				// Force context loss to free GPU memory
+				const gl = this.renderer.getContext();
+				if (gl && gl.getExtension('WEBGL_lose_context')) {
+					gl.getExtension('WEBGL_lose_context').loseContext();
+				}
+
+				this.renderer.forceContextLoss();
+			}
+
+			// Dispose cameras
+			this.disposeCamera(this.scene?.cameraP);
+			this.disposeCamera(this.scene?.cameraO);
+			this.disposeCamera(this.scene?.cameraBG);
+			this.disposeCamera(this.scene?.cameraScreenSpace);
+			this.disposeCamera(this._ecefPerspectiveCamera);
+			this.disposeCamera(this._ecefOrthographicCamera);
+			this.disposeCamera(this.shadowTestCam);
+			this.disposeCamera(this.overlayCamera);
+
+			// Dispose skybox
+			if (this.skybox) {
+				this.disposeSceneRecursive(this.skybox.scene);
+				this.disposeCamera(this.skybox.camera);
+				this.skybox = null;
+			}
+
+			// Dispose tools
+			this.disposeTool(this.annotationTool);
+			this.disposeTool(this.measuringTool);
+			this.disposeTool(this.profileTool);
+			this.disposeTool(this.volumeTool);
+			this.disposeTool(this.clippingTool);
+			this.disposeTool(this.transformationTool);
+			this.disposeTool(this.clusterTool);
+			this.disposeTool(this.selectionTool);
+			this.disposeTool(this.navigationCube);
+			this.disposeTool(this.compass);
+
+			// Dispose extra tools
+			for (let tool of this.extraTools) {
+				this.disposeTool(tool);
+			}
+
+			// Clear custom arrays
+			this.customUpdates = [];
+			this.ecefRenderers = [];
+			this.extraRenders = [];
+			this.extraTools = [];
+
+			// Dispose GUI elements
+			if (this.sidebar && this.sidebar.dispose) {
+				this.sidebar.dispose();
+			}
+			if (this.mapView && this.mapView.dispose) {
+				this.mapView.dispose();
+			}
+			if (this.profileWindow && this.profileWindow.dispose) {
+				this.profileWindow.dispose();
+			}
+
+			// Remove DOM elements
+			$('#potree_sidebar_container').empty();
+			$('#potree_map').remove();
+			$('#potree_description').empty();
+			$('#potree_annotation_container').empty();
+			$('#potree_quick_buttons').empty();
+			$('#message_listing').empty();
+			$('.annotation').remove();
+			$('#profile_window').remove();
+
+			// Remove canvas and renderer DOM element
+			if (this.renderer && this.renderer.domElement) {
+				if (this.renderer.domElement.parentNode) {
+					this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
+				}
+			}
+
+			// Remove stats if present
+			if (this.stats && this.stats.dom) {
+				if (this.stats.dom.parentNode) {
+					this.stats.dom.parentNode.removeChild(this.stats.dom);
+				}
+			}
+
+			// Clear event listeners
+			this.removeAllEventListeners();
+
+			// Clear messages
+			this.messages = [];
+
+			// Clear performance measures
+			if (typeof performance !== 'undefined') {
+				performance.clearMarks();
+				performance.clearMeasures();
+			}
+
+			// Dispose clock
+			if (this.clock) {
+				this.clock = null;
+			}
+
+			// Clear all object references
+			this.scene = null;
+			this.sceneVR = null;
+			this.overlay = null;
+			this.renderer = null;
+			this.potreeRenderer = null;
+			this.edlRenderer = null;
+			this.hqRenderer = null;
+			this.pRenderer = null;
+			this.controls = null;
+			this.inputHandler = null;
+			this.sidebar = null;
+			this.mapView = null;
+			this.overlayCamera = null;
+			this._ecefPerspectiveCamera = null;
+			this._ecefOrthographicCamera = null;
+			this.shadowTestCam = null;
+
+			console.log('Viewer disposed successfully');
+
+		} catch (error) {
+			console.error('Error during viewer disposal:', error);
+		}
+	}
+
+	// Helper method to recursively dispose Three.js scene objects
+	disposeSceneRecursive(scene) {
+		if (!scene) return;
+
+		scene.traverse((child) => {
+			// Dispose geometry
+			if (child.geometry && child.geometry.dispose) {
+				child.geometry.dispose();
+			}
+
+			// Dispose material(s)
+			if (child.material) {
+				if (Array.isArray(child.material)) {
+					child.material.forEach(material => {
+						this.disposeMaterial(material);
+					});
+				} else {
+					this.disposeMaterial(child.material);
+				}
+			}
+
+			// Dispose textures
+			if (child.texture && child.texture.dispose) {
+				child.texture.dispose();
+			}
+		});
+
+		// Clear the scene
+		while (scene.children.length > 0) {
+			scene.remove(scene.children[0]);
+		}
+	}
+
+	// Helper method to dispose materials and their textures
+	disposeMaterial(material) {
+		if (!material || !material.dispose) return;
+
+		// Dispose textures in the material
+		Object.keys(material).forEach(key => {
+			const value = material[key];
+			if (value && value.isTexture) {
+				value.dispose();
+			}
+		});
+
+		// Dispose the material itself
+		material.dispose();
+	}
+
+	// Helper method to dispose cameras
+	disposeCamera(camera) {
+		if (!camera) return;
+
+		// Remove from parent if attached
+		if (camera.parent) {
+			camera.parent.remove(camera);
+		}
+
+		// Clear references
+		camera.clear?.();
+	}
+
+	// Helper method to dispose tools
+	disposeTool(tool) {
+		if (!tool) return;
+
+		if (tool.dispose) {
+			tool.dispose();
+		}
+
+		// Remove from scene if it has a scene reference
+		if (tool.scene) {
+			tool.scene = null;
+		}
+	}
+
+	// Helper method to remove all event listeners
+	removeAllEventListeners() {
+		try {
+			// Remove drag and drop listeners
+			$("body")[0].removeEventListener("dragenter", this.allowDrag);
+			$("body")[0].removeEventListener("dragover", this.allowDrag);
+			$("body")[0].removeEventListener("drop", this.dropHandler);
+
+			// Remove canvas event listeners
+			if (this.renderer && this.renderer.domElement) {
+				this.renderer.domElement.removeEventListener("webglcontextlost", this.onWebGLContextLost);
+				this.renderer.domElement.removeEventListener("mousedown", this.onMouseDown);
+			}
+
+			// Clear all custom event listeners from EventDispatcher
+			this._listeners = {};
+
+		} catch (error) {
+			console.error('Error removing event listeners:', error);
+		}
+	}
+
 };
