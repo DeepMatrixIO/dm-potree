@@ -33,6 +33,8 @@ libs/giro3d
 /pointclouds/*.las
 /pointclouds/vegetation_zone_ROW_75_20_1_64930dd1.las_converted
 /pointclouds/inegi_point_cloud_cov_40cm.las_converted
+/libs/three.js_*
+
 .vscode/settings.json
 .prettierrc
 .settings.json

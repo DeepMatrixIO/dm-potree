@@ -817,11 +817,13 @@ export class Renderer {
 			view = params.viewOverride;
 		}
 
-		let worldView = new THREE.Matrix4();
+		let worldView = new THREE.Matrix4();//empty matrix
 
 		let mat4holder = new Float32Array(16);
 
 		let i = 0;
+		//nodes are rendered
+		//world matrix transformation is received from the node.sceneNode.matrixWorld
 		for (let node of nodes) {
 
 			if (exports.debug.allowedNodes !== undefined) {
@@ -831,7 +833,7 @@ export class Renderer {
 			}
 
 			let world = node.sceneNode.matrixWorld;
-			worldView.multiplyMatrices(view, world);
+			worldView.multiplyMatrices(view, world);//the world and view matrix is computed per node
 
 			if (visibilityTextureData) {
 				let vnStart = visibilityTextureData.offsets.get(node);
