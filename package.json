@@ -21,8 +21,9 @@
     "build_old": "gulp build pack",
     "build_bad": "webpack --mode production",
     "dev": "webpack --mode development --watch --progress --stats-children",
-    "build": "webpack --mode production --config webpack.prod.js",
-    "start": "npm run build && webpack serve --config webpack.example.js --mode development --progress --port 5200",
+    "build": "npm run build_old",
+	"build:module": "webpack --mode production --config webpack.prod.js",
+    "start": "npm run build:module && webpack serve --config webpack.example.js --mode development --progress --port 5200",
     "postinstall": "npm run build"
   },
   "dependencies": {
