@@ -38,3 +38,11 @@ libs/giro3d
 .vscode/settings.json
 .prettierrc
 .settings.json
+<<<<<<< Updated upstream
+=======
+/examples/persisted*
+/pointclouds/*
+/example/data/*
+/dist/potree_module_index.js
+/dist/*
+>>>>>>> Stashed changes
