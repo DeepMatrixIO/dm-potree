@@ -1,6 +1,11 @@
-//webpack atempt to bundle potree
-//use "npm run build" to create a production bundle in dist folder
 
-export * from "./Potree.js";
+
+// export * from  "./PotreeGlobal.js";//this is the module in charge
+
+// export * from "./Potree.js";
+// export *  from "./PotreeGlobal.js";
+
+// window.Potree=new Potree();
+
 
 

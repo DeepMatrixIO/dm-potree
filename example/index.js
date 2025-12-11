@@ -1,7 +1,7 @@
 // import { AmbientLight, BoxGeometry,  Euler,  Mesh, MeshBasicMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer } from 'three';
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-import {Viewer} from '../src/potree_module.js';//as index is changed name to potree_module
+import {Potree,Viewer}  from '../src/PotreeGlobal.js';//as index is changed name to potree_module
 // import {Viewer} from '../dist/potree_module_index.js';//as index is changed name to potree_module
 
 document.body.onload = function () {
@@ -55,8 +55,9 @@ Hello potree!!!
 
 
 	// window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
-
-
+	window.Potree=new Potree()
+	console.log(window.Potree)
+	let test='test 12345';
 	const viewer = new Viewer(document.getElementById("potree_render_area"));
 	window.viewer = viewer;
 

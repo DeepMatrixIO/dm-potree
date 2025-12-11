@@ -20,7 +20,9 @@ export default {
 	},
 	// devtool: 'source-map',
 	devServer: {
-		compress: true,
+		compress: false,
+				// compress: true,
+
 		port: 5200,
 		// client: {
 		// 	logging: 'verbose', // Add this line for verbose client logs

@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {MathUtils, Scene, Vector2, Vector3} from 'three';
+import {DirectionalLight, MathUtils, Scene, Vector2, Vector3} from 'three';
 import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
