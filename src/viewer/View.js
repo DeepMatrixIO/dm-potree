@@ -1,4 +1,5 @@
 import {Vector3} from 'three';
+import * as TWEEN from '@tweenjs/tween.js';
 
 export class View{
 	constructor () {
@@ -179,11 +180,21 @@ export class View{
 
 			tween.start();
 
+
+
 			tween.onComplete(() => {
 				if(callback){
 					callback();
 				}
 			});
+
+
+			const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				tween.update(time);
+
+			};
+			animate();
 		}
 
 	}

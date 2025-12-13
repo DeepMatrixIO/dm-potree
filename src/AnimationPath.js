@@ -1,7 +1,7 @@
 //changes to more recent version of js, above 0124 require to move from Geometry to BufferGeometry
-import {BufferGeometry, Float32BufferAttribute,CatmullRomCurve3} from 'three'
+import {BufferGeometry, Float32BufferAttribute, CatmullRomCurve3} from 'three'
 
-
+import * as TWEEN from '@tweenjs/tween.js';
 export class PathAnimation {
 
 	constructor(path, start, end, speed, callback) {
@@ -45,6 +45,14 @@ export class PathAnimation {
 
 		setTimeout(() => {
 			this.tween.start();
+
+			const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				this.tween.update(time);
+
+			};
+			animate();
+
 		}, 0);
 	}
 
@@ -119,7 +127,7 @@ export class AnimationPath {
 		let samples = 500;
 		let i = 0;
 		let vertices = []
-		for (let u = 0; u <= 1; u += 1 / samples) {
+		for (let u = 0;u <= 1;u += 1 / samples) {
 			let position = this.spline.getPoint(u);
 			//geometry.vertices[i] = new Vector3(position.x, position.y, position.z);
 			vertices.push(position.x, position.y, position.z);

@@ -4,6 +4,7 @@ import {MOUSE} from "../defines.js";
 import {Utils} from "../utils.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Mesh, MeshNormalMaterial, Scene, Sphere, SphereGeometry, Vector3} from "three";
+import * as TWEEN from '@tweenjs/tween.js';
 
 export class EarthControls extends EventDispatcher {
 	constructor (viewer) {
@@ -227,6 +228,13 @@ export class EarthControls extends EventDispatcher {
 			});
 
 			tween.start();
+
+			const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				tween.update(time);
+
+			};
+			animate();
 		}
 	}
 

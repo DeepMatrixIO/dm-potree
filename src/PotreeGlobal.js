@@ -5,7 +5,8 @@
 export * from "./Actions.js";
 export * from "./AnimationPath.js";
 export * from "./Annotation.js";
-export * from "./defines.js";
+// export * as DEFINES from "./defines.js";
+import * as DEFINES from "./defines.js";
 export * from "./Enum.js";
 export * from "./EventDispatcher.js";
 export * from "./Features.js";
@@ -17,7 +18,8 @@ export * from "./PointCloudOctreeGeometry.js";
 export * from "./PointCloudTree.js";
 export * from "./Points.js";
 // export * from "./Potree_update_visibility.js";
-import {updatePointClouds as _updatePointClouds, updateVisibility as _updateVisibility} from "./Potree_update_visibility.js";
+// import {updatePointClouds as _updatePointClouds, updateVisibility as _updateVisibility} from "./Potree_update_visibility.js";
+import * as POTREE_UPDATE_VISIBILITY from "./Potree_update_visibility.js";
 export * from "./PotreeRenderer.js";
 export * from "./ProfileRequest.js";
 export * from "./TextSprite.js";
@@ -151,7 +153,19 @@ export class Potree {
 
 		/////
 
+		this.PointShape=DEFINES.PointShape;
+		this.PointSizeType=DEFINES.PointSizeType;
+		this.CameraMode=DEFINES.CameraMode;
+		this.ClipTask=DEFINES.ClipTask;
+		this.ClipMethod=DEFINES.ClipMethod;
+		this.ElevationGradientRepeat=DEFINES.ElevationGradientRepeat;
+		this.MOUSE=DEFINES.MOUSE;
+		this.TreeType=DEFINES.TreeType;
+		this.LengthUnits=DEFINES.LengthUnits;
 
+
+		this.updatePointClouds = POTREE_UPDATE_VISIBILITY.updatePointClouds;
+		this.updateVisibility = POTREE_UPDATE_VISIBILITY.updateVisibility;
 
 
 		// window.Potree=this;
@@ -159,7 +173,6 @@ export class Potree {
 	}
 
 	// const
-
 
 
 
@@ -274,13 +287,13 @@ export class Potree {
 
 //needs to be updated to point to the file
 
-	updatePointClouds(scene, camera, renderer) {
-		return _updatePointClouds(scene, camera, renderer);
-	}
+	// updatePointClouds(scene, camera, renderer) {
+	// 	return _updatePointClouds(scene, camera, renderer);
+	// }
 
-	updateVisibility(pointcloud, camera, renderer) {
-		return _updateVisibility(pointcloud, camera, renderer);
-	}
+	// updateVisibility(pointcloud, camera, renderer) {
+	// 	return _updateVisibility(pointcloud, camera, renderer);
+	// }
 
 }
 

@@ -18,6 +18,7 @@ import {MOUSE} from "../defines.js";
 import {Utils} from "../utils.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Scene, Sphere, Vector3} from "three";
+import * as TWEEN from '@tweenjs/tween.js';
 
 
 export class FirstPersonControls extends EventDispatcher {
@@ -176,6 +177,13 @@ export class FirstPersonControls extends EventDispatcher {
 			});
 
 			tween.start();
+
+			const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				tween.update(time);
+
+			};
+			animate();
 		}
 	}
 

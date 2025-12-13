@@ -19,6 +19,7 @@ import {MOUSE} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
 
+import * as TWEEN from 'tween';
 
 export class OrbitControls extends EventDispatcher {
 
@@ -226,6 +227,13 @@ export class OrbitControls extends EventDispatcher {
 			});
 
 			tween.start();
+
+			const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				tween.update(time);
+
+			};
+			animate();
 		}
 	}
 

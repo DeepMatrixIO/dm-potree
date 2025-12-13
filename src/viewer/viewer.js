@@ -56,7 +56,7 @@ import {ClusterTool} from "../dm_custom_tools/clustering/ClusterTool.js"; //JUST
 import {SelectionTool} from "../dm_custom_tools/clustering/SelectionTool.js"; //JUST A REFERENCE
 
 import * as TWEEN from '@tweenjs/tween.js';//0.15, now at eol
-import {interact} from 'interactjs'
+// import {interact} from 'interactjs'
 export class Viewer extends EventDispatcher {
 
 	constructor(domElement, args = {}) {
@@ -1068,25 +1068,25 @@ export class Viewer extends EventDispatcher {
 	};
 
 	disableAnnotations() {
-		try{
-		this.scene.annotations.traverse(annotation => {
-			annotation.domElement.css('pointer-events', 'none');
+		try {
+			this.scene.annotations.traverse(annotation => {
+				annotation.domElement.css('pointer-events', 'none');
 
-			// return annotation.visible;
-		});
-		}catch(e){
+				// return annotation.visible;
+			});
+		} catch (e) {
 			console.error('Error disabling annotations', e);
 		}
 	};
 
 	enableAnnotations() {
-		try{
-		this.scene.annotations.traverse(annotation => {
-			annotation.domElement.css('pointer-events', 'auto');
+		try {
+			this.scene.annotations.traverse(annotation => {
+				annotation.domElement.css('pointer-events', 'auto');
 
-			// return annotation.visible;
-		});
-		}catch(e){
+				// return annotation.visible;
+			});
+		} catch (e) {
 			console.error('Error enabling annotations', e);
 		}
 	}
@@ -1245,6 +1245,13 @@ export class Viewer extends EventDispatcher {
 			});
 
 			tween.start();
+
+			const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				tween.update(time);
+
+			};
+			animate();
 		}
 
 		{ // animate camera target
@@ -1261,7 +1268,19 @@ export class Viewer extends EventDispatcher {
 
 			this.dispatchEvent({type: 'focusing_started', target: this});
 			tween.start();
+			const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				tween.update(time);
+
+			};
+			animate();
 		}
+
+		//newer tween requires animation
+
+
+
+
 	};
 
 	moveToGpsTimeVicinity(time) {
@@ -1608,13 +1627,17 @@ export class Viewer extends EventDispatcher {
 	};
 
 	toggleSidebar() {
-		let renderArea = document.getElementById('potree_render_area');
-		let isVisible = renderArea.css('left') !== '0px';
+		try {
+			let renderArea = document.getElementById('potree_render_area');
+			let isVisible = renderArea.css('left') !== '0px';
 
-		if (isVisible) {
-			renderArea.css('left', '0px');
-		} else {
-			renderArea.css('left', '300px');
+			if (isVisible) {
+				renderArea.css('left', '0px');
+			} else {
+				renderArea.css('left', '300px');
+			}
+		} catch (e) {
+			console.error("Error toggling sidebar viewer.toggleSidebar", e);
 		}
 	};
 

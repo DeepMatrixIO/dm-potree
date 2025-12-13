@@ -12,6 +12,7 @@ const LINEPIECES = 1;
 const NOCOLORS = 0;
 const FACECOLORS = 1;
 const VERTEXCOLORS = 2;
+import * as TWEEN from '@tweenjs/tween.js';
 
 
 export class Utils {
@@ -269,6 +270,13 @@ export class Utils {
 			let tween = new TWEEN.Tween(view.position).to(endPosition, animationDuration);
 			tween.easing(easing);
 			tween.start();
+
+			const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				tween.update(time);
+
+			};
+			animate();
 		}
 
 		{ // animate camera target
@@ -286,6 +294,14 @@ export class Utils {
 				view.lookAt(target);
 			});
 			tween.start();
+
+const animate = (time = 0) => {
+				requestAnimationFrame(animate);
+				tween.update(time);
+
+			};
+			animate();
+
 		}
 
 	}

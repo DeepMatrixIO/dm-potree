@@ -4,6 +4,7 @@ import {EventDispatcher} from "./EventDispatcher.js";
 import {Utils} from "./utils.js";
 // import {Math} from 'three';
 import * as uuid from 'uuid';
+import * as TWEEN from '@tweenjs/tween.js';
 
 export class Annotation extends EventDispatcher {
 	constructor(args = {}) {
@@ -62,11 +63,11 @@ export class Annotation extends EventDispatcher {
         <span class="annotation-description-content">${this._description}</span>
     </div>
 `;
-        this.elTitlebar = this.domElement.querySelector('.annotation-titlebar');
-        this.elTitle = this.elTitlebar.querySelector('.annotation-label');
-        this.elTitle.innerHTML = this._title;
-        this.elDescription = this.domElement.querySelector('.annotation-description');
-        this.elDescriptionClose = this.elDescription.querySelector('.annotation-description-close');
+		this.elTitlebar = this.domElement.querySelector('.annotation-titlebar');
+		this.elTitle = this.elTitlebar.querySelector('.annotation-label');
+		this.elTitle.innerHTML = this._title;
+		this.elDescription = this.domElement.querySelector('.annotation-description');
+		this.elDescriptionClose = this.elDescription.querySelector('.annotation-description-close');
 
 
 		this.clickTitle = () => {
@@ -93,26 +94,26 @@ export class Annotation extends EventDispatcher {
 		let actions = this.actions.filter(
 			a => a.showIn === undefined || a.showIn.includes('scene'));
 
-		        for (let action of actions) {
-            let elButton = document.createElement('img');
-            elButton.src = action.icon;
-            elButton.className = 'annotation-action-icon';
-            this.elTitlebar.appendChild(elButton);
-            elButton.addEventListener('click', () => action.onclick({annotation: this}));
-        }
+		for (let action of actions) {
+			let elButton = document.createElement('img');
+			elButton.src = action.icon;
+			elButton.className = 'annotation-action-icon';
+			this.elTitlebar.appendChild(elButton);
+			elButton.addEventListener('click', () => action.onclick({annotation: this}));
+		}
 
-        this.elDescriptionClose.addEventListener('mouseenter', e => this.elDescriptionClose.style.opacity = '1');
-        this.elDescriptionClose.addEventListener('mouseleave', e => this.elDescriptionClose.style.opacity = '0.5');
-        this.elDescriptionClose.addEventListener('click', e => this.setHighlighted(false));
+		this.elDescriptionClose.addEventListener('mouseenter', e => this.elDescriptionClose.style.opacity = '1');
+		this.elDescriptionClose.addEventListener('mouseleave', e => this.elDescriptionClose.style.opacity = '0.5');
+		this.elDescriptionClose.addEventListener('click', e => this.setHighlighted(false));
 
-        this.domElement.addEventListener('mouseenter', e => this.setHighlighted(true));
-        this.domElement.addEventListener('mouseleave', e => this.setHighlighted(false));
+		this.domElement.addEventListener('mouseenter', e => this.setHighlighted(true));
+		this.domElement.addEventListener('mouseleave', e => this.setHighlighted(false));
 
-        this.domElement.addEventListener('touchstart', e => {
-            this.setHighlighted(!this.isHighlighted);
-        });
+		this.domElement.addEventListener('touchstart', e => {
+			this.setHighlighted(!this.isHighlighted);
+		});
 
-        this.display = false;
+		this.display = false;
 
 	}
 
@@ -304,22 +305,22 @@ export class Annotation extends EventDispatcher {
 	}
 
 	get display() {
-        return this._display;
-    }
+		return this._display;
+	}
 
-    set display(display) {
-        if (this._display === display) {
-            return;
-        }
+	set display(display) {
+		if (this._display === display) {
+			return;
+		}
 
-        this._display = display;
+		this._display = display;
 
-        if (display) {
-            this.domElement.style.display = 'block';
-        } else {
-            this.domElement.style.display = 'none';
-        }
-    }
+		if (display) {
+			this.domElement.style.display = 'block';
+		} else {
+			this.domElement.style.display = 'none';
+		}
+	}
 
 	get expand() {
 		return this._expand;
@@ -553,6 +554,14 @@ export class Annotation extends EventDispatcher {
 				let tween = new TWEEN.Tween(view.position).to(endPosition, animationDuration);
 				tween.easing(easing);
 				tween.start();
+
+				const animate = (time = 0) => {
+					requestAnimationFrame(animate);
+					tween.update(time);
+
+				};
+				animate();
+
 			}
 
 			{ // animate radius
@@ -565,6 +574,14 @@ export class Annotation extends EventDispatcher {
 					});
 				tween.easing(easing);
 				tween.start();
+
+				const animate = (time = 0) => {
+					requestAnimationFrame(animate);
+					tween.update(time);
+
+				};
+				animate();
+
 			}
 		}
 	};
