@@ -10,7 +10,7 @@ module.exports = {
 	// },
 	output: {
 		path: path.resolve('dist'),
-		filename: 'potree_module_index.js',
+		filename: 'potree_module.js',
 		library: {
 			type: 'module',
 		},

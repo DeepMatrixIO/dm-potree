@@ -12,7 +12,7 @@
 
 export class BinaryHeap{
 
-	cosntructor(scoreFunction){
+	constructor(scoreFunction){
   	this.content = [];
   	this.scoreFunction = scoreFunction;
 	}

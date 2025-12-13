@@ -2,6 +2,7 @@
 // import * as THREE from "../../libs/js/build/module.js";
 import {TorusGeometry, PlaneGeometry, BackSide, BoxGeometry, BufferGeometry, Float32BufferAttribute, Line3, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, Object3D, Raycaster, Scene, SphereGeometry, TextureLoader, Vector3, Vector4} from 'three';
 import {Utils} from "../utils.js";
+import * as TWEEN from '@tweenjs/tween.js';//from 0.15 to 25, now at eol
 
 export class TransformationTool {
 	constructor(viewer) {

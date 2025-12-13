@@ -1,7 +1,7 @@
 
 import {Shaders} from "../../build/shaders/shaders.js";
 // import * as THREE from "../../libs/js/build/module.js";
-import {RawShaderMaterial} from 'three'
+import {GLSL3, RawShaderMaterial} from 'three'
 
 //
 // Algorithm by Christian Boucheny

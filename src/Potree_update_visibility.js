@@ -1,11 +1,14 @@
 
 
-import {Matrix4, Vector3} from 'three';
+import {Frustum, Matrix4, Vector3} from 'three';
 
 import {ClipMethod, ClipTask} from "./defines.js";
 import {Box3Helper} from "./utils/Box3Helper.js";
+import {BinaryHeap} from "./BinaryHeap.js";
 
 export function updatePointClouds(pointclouds, camera, renderer){
+
+	// let exports = Potree;//expects window.Potree
 
 	for (let pointcloud of pointclouds) {
 		let start = performance.now();
@@ -103,6 +106,8 @@ export function updateVisibilityStructures(pointclouds, camera, renderer) {
 
 
 export function updateVisibility(pointclouds, camera, renderer){
+
+	// let exports = Potree;//expects window.Potree
 
 	let numVisibleNodes = 0;
 	let numVisiblePoints = 0;
@@ -309,7 +314,7 @@ export function updateVisibility(pointclouds, camera, renderer){
 		}
 
 		if (node.isTreeNode()) {
-			exports.lru.touch(node.geometryNode);
+			exports.lru.touch(node.geometryNode);//Potree saved as exports
 			node.sceneNode.visible = true;
 			node.sceneNode.material = pointcloud.material;
 

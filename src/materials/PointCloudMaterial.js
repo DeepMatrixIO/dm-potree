@@ -72,7 +72,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this._gradient
 		);
 		this._matcap = 'matcap.jpg';
-		this.matcapTexture = Potree.PointCloudMaterial.generateMatcapTexture(
+		// this.matcapTexture = Potree.PointCloudMaterial.generateMatcapTexture(
+		this.matcapTexture = PointCloudMaterial.generateMatcapTexture(
 			this._matcap
 		);
 		this.lights = false;
@@ -1519,8 +1520,9 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	}
 
 	static generateMatcapTexture(matcap) {
-		var url = new URL(Potree.resourcePath + '/textures/matcap/' + matcap)
-			.href;
+		// var url = new URL(Potree.resourcePath + '/textures/matcap/' + matcap).href;
+
+		var url = '/textures/matcap/' + matcap;
 		let texture = new TextureLoader().load(url);
 		texture.magFilter = texture.minFilter = LinearFilter;
 		texture.needsUpdate = true;

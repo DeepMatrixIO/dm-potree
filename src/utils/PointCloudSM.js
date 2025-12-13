@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {Vector3, LinearFilter, FloatType, RGBAFormat, UnsignedIntType, PerspectiveCamera} from 'three'
+import {Vector3, LinearFilter, FloatType, RGBAFormat, UnsignedIntType, PerspectiveCamera, WebGLRenderTarget, DepthTexture} from 'three'
 export class PointCloudSM{
 
 	constructor(potreeRenderer){

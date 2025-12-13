@@ -114,9 +114,12 @@ export class NodeLoader {
 
 			let workerPath;
 			if (this.metadata.encoding === "BROTLI") {
+				// workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker_brotli.js';
 				workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker_brotli.js';
 			} else {
-				workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker.js';
+				// workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker.js';
+
+				workerPath = '/workers/2.0/DecoderWorker.js';
 			}
 
 			let worker = Potree.workerPool.getWorker(workerPath);

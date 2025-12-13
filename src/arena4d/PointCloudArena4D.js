@@ -583,6 +583,7 @@ export class PointCloudArena4D extends PointCloudTree{
 	}
 
 	get progress () {
+		let exports = Potree;//expects window.Potree
 		if (this.pcoGeometry.root) {
 			return exports.numNodesLoading > 0 ? 0 : 1;
 		} else {

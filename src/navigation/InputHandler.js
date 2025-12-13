@@ -5,7 +5,7 @@
  */
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {Raycaster, Vector2} from 'three'
+import {Raycaster, Vector2,MOUSE} from 'three'
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";
 import {Utils} from "../utils.js";
@@ -594,6 +594,7 @@ export class InputHandler extends EventDispatcher {
 		}
 
 		if (!consumed) {
+			// if (e.button === MOUSE.LEFT) {
 			if (e.button === MOUSE.LEFT) {
 				if (noMovement) {
 					let selectable = this.hoveredElements

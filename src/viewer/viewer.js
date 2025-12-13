@@ -54,6 +54,9 @@ import {updateFetchToken} from "../tokenUpdater.js";
 
 import {ClusterTool} from "../dm_custom_tools/clustering/ClusterTool.js"; //JUST A REFERENCE
 import {SelectionTool} from "../dm_custom_tools/clustering/SelectionTool.js"; //JUST A REFERENCE
+
+import * as TWEEN from '@tweenjs/tween.js';//0.15, now at eol
+import {interact} from 'interactjs'
 export class Viewer extends EventDispatcher {
 
 	constructor(domElement, args = {}) {
@@ -697,17 +700,20 @@ export class Viewer extends EventDispatcher {
 	}
 
 	ecefRenderer() {
-		this.ecefRenderers.forEach((render) => {
-			render();
+		if (this.ecefRenderer.length) {
+			this.ecefRenderers.forEach((render) => {
+				render();
 
-		})
+			})
+		}
 	};
 
 	//ADDED by  @jguerrer
 	extraRenderers(timestamp) {
 		try {
 			if (this.extraRenders != null) {//added by jguerrer to enable Cesium extra render, requires an extra attr
-				this.extraRenders.forEach((newRender) => newRender(timestamp));
+				this.extraRenders.forEach((newRender) => {newRender(timestamp)}
+				);
 			}
 		} catch (e) {
 			console.error(e, 'Error on extra renderer');
@@ -782,9 +788,9 @@ export class Viewer extends EventDispatcher {
 			//	this.renderArea.appendChild(annotation.domElement[0]);
 			// }
 
-		    this.scene.annotations.traverse(annotation => {
-            this.renderArea.appendChild(annotation.domElement);
-        });
+			this.scene.annotations.traverse(annotation => {
+				this.renderArea.appendChild(annotation.domElement);
+			});
 
 			if (!this.onAnnotationAdded) {
 				this.onAnnotationAdded = e => {
@@ -864,8 +870,12 @@ export class Viewer extends EventDispatcher {
 			return;
 		}
 
+		// TODO, provide better path
+
 		if (bg === "skybox") {
-			this.skybox = Utils.loadSkybox(new URL(Potree.resourcePath + '/textures/skybox2/').href);
+			// this.skybox = Utils.loadSkybox(new URL(Potree.resourcePath + '/textures/skybox2/').href);
+			this.skybox = Utils.loadSkybox('/textures/skybox2/');
+
 		}
 
 		this.background = bg;
@@ -1058,19 +1068,27 @@ export class Viewer extends EventDispatcher {
 	};
 
 	disableAnnotations() {
+		try{
 		this.scene.annotations.traverse(annotation => {
 			annotation.domElement.css('pointer-events', 'none');
 
 			// return annotation.visible;
 		});
+		}catch(e){
+			console.error('Error disabling annotations', e);
+		}
 	};
 
 	enableAnnotations() {
+		try{
 		this.scene.annotations.traverse(annotation => {
 			annotation.domElement.css('pointer-events', 'auto');
 
 			// return annotation.visible;
 		});
+		}catch(e){
+			console.error('Error enabling annotations', e);
+		}
 	}
 
 	setClassifications(classifications) {
@@ -1639,7 +1657,10 @@ export class Viewer extends EventDispatcher {
 		let sidebarContainer = document.getElementById('potree_sidebar_container');
 
 		// Load sidebar.html using fetch instead of jQuery.load
-		fetch(new URL(Potree.scriptPath + '/sidebar.html').href)
+		// fetch(new URL(Potree.scriptPath + '/sidebar.html').href)
+		// let url=new URL( './potree/sidebar.html',import.meta.url);
+		let path = `./potree/sidebar.html`;
+		fetch(path)
 			.then(response => response.text())
 			.then(html => {
 				sidebarContainer.innerHTML = html;
@@ -1648,12 +1669,15 @@ export class Viewer extends EventDispatcher {
 				sidebarContainer.style.height = '100%';
 
 				let imgMenuToggle = document.createElement('img');
-				imgMenuToggle.src = new URL(Potree.resourcePath + '/icons/menu_button.svg').href;
+				// imgMenuToggle.src = new URL(Potree.resourcePath + '/icons/menu_button.svg').href;
+				imgMenuToggle.src = '/icons/menu_button.svg';
 				imgMenuToggle.onclick = this.toggleSidebar;
 				imgMenuToggle.classList.add('potree_menu_toggle');
 
 				let imgMapToggle = document.createElement('img');
-				imgMapToggle.src = new URL(Potree.resourcePath + '/icons/map_icon.png').href;
+				// imgMapToggle.src = new URL(Potree.resourcePath + '/icons/map_icon.png').href;
+				imgMapToggle.src = '/icons/map_icon.png'
+
 				imgMapToggle.style.display = 'none';
 				imgMapToggle.onclick = e => {this.toggleMap();};
 				imgMapToggle.id = 'potree_map_toggle';
@@ -1663,53 +1687,60 @@ export class Viewer extends EventDispatcher {
 				elButtons.appendChild(imgMapToggle);
 
 				// Migrate i18n to i18next (install via npm)
-				import('i18next').then(i18next => {
-					i18next.init({
-						lng: 'en',
-						resources: {
-							en: {
-								translation: {
-									// Add your translations here
-								}
-							}
-						}
-					}, function (err, t) {
-						// Apply translations to body
-						document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
-					});
-				});
+				// import('i18next').then(i18next => {
+				// 	i18next.init({
+				// 		lng: 'en',
+				// 		resources: {
+				// 			en: {
+				// 				translation: {
+				// 					// Add your translations here
+				// 				}
+				// 			}
+				// 		}
+				// 	}, function (err, t) {
+				// 		// Apply translations to body
+				// 		document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
+				// 	});
+				// });
 
 				// Load profile.html using fetch
-				fetch(new URL(Potree.scriptPath + '/profile.html').href)
-					.then(response => response.text())
-					.then(profileHtml => {
-						let elProfile = document.createElement('div');
-						elProfile.innerHTML = profileHtml;
-						// Append children to body
-						while (elProfile.firstChild) {
-							document.body.appendChild(elProfile.firstChild);
-						}
+				// fetch(new URL(Potree.scriptPath + '/profile.html').href)
+				// let profilePath=`./potree/profile.html`;
+				// fetch(profilePath)
+				// 	.then(response => response.text())
+				// 	.then(profileHtml => {
+				// 		let elProfile = document.createElement('div');
+				// 		elProfile.innerHTML = profileHtml;
+				// 		// Append children to body
+				// 		while (elProfile.firstChild) {
+				// 			document.body.appendChild(elProfile.firstChild);
+				// 		}
 
-						// Replace jQuery UI draggable/resizable with a library or custom implementation
-						// Example: Using interact.js (install via npm)
-						import('interactjs').then(interact => {
-							interact('#profile_window')
-								.draggable({
-									// Configure drag options
-								})
-								.resizable({
-									// Configure resize options
-								});
-						});
+				// 		// Replace jQuery UI draggable/resizable with a library or custom implementation
+				// 		// Example: Using interact.js (install via npm)
 
-						// Document ready equivalent
-						document.addEventListener('DOMContentLoaded', () => {
-							this.guiLoaded = true;
-							for (let task of this.guiLoadTasks) {
-								task();
-							}
-						});
-					});
+				// 		//removed for testing unless find another way
+				// 		import('interactjs').then(interact => {
+				// 			interact('#profile_window')
+				// 				.draggable({
+				// 					// Configure drag options
+				// 				})
+				// 				.resizable({
+				// 					// Configure resize options
+				// 				});
+				// 		});
+
+
+
+
+				// 		// Document ready equivalent
+				// 		document.addEventListener('DOMContentLoaded', () => {
+				// 			this.guiLoaded = true;
+				// 			for (let task of this.guiLoadTasks) {
+				// 				task();
+				// 			}
+				// 		});
+				// 	});
 			});
 
 		return this.promiseGuiLoaded();

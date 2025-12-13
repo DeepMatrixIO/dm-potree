@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {FloatType, NearestFilter, RGBAFormat, UnsignedIntType, Vector2, Vector3} from 'three';
+import {DepthTexture, FloatType, NearestFilter, RGBAFormat, UnsignedIntType, Vector2, Vector3, WebGLRenderTarget} from 'three';
 import {EyeDomeLightingMaterial} from "../materials/EyeDomeLightingMaterial.js";
 import {Utils} from "../utils.js";
 import {PointCloudSM} from "../utils/PointCloudSM.js";

@@ -1,10 +1,11 @@
 
 
-import {Box3, Line3, LinearFilter, Matrix4, NearestFilter, NoBlending, Object3D, RGBAFormat, Scene, Sphere, Vector2, Vector3, Vector4} from 'three';
+import {Box3, Line3, LinearFilter, Matrix4, NearestFilter, NoBlending, Object3D, Points, RGBAFormat, Scene, Sphere, Vector2, Vector3, Vector4, WebGLRenderTarget} from 'three';
 
 import {PointCloudMaterial} from "./materials/PointCloudMaterial.js";
 import {PointCloudOctreeGeometryNode} from "./PointCloudOctreeGeometry.js";
 import {PointCloudTree, PointCloudTreeNode} from "./PointCloudTree.js";
+// import {Points} from './Points.js'
 import {Utils} from "./utils.js";
 
 
@@ -210,7 +211,7 @@ export class PointCloudOctree extends PointCloudTree {
 		// if(geometryNode.name === "r40206"){
 		//	console.log("creating node for r40206");
 		// }
-		let sceneNode = new Points(geometryNode.geometry, this.material);
+		let sceneNode = new Points(geometryNode.geometry, this.material);//uses three Points object, not Potree Points
 		sceneNode.name = geometryNode.name;
 		sceneNode.position.copy(geometryNode.boundingBox.min);
 		sceneNode.frustumCulled = false;
@@ -773,7 +774,8 @@ export class PointCloudOctree extends PointCloudTree {
 		if (!this.pickState) {
 			let scene = new Scene();
 
-			let material = new Potree.PointCloudMaterial();
+			// let material = new Potree.PointCloudMaterial();
+			let material = new PointCloudMaterial();
 			material.activeAttributeName = "indices";//triggers the rendering on that
 
 			let renderTarget = new WebGLRenderTarget(

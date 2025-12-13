@@ -16,7 +16,8 @@ export * from "./PointCloudOctree.js";
 export * from "./PointCloudOctreeGeometry.js";
 export * from "./PointCloudTree.js";
 export * from "./Points.js";
-export * from "./Potree_update_visibility.js";
+// export * from "./Potree_update_visibility.js";
+import {updatePointClouds as _updatePointClouds, updateVisibility as _updateVisibility} from "./Potree_update_visibility.js";
 export * from "./PotreeRenderer.js";
 export * from "./ProfileRequest.js";
 export * from "./TextSprite.js";
@@ -84,6 +85,7 @@ export {DeviceOrientationControls} from "./navigation/DeviceOrientationControls.
 export {EarthControls} from "./navigation/EarthControls.js";
 export {FirstPersonControls} from "./navigation/FirstPersonControls.js";
 export {OrbitControls} from "./navigation/OrbitControls.js";
+import {update} from "three/examples/jsm/libs/tween.module.js";
 //export {VRControls} from "./navigation/VRControls.js";
 
 import "./extensions/OrthographicCamera.js";
@@ -147,7 +149,13 @@ export class Potree {
 		}
 		this.resourcePath = this.scriptPath + '/resources';
 
+		/////
+
+
+
+
 		// window.Potree=this;
+		window.exports=this;//FIX for LRU and other imports
 	}
 
 	// const
@@ -206,7 +214,8 @@ export class Potree {
 					}
 				});
 			} else if (path.indexOf('metadata.json') > 0) {
-				Potree.OctreeLoader.load(path).then(e => {
+				// Potree.OctreeLoader.load(path).then(e => {
+				OctreeLoader.load(path).then(e => {
 					let geometry = e.geometry;
 
 					if (!geometry) {
@@ -261,6 +270,16 @@ export class Potree {
 		} else {
 			return promise;
 		}
+	}
+
+//needs to be updated to point to the file
+
+	updatePointClouds(scene, camera, renderer) {
+		return _updatePointClouds(scene, camera, renderer);
+	}
+
+	updateVisibility(pointcloud, camera, renderer) {
+		return _updateVisibility(pointcloud, camera, renderer);
 	}
 
 }
