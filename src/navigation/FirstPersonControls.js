@@ -174,8 +174,10 @@ export class FirstPersonControls extends EventDispatcher {
 
 			tween.onComplete(() => {
 				this.tweens = this.tweens.filter(e => e !== tween);
+				this.viewer.TWEENGROUP.remove(tween);
 			});
 
+			this.viewer.TWEENGROUP.add(tween);
 			tween.start();
 
 			const animate = (time = 0) => {

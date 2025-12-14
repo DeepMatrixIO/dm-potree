@@ -55,6 +55,7 @@ import {updateFetchToken} from "../tokenUpdater.js";
 import {ClusterTool} from "../dm_custom_tools/clustering/ClusterTool.js"; //JUST A REFERENCE
 import {SelectionTool} from "../dm_custom_tools/clustering/SelectionTool.js"; //JUST A REFERENCE
 
+// import * as TWEEN from '@tweenjs/tween.js';//0.15, now at eol
 import * as TWEEN from '@tweenjs/tween.js';//0.15, now at eol
 // import {interact} from 'interactjs'
 export class Viewer extends EventDispatcher {
@@ -62,6 +63,7 @@ export class Viewer extends EventDispatcher {
 	constructor(domElement, args = {}) {
 		super();
 
+		this.TWEENGROUP = new TWEEN.Group();
 		////// additions
 		proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
 		//wont break if not provided
@@ -1243,20 +1245,23 @@ export class Viewer extends EventDispatcher {
 			tween.onUpdate(() => {
 				view.position.copy(pos);
 			});
+			tween.onComplete(() => {
+				this.TWEENGROUP.remove(tween);
+			});
 
+			this.TWEENGROUP.add(tween);//so animation is held at viewer.update
 			tween.start();
+			// const animate = (time = 0) => {
+			// 	requestAnimationFrame(animate);
+			// 	tween.update(time);
 
-			const animate = (time = 0) => {
-				requestAnimationFrame(animate);
-				tween.update(time);
-
-			};
-			animate();
+			// };
+			// animate();
 		}
 
 		{ // animate camera target
 			let target = startTarget.clone();
-			let tween = new TWEEN.Tween(target).to(endTarget, animationDuration);
+			let tween = new TWEEN.Tween(target, ).to(endTarget, animationDuration);
 			tween.easing(easing);
 			tween.onUpdate(() => {
 				view.lookAt(target);
@@ -1264,16 +1269,18 @@ export class Viewer extends EventDispatcher {
 			tween.onComplete(() => {
 				view.lookAt(target);
 				this.dispatchEvent({type: 'focusing_finished', target: this});
+				this.TWEENGROUP.remove(tween);
 			});
 
 			this.dispatchEvent({type: 'focusing_started', target: this});
+			this.TWEENGROUP.add(tween);//so animation is held at viewer.update
 			tween.start();
-			const animate = (time = 0) => {
-				requestAnimationFrame(animate);
-				tween.update(time);
+			// const animate = (time = 0) => {
+			// 	requestAnimationFrame(animate);
+			// 	tween.update(time);
 
-			};
-			animate();
+			// };
+			// animate();
 		}
 
 		//newer tween requires animation
@@ -2497,7 +2504,9 @@ export class Viewer extends EventDispatcher {
 			}
 		}
 
-		TWEEN.update(timestamp);
+		//this global variable TWEEN is outdated and shoudl be updated per groups as 24.0
+		// TWEEN.update(timestamp);
+		this.TWEENGROUP.update(timestamp);
 
 		this.dispatchEvent({
 			type: 'update',

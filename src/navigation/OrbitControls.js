@@ -19,7 +19,7 @@ import {MOUSE} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
 
-import * as TWEEN from 'tween';
+import * as TWEEN from '@tweenjs/tween.js';
 
 export class OrbitControls extends EventDispatcher {
 
@@ -224,16 +224,22 @@ export class OrbitControls extends EventDispatcher {
 
 			tween.onComplete(() => {
 				this.tweens = this.tweens.filter(e => e !== tween);
+
+				this.viewer.TWEENGROUP.remove(tween);
+
 			});
 
+			// this.viewer.TWEENGROUP.add(tween);
+
+			this.viewer.TWEENGROUP.add(tween);
 			tween.start();
+			// const animate = (time = 0) => {
+			// 	requestAnimationFrame(animate);
+			// 	tween.update(time);
+			// 	console.log("OrbitControls.zoomToLocation -> animate", time)
 
-			const animate = (time = 0) => {
-				requestAnimationFrame(animate);
-				tween.update(time);
-
-			};
-			animate();
+			// };
+			// animate();
 		}
 	}
 

@@ -553,14 +553,16 @@ export class Annotation extends EventDispatcher {
 			{ // animate camera position
 				let tween = new TWEEN.Tween(view.position).to(endPosition, animationDuration);
 				tween.easing(easing);
+
+				this.viewer.TWEENGROUP.add(tween);//for newer version
 				tween.start();
 
-				const animate = (time = 0) => {
-					requestAnimationFrame(animate);
-					tween.update(time);
+				// const animate = (time = 0) => {
+				// 	requestAnimationFrame(animate);
+				// 	tween.update(time);
 
-				};
-				animate();
+				// };
+				// animate();
 
 			}
 
@@ -573,14 +575,16 @@ export class Annotation extends EventDispatcher {
 						view.radius = this.x * endRadius + (1 - this.x) * startRadius;
 					});
 				tween.easing(easing);
+
+				this.viewer.TWEENGROUP.add(tween);//for newer version
 				tween.start();
 
-				const animate = (time = 0) => {
-					requestAnimationFrame(animate);
-					tween.update(time);
+				// const animate = (time = 0) => {
+				// 	requestAnimationFrame(animate);
+				// 	tween.update(time);
 
-				};
-				animate();
+				// };
+				// animate();
 
 			}
 		}

@@ -269,14 +269,18 @@ export class Utils {
 		{ // animate camera position
 			let tween = new TWEEN.Tween(view.position).to(endPosition, animationDuration);
 			tween.easing(easing);
+			tween.onComplete(() => {
+				this.viewer.TWEENGROUP.remove(tween);
+			});
+			this.viewer.TWEENGROUP.add(tween);//handled by viewer.update
 			tween.start();
 
-			const animate = (time = 0) => {
-				requestAnimationFrame(animate);
-				tween.update(time);
+			// const animate = (time = 0) => {
+			// 	requestAnimationFrame(animate);
+			// 	tween.update(time);
 
-			};
-			animate();
+			// };
+			// animate();
 		}
 
 		{ // animate camera target
@@ -292,7 +296,10 @@ export class Utils {
 			});
 			tween.onComplete(() => {
 				view.lookAt(target);
+				this.viewer.TWEENGROUP.remove(tween);
 			});
+
+			this.viewer.TWEENGROUP.add(tween);//handled by viewer.update
 			tween.start();
 
 const animate = (time = 0) => {

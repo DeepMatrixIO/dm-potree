@@ -167,6 +167,10 @@ export class TransformationTool {
 					outlineMaterial.opacity = opacity.x;
 					pickSphere.material.opacity = opacity.x * 0.5;
 				});
+				t.onComplete(() => {
+					this.viewer.TWEENGROUP.remove(t);
+				});
+				this.viewer.TWEENGROUP.add(t);
 				t.start();
 			};
 
@@ -272,6 +276,10 @@ export class TransformationTool {
 					//outlineMaterial.opacity = opacity.x;
 					pickSphere.material.opacity = opacity.x * 0.5;
 				});
+				t.onComplete(() => {
+					this.viewer.TWEENGROUP.remove(t);
+				});
+				this.viewer.TWEENGROUP.add(t);
 				t.start();
 			};
 
@@ -368,6 +376,10 @@ export class TransformationTool {
 					outlineMaterial.opacity = opacity.x;
 					pickMaterial.opacity = opacity.x * 0.5;
 				});
+				t.onComplete(() => {
+					this.viewer.TWEENGROUP.remove(t);
+				});
+				this.viewer.TWEENGROUP.add(t);
 				t.start();
 			};
 
@@ -436,6 +448,10 @@ export class TransformationTool {
 					outlineMaterial.opacity = opacity.x;
 					pickMaterial.opacity = opacity.x * 0.5;
 				});
+				t.onComplete(() => {
+					this.viewer.TWEENGROUP.remove(t);
+				});
+				this.viewer.TWEENGROUP.add(t);
 				t.start();
 			};
 

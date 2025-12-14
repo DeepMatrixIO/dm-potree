@@ -225,16 +225,20 @@ export class EarthControls extends EventDispatcher {
 
 			tween.onComplete(() => {
 				this.tweens = this.tweens.filter(e => e !== tween);
+
+				this.viewer.TWEENGROUP.remove(tween);
+
 			});
 
+			this.viewer.TWEENGROUP.add(tween);
 			tween.start();
 
-			const animate = (time = 0) => {
-				requestAnimationFrame(animate);
-				tween.update(time);
+			// const animate = (time = 0) => {
+			// 	requestAnimationFrame(animate);
+			// 	tween.update(time);
 
-			};
-			animate();
+			// };
+			// animate();
 		}
 	}
 

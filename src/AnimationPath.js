@@ -2,6 +2,7 @@
 import {BufferGeometry, Float32BufferAttribute, CatmullRomCurve3} from 'three'
 
 import * as TWEEN from '@tweenjs/tween.js';
+import {Viewer} from './viewer/viewer';
 export class PathAnimation {
 
 	constructor(path, start, end, speed, callback) {
@@ -42,6 +43,9 @@ export class PathAnimation {
 				this.start();
 			}
 		});
+
+		//required global access to viewer or make it independent
+
 
 		setTimeout(() => {
 			this.tween.start();
