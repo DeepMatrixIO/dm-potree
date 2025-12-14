@@ -1,9 +1,9 @@
 
 import {Vector3, Mesh, Vector2,  Color, Object3D, SphereGeometry, MeshNormalMaterial} from 'three'
 
-import {Line2} from "../../libs/three.js/lines/Line2.js";
-import {LineGeometry} from "../../libs/three.js/lines/LineGeometry.js";
-import {LineMaterial} from "../../libs/three.js/lines/LineMaterial.js";
+import {Line2} from "../lines/Line2.js";
+import {LineGeometry} from "../lines/LineGeometry.js";
+import {LineMaterial} from "../lines/LineMaterial.js";
 import {updateFetchToken} from "../tokenUpdater.js"; //added by jguerrer
 import {Utils} from "../utils.js";
 

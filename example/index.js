@@ -93,9 +93,9 @@ document.body.onload = function () {
 
 	viewer.setScene(sceneSG);
 
-	viewer.loadGUI(() => {
+	viewer.loadGUI(() => {//no more jquery pls
 		viewer.setLanguage('en');
-		$("#menu_scene").next().show();
+		// $("#menu_scene").next().show();
 		viewer.toggleSidebar();
 	});
 	//here the viewer is not visible, only the window.viewer
