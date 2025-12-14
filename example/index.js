@@ -33,10 +33,10 @@ document.body.onload = function () {
 	// loadPointCloud('/data/pump/', 'metadata.json', new Vector3(0, -1.5, 3), new Euler(-Math.PI / 2, 0, 0), new Vector3(2, 2, 2));
 
 	const libs = `
-	<script src="./libs/jquery/jquery-3.1.1.min.js"></script>
+	<!--<script src="./libs/jquery/jquery-3.1.1.min.js"></script>-->
 	<script src="./libs/spectrum/spectrum.js"></script>
 	<script src="./libs/jquery-ui/jquery-ui.min.js"></script>
-	<script src="./libs/other/BinaryHeap.js"></script>
+	<!--<script src="./libs/other/BinaryHeap.js"></script> -->
 	<!--<script src="./libs/tween/tween.min.js"></script> --> <!-- removed-->
 	<script src="./libs/d3/d3.js"></script>
 	<script src="./libs/proj4/proj4.js"></script>

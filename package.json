@@ -2,7 +2,7 @@
   "name": "potree",
   "private": true,
   "version": "1.8.0",
-  "description": "WebGL point cloud viewer",
+  "description": "WebGL2 point cloud viewer. Modernized",
   "keywords": [
     "point",
     "cloud",
@@ -42,10 +42,9 @@
     "proj4": "^2.19.10",
     "rollup": "^3.29.4",
     "s-": "^0.0.1",
-    "three": "^0.170.0",
+    "three": "^0.182.0",
     "through": "~2.3.4",
     "ts-loader": "^9.5.4",
-    "tween": "^0.9.0",
     "uglify-js": "^3.19.3",
     "uuid": "^13.0.0"
   },

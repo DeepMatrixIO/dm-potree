@@ -302,12 +302,12 @@ export class Utils {
 			this.viewer.TWEENGROUP.add(tween);//handled by viewer.update
 			tween.start();
 
-const animate = (time = 0) => {
-				requestAnimationFrame(animate);
-				tween.update(time);
+// const animate = (time = 0) => {
+// 				requestAnimationFrame(animate);
+// 				tween.update(time);
 
-			};
-			animate();
+// 			};
+// 			animate();
 
 		}
 

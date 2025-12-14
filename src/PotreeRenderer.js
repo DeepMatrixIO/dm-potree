@@ -5,7 +5,9 @@ import {PointCloudTree} from "./PointCloudTree.js";
 import {ClipTask, ElevationGradientRepeat, PointSizeType} from "./defines.js";
 import {FilterConstListType, FilterIntType} from "./utils/FilterConsts.js";
 import {PointCloudFilterList} from "./utils/Filter.js";
-import {LuminanceAlphaFormat, LuminanceFormat} from 'three';
+// import {LuminanceAlphaFormat, LuminanceFormat} from 'three';//deprecated since 152
+// import {RGFormat as LuminanceAlphaFormat, RedFormat as LuminanceFormat} from 'three';// TODO replace for the proper vaRIABLES AND gl.
+import {RGFormat , RedFormat } from 'three';// TODO replace for the proper vaRIABLES AND gl.
 
 // Copied from js: WebGLRenderer.js
 function paramThreeToGL(_gl, p) {
@@ -48,8 +50,12 @@ function paramThreeToGL(_gl, p) {
 	if (p === AlphaFormat) return _gl.ALPHA;
 	if (p === RGBFormat) return _gl.RGB;
 	if (p === RGBAFormat) return _gl.RGBA;
-	if (p === LuminanceFormat) return _gl.LUMINANCE;
-	if (p === LuminanceAlphaFormat) return _gl.LUMINANCE_ALPHA;
+	// if (p === LuminanceFormat) return _gl.LUMINANCE;//this
+	// if (p === LuminanceAlphaFormat) return _gl.LUMINANCE_ALPHA;
+
+	if (p === RedFormat) return _gl.RED;//REPLACED and apparently not in use
+	if (p === RGFormat) return _gl.RG;//REPLACED and apparently not in use
+
 	if (p === DepthFormat) return _gl.DEPTH_COMPONENT;
 	if (p === DepthStencilFormat) return _gl.DEPTH_STENCIL;
 

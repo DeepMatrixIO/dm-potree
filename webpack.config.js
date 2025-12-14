@@ -25,7 +25,7 @@ module.exports = {
 		optimization: {
         minimize: false,
     },
-	externals: ['three'],
+	externals: ['three', '@tweenjs/tween.js','proj4','i18next'],
 
 	module: {
 		rules: [

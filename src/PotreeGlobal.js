@@ -116,7 +116,8 @@ export class Potree {
 		this.version = {
 			major: 1,
 			minor: 8,
-			suffix: '.0'
+			suffix: '.1'
+
 		};
 
 		this.lru = new LRU();
