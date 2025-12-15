@@ -1,8 +1,8 @@
 // import { AmbientLight, BoxGeometry,  Euler,  Mesh, MeshBasicMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer } from 'three';
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-import {Potree, PScene, Viewer} from '../src/PotreeGlobal.js';//as index is changed name to potree_module
-// import {Potree, PScene, Viewer} from '../dist/potree_module.js';//as index is changed name to potree_module
+// import {Potree, PScene, Viewer} from '../src/PotreeGlobal.js';//as index is changed name to potree_module
+import {Potree, PScene, Viewer} from '../dist/potree_module.js';//as index is changed name to potree_module
 
 
 document.body.onload = function () {
@@ -78,11 +78,7 @@ document.body.onload = function () {
 	viewer.loadSettingsFromURL();
 	viewer.setBackground("skybox");
 
-	// viewer.loadGUI(() => {
-	// 	viewer.setLanguage('en');
-	// 	$("#menu_scene").next().show();
-	// 	viewer.toggleSidebar();
-	// });
+
 	console.log(potree_viewer)
 
 	viewer.setDescription(`
@@ -98,6 +94,10 @@ document.body.onload = function () {
 		// $("#menu_scene").next().show();
 		viewer.toggleSidebar();
 	});
+
+
+	//profile needs to be added
+
 	//here the viewer is not visible, only the window.viewer
 	document.body.onresize = function () {
 		const width = window.innerWidth;

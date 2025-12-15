@@ -16,8 +16,11 @@ import {ScreenBoxSelectTool} from "../utils/ScreenBoxSelectTool.js";
 import {SphereVolume, Volume} from "../utils/Volume.js";
 import {HierarchicalSlider} from "./HierarchicalSlider.js";
 import {PropertiesPanel} from "./PropertyPanels/PropertiesPanel.js";
-
 import JSON5 from "../../libs/json5-2.1.3/json5.mjs";
+
+
+
+
 
 export class Sidebar {
 
@@ -28,18 +31,17 @@ export class Sidebar {
 		this.profileTool = viewer.profileTool;
 		this.volumeTool = viewer.volumeTool;
 
-		this.dom = $("#sidebar_root");
+		this.dom = document.querySelector("#sidebar_root");
 	}
 
 	createToolIcon(icon, title, callback) {
-		let element = $(`
-			<img src="${icon}"
-				style="width: 32px; height: 32px"
-				class="button-icon"
-				data-i18n="${title}" />
-		`);
-
-		element.click(callback);
+		let element = document.createElement('img');
+		element.src = icon;
+		element.style.width = "32px";
+		element.style.height = "32px";
+		element.className = "button-icon";
+		element.setAttribute("data-i18n", title);
+		element.addEventListener("click", callback);
 
 		return element;
 	}
@@ -47,28 +49,34 @@ export class Sidebar {
 	init() {
 
 		this.initAccordion();
-		this.initAppearance();
-		this.initToolbar();
-		this.initScene();
-		this.initNavigation();
-		this.initFilters();
-		this.initClippingTool();
-		this.initSettings();
+		this.initAppearance();//appearance UI options
 
-		$('#potree_version_number').html(Potree.version.major + "." + Potree.version.minor + Potree.version.suffix);
+		this.initToolbar();//measurements
+
+		this.initScene();
+
+		this.initNavigation();//controls for nav
+
+		this.initFilters(); //pointcloud filtering
+
+		this.initClippingTool();//clip tools
+
+		this.initSettings();//settings
+
+		document.querySelector('#potree_version_number').innerHTML = Potree.version.major + "." + Potree.version.minor + Potree.version.suffix;
 	}
 
 
-
+	//starts all tools used for measurements
 	initToolbar() {
 
 		// ANGLE
-		let elToolbar = $('#tools');
+		let elToolbar = document.querySelector('#tools');
 		elToolbar.append(this.createToolIcon(
 			Potree.resourcePath + '/icons/angle.png',
 			'[title]tt.angle_measurement',
 			() => {
-				$('#menu_measurements').next().slideDown();
+				document.querySelector('#menu_measurements').next().slideDown();
 				let measurement = this.measuringTool.startInsertion({
 					showDistances: false,
 					showAngles: true,
@@ -78,10 +86,16 @@ export class Sidebar {
 					name: 'Angle'
 				});
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				//jstree must be discarded because is not in use anymore
+
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+
+				//replace all jstree stuff
+
+
 			}
 		));
 
@@ -90,7 +104,8 @@ export class Sidebar {
 			Potree.resourcePath + '/icons/point.svg',
 			'[title]tt.point_measurement',
 			() => {
-				$('#menu_measurements').next().slideDown();
+
+				document.querySelector('#menu_measurements').next().slideDown();
 				let measurement = this.measuringTool.startInsertion({
 					showDistances: false,
 					showAngles: false,
@@ -101,10 +116,12 @@ export class Sidebar {
 					name: 'Point'
 				});
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+
+				//TODO replace all jstree stuff
 			}
 		));
 
@@ -113,7 +130,7 @@ export class Sidebar {
 			Potree.resourcePath + '/icons/distance.svg',
 			'[title]tt.distance_measurement',
 			() => {
-				$('#menu_measurements').next().slideDown();
+				document.querySelector('#menu_measurements').next().slideDown();
 				let measurement = this.measuringTool.startInsertion({
 					showDistances: true,
 					showArea: false,
@@ -121,10 +138,12 @@ export class Sidebar {
 					name: 'Distance'
 				});
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+
+				//TODO replace all jstree stuff
 			}
 		));
 
@@ -133,7 +152,7 @@ export class Sidebar {
 			Potree.resourcePath + '/icons/height.svg',
 			'[title]tt.height_measurement',
 			() => {
-				$('#menu_measurements').next().slideDown();
+				document.querySelector('#menu_measurements').next().slideDown();
 				let measurement = this.measuringTool.startInsertion({
 					showDistances: false,
 					showHeight: true,
@@ -143,10 +162,10 @@ export class Sidebar {
 					name: 'Height'
 				});
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
 			}
 		));
 
@@ -155,7 +174,7 @@ export class Sidebar {
 			Potree.resourcePath + '/icons/circle.svg',
 			'[title]tt.circle_measurement',
 			() => {
-				$('#menu_measurements').next().slideDown();
+				document.querySelector('#menu_measurements').next().slideDown();
 				let measurement = this.measuringTool.startInsertion({
 					showDistances: false,
 					showHeight: false,
@@ -167,10 +186,10 @@ export class Sidebar {
 					name: 'Circle'
 				});
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
 			}
 		));
 
@@ -179,7 +198,7 @@ export class Sidebar {
 			Potree.resourcePath + '/icons/azimuth.svg',
 			'Azimuth',
 			() => {
-				$('#menu_measurements').next().slideDown();
+				document.querySelector('#menu_measurements').next().slideDown();
 				let measurement = this.measuringTool.startInsertion({
 					showDistances: false,
 					showHeight: false,
@@ -192,10 +211,10 @@ export class Sidebar {
 					name: 'Azimuth'
 				});
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
 			}
 		));
 
@@ -204,7 +223,7 @@ export class Sidebar {
 			Potree.resourcePath + '/icons/area.svg',
 			'[title]tt.area_measurement',
 			() => {
-				$('#menu_measurements').next().slideDown();
+				document.querySelector('#menu_measurements').next().slideDown();
 				let measurement = this.measuringTool.startInsertion({
 					showDistances: true,
 					showArea: true,
@@ -212,10 +231,10 @@ export class Sidebar {
 					name: 'Area'
 				});
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === measurement.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
 			}
 		));
 
@@ -226,10 +245,10 @@ export class Sidebar {
 			() => {
 				let volume = this.volumeTool.startInsertion();
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === volume.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === volume.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
 			}
 		));
 
@@ -240,10 +259,10 @@ export class Sidebar {
 			() => {
 				let volume = this.volumeTool.startInsertion({type: SphereVolume});
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === volume.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === volume.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
 			}
 		));
 
@@ -252,13 +271,13 @@ export class Sidebar {
 			Potree.resourcePath + '/icons/profile.svg',
 			'[title]tt.height_profile',
 			() => {
-				$('#menu_measurements').next().slideDown();;
+				document.querySelector('#menu_measurements').next().slideDown();;
 				let profile = this.profileTool.startInsertion();
 
-				let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
-				let jsonNode = measurementsRoot.children.find(child => child.data.uuid === profile.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let measurementsRoot = $("#jstree_scene").jstree().get_json("measurements");
+				// let jsonNode = measurementsRoot.children.find(child => child.data.uuid === profile.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
 			}
 		));
 
@@ -270,10 +289,10 @@ export class Sidebar {
 				$('#menu_measurements').next().slideDown();;
 				let annotation = this.viewer.annotationTool.startInsertion();
 
-				let annotationsRoot = $("#jstree_scene").jstree().get_json("annotations");
-				let jsonNode = annotationsRoot.children.find(child => child.data.uuid === annotation.uuid);
-				$.jstree.reference(jsonNode.id).deselect_all();
-				$.jstree.reference(jsonNode.id).select_node(jsonNode.id);
+				// let annotationsRoot = $("#jstree_scene").jstree().get_json("annotations");
+				// let jsonNode = annotationsRoot.children.find(child => child.data.uuid === annotation.uuid);
+				// $.jstree.reference(jsonNode.id).deselect_all();
+				// $.jstree.reference(jsonNode.id).select_node(jsonNode.id);
 			}
 		));
 
@@ -288,7 +307,8 @@ export class Sidebar {
 
 
 		{ // SHOW / HIDE Measurements
-			let elShow = $("#measurement_options_show");
+			let elShow = document.querySelector("#measurement_options_show");
+
 			elShow.selectgroup({title: "Show/Hide labels"});
 
 			elShow.find("input").click((e) => {
@@ -303,7 +323,7 @@ export class Sidebar {
 
 	initScene() {
 
-		let elScene = $("#menu_scene");
+		let elScene = document.querySelector("#menu_scene");
 		let elObjects = elScene.next().find("#scene_objects");
 		let elProperties = elScene.next().find("#scene_object_properties");
 
@@ -311,9 +331,15 @@ export class Sidebar {
 		{
 			let elExport = elScene.next().find("#scene_export");
 
-			let geoJSONIcon = `${Potree.resourcePath}/icons/file_geojson.svg`;
-			let dxfIcon = `${Potree.resourcePath}/icons/file_dxf.svg`;
-			let potreeIcon = `${Potree.resourcePath}/icons/file_potree.svg`;
+			// let geoJSONIcon = `${Potree.resourcePath}/icons/file_geojson.svg`;
+			// let dxfIcon = `${Potree.resourcePath}/icons/file_dxf.svg`;
+			// let potreeIcon = `${Potree.resourcePath}/icons/file_potree.svg`;
+			//TODO find a proper way to load resources other than static
+			let geoJSONIcon = `/icons/file_geojson.svg`;
+			let dxfIcon = `/icons/file_dxf.svg`;
+			let potreeIcon = `/icons/file_potree.svg`;
+
+
 
 			elExport.append(`
 				Export: <br>
@@ -370,7 +396,10 @@ export class Sidebar {
 
 		localStorage.removeItem('jstree');
 
-		let tree = $(`<div id="jstree_scene"></div>`);
+		// let tree = $(`<div id="jstree_scene"></div>`);
+		let tree = document.createElement("div");
+		tree.id = "jstree_scene";
+
 		elObjects.append(tree);
 
 		tree.jstree({
@@ -449,7 +478,7 @@ export class Sidebar {
 
 		tree.on('dblclick', '.jstree-anchor', (e) => {
 
-			let instance = $.jstree.reference(e.target);
+			let instance =  $.jstree.reference(e.target);
 			let node = instance.get_node(e.target);
 			let object = node.data;
 
@@ -1254,17 +1283,18 @@ export class Sidebar {
 	}
 
 	initAccordion() {
-		$('.accordion > h3').each(function () {
-			let header = $(this);
-			let content = $(this).next();
+		document.querySelectorAll('.accordion > h3').forEach(function(header) {
+			let content = header.nextElementSibling;
 
-			//header.addClass('accordion-header ui-widget');
-			//content.addClass('accordion-content ui-widget');
-
-			content.hide();
-
-			header.click(() => {
-				content.slideToggle();
+			//header.classList.add('accordion-header', 'ui-widget');
+			//content.classList.add('accordion-content', 'ui-widget');
+			content.style.display = 'none';
+			header.addEventListener('click', () => {
+				if (content.style.display === 'none') {
+					content.style.display = '';
+				} else {
+					content.style.display = 'none';
+				}
 			});
 		});
 
@@ -1279,7 +1309,8 @@ export class Sidebar {
 			["IT", "it"]
 		];
 
-		let elLanguages = $('#potree_languages');
+		let elLanguages =  document.querySelector('#potree_languages');
+
 		for (let i = 0;i < languages.length;i++) {
 			let [key, value] = languages[i];
 			let element = $(`<a>${key}</a>`);

@@ -1636,12 +1636,14 @@ export class Viewer extends EventDispatcher {
 	toggleSidebar() {
 		try {
 			let renderArea = document.getElementById('potree_render_area');
-			let isVisible = renderArea.css('left') !== '0px';
+			// let isVisible = renderArea.css('left') !== '0px';
+
+			let isVisible = renderArea.style.left !== '0px';
 
 			if (isVisible) {
-				renderArea.css('left', '0px');
+				renderArea.style.left = '0px';
 			} else {
-				renderArea.css('left', '300px');
+				renderArea.style.left = '300px';
 			}
 		} catch (e) {
 			console.error("Error toggling sidebar viewer.toggleSidebar", e);

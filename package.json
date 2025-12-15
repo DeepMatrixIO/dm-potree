@@ -15,7 +15,7 @@
     "browser",
     "tool"
   ],
-  "main": "./example/main.js.js",
+  "main": "./example/index.js",
   "scripts": {
     "start_old": "gulp watch",
     "build_old": "gulp build pack",

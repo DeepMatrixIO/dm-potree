@@ -21,15 +21,14 @@ console.log(__dirname);
 const serveConfig = {
 	mode: 'development',
 	context: __context,
-	entry: './index.js',
+	entry:  './index.js',
 
-	// output: {
-	// 	filename: 'bundle.js',
-	// 	path: path.resolve('dist'),
-	// 	clean: true,
-	// 	// publicPath: './',
-	// },
-	// devtool: 'source-map',
+	output: {
+		filename: 'bundle.js',
+		path: path.resolve('dist'),
+		clean: true,
+	},
+	devtool: 'source-map',
 	devServer: {
 		compress: false,
 		// compress: true,

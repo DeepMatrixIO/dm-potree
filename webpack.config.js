@@ -31,7 +31,10 @@ module.exports = {
 		rules: [
 			{
 				test: /\.js$/,
-				exclude: /node_modules/,
+				exclude: [
+					/node_modules/,
+					/PotreeOLD\.js$/
+				],
 				use: {
 					loader: 'babel-loader', // If you use Babel
 				},
@@ -76,5 +79,7 @@ module.exports = {
 		static: './dist',
 		hot: true,
 		open: true,
+		entry	: './example/index.js',
 	},
+
 };
