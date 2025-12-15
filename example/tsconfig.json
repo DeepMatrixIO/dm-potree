@@ -18,6 +18,6 @@
     "lib": ["es2017", "dom"],
     "plugins": []
   },
-  "include": ["**/*.ts", "**/*.js"],
+  "include": ["**/*.ts", "**/*.js", "index.ts.unused"],
   "exclude": ["build", "node_modules"]
 }

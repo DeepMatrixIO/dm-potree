@@ -1072,7 +1072,8 @@ export class Viewer extends EventDispatcher {
 	disableAnnotations() {
 		try {
 			this.scene.annotations.traverse(annotation => {
-				annotation.domElement.css('pointer-events', 'none');
+				// annotation.domElement.css('pointer-events', 'none');
+				annotation.domElement.style.pointerEvents = 'none';
 
 				// return annotation.visible;
 			});
@@ -1084,7 +1085,7 @@ export class Viewer extends EventDispatcher {
 	enableAnnotations() {
 		try {
 			this.scene.annotations.traverse(annotation => {
-				annotation.domElement.css('pointer-events', 'auto');
+				// annotation.domElement.css('pointer-events', 'auto');
 
 				// return annotation.visible;
 			});
@@ -1992,15 +1993,18 @@ export class Viewer extends EventDispatcher {
 				}
 			}
 
-			element.css("left", screenPos.x + "px");
-			element.css("top", screenPos.y + "px");
+			// element.css("left", screenPos.x + "px");
+			element.style.left = screenPos.x + "px";
+			// element.css("left", screenPos.y + "px");
+			element.style.top = screenPos.y + "px";
 			//element.css("display", "block");
 
 			let zIndex = 10000000 - distance * (10000000 / this.scene.cameraP.far);
 			if (annotation.descriptionVisible) {
 				zIndex += 10000000;
 			}
-			element.css("z-index", parseInt(zIndex));
+			// element.css("z-index", Math.floor(zIndex));
+			element.style.zIndex = Math.floor(zIndex);
 
 			if (annotation.children.length > 0) {
 				let expand = screenSize > annotation.collapseThreshold || annotation.boundingBox.containsPoint(this.scene.getActiveCamera().position);
@@ -2501,7 +2505,8 @@ export class Viewer extends EventDispatcher {
 		if (this.mapView) {
 			this.mapView.update(delta);
 			if (this.mapView.sceneProjection) {
-				$("#potree_map_toggle").css("display", "block");
+				// $("#potree_map_toggle").css("display", "block");
+				document.getElementById("potree_map_toggle").style.display = "block";
 
 			}
 		}
