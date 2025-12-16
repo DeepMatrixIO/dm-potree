@@ -1262,7 +1262,7 @@ export class Viewer extends EventDispatcher {
 
 		{ // animate camera target
 			let target = startTarget.clone();
-			let tween = new TWEEN.Tween(target, ).to(endTarget, animationDuration);
+			let tween = new TWEEN.Tween(target,).to(endTarget, animationDuration);
 			tween.easing(easing);
 			tween.onUpdate(() => {
 				view.lookAt(target);
@@ -1680,6 +1680,8 @@ export class Viewer extends EventDispatcher {
 		});
 	}
 
+
+	//add all graphical elements
 	loadGUI(callback) {
 
 		if (callback) {
@@ -1736,9 +1738,12 @@ export class Viewer extends EventDispatcher {
 				// 	});
 				// });
 
+				////////////////////////////////////////////////////// PROFILE WINDOW REMOVED FOR TESTING PURPOSES
 				// Load profile.html using fetch
 				// fetch(new URL(Potree.scriptPath + '/profile.html').href)
-				// let profilePath=`./potree/profile.html`;
+
+				// fetch(new URL('/potree/profile.html').href)
+				// let profilePath = `./potree/profile.html`;
 				// fetch(profilePath)
 				// 	.then(response => response.text())
 				// 	.then(profileHtml => {
@@ -1749,108 +1754,108 @@ export class Viewer extends EventDispatcher {
 				// 			document.body.appendChild(elProfile.firstChild);
 				// 		}
 
-				// 		// Replace jQuery UI draggable/resizable with a library or custom implementation
-				// 		// Example: Using interact.js (install via npm)
+						// 		// Replace jQuery UI draggable/resizable with a library or custom implementation
+						// 		// Example: Using interact.js (install via npm)
 
-				// 		//removed for testing unless find another way
-				// 		import('interactjs').then(interact => {
-				// 			interact('#profile_window')
-				// 				.draggable({
-				// 					// Configure drag options
-				// 				})
-				// 				.resizable({
-				// 					// Configure resize options
-				// 				});
-				// 		});
-
-
+						// 		//removed for testing unless find another way
+						// 		import('interactjs').then(interact => {
+						// 			interact('#profile_window')
+						// 				.draggable({
+						// 					// Configure drag options
+						// 				})
+						// 				.resizable({
+						// 					// Configure resize options
+						// 				});
+						// 		});
 
 
-				// 		// Document ready equivalent
-				// 		document.addEventListener('DOMContentLoaded', () => {
-				// 			this.guiLoaded = true;
-				// 			for (let task of this.guiLoadTasks) {
-				// 				task();
-				// 			}
-				// 		});
-				// 	});
-			});
 
-		return this.promiseGuiLoaded();
-	}
+
+						// 		// Document ready equivalent
+						// 		document.addEventListener('DOMContentLoaded', () => {
+						// 			this.guiLoaded = true;
+						// 			for (let task of this.guiLoadTasks) {
+						// 				task();
+						// 			}
+						// 		});
+						// 	});
+					});
+
+				return this.promiseGuiLoaded();
+			}
 
 	setLanguage(lang) {
-		i18next.changeLanguage(lang);
-		// Apply translations to body or specific elements
-		document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
-	}
+				i18next.changeLanguage(lang);
+				// Apply translations to body or specific elements
+				document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
+			}
 
 	setServer(server) {
-		this.server = server;
-	}
+				this.server = server;
+			}
 
 	initDragAndDrop() {
-		function allowDrag(e) {
-			e.dataTransfer.dropEffect = 'copy';
-			e.preventDefault();
-		}
+				function allowDrag(e) {
+				e.dataTransfer.dropEffect = 'copy';
+				e.preventDefault();
+			}
 
 		let dropHandler = async (event) => {
-			console.log(event);
-			event.preventDefault();
+				console.log(event);
+				event.preventDefault();
 
-			for (const item of event.dataTransfer.items) {
-				console.log(item);
+				for (const item of event.dataTransfer.items) {
+					console.log(item);
 
-				if (item.kind !== "file") {
-					continue;
-				}
+					if (item.kind !== "file") {
+						continue;
+					}
 
-				const file = item.getAsFile();
+					const file = item.getAsFile();
 
-				const isJson5 = file.name.toLowerCase().endsWith(".json5");
-				const isGeoPackage = file.name.toLowerCase().endsWith(".gpkg");
+					const isJson5 = file.name.toLowerCase().endsWith(".json5");
+					const isGeoPackage = file.name.toLowerCase().endsWith(".gpkg");
 
-				if (isJson5) {
-					try {
+					if (isJson5) {
+						try {
 
-						const text = await file.text();
-						const json = JSON5.parse(text);
+							const text = await file.text();
+							const json = JSON5.parse(text);
 
-						if (json.type === "Potree") {
-							Potree.loadProject(viewer, json);
+							if (json.type === "Potree") {
+								Potree.loadProject(viewer, json);
+							}
+						} catch (e) {
+							console.error("failed to parse the dropped file as JSON");
+							console.error(e);
 						}
-					} catch (e) {
-						console.error("failed to parse the dropped file as JSON");
-						console.error(e);
+					} else if (isGeoPackage) {
+						const hasPointcloud = viewer.scene.pointclouds.length > 0;
+
+						if (!hasPointcloud) {
+							let msg = "At least one point cloud is needed that specifies the ";
+							msg += "coordinate reference system before loading vector data.";
+							console.error(msg);
+						} else {
+
+							proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+							proj4.defs("pointcloud", this.getProjection());
+							let transform = proj4("WGS84", "pointcloud");
+
+							const buffer = await file.arrayBuffer();
+
+							const params = {
+								transform: transform,
+								source: file.name,
+							};
+
+							const geo = await Potree.GeoPackageLoader.loadBuffer(buffer, params);
+							viewer.scene.addGeopackage(geo);
+						}
 					}
-				} else if (isGeoPackage) {
-					const hasPointcloud = viewer.scene.pointclouds.length > 0;
 
-					if (!hasPointcloud) {
-						let msg = "At least one point cloud is needed that specifies the ";
-						msg += "coordinate reference system before loading vector data.";
-						console.error(msg);
-					} else {
-
-						proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-						proj4.defs("pointcloud", this.getProjection());
-						let transform = proj4("WGS84", "pointcloud");
-
-						const buffer = await file.arrayBuffer();
-
-						const params = {
-							transform: transform,
-							source: file.name,
-						};
-
-						const geo = await Potree.GeoPackageLoader.loadBuffer(buffer, params);
-						viewer.scene.addGeopackage(geo);
-					}
 				}
-
-			}
-		};
+			};
 
 
 		document.body.addEventListener("dragenter", allowDrag);
