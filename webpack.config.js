@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
 	entry: './src/potree_module.js', // Change this to your main entry file
@@ -25,6 +26,22 @@ module.exports = {
 		optimization: {
         minimize: false,
     },
+
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                // Adjust 'from' to point to your source static folder (e.g., 'resources', 'public')
+                { from: 'resources', to: 'resources' },
+				{ from: 'src/viewer/potree.css', to: 'potree/potree.css' },
+				{ from: 'src/viewer/*.html', to: 'potree/[name][ext]' },
+				{ from: 'src/workers/**/*', to: 'workers' },
+
+                // You can add more patterns here
+                // { from: 'libs', to: 'libs' },
+            ],
+        }),
+    ],
+
 	externals: ['three', '@tweenjs/tween.js','proj4','i18next'],
 
 	module: {

@@ -23,13 +23,15 @@ export {Points} from "./Points.js";
 // export * from "./Potree_update_visibility.js";
 // import {updatePointClouds as _updatePointClouds, updateVisibility as _updateVisibility} from "./Potree_update_visibility.js";
 // import * as POTREE_UPDATE_VISIBILITY from "./Potree_update_visibility.js";
-export {PotreeRenderer} from "./PotreeRenderer.js";
+export {PotreeRenderer} from "./viewer/PotreeRenderer.js";
 export {ProfileRequest} from "./ProfileRequest.js";
 export {TextSprite} from "./TextSprite.js";
-export {utils} from "./utils.js";
+export {Utils} from "./utils.js";
 export {Version} from "./Version.js";
-export {LoadProject} from "./viewer/LoadProject.js";
-export {SaveProject} from "./viewer/SaveProject.js";
+
+export {loadProject} from "./viewer/LoadProject.js";//as candidates for adding to PotreeClass
+export {saveProject} from "./viewer/SaveProject.js";//
+
 export {WorkerPool} from "./WorkerPool.js";
 export {XHRFactory} from "./XHRFactory.js";
 
@@ -40,10 +42,11 @@ export {NormalizationEDLMaterial} from "./materials/NormalizationEDLMaterial.js"
 export {NormalizationMaterial} from "./materials/NormalizationMaterial.js";
 export {PointCloudMaterial} from "./materials/PointCloudMaterial.js";
 
-export {BinaryLoader} from "./loader/ept/BinaryLoader.js";
-export {LaszipLoader} from "./loader/ept/LaszipLoader.js";
-export {ZstandardLoader} from "./loader/ept/ZstandardLoader.js";
-export {EptLoader} from "./loader/EptLoader.js";
+// export {EptBinaryLoader} from "./loader/ept/BinaryLoader.js";//however is not really in use
+// export {CopcLaszipLoader,EptLaszipLoader,EptLazBatcher} from "./loader/ept/LaszipLoader.js";//however not in use in this level
+// export {EptZstandardLoader} from "./loader/ept/ZstandardLoader.js"; //not in use here
+// export {EptLoader} from "./loader/EptLoader.js";//not in use here
+
 export {GeoPackageLoader} from "./loader/GeoPackageLoader.js";
 export {POCLoader} from "./loader/POCLoader.js";
 export {PointAttributes} from "./loader/PointAttributes.js";
@@ -54,7 +57,7 @@ export {Box3Helper} from "./utils/Box3Helper.js";
 export {ClippingTool} from "./utils/ClippingTool.js";
 export {ClipVolume} from "./utils/ClipVolume.js";
 export {Compass} from "./utils/Compass.js";
-export {GeoTIFF} from "./utils/GeoTIFF.js";
+// export { } from "./utils/GeoTIFF.js";//Old STYLE CODE, fix or remove it
 export {Measure} from "./utils/Measure.js";
 export {MeasuringTool} from "./utils/MeasuringTool.js";
 export {Message} from "./utils/Message.js";
@@ -78,7 +81,7 @@ export {OrientedImages} from "./modules/OrientedImages/OrientedImages.js";
 
 // export {OctreeLoader,NodeLoader} from "./modules/loader/2.0/OctreeLoader.js";
 
-export {tokenUpdater} from './tokenUpdater.js';
+export {updateFetchToken} from './tokenUpdater.js';//NOT IN USE HERE
 
 // export {ClusteredPoint} from './dm_custom_tools/clustering/ClusteredPoint.js';
 export {ClusterTool} from './dm_custom_tools/clustering/ClusterTool.js';

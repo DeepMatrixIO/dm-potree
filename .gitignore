@@ -41,6 +41,7 @@ libs/giro3d
 /examples/persisted*
 /pointclouds/*
 /example/data/*
-dist/potree_module_index.js
+dist/*
+libs/*
 example/workers*
 example/potree*
