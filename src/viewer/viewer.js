@@ -37,7 +37,7 @@ import {MeasuringTool} from "../utils/MeasuringTool.js";
 import {ProfileTool} from "../utils/ProfileTool.js";
 import {VolumeTool} from "../utils/VolumeTool.js";
 
-// import {VRButton} from '../../libs/three.js/extra/VRButton.js';
+// import {VRButton} from '../../libs/js/extra/VRButton.js';
 import {EventDispatcher} from "../EventDispatcher.js";
 import {ClassificationScheme} from "../materials/ClassificationScheme.js";
 import {DeviceOrientationControls} from "../navigation/DeviceOrientationControls.js";
@@ -81,8 +81,8 @@ export class Viewer extends EventDispatcher {
 		//spatial information
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
 		this.isFeetBasedProjection = false;
-		this._ecefPerspectiveCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
-		this._ecefOrthographicCamera = new THREE.OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
+		this._ecefPerspectiveCamera = new PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
+		this._ecefOrthographicCamera = new OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
 
 
 

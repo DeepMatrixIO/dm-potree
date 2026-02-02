@@ -1,13 +1,13 @@
 import {Shaders} from "../../build/shaders/shaders.js";
-// import {
-// 	AdditiveBlending,
-// 	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
-// 	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
-// // } from "../../libs/js/build/core.js";
-// } from "three";
-import * as THREE from 'three';
+import {
+	AdditiveBlending,
+	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
+	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
+// } from "../../libs/js/build/core.js";
+} from "three";
+// import * as THREE from 'three';
 
-// } from "../../libs/three.js/build/module.jsthre";
+// } from "../../libs/js/build/module.jsthre";
 import {ElevationGradientRepeat, PointShape, PointSizeType, TreeType} from "../defines.js";
 import {Utils} from "../utils.js";
 import {PointCloudFilterList} from "../utils/Filter.js";
@@ -16,7 +16,7 @@ import {ClassificationScheme} from "./ClassificationScheme.js";
 import {Gradients} from "./Gradients.js";
 
 
-export class PointCloudMaterial extends THREE.RawShaderMaterial {
+export class PointCloudMaterial extends RawShaderMaterial {
 	constructor(parameters = {}) {
 		super();
 
@@ -25,10 +25,10 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 		this.visibleNodesTexture = Utils.generateDataTexture(
 			2048,
 			1,
-			new THREE.Color(0xffffff)
+			new Color(0xffffff)
 		);
-		this.visibleNodesTexture.minFilter = THREE.NearestFilter;
-		this.visibleNodesTexture.magFilter = THREE.NearestFilter;
+		this.visibleNodesTexture.minFilter = NearestFilter;
+		this.visibleNodesTexture.magFilter = NearestFilter;
 
 		let getValid = (a, b) => {
 			if (a !== undefined) {
@@ -106,8 +106,8 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 		{
 			const [width, height] = [256, 1];
 			let data = new Uint8Array(width * 4);
-			let texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
-			texture.magFilter = THREE.NearestFilter;
+			let texture = new DataTexture(data, width, height, RGBAFormat);
+			texture.magFilter = NearestFilter;
 			texture.needsUpdate = true;
 
 			this.classificationTexture = texture;
@@ -148,7 +148,7 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 			screenHeight: {type: 'f', value: 1.0},
 			near: {type: 'f', value: 0.1},
 			far: {type: 'f', value: 1.0},
-			uColor: {type: 'c', value: new THREE.Color(0xffffff)},
+			uColor: {type: 'c', value: new Color(0xffffff)},
 			uOpacity: {type: 'f', value: 1.0},
 			size: {type: 'f', value: pointSize},
 			minSize: {type: 'f', value: minSize},
@@ -433,21 +433,21 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 		this.fragmentShader = fs;
 
 		if (this.opacity === 1.0) {
-			this.blending = THREE.NoBlending;
+			this.blending = NoBlending;
 			this.transparent = false;
 			this.depthTest = true;
 			this.depthWrite = true;
-			this.depthFunc = THREE.LessEqualDepth;
+			this.depthFunc = LessEqualDepth;
 		} else if (this.opacity < 1.0 && !this.useEDL) {
-			this.blending = THREE.AdditiveBlending;
+			this.blending = AdditiveBlending;
 			this.transparent = true;
 			this.depthTest = false;
 			this.depthWrite = true;
-			this.depthFunc = THREE.AlwaysDepth;
+			this.depthFunc = AlwaysDepth;
 		}
 
 		if (this.weighted) {
-			this.blending = THREE.AdditiveBlending;
+			this.blending = AdditiveBlending;
 			this.transparent = true;
 			this.depthTest = true;
 			this.depthWrite = false;
@@ -1571,11 +1571,11 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 		context.fill();
 
 		//let texture = new Texture(canvas);
-		let texture = new THREE.CanvasTexture(canvas);
+		let texture = new CanvasTexture(canvas);
 		texture.needsUpdate = true;
 
-		texture.minFilter = THREE.LinearFilter;
-		texture.wrap = THREE.RepeatWrapping;
+		texture.minFilter = LinearFilter;
+		texture.wrap = RepeatWrapping;
 		texture.repeat = 2;
 		// textureImage = texture.image;
 
@@ -1586,8 +1586,8 @@ export class PointCloudMaterial extends THREE.RawShaderMaterial {
 		// var url = new URL(Potree.resourcePath + '/textures/matcap/' + matcap).href;
 
 		var url = '/textures/matcap/' + matcap;
-		let texture = new THREE.TextureLoader().load(url);
-		texture.magFilter = texture.minFilter = THREE.LinearFilter;
+		let texture = new TextureLoader().load(url);
+		texture.magFilter = texture.minFilter = LinearFilter;
 		texture.needsUpdate = true;
 		// PotreeConverter_1.6_2018_07_29_windows_x64\PotreeConverter.exe autzen_xyzrgbXYZ_ascii.xyz -f xyzrgbXYZ -a RGB NORMAL -o autzen_xyzrgbXYZ_ascii_a -p index --overwrite
 		// Switch matcap texture on the fly : viewer.scene.pointclouds[0].material.matcap = 'matcap1.jpg';

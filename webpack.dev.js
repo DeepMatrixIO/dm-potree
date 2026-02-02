@@ -71,6 +71,17 @@ const serveConfig = {
 				publicPath: '/libs',
 			},
 
+			{
+				directory: path.resolve('lines/'), // Expose libs folder
+				publicPath: '/lines',
+			},
+
+			{
+				directory: path.resolve('loader/'), // Expose libs folder
+				publicPath: '/loader',
+			},
+
+
 
 			{
 				directory: path.resolve('resources/images'), // Expose libs folder
@@ -101,6 +112,52 @@ const serveConfig = {
 	},
 	module: {
 		rules: [
+			{
+				test: /\.css$/,
+				use: ['style-loader', 'css-loader'],
+			},
+			{
+				test: /\.md$/,
+				type: 'asset/source',
+			},
+			{
+				test: /\.html$/,
+				type: 'asset/source',
+			},
+			{
+				test: /\.mtl$/,
+				type: 'asset/source',
+			},
+
+			{
+				test: /\.ply$/,
+				type: 'asset/source',
+			},
+			{
+				test: /\.obj$/,
+				type: 'asset/source',
+			},
+
+			{
+				test: /\.shp$/,
+				type: 'asset/source',
+			},
+
+			{
+				test: /\.dbf$/,
+				type: 'asset/source',
+			},
+
+			{
+				test: /\.txt$/,
+				type: 'asset/source',
+			},
+
+			{
+				test: /\.TXT$/,
+				type: 'asset/source',
+			},
+
 
 			{
 				test: /\.wasm$/,
@@ -122,8 +179,11 @@ const serveConfig = {
 				{
 					from: path.resolve(__dirname, 'src/workers'),
 					to: path.resolve(__context, 'workers'),
-				}
-				,
+				},
+				{
+					from: path.resolve(__dirname, 'src/lines'),
+					to: path.resolve(__dirname, 'dist/lines'),
+				},
 				{
 					from: path.resolve(__dirname, 'src/viewer/potree.css'),
 					to: path.resolve(__dirname, 'dist/potree.css'),
