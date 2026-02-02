@@ -213,7 +213,7 @@ export class MeasuringTool extends EventDispatcher {
 		measure.closed = pick(args.closed, false);
 		measure.maxMarkers = pick(args.maxMarkers, Infinity);
 
-		measure.showVerticalAngle = pick(args.showVerticalAngle, false);
+		// measure.showVerticalAngle = pick(args.showVerticalAngle, false);
 
 		measure.name = args.name || 'Measurement';
 
@@ -335,21 +335,21 @@ export class MeasuringTool extends EventDispatcher {
 				label.scale.set(scale, scale, scale);
 			}
 
-			{
-				// vertical angle label
-				let label = measure.verticalAngleLabel;
-				let distance = label.position.distanceTo(camera.position);
-				let pr = Utils.projectedRadius(
-					1,
-					camera,
-					distance,
-					clientWidth,
-					clientHeight
-				);
+			// {
+			// 	// vertical angle label
+			// 	let label = measure.verticalAngleLabel;
+			// 	let distance = label.position.distanceTo(camera.position);
+			// 	let pr = Utils.projectedRadius(
+			// 		1,
+			// 		camera,
+			// 		distance,
+			// 		clientWidth,
+			// 		clientHeight
+			// 	);
 
-				let scale = 70 / pr;
-				label.scale.set(scale, scale, scale);
-			}
+			// 	let scale = 70 / pr;
+			// 	label.scale.set(scale, scale, scale);
+			// }
 
 			// height label
 			if (measure.showHeight) {
@@ -427,9 +427,9 @@ export class MeasuringTool extends EventDispatcher {
 					measure.heightEdge.material,
 					measure.circleLine.material,
 
-					measure.verticalAngleElements.verticalLine.material,
-					measure.verticalAngleElements.horizontalLine.material,
-					measure.verticalAngleElements.measureLine.material,
+					// measure.verticalAngleElements.verticalLine.material,
+					// measure.verticalAngleElements.horizontalLine.material,
+					// measure.verticalAngleElements.measureLine.material,
 				];
 
 				for (const material of materials) {
