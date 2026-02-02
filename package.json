@@ -23,7 +23,7 @@
     "dev": "webpack --mode development --watch --progress --stats-children",
     "build": "npm run build_old",
     "build:module": "webpack --mode production --config webpack.prod.js",
-    "start": "npm run build:module && webpack serve --config webpack.example.js --mode development --progress --port 5200",
+    "start": "npm run build:module && webpack serve --config webpack.dev.js --mode development --progress --port 5200",
     "postinstall": "npm run build"
   },
   "dependencies": {
