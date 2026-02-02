@@ -1,20 +1,22 @@
 import {Shaders} from "../../build/shaders/shaders.js";
-import {
-	AdditiveBlending,
-	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
-	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
-// } from "../../libs/js/build/core.js";
-} from "three";
+// import {
+// 	AdditiveBlending,
+// 	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
+// 	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
+// // } from "../../libs/js/build/core.js";
+// } from "three";
+import * as THREE from 'three';
+
 // } from "../../libs/three.js/build/module.jsthre";
 import {ElevationGradientRepeat, PointShape, PointSizeType, TreeType} from "../defines.js";
 import {Utils} from "../utils.js";
 import {PointCloudFilterList} from "../utils/Filter.js";
-import {FilterIntType} from "../utils/FilterConsts.js";
+import {FilterConstListType, FilterIntType} from "../utils/FilterConsts.js";
 import {ClassificationScheme} from "./ClassificationScheme.js";
 import {Gradients} from "./Gradients.js";
 
 
-export class PointCloudMaterial extends RawShaderMaterial {
+export class PointCloudMaterial extends THREE.RawShaderMaterial {
 	constructor(parameters = {}) {
 		super();
 
@@ -23,10 +25,10 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.visibleNodesTexture = Utils.generateDataTexture(
 			2048,
 			1,
-			new Color(0xffffff)
+			new THREE.Color(0xffffff)
 		);
-		this.visibleNodesTexture.minFilter = NearestFilter;
-		this.visibleNodesTexture.magFilter = NearestFilter;
+		this.visibleNodesTexture.minFilter = THREE.NearestFilter;
+		this.visibleNodesTexture.magFilter = THREE.NearestFilter;
 
 		let getValid = (a, b) => {
 			if (a !== undefined) {
@@ -45,6 +47,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this._shape = PointShape.SQUARE;
 		this._useClipBox = false;
 
+		//left for pointcloud selections based on clips and filters
 		this.clipBoxes = [];
 		this.clipPolygons = [];
 		this.pointClusters = [];
@@ -54,6 +57,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		// adding all extra arrays for filtering and custom  rendering order for clips
 		this.mixedFilters = [];//arbitrary array to store either box clips, polygon clips or even filters to be applied in order, each returns true false
 
+		//special container for profile clipping
+		this.clipProfileBoxes = [];//from profiles clipboxes only
 
 		//adding the custom filter
 		//////////////////////////////  added in viewer.update and retrieved in potreeRenderer
@@ -72,8 +77,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this._gradient
 		);
 		this._matcap = 'matcap.jpg';
-		// this.matcapTexture = Potree.PointCloudMaterial.generateMatcapTexture(
-		this.matcapTexture = PointCloudMaterial.generateMatcapTexture(
+		this.matcapTexture = Potree.PointCloudMaterial.generateMatcapTexture(
 			this._matcap
 		);
 		this.lights = false;
@@ -102,8 +106,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		{
 			const [width, height] = [256, 1];
 			let data = new Uint8Array(width * 4);
-			let texture = new DataTexture(data, width, height, RGBAFormat);
-			texture.magFilter = NearestFilter;
+			let texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
+			texture.magFilter = THREE.NearestFilter;
 			texture.needsUpdate = true;
 
 			this.classificationTexture = texture;
@@ -144,7 +148,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			screenHeight: {type: 'f', value: 1.0},
 			near: {type: 'f', value: 0.1},
 			far: {type: 'f', value: 1.0},
-			uColor: {type: 'c', value: new Color(0xffffff)},
+			uColor: {type: 'c', value: new THREE.Color(0xffffff)},
 			uOpacity: {type: 'f', value: 1.0},
 			size: {type: 'f', value: pointSize},
 			minSize: {type: 'f', value: minSize},
@@ -154,13 +158,22 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			elevationRange: {type: '2fv', value: [0, 0]},
 
 			clipBoxCount: {type: 'f', value: 0},
-			//clipSphereCount:	{ type: "f", value: 0 },
-			clipPolygonCount: {type: 'i', value: 0},
 			clipBoxes: {type: 'Matrix4fv', value: []},
-			//clipSpheres:		{ type: "Matrix4fv", value: [] },
+
+			clipProfileBoxCount: {type: 'f', value: 0},
+			clipProfileBoxes: {type: 'Matrix4fv', value: []},
+
+
+			clipPolygonCount: {type: 'i', value: 0},
 			clipPolygons: {type: '3fv', value: []},
+
 			clipPolygonVCount: {type: 'iv', value: []},
 			clipPolygonVP: {type: 'Matrix4fv', value: []},
+
+			//clipSphereCount:	{ type: "f", value: 0 },
+			//clipSpheres:		{ type: "Matrix4fv", value: [] },
+
+
 
 			visibleNodes: {type: 't', value: this.visibleNodesTexture},
 			pcIndex: {type: 'f', value: 0},
@@ -255,9 +268,12 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		}
 
-
-
-
+	//copy them
+		// for (let key in this.customUniforms) {
+		// 	let uniform = this.customUniforms[key];
+		// 	// this.shader.setUniform(key, uniform.type, uniform.value);
+		// 	this.uniforms[key] = uniform;
+		// }
 
 		this.updateShaderSource();
 	}
@@ -417,21 +433,21 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.fragmentShader = fs;
 
 		if (this.opacity === 1.0) {
-			this.blending = NoBlending;
+			this.blending = THREE.NoBlending;
 			this.transparent = false;
 			this.depthTest = true;
 			this.depthWrite = true;
-			this.depthFunc = LessEqualDepth;
+			this.depthFunc = THREE.LessEqualDepth;
 		} else if (this.opacity < 1.0 && !this.useEDL) {
-			this.blending = AdditiveBlending;
+			this.blending = THREE.AdditiveBlending;
 			this.transparent = true;
 			this.depthTest = false;
 			this.depthWrite = true;
-			this.depthFunc = AlwaysDepth;
+			this.depthFunc = THREE.AlwaysDepth;
 		}
 
 		if (this.weighted) {
-			this.blending = AdditiveBlending;
+			this.blending = THREE.AdditiveBlending;
 			this.transparent = true;
 			this.depthTest = true;
 			this.depthWrite = false;
@@ -496,6 +512,44 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		return defines.join('\n');
 	}
+
+	//receive material info for profiles clipboxes,
+	setClipProfileBoxes(clipProfileBoxes) {
+		if (!clipProfileBoxes) {
+			return;
+		}
+
+		let doUpdate =
+			this.clipProfileBoxes.length !== clipProfileBoxes.length &&
+			(clipProfileBoxes.length === 0 || this.clipProfileBoxes.length === 0);
+
+		this.uniforms.clipProfileBoxCount.value = this.clipProfileBoxes.length;
+		this.clipProfileBoxes = clipProfileBoxes;
+
+		if (doUpdate) {
+			this.updateShaderSource();
+		}
+
+		//why 16? MAtrix size 4x4
+		this.uniforms.clipProfileBoxes.value = new Float32Array(
+			this.clipProfileBoxes.length * 16
+		);
+
+
+
+		for (let i = 0;i < this.clipProfileBoxes.length;i++) {
+			let box = clipProfileBoxes[i];
+
+			this.uniforms.clipProfileBoxes.value.set(box.inverse.elements, 16 * i);
+		}
+
+		for (let i = 0;i < this.uniforms.clipProfileBoxes.value.length;i++) {
+			if (Number.isNaN(this.uniforms.clipProfileBoxes.value[i])) {
+				this.uniforms.clipProfileBoxes.value[i] = Infinity;
+			}
+		}
+	}
+
 
 	setClipBoxes(clipBoxes) {
 		if (!clipBoxes) {
@@ -582,10 +636,19 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 			this.filterPackedAttributesUpdated = true;
 
-			this.setCustomDefine("mixed_filters", this.mixedFilters.length);//set the define for filtering, 0 non
-			this.setCustomDefine("num_logical_filters", logicalFilters.length);//set the define for filtering, 0 non
-			this.setCustomDefine("num_int_values", flat.integer_filter_values.length);//set the define for filtering, 0 non
-			this.setCustomDefine("num_float_values", flat.float_filter_values.length);//set the define for filtering, 0 non
+			// this.setCustomDefine("mixed_filters", this.mixedFilters.length);//set the define for filtering, 0 non
+			// this.setCustomDefine("num_logical_filters", logicalFilters.length);//set the define for filtering, 0 non
+			// this.setCustomDefine("num_int_values", flat.integer_filter_values.length);//set the define for filtering, 0 non
+			// this.setCustomDefine("num_float_values", flat.float_filter_values.length);//set the define for filtering, 0 non
+
+
+
+
+			this.setDefine("mixed_filters", "#define mixed_filters " + this.mixedFilters.length);//enable disable mixed filters
+			this.setDefine("num_logical_filters", "#define num_logical_filters " + logicalFilters.length);//logical filter arrays
+			this.setDefine("num_int_values", "#define num_int_values " + flat.integer_filter_values.length);//required for integer value lists
+			this.setDefine("num_float_values", "#define num_float_values " + flat.float_filter_values.length);//required for float value lists. More common
+			this.setDefine("visible_classes", "#define visible_classes " + Object.keys(viewer.classifications).filter(k => k !== 'DEFAULT').length);//classes and its visibility are always committed
 
 			// this.setCustomDefine("num_filter_attributes", logicalFilters.length);//set the define for filtering, 0 non
 
@@ -1199,19 +1262,19 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		});
 	}
 
-	get nonVisibleColorMax(){
+	get nonVisibleColorMax() {
 		return this.customUniforms.nonVisibleColorMax.value;
 	}
 
-	set nonVisibleColorMax(value){
+	set nonVisibleColorMax(value) {
 		this.customUniforms.nonVisibleColorMax.value = value;
 	}
 
-	get nonVisibleColorMin(){
+	get nonVisibleColorMin() {
 		return this.customUniforms.nonVisibleColorMin.value;
 	}
 
-	set nonVisibleColorMin(value){
+	set nonVisibleColorMin(value) {
 		//add checkups on color
 		this.customUniforms.nonVisibleColorMin.value = value;
 	}
@@ -1508,11 +1571,11 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		context.fill();
 
 		//let texture = new Texture(canvas);
-		let texture = new CanvasTexture(canvas);
+		let texture = new THREE.CanvasTexture(canvas);
 		texture.needsUpdate = true;
 
-		texture.minFilter = LinearFilter;
-		texture.wrap = RepeatWrapping;
+		texture.minFilter = THREE.LinearFilter;
+		texture.wrap = THREE.RepeatWrapping;
 		texture.repeat = 2;
 		// textureImage = texture.image;
 
@@ -1523,8 +1586,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		// var url = new URL(Potree.resourcePath + '/textures/matcap/' + matcap).href;
 
 		var url = '/textures/matcap/' + matcap;
-		let texture = new TextureLoader().load(url);
-		texture.magFilter = texture.minFilter = LinearFilter;
+		let texture = new THREE.TextureLoader().load(url);
+		texture.magFilter = texture.minFilter = THREE.LinearFilter;
 		texture.needsUpdate = true;
 		// PotreeConverter_1.6_2018_07_29_windows_x64\PotreeConverter.exe autzen_xyzrgbXYZ_ascii.xyz -f xyzrgbXYZ -a RGB NORMAL -o autzen_xyzrgbXYZ_ascii_a -p index --overwrite
 		// Switch matcap texture on the fly : viewer.scene.pointclouds[0].material.matcap = 'matcap1.jpg';

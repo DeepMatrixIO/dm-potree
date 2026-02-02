@@ -18,6 +18,8 @@ vec3 assignedColor = vec3(1.0f, 0.0f, 0.0f); //not in use, as it is always overw
 vec3 olderColor = vec3(0.0f, 0.0f, 1.0f); //
 vec3 activeColor = vec3(0.0f, 1.0f, 0.15f); // green
 
+int lastClassification = -1;//assigned based on the last valid filter operation with points inside. Colorize extracts the attribute index or first index as assigned classification. If the uniform contains it, visible, otherwise not.
+int currentClassification = -1;
 bool clip = false;
 	// bool showAll = false;//?????
 	// bool showThis = false;//?????

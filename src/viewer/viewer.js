@@ -60,6 +60,10 @@ import * as TWEEN from '@tweenjs/tween.js';//0.15, now at eol
 // import {interact} from 'interactjs'
 export class Viewer extends EventDispatcher {
 
+	ecef = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'; // ECEF
+	wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
+	webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
+
 	constructor(domElement, args = {}) {
 		super();
 
@@ -72,11 +76,15 @@ export class Viewer extends EventDispatcher {
 		this.extraRenders = [];//ADDED by  @jguerrer // runs on each loop after potree  render loop
 		this.currentWGS84Position = {lat: 0, lon: 0, alt: 0};//ADDED by  @jguerrer // updated on each loop before general update.
 		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
+		this.unitConversionFactor = 1.0;//
 
+		//spatial information
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
-		this.isFootBasedProjection = false;
-		this.ecefCamera = new PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
-		///////
+		this.isFeetBasedProjection = false;
+		this._ecefPerspectiveCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
+		this._ecefOrthographicCamera = new THREE.OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
+
+
 
 
 		this.renderArea = domElement;

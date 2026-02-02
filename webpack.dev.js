@@ -28,6 +28,9 @@ const serveConfig = {
 		path: path.resolve('dist'),
 		clean: true,
 	},
+	experiments: {
+		asyncWebAssembly: true,
+	},
 	devtool: 'source-map',
 	devServer: {
 		compress: false,
@@ -98,6 +101,11 @@ const serveConfig = {
 	},
 	module: {
 		rules: [
+
+			{
+				test: /\.wasm$/,
+				type: 'webassembly/async',
+			},
 			{
 				test: /\.(png|jpg|jpeg|gif|svg)$/i,
 				type: 'asset/resource',
