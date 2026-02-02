@@ -140,7 +140,7 @@ export class MeasuringTool extends EventDispatcher {
 		//this.light = new THREE.PointLight(0xffffff, 1000, 10);
 		this.light = new THREE.DirectionalLight(0xffffff, 2.5)
 		this.light.position.copy(viewer.scene.getActiveCamera().position);
-				//this.light.position.z += 500;
+		//this.light.position.z += 500;
 		this.light.position.z += 1000;
 		//this.light.lookAt(viewer.scene.view.getPivot());
 
@@ -212,6 +212,8 @@ export class MeasuringTool extends EventDispatcher {
 		measure.showEdges = pick(args.showEdges, true);
 		measure.closed = pick(args.closed, false);
 		measure.maxMarkers = pick(args.maxMarkers, Infinity);
+
+		measure.showVerticalAngle = pick(args.showVerticalAngle, false);
 
 		measure.name = args.name || 'Measurement';
 
@@ -304,7 +306,7 @@ export class MeasuringTool extends EventDispatcher {
 			}
 
 			// coordinate labels
-			for (let j = 0; j < measure.coordinateLabels.length; j++) {
+			for (let j = 0;j < measure.coordinateLabels.length;j++) {
 				let label = measure.coordinateLabels[j];
 				let sphere = measure.spheres[j];
 
@@ -330,6 +332,22 @@ export class MeasuringTool extends EventDispatcher {
 				label.position.copy(labelPos);
 				let pr = Utils.projectedRadius(1, camera, distance, clientWidth, clientHeight);
 				let scale = (70 / pr);
+				label.scale.set(scale, scale, scale);
+			}
+
+			{
+				// vertical angle label
+				let label = measure.verticalAngleLabel;
+				let distance = label.position.distanceTo(camera.position);
+				let pr = Utils.projectedRadius(
+					1,
+					camera,
+					distance,
+					clientWidth,
+					clientHeight
+				);
+
+				let scale = 70 / pr;
 				label.scale.set(scale, scale, scale);
 			}
 
@@ -408,6 +426,10 @@ export class MeasuringTool extends EventDispatcher {
 					...measure.edges.map((e) => e.material),
 					measure.heightEdge.material,
 					measure.circleLine.material,
+
+					measure.verticalAngleElements.verticalLine.material,
+					measure.verticalAngleElements.horizontalLine.material,
+					measure.verticalAngleElements.measureLine.material,
 				];
 
 				for (const material of materials) {
