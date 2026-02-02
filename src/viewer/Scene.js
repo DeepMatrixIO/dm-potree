@@ -265,14 +265,14 @@ export class Scene extends EventDispatcher {
 	//index4 . end value, but not in use, so set to -1
 
 
-	addStaticFilterColor(r, g, b, classification_value=0) {//filter i set of objects containing all items, making easier to manage items
+	addStaticFilterColor(r, g, b, classification_value = 0) {//filter i set of objects containing all items, making easier to manage items
 
 		let filter = new PointCloudFilter(
 			FilterOperationType.COLORIZE,//operator value
 			classification_value, //attribute index, not used as color is no attribute here. Set to 0. Can be used to store classification
 			0, //optional second attribute index or value index, not used. Set to 0
-			 -1, //
-			  1,//float array is used
+			-1, //
+			1,//float array is used
 			[],//attribute list
 			[],//integer list not used
 			[r, g, b]//float list with color values
@@ -701,6 +701,14 @@ export class Scene extends EventDispatcher {
 	}
 
 	removeAllMeasurements() {
+		let removableMeasurements = this.measurements.filter(m => {
+			let componentId = m ? m.componentId : undefined;
+			if (typeof componentId === "string") {
+				return componentId.trim() === "";
+			}
+			return !componentId;
+		});
+
 		while (this.measurements.length > 0) {
 			this.removeMeasurement(this.measurements[0]);
 		}
