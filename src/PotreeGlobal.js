@@ -35,7 +35,7 @@ import * as POTREE_UPDATE_VISIBILITY from "./Potree_update_visibility.js";
 // export * from "./materials/Gradients.js";
 // export * from "./materials/NormalizationEDLMaterial.js";
 // export * from "./materials/NormalizationMaterial.js";
-// export * from "./materials/PointCloudMaterial.js";
+import {PointCloudMaterial} from "./materials/PointCloudMaterial.js";
 
 // export * from "./loader/ept/BinaryLoader.js";
 // export * from "./loader/ept/LaszipLoader.js";
@@ -169,6 +169,7 @@ export class Potree {
 		this.updatePointClouds = POTREE_UPDATE_VISIBILITY.updatePointClouds;
 		this.updateVisibility = POTREE_UPDATE_VISIBILITY.updateVisibility;
 
+		this.PointCloudMaterial=PointCloudMaterial;
 
 		// window.Potree=this;
 		window.exports=this;//FIX for LRU and other imports

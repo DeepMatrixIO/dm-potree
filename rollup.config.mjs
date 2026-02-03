@@ -102,12 +102,20 @@ export default [
 
 			//,some other libs like tween.js
 		],
-		plugins: [nodeResolve(), commonjs()] // Convert CommonJS modules to ES6
+		plugins: [
+			nodeResolve({
+				ignoreGlobal: false,
+				exportConditions: ['node', 'default', 'module', 'import'],
+				preferBuiltins: false,
+				ignoreDirs: ['dist', 'resources', 'build', 'examples', 'docs', 'node_modules', 'pointclouds']
+			}),
+			commonjs()
+		] // Convert CommonJS modules to ES6
 
 	}
 	,
 	{
-		input: 'src/workers/BinaryDecoderWorker.js',
+		input: 'src///BinaryDecoderWorker.js',
 		output: {
 			file: 'build/potree/workers/BinaryDecoderWorker.js',
 			format: 'es',

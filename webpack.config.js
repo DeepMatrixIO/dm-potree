@@ -32,18 +32,21 @@ module.exports = {
         new CopyPlugin({
             patterns: [
                 // Adjust 'from' to point to your source static folder (e.g., 'resources', 'public')
-                { from: 'resources', to: 'resources' },
+                // { from: 'resources', to: 'resources' },
 				{ from: 'src/viewer/potree.css', to: 'potree/potree.css' },
 				{ from: 'src/viewer/*.html', to: 'potree/[name][ext]' },
-				{ from: 'src/workers/**/*', to: 'workers/[name][ext]' },
-				{ from: 'src/Version.js', to: 'Version.js' },
-				{ from: 'src/XHRFactory.js', to: 'XHRFactory.js' },
-				{ from: 'src/tokenUpdater.js', to: 'tokenUpdater.js' },
-				{ from: 'src/loader', to: 'loader' },
-				{ from: 'libs/copc', to: 'libs/copc' },
-				{ from: 'libs/plasio/workers', to: 'libs/plasio/workers' },
-				{ from: 'libs/zstd-codec', to: 'libs/zstd-codec' },
-				{ from: 'libs/ept', to: 'libs/ept' },
+				// { from: 'src/workers/**/*', to: 'workers/[name][ext]' },
+				// { from: 'src/workers/BinaryDecoderWorker.js', to: 'workers/[name][ext]' },
+				// { from: 'src/workers/**/*', to: 'workers/[name][ext]' },
+				// { from: 'src/workers/**/*', to: 'workers/[name][ext]' },
+				// { from: 'src/Version.js', to: 'Version.js' },
+				// { from: 'src/XHRFactory.js', to: 'XHRFactory.js' },
+				// { from: 'src/tokenUpdater.js', to: 'tokenUpdater.js' },
+				// { from: 'src/loader', to: 'loader' },
+				// { from: 'libs/copc', to: 'libs/copc' },
+				// { from: 'libs/plasio/workers', to: 'libs/plasio/workers' },
+				// { from: 'libs/zstd-codec', to: 'libs/zstd-codec' },
+				// { from: 'libs/ept', to: 'libs/ept' },
 				{ from: 'src/lines', to: 'lines' },
 
                 // You can add more patterns here
