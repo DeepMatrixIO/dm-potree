@@ -492,13 +492,22 @@ export class InputHandler extends EventDispatcher {
 			}
 		} else {
 			for (let hovered of this.hoveredElements) {
-				let object = hovered.object;
-				object.dispatchEvent({
-					type: 'mousedown',
-					viewer: this.viewer,
-					consume: consume
-				});
 
+				//adding case for rootScene
+				if (hovered.rootScene !== undefined) {//must have rootScene
+					hovered.rootScene.dispatchEvent({
+						type: 'mousedown',
+						viewer: this.viewer,
+						consume: consume
+					});
+				} else {//default case the rest of objects
+					let object = hovered.object;
+					object.dispatchEvent({
+						type: 'mousedown',
+						viewer: this.viewer,
+						consume: consume
+					});
+				}
 				if (consumed) {
 					break;
 				}
@@ -703,7 +712,8 @@ export class InputHandler extends EventDispatcher {
 
 		//old code is missing related to propagatting code
 
-
+		//////////////////////////////////
+		//dispatching events on hovered elements
 		let consumed = false;
 		let consume = () => {return consumed = true;};
 		if (this.hoveredElements.length === 0) {
@@ -730,6 +740,21 @@ export class InputHandler extends EventDispatcher {
 					consume: consume
 				});
 			}
+			//looking for objects with rootScene
+			hovered = this.hoveredElements
+				.map(e => e.object)
+				.find(e => (e.rootScene && e.rootScene_listeners && e.rootScene._listeners['mouseup']));
+			if (hovered) {
+				hovered.dispatchEvent({
+					type: 'mouseup',
+					viewer: this.viewer,
+					consume: consume
+				});
+			}
+
+
+
+
 		}
 
 		//// end code added from ClusterTool
@@ -854,10 +879,14 @@ export class InputHandler extends EventDispatcher {
 					console.log(
 						this.constructor.name + ': drag: ' + this.drag.object.name
 					);
+
+
+
 				this.drag.object.dispatchEvent({
 					type: 'drag',
 					drag: this.drag,
 					viewer: this.viewer,
+					hoveredObject: hoveredElements[0] ? hoveredElements[0] : null //to keep track of the topmost object found
 				});
 			} else {
 				if (this.logMessages) console.log(this.constructor.name + ': drag: ');
@@ -1320,7 +1349,8 @@ export class InputHandler extends EventDispatcher {
 
 			intersections = intersections.concat(raycaster.intersectObjects(interactables.filter(o => o.visible), false));
 		}
-
+		//	scenes with transformCamera method for ECEF or other projections
+		// here  a threejs method is applied to raycast each scene with its custom camera, however non threejs engines require custom code, so if a custom raycast method is provided, it should be used instead of the threejs raycaster
 		if (scenesWithTransformCamera.length > 0) {
 
 			scenesWithTransformCamera.forEach(scene => {

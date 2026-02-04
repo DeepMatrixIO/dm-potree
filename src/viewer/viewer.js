@@ -64,6 +64,10 @@ export class Viewer extends EventDispatcher {
 	wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
 	webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
 
+	ecef = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'; // ECEF
+	wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
+	webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
+
 	constructor(domElement, args = {}) {
 		super();
 
@@ -276,12 +280,16 @@ export class Viewer extends EventDispatcher {
 			{
 				let canvas = this.renderer.domElement;
 				canvas.addEventListener("webglcontextlost", (e) => {
-					console.log(e);
-					this.postMessage("WebGL context lost. \u2639");
+					try {
+						console.log(e);
+						// this.postMessage("WebGL context lost. \u2639");
 
-					let gl = this.renderer.getContext();
-					let error = gl.getError();
-					console.log(error);
+						let gl = this.renderer.getContext();
+						let error = gl.getError();
+						console.log(error);
+					} catch (error) {
+						console.error("Error handling webglcontextlost:", error);
+					}
 				}, false);
 			}
 
@@ -331,9 +339,17 @@ export class Viewer extends EventDispatcher {
 				this.inputHandler = new InputHandler(this);
 				this.inputHandler.setScene(this.scene);
 
-				this.clippingTool = new ClippingTool(this);
-				this.transformationTool = new TransformationTool(this);
-				this.navigationCube = new NavigationCube(this);
+
+				//where are these being rendered and  updated?
+				//within viewer.update are being update as result of camera changes
+				//later rendered within potreeRenderer
+				this.annotationTool = new AnnotationTool(this);//has its own render method and update method but no real implementation
+				this.measuringTool = new MeasuringTool(this);//line, point, height, etc, they create measures
+				this.profileTool = new ProfileTool(this);//Creates profile.js profiles
+				this.volumeTool = new VolumeTool(this);//has its own update and render methods . Creates Box or SPhere volumes
+				this.clippingTool = new ClippingTool(this);//for polygon clips and polygonClipVolume
+				this.transformationTool = new TransformationTool(this);//persistent handler attached per object to rotate and translate 3d object s
+				this.navigationCube = new NavigationCube(this);//currently not attached nor used
 				this.navigationCube.visible = false;
 
 				this.compass = new Compass(this);
@@ -400,13 +416,7 @@ export class Viewer extends EventDispatcher {
 
 			this.loadGUI = this.loadGUI.bind(this);
 
-			//where are these being rendered and  updated?
-			//within viewer.update are being update as result of camera changes
-			//later rendered within potreeRenderer
-			this.annotationTool = new AnnotationTool(this);//has its own render method and update method but no real implementation
-			this.measuringTool = new MeasuringTool(this);//has its own render method and update method
-			this.profileTool = new ProfileTool(this);//has its own update and render methods. Its object a raycaster
-			this.volumeTool = new VolumeTool(this);//has its own update and render methods
+
 
 
 
@@ -414,13 +424,29 @@ export class Viewer extends EventDispatcher {
 			this.extraTools = []
 			//			this.selectionTool = new SelectionTool(this);
 			this.clusterTool = new ClusterTool(this);
-			this.selectionTool = new SelectionTool(this);
-
-			//this.addTool
+			this.selectionTool = new SelectionTool(this);//volume and polygon based
 
 
 		} catch (e) {
 			this.onCrash(e);
+		}
+	}
+
+
+	//so we dont care about persoective or orthographic, as it depends on current projection and both have position
+	get ecefCamera() {
+		if (this.scene.getActiveCamera().isPerspectiveCamera) {
+			return this._ecefPerspectiveCamera;
+		} else {
+			return this._ecefOrthographicCamera;
+		}
+	}
+
+	set ecefCamera(value) {
+		if (value.isPerspectiveCamera) {
+			this._ecefPerspectiveCamera = value;
+		} else {
+			this._ecefOrthographicCamera = value;
 		}
 	}
 
@@ -435,20 +461,29 @@ export class Viewer extends EventDispatcher {
 
 			this._projection = value;
 
-			this.isFootBasedProjection =
+			this.isFeetBasedProjection =
 
 				this._projection.includes('us-ft') ||
 				this._projection.includes('ft') ||
 				this._projection.includes('feet');
 
+			if (this.isFeetBasedProjection) {
+				this.setLengthUnit(LengthUnits.FEET.code);
+				console.log("Setting feet as length and display unit based on projection definition");
+			} else {
+				this.setLengthUnit(LengthUnits.METER.code);
+			}
 			console.log('setting potree current projection')
+
+			this.unitConversionFactor = this.isFeetBasedProjection ? 0.3048 : 1.0;
 		}
+
 
 	}
 
-	ecef = 'EPSG:4978'; // ECEF
-	wgs84 = 'EPSG:4326'; // WGS84
 
+
+	//should be deprecated
 	updateCurrentPosition() {
 		try {
 
@@ -502,10 +537,11 @@ export class Viewer extends EventDispatcher {
 
 
 
+
 	updateCameraPosition(customCamera) {
 		//const groundOffset = -40;
 		const groundOffset = 0;
-
+		this.unitConversionFactor = this.isFeetBasedProjection ? 0.3048 : 1.0;
 		try {
 			if (!this.scene || !this.scene.getActiveCamera()) {
 				return;
@@ -559,6 +595,15 @@ export class Viewer extends EventDispatcher {
 					cDir.z = 0;
 				}
 
+				///// only updating if it is different
+				if (camera.type != this.ecefCamera.type) {//TODO check if is camera std method
+					if (camera.isPerspectiveCamera) {
+						this.ecefCamera = this._ecefPerspectiveCamera;
+					} else if (camera.isOrthographicCamera) {
+						this.ecefCamera = this._ecefOrthographicCamera;
+					}
+				}
+
 				this.ecefCamera.position.set(cPos.x, cPos.y, cPos.z);
 				this.ecefCamera.up.set(cUp.x, cUp.y, cUp.z);
 				this.ecefCamera.lookAt(cTarget.x, cTarget.y, cTarget.z);
@@ -576,16 +621,19 @@ export class Viewer extends EventDispatcher {
 				//   //window.cesiumViewer.camera.frustum.fov = fovx;
 				// }
 
-				if (camera instanceof PerspectiveCamera) {
+				if (camera.isPerspectiveCamera) {
+					// if (camera instanceof THREE.PerspectiveCamera) {
 					this.ecefCamera.fov = camera.fov;
 
-					//	this.ecefCamera.aspect = aspect;
-					// this.ecefCamera.setFocalLength(camera.getFocalLength());
-					// this.ecefCamera.width = window.innerWidth;//to remove warnings
-					// this.ecefCamera.height = window.innerHeight;
+					// this.ecefCamera.aspect = aspect;
+					this.ecefCamera.setFocalLength(camera.getFocalLength());
+					this.ecefCamera.width = window.innerWidth;//to remove warnings
+					this.ecefCamera.height = window.innerHeight;
+					this.ecefCamera.near = camera.near;
+					this.ecefCamera.far = camera.far;
 
-
-				} else if (camera instanceof OrthographicCamera) {
+					// } else if (camera instanceof THREE.OrthographicCamera) {
+				} else if (camera.isOrthographicCamera) {
 					let frustumHeight = camera.top - camera.bottom;
 					let frustumWidth = camera.right - camera.left;
 					this.ecefCamera.zoom = camera.zoom;
@@ -593,6 +641,9 @@ export class Viewer extends EventDispatcher {
 					this.ecefCamera.right = frustumWidth / 2;
 					this.ecefCamera.top = frustumHeight / 2;
 					this.ecefCamera.bottom = -frustumHeight / 2;
+					this.ecefCamera.near = -50000;
+					this.ecefCamera.far = 80000000;
+
 				}
 
 				this.ecefCamera.aspect = aspect;
@@ -652,7 +703,7 @@ export class Viewer extends EventDispatcher {
 		// Convert the WGS84 coordinates to ECEF
 		//const [x, y, z] = proj4(this.wgs84, this.ecef, [lon, lat, alt]);
 
-		const [x, y, z] = proj4(sourceProj, this.ecef, [vector3.x, vector3.y, vector3.z]);
+		const [x, y, z] = proj4(sourceProj, this.ecef, [vector3.x, vector3.y, vector3.z * this.unitConversionFactor]);
 
 
 		//return { x, y, z };
@@ -702,7 +753,9 @@ export class Viewer extends EventDispatcher {
 	triggerUpdates() {
 		try {
 			this.customUpdates.forEach((item) => {
-				item.refresh(this);
+				if (item.visible) {
+					item.refresh(this);
+				}
 			});
 		} catch (e) {
 			console.error(e);
@@ -1187,6 +1240,51 @@ export class Viewer extends EventDispatcher {
 		this.dispatchEvent({'type': 'length_unit_changed', 'viewer': this, value: value});
 	};
 
+	// setLengthUnitAndDisplayUnit(lengthUnitValue, lengthUnitDisplayValue) {
+	// 	switch (lengthUnitValue) {
+	// 		case 'm':
+	// 			this.lengthUnit = LengthUnits.METER;
+	// 			break;
+	// 		case 'ft':
+	// 			this.lengthUnit = LengthUnits.FEET;
+	// 			break;
+	// 		case 'in':
+	// 			this.lengthUnit = LengthUnits.INCH;
+	// 			break;
+	// 	}
+
+	// 	switch (lengthUnitDisplayValue) {
+	// 		case 'm':
+	// 			this.lengthUnitDisplay = LengthUnits.METER;
+	// 			break;
+	// 		case 'ft':
+	// 			this.lengthUnitDisplay = LengthUnits.FEET;
+	// 			break;
+	// 		case 'in':
+	// 			this.lengthUnitDisplay = LengthUnits.INCH;
+	// 			break;
+	// 	}
+
+	// 	this.dispatchEvent({'type': 'length_unit_changed', 'viewer': this, value: lengthUnitValue});
+	// };
+
+	setLengthDisplayUnit(value) {
+		switch (value) {
+			case 'm':
+				this.lengthUnitDisplay = LengthUnits.METER;
+				break;
+			case 'ft':
+				this.lengthUnitDisplay = LengthUnits.FEET;
+				break;
+			case 'in':
+				this.lengthUnitDisplay = LengthUnits.INCH;
+				break;
+		}
+
+		this.dispatchEvent({'type': 'length_unit_display_changed', 'viewer': this, value: value});
+	}
+
+
 	setLengthUnitAndDisplayUnit(lengthUnitValue, lengthUnitDisplayValue) {
 		switch (lengthUnitValue) {
 			case 'm':
@@ -1200,20 +1298,11 @@ export class Viewer extends EventDispatcher {
 				break;
 		}
 
-		switch (lengthUnitDisplayValue) {
-			case 'm':
-				this.lengthUnitDisplay = LengthUnits.METER;
-				break;
-			case 'ft':
-				this.lengthUnitDisplay = LengthUnits.FEET;
-				break;
-			case 'in':
-				this.lengthUnitDisplay = LengthUnits.INCH;
-				break;
-		}
+		this.setLengthDisplayUnit(lengthUnitDisplayValue);
 
 		this.dispatchEvent({'type': 'length_unit_changed', 'viewer': this, value: lengthUnitValue});
 	};
+
 
 	zoomTo(node, factor, animationDuration = 0) {
 		let view = this.scene.view;
@@ -1363,6 +1452,7 @@ export class Viewer extends EventDispatcher {
 		this.navigationCube.visible = !this.navigationCube.visible;
 	}
 
+	//set current view from any of the 6 axis views
 	setView(view) {
 		if (!view) return;
 
@@ -1430,6 +1520,7 @@ export class Viewer extends EventDispatcher {
 		this.fitToScreen();
 	};
 
+	// for non world apps
 	flipYZ() {
 		this.isFlipYZ = !this.isFlipYZ;
 
@@ -1445,15 +1536,37 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+
+	//enforcing an proj4 projection definition for the first valid def
+	getProjection() {
+		let proj = this.projection
+		if (!proj || proj === null) {
+			proj = this.getFirstValidProjection();
+		}
+		return proj;
+	}
+
 	/**
 	 * Set the viewer default projection based on the first pointcloud, otherwise null.
 	 * Another option is to scroll and assign the first valid projection.
 	 *
 	 */
 
-	getProjection() {
-		const pointcloud = this.scene.pointclouds[0];
+	getFirstValidProjection() {
+		// const pointcloud = this.scene.pointclouds[0];//sometimes fails if pointclouds is empty
+		let pc = this.scene.pointclouds.find((pc) => pc.projection && pc.projection != '');
+		if (pc && pc.projection) {
+			console.log(pc.projection);
+			return pc.projection;
+		}
+		return null;
 
+	}
+
+
+	//if not null, returns it, otherwise null
+	getFirstProjection() {
+		const pointcloud = this.scene.pointclouds[0];//sometimes fails if pointclouds is empty
 		if (pointcloud) {
 			return pointcloud.projection;
 		} else {
@@ -1461,7 +1574,7 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
-
+	//returns a list of all projections in the scene
 	getProjectionsList() {
 
 		let projectionsList = this.scene.pointclouds.map((pointcloud) => {
@@ -1472,7 +1585,7 @@ export class Viewer extends EventDispatcher {
 		return projectionsList
 	}
 
-
+	//retrieve the project options  from an url
 	async loadProject(url) {
 
 		const fetchOptions = updateFetchToken({headers: {}});//added by jguerrer
@@ -1495,6 +1608,9 @@ export class Viewer extends EventDispatcher {
 		return Potree.saveProject(this);
 	}
 
+	/**
+	 * Load potree project from url
+	 */
 	loadSettingsFromURL() {
 		if (Utils.getParameterByName("pointSize")) {
 			this.setPointSize(parseFloat(Utils.getParameterByName("pointSize")));
@@ -1846,9 +1962,9 @@ export class Viewer extends EventDispatcher {
 							console.error(msg);
 						} else {
 
-							proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-							proj4.defs("pointcloud", this.getProjection());
-							let transform = proj4("WGS84", "pointcloud");
+						proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+						proj4.defs("pointcloud", this.getFirstValidProjection());
+						let transform = proj4("WGS84", "pointcloud");
 
 							const buffer = await file.arrayBuffer();
 
@@ -1912,7 +2028,8 @@ export class Viewer extends EventDispatcher {
 			alpha: true,
 			premultipliedAlpha: false,
 			canvas: canvas,
-			context: context
+			context: context,
+			antialias: true, //reduce jagged edges on shapes
 		});
 		this.renderer.sortObjects = false;
 		this.renderer.setSize(width, height);
@@ -2093,7 +2210,7 @@ export class Viewer extends EventDispatcher {
 
 	}
 
-	//checking and updating all items in the scene
+	//checking and updating all items in the scene according to the viewer app
 	update(delta, timestamp) {
 
 		if (Potree.measureTimings) performance.mark("update-start");
@@ -2331,22 +2448,17 @@ export class Viewer extends EventDispatcher {
 			// volumes with clipping enabled
 			//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
 			boxes.push(...this.scene.volumes.filter(v => (v.clip && v.visible && v instanceof BoxVolume)));//for in built boxes
-			// boxes.push(...this.scene.volumes.filter(v => (v.clip && true && v instanceof BoxVolume)));//added to check its visibility
-
-			//let customBoxes = [];
 
 			// volumes with clipping enabled
 			//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
 			boxes.push(...this.scene.volumes.filter(v => (v.clip && v.visible && !(v instanceof BoxVolume))));//add non built in boxes
 
-
 			//only if custom boxes are present, this applies, but must change it.
 
-
-
 			// profile segments
+			let profileBoxes = [];
 			for (let profile of this.scene.profiles) {
-				boxes.push(...profile.boxes);
+				profileBoxes.push(...profile.boxes);
 			}
 
 			// Needed for .getInverse(), pre-empt a determinant of 0, see #815 / #816
@@ -2355,11 +2467,23 @@ export class Viewer extends EventDispatcher {
 			let clipBoxes = boxes.filter(degenerate).map(box => {
 				box.updateMatrixWorld();
 
+				let boxInverse = box.matrixWorld.clone().invert();//added for clipProfileBoxes
+				let boxPosition = box.getWorldPosition(new Vector3());
+
+				return {box: box, inverse: boxInverse, position: boxPosition};
+			});
+
+
+
+			let clipProfileBoxes = profileBoxes.filter(degenerate).map(box => {
+				box.updateMatrixWorld();
 				let boxInverse = box.matrixWorld.clone().invert();
 				let boxPosition = box.getWorldPosition(new Vector3());
 
 				return {box: box, inverse: boxInverse, position: boxPosition};
 			});
+
+			//////////////
 
 			let clipPolygons = this.scene.polygonClipVolumes.filter(vol => vol.initialized && vol.visible);//checking visilibity to avoid/ignore it. Works on std or not std clip polygon
 
@@ -2384,8 +2508,12 @@ export class Viewer extends EventDispatcher {
 
 			// set clip volumes in material
 			for (let pointcloud of visiblePointClouds) {
-				pointcloud.material.setClipBoxes(clipBoxes);//profiles and std volumes but not updating mixed profiles
-				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//updated but not updating mixed profiles
+				pointcloud.material.setClipBoxes(clipBoxes);//selection std volumes only
+				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//selection polygons only
+				//additional clipping must be added here
+
+				pointcloud.material.setClipProfileBoxes(clipProfileBoxes);//profiles only, taken out from clipBoxes
+
 				pointcloud.material.clipTask = this.clipTask;
 				pointcloud.material.clipMethod = this.clipMethod;
 
@@ -2976,4 +3104,334 @@ export class Viewer extends EventDispatcher {
 
 		return message;
 	}
+
+
+	dispose() {
+		try {
+			console.log('Disposing viewer...');
+
+			// Stop animation loop
+			this.renderer.setAnimationLoop(null);
+
+			// Dispose of controls
+			if (this.controls) {
+				this.controls.enabled = false;
+				if (this.controls.dispose) this.controls.dispose();
+			}
+			if (this.fpControls) {
+				this.fpControls.enabled = false;
+				if (this.fpControls.dispose) this.fpControls.dispose();
+			}
+			if (this.orbitControls) {
+				this.orbitControls.enabled = false;
+				if (this.orbitControls.dispose) this.orbitControls.dispose();
+			}
+			if (this.earthControls) {
+				this.earthControls.enabled = false;
+				if (this.earthControls.dispose) this.earthControls.dispose();
+			}
+			if (this.deviceControls) {
+				this.deviceControls.enabled = false;
+				if (this.deviceControls.dispose) this.deviceControls.dispose();
+			}
+			if (this.vrControls) {
+				this.vrControls.enabled = false;
+				if (this.vrControls.dispose) this.vrControls.dispose();
+			}
+
+			// Clear TWEEN animations
+			TWEEN.removeAll();
+
+			// Dispose of scene and its contents recursively
+			if (this.scene) {
+				// Dispose point clouds with their geometries and materials
+				for (let pointcloud of this.scene.pointclouds) {
+					if (pointcloud.dispose) {
+						pointcloud.dispose();
+					}
+					// Dispose geometry
+					if (pointcloud.geometry && pointcloud.geometry.dispose) {
+						pointcloud.geometry.dispose();
+					}
+					// Dispose material
+					if (pointcloud.material && pointcloud.material.dispose) {
+						pointcloud.material.dispose();
+					}
+				}
+				this.scene.pointclouds = [];
+
+				// Dispose Three.js scenes recursively
+				this.disposeSceneRecursive(this.scene.scene);
+				this.disposeSceneRecursive(this.scene.scenePointCloud);
+				this.disposeSceneRecursive(this.scene.sceneBG);
+				this.disposeSceneRecursive(this.overlay);
+				this.disposeSceneRecursive(this.sceneVR);
+
+				// Clear scene references
+				this.scene.scene = null;
+				this.scene.scenePointCloud = null;
+				this.scene.sceneBG = null;
+			}
+
+			// Dispose VR scene
+			if (this.sceneVR) {
+				this.disposeSceneRecursive(this.sceneVR);
+				this.sceneVR = null;
+			}
+
+			// Dispose overlay scene
+			if (this.overlay) {
+				this.disposeSceneRecursive(this.overlay);
+				this.overlay = null;
+			}
+
+			// Dispose renderers
+			if (this.potreeRenderer && this.potreeRenderer.dispose) {
+				this.potreeRenderer.dispose();
+			}
+			if (this.edlRenderer && this.edlRenderer.dispose) {
+				this.edlRenderer.dispose();
+			}
+			if (this.hqRenderer && this.hqRenderer.dispose) {
+				this.hqRenderer.dispose();
+			}
+			if (this.pRenderer && this.pRenderer.dispose) {
+				this.pRenderer.dispose();
+			}
+
+			// Dispose WebGL renderer thoroughly
+			if (this.renderer) {
+				// Dispose render targets
+				this.renderer.getRenderTarget()?.dispose();
+
+				// Clear WebGL state
+				this.renderer.state.reset();
+
+				// Dispose WebGL renderer
+				this.renderer.dispose();
+
+				// Force context loss to free GPU memory
+				const gl = this.renderer.getContext();
+				if (gl && gl.getExtension('WEBGL_lose_context')) {
+					gl.getExtension('WEBGL_lose_context').loseContext();
+				}
+
+				this.renderer.forceContextLoss();
+			}
+
+			// Dispose cameras
+			this.disposeCamera(this.scene?.cameraP);
+			this.disposeCamera(this.scene?.cameraO);
+			this.disposeCamera(this.scene?.cameraBG);
+			this.disposeCamera(this.scene?.cameraScreenSpace);
+			this.disposeCamera(this._ecefPerspectiveCamera);
+			this.disposeCamera(this._ecefOrthographicCamera);
+			this.disposeCamera(this.shadowTestCam);
+			this.disposeCamera(this.overlayCamera);
+
+			// Dispose skybox
+			if (this.skybox) {
+				this.disposeSceneRecursive(this.skybox.scene);
+				this.disposeCamera(this.skybox.camera);
+				this.skybox = null;
+			}
+
+			// Dispose tools
+			this.disposeTool(this.annotationTool);
+			this.disposeTool(this.measuringTool);
+			this.disposeTool(this.profileTool);
+			this.disposeTool(this.volumeTool);
+			this.disposeTool(this.clippingTool);
+			this.disposeTool(this.transformationTool);
+			this.disposeTool(this.clusterTool);
+			this.disposeTool(this.selectionTool);
+			this.disposeTool(this.navigationCube);
+			this.disposeTool(this.compass);
+
+			// Dispose extra tools
+			for (let tool of this.extraTools) {
+				this.disposeTool(tool);
+			}
+
+			// Clear custom arrays
+			this.customUpdates = [];
+			this.ecefRenderers = [];
+			this.extraRenders = [];
+			this.extraTools = [];
+
+			// Dispose GUI elements
+			if (this.sidebar && this.sidebar.dispose) {
+				this.sidebar.dispose();
+			}
+			if (this.mapView && this.mapView.dispose) {
+				this.mapView.dispose();
+			}
+			if (this.profileWindow && this.profileWindow.dispose) {
+				this.profileWindow.dispose();
+			}
+
+			// Remove DOM elements
+			$('#potree_sidebar_container').empty();
+			$('#potree_map').remove();
+			$('#potree_description').empty();
+			$('#potree_annotation_container').empty();
+			$('#potree_quick_buttons').empty();
+			$('#message_listing').empty();
+			$('.annotation').remove();
+			$('#profile_window').remove();
+
+			// Remove canvas and renderer DOM element
+			if (this.renderer && this.renderer.domElement) {
+				if (this.renderer.domElement.parentNode) {
+					this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
+				}
+			}
+
+			// Remove stats if present
+			if (this.stats && this.stats.dom) {
+				if (this.stats.dom.parentNode) {
+					this.stats.dom.parentNode.removeChild(this.stats.dom);
+				}
+			}
+
+			// Clear event listeners
+			this.removeAllEventListeners();
+
+			// Clear messages
+			this.messages = [];
+
+			// Clear performance measures
+			if (typeof performance !== 'undefined') {
+				performance.clearMarks();
+				performance.clearMeasures();
+			}
+
+			// Dispose clock
+			if (this.clock) {
+				this.clock = null;
+			}
+
+			// Clear all object references
+			this.scene = null;
+			this.sceneVR = null;
+			this.overlay = null;
+			this.renderer = null;
+			this.potreeRenderer = null;
+			this.edlRenderer = null;
+			this.hqRenderer = null;
+			this.pRenderer = null;
+			this.controls = null;
+			this.inputHandler = null;
+			this.sidebar = null;
+			this.mapView = null;
+			this.overlayCamera = null;
+			this._ecefPerspectiveCamera = null;
+			this._ecefOrthographicCamera = null;
+			this.shadowTestCam = null;
+
+			console.log('Viewer disposed successfully');
+
+		} catch (error) {
+			console.error('Error during viewer disposal:', error);
+		}
+	}
+
+	// Helper method to recursively dispose Three.js scene objects
+	disposeSceneRecursive(scene) {
+		if (!scene) return;
+
+		scene.traverse((child) => {
+			// Dispose geometry
+			if (child.geometry && child.geometry.dispose) {
+				child.geometry.dispose();
+			}
+
+			// Dispose material(s)
+			if (child.material) {
+				if (Array.isArray(child.material)) {
+					child.material.forEach(material => {
+						this.disposeMaterial(material);
+					});
+				} else {
+					this.disposeMaterial(child.material);
+				}
+			}
+
+			// Dispose textures
+			if (child.texture && child.texture.dispose) {
+				child.texture.dispose();
+			}
+		});
+
+		// Clear the scene
+		while (scene.children.length > 0) {
+			scene.remove(scene.children[0]);
+		}
+	}
+
+	// Helper method to dispose materials and their textures
+	disposeMaterial(material) {
+		if (!material || !material.dispose) return;
+
+		// Dispose textures in the material
+		Object.keys(material).forEach(key => {
+			const value = material[key];
+			if (value && value.isTexture) {
+				value.dispose();
+			}
+		});
+
+		// Dispose the material itself
+		material.dispose();
+	}
+
+	// Helper method to dispose cameras
+	disposeCamera(camera) {
+		if (!camera) return;
+
+		// Remove from parent if attached
+		if (camera.parent) {
+			camera.parent.remove(camera);
+		}
+
+		// Clear references
+		camera.clear?.();
+	}
+
+	// Helper method to dispose tools
+	disposeTool(tool) {
+		if (!tool) return;
+
+		if (tool.dispose) {
+			tool.dispose();
+		}
+
+		// Remove from scene if it has a scene reference
+		if (tool.scene) {
+			tool.scene = null;
+		}
+	}
+
+	// Helper method to remove all event listeners
+	removeAllEventListeners() {
+		try {
+			// Remove drag and drop listeners
+			$("body")[0].removeEventListener("dragenter", this.allowDrag);
+			$("body")[0].removeEventListener("dragover", this.allowDrag);
+			$("body")[0].removeEventListener("drop", this.dropHandler);
+
+			// Remove canvas event listeners
+			if (this.renderer && this.renderer.domElement) {
+				this.renderer.domElement.removeEventListener("webglcontextlost", this.onWebGLContextLost);
+				this.renderer.domElement.removeEventListener("mousedown", this.onMouseDown);
+			}
+
+			// Clear all custom event listeners from EventDispatcher
+			this._listeners = {};
+
+		} catch (error) {
+			console.error('Error removing event listeners:', error);
+		}
+	}
+
 };

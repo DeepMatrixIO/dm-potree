@@ -52,8 +52,6 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.clipPolygons = [];
 		this.pointClusters = [];
 
-
-
 		// adding all extra arrays for filtering and custom  rendering order for clips
 		this.mixedFilters = [];//arbitrary array to store either box clips, polygon clips or even filters to be applied in order, each returns true false
 

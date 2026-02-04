@@ -124,10 +124,14 @@ uniform int clipMethod;
 
 #if defined(num_clipboxes) && num_clipboxes > 0
 uniform mat4 clipBoxes[num_clipboxes];
-//uniform int selectionClipTasks[num_clipboxes];
 uniform vec3 boxColors[num_clipboxes];
 uniform int clipTasks[num_clipboxes];
-// uniform vec3 selectionBoxColors[num_clipboxes];
+#endif
+
+#if defined(num_clipprofileboxes) && num_clipprofileboxes > 0
+uniform mat4 clipProfileBoxes[num_clipprofileboxes];
+uniform vec3 boxProfileColors[num_clipprofileboxes];
+uniform int clipProfileTasks[num_clipprofileboxes];
 #endif
 
 // distance rendering requires a position and an array of min max ranges
@@ -207,6 +211,11 @@ uniform int uIntegerFilterValues[num_int_values];
 #if defined(mixed_filters) && mixed_filters > 0 // means something is commited to filtering
 uniform int uMixedFilters[mixed_filters];		// list of filters encoded with indices, extra variables are checked independently
 // uniform int  uFilterAttributes[num_filter_attributes];//attribute values are packed and indexed for filters, so they are indices
+#endif
+
+#if defined(visible_classes) && visible_classes > 0 // an array of visible classes 0 or 1
+uniform int uVisibleClasses[visible_classes];
+
 #endif
 
 uniform float size;
@@ -622,8 +631,6 @@ vec3 getGpsTime() {
 
 vec3 getElevation() {
 	vec4 world = modelMatrix * vec4(position, 1.0f);
-	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);//value is scaled to range
-	vec3 cElevation = texture(gradient, vec2(w, 1.0f - w)).rgb;
 
 #if defined(custom_range) && custom_range > 0
 	vec3 color;
@@ -671,6 +678,8 @@ vec3 getElevation() {
 
 #endif
 
+	float w = (world.z - elevationRange.x) / (elevationRange.y - elevationRange.x);//value is scaled to range
+	vec3 cElevation = texture(gradient, vec2(w, 1.0f - w)).rgb;
 	return cElevation;
 }
 
@@ -1055,8 +1064,9 @@ vec3 getColor() {
 	color = vec3(linearDepth, expDepth, 0.0f);
 	// color = vec3(1.0, 0.5, 0.3);
 #elif defined color_type_intensity
-	float w = getIntensity();
-	color = vec3(w, w, w);
+	// float w = getIntensity();
+	// color = vec3(w, w, w);
+	color = customIntensity();//replaces default grayscale behaviour
 #elif defined color_type_gps_time
 	color = getGpsTime();
 #elif defined color_type_intensity_gradient
@@ -1234,7 +1244,7 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point) {
  * HAve two options, one is to directly extract a filter from all arrays. other is to explicitely receive the values
  */
 
-bool doLogicalEval(int operator, float attributeValue, float compareValue, int startIndex, int endIndex) {
+bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float compareValue, int startIndex, int endIndex) {
 
 	bool result = false;
 #if defined(num_float_values) && num_float_values > 0
@@ -1250,6 +1260,15 @@ bool doLogicalEval(int operator, float attributeValue, float compareValue, int s
 
 		result = true;
 
+		//have to store the last
+
+		#if defined(visible_classes) && visible_classes > 0
+		//  //takes as classification value
+		lastClassification = currentClassification;
+		currentClassification = attributeIdx;
+		// isVisible = uVisibleClasses[attributeIdx];// == 0 ? 0 :1;
+		// // isVisibleClassification=true;
+		#endif
 		//clipTask= CLIPTASK_COLORIZE;
 
 	} else if(operator == OP_EQUALS_CONST) {
@@ -1406,6 +1425,50 @@ void doClipping(bool inside) {
 		}
 	}
 #endif
+
+	//profile clipping variables
+	int clipVolumesCount = 0;
+	int insideCount = 0;
+
+	int clipProfileBoxesCount = 0;
+	int insideProfileCount = 0;
+
+	//profile clipboxes
+	#if defined(num_clipprofileboxes) && num_clipprofileboxes > 0
+	for(int i = 0; i < num_clipprofileboxes; i++) {
+		vec4 clipPosition = clipProfileBoxes[i] * modelMatrix * vec4(position, 1.0f);
+		bool inside = -0.5f <= clipPosition.x && clipPosition.x <= 0.5f;
+		inside = inside && -0.5f <= clipPosition.y && clipPosition.y <= 0.5f;
+		inside = inside && -0.5f <= clipPosition.z && clipPosition.z <= 0.5f;
+
+		insideProfileCount = insideProfileCount + (inside ? 1 : 0);
+		clipProfileBoxesCount++;
+	}
+	#endif
+	if(insideProfileCount > 0) {
+
+		//some color
+		vColor.r += 0.5f; // or colorize later
+		return;//if return, means profile goes on top
+	}
+
+	// #if defined(num_clipboxes) && num_clipboxes > 0
+	// 	for(int i = 0; i < num_clipboxes; i++){
+	// 		vec4 clipPosition = clipBoxes[i] * modelMatrix * vec4( position, 1.0 );
+	// 		bool inside = -0.5 <= clipPosition.x && clipPosition.x <= 0.5;
+	// 		inside = inside && -0.5 <= clipPosition.y && clipPosition.y <= 0.5;
+	// 		inside = inside && -0.5 <= clipPosition.z && clipPosition.z <= 0.5;
+
+	// 		insideCount = insideCount + (inside ? 1 : 0);
+	// 		clipVolumesCount++;
+	// 	}
+	// #endif
+	// if(insideCount > 0){
+
+	// 	//some color
+	// 		vColor.r += 0.5; // or colorize later
+	// 		return;
+	// }
 
 	//bool active_ = false;//now global
 	//bool visible = true;//now global
@@ -1824,19 +1887,18 @@ bool doFiltering(bool isInside) {
 
 					if(currentFilterChainValue) {//if point is here, assignedColor is the current Color
 						olderColor = assignedColor;
+						lastClassification = currentClassification;
 					} else {
 						assignedColor = olderColor;//current block failed and must return to older color if any, but better
+						currentClassification = lastClassification;
 					}
 
-
-					if(stopped){//if i just came from a stop
-						currentFilterChainValue=false;
+					if(stopped) {//if i just came from a stop
+						currentFilterChainValue = false;
 					}
 
 					globalValue = globalValue || currentFilterChainValue; // OR operation
 					currentFilterChainValue = true;						 // reset for next filter
-
-
 
 					// skip = false;									 // reset skip for next filter
 					stopped = true;
@@ -1845,7 +1907,8 @@ bool doFiltering(bool isInside) {
 				} else {
 /////////////logical
 					#if defined(num_float_values) && num_float_values > 0
-					isIn = doLogicalEval(currentOperator, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+					isIn = doLogicalEval(currentOperator, attribIdx, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+
 					currentFilterChainValue = currentFilterChainValue && isIn;
 
 					#endif
@@ -1949,12 +2012,20 @@ void main() {
 	//doFiltering
 	#if defined(mixed_filters) && mixed_filters > 0
 	isInside = doFiltering(isInside); // position is in world space, so pass it as parameter
+
+		#if defined(visible_classes) && visible_classes > 0
+		if(isInside && currentClassification > -1) {
+				isVisible = uVisibleClasses[currentClassification];// == 0 ? 0 :1;
+			}
+
+		#endif
+
 	// if(res) {vColor = vec3(1.0f, 1.0f, 0.0f); // yellow highlight on selection
 	// }
 	#endif
 
 	// CLIPPING
-	doClipping(isInside);//requires inside
+	doClipping(isInside);//requires inside, also deals with profile clip boxes, which should be changed
 
 #if defined(num_clipspheres) && num_clipspheres > 0
 	for(int i = 0; i < num_clipspheres; i++) {

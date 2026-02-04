@@ -69,8 +69,9 @@ export class PotreeRenderer {
 		}else if(viewer.background === "gradient"){
 			renderer.render(viewer.scene.sceneBG, viewer.scene.cameraBG);
 		}
+		/////////////////////////////////
 		viewer.ecefRenderer();//forcing b3dm and others before regular rendering
-
+		////////////////////////////////
 		for(let pointcloud of this.viewer.scene.pointclouds){
 			const {material} = pointcloud;
 			material.useEDL = false;
@@ -82,13 +83,11 @@ export class PotreeRenderer {
 
 		// render scene
 		renderer.render(viewer.scene.scene, camera);
-
 		viewer.dispatchEvent({type: "render.pass.scene",viewer: viewer});
-
+		////////////////////////////////
 		viewer.clippingTool.update();
 		renderer.render(viewer.clippingTool.sceneMarker, viewer.scene.cameraScreenSpace); //viewer.scene.cameraScreenSpace);
 		renderer.render(viewer.clippingTool.sceneVolume, camera);
-
 		renderer.render(viewer.controls.sceneControls, camera);
 
 		renderer.clearDepth();
@@ -101,6 +100,7 @@ export class PotreeRenderer {
 		// renderer.render(viewer.clippingTool.sceneVolume, camera);
 		renderer.render(viewer.transformationTool.scene, camera); //Put back to be displayed on all qualities
 
+		//navigation cube used to
 		// renderer.setViewport(width - viewer.navigationCube.width,
 		// 							height - viewer.navigationCube.width,
 		// 							viewer.navigationCube.width, viewer.navigationCube.width);

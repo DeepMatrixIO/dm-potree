@@ -691,12 +691,12 @@ export class Renderer {
 
 				}
 				//}
-			// } else {
+				// } else {
 
-			// 	for (let i = 0;i < numVertices;i++) {
-			// 		packedData[i * totalAttributes + j] = 0.0;
+				// 	for (let i = 0;i < numVertices;i++) {
+				// 		packedData[i * totalAttributes + j] = 0.0;
 
-			// 	}
+				// 	}
 			}
 
 
@@ -828,6 +828,8 @@ export class Renderer {
 		let mat4holder = new Float32Array(16);
 
 		let i = 0;
+		//nodes are rendered
+		//world matrix transformation is received from the node.sceneNode.matrixWorld
 		for (let node of nodes) {
 
 			if (exports.debug.allowedNodes !== undefined) {
@@ -837,7 +839,7 @@ export class Renderer {
 			}
 
 			let world = node.sceneNode.matrixWorld;
-			worldView.multiplyMatrices(view, world);
+			worldView.multiplyMatrices(view, world);//the world and view matrix is computed per node
 
 			if (visibilityTextureData) {
 				let vnStart = visibilityTextureData.offsets.get(node);
@@ -1010,6 +1012,9 @@ export class Renderer {
 			const geometry = node.geometryNode.geometry;
 
 			if (!geometry) console.log('Missing geometry', node)
+
+			///////////////////////////////////////////
+			// gps time
 			if (geometry.attributes["gps-time"]) {
 				const bufferAttribute = geometry.attributes["gps-time"];
 				const attGPS = octree.getAttribute("gps-time");
@@ -1123,10 +1128,17 @@ export class Renderer {
 					let uValue = customUniforms[uniformName].value;
 
 
+					// for now ignore the types and set directly as float array
 					const customLocation =
 						shader.uniformLocations[`${uniformName}[0]`];
 					gl.uniform1fv(customLocation, uValue);//directly setting
 
+
+
+					//  if (uType === "fv" ){
+					// 	shader.setUniform1f(`${uniformName}[0]`,uValue);
+					// 	// return;
+					// }
 
 
 					// if (uType === "f") {
@@ -1623,7 +1635,7 @@ export class Renderer {
 
 
 
-
+				// this code was modified to store
 				//// TODO CHECK using some variable or some other element clipboxes used for clustering tool, which are stored
 				let clusterToolClipBoxes = true;
 				if (clusterToolClipBoxes) {//code added for ClusterTool, crashed profile tool as profile tool is a set of  clipboxes
