@@ -1347,7 +1347,8 @@ export class InputHandler extends EventDispatcher {
 
 			intersections = intersections.concat(raycaster.intersectObjects(interactables.filter(o => o.visible), false));
 		}
-
+		//	scenes with transformCamera method for ECEF or other projections
+		// here  a threejs method is applied to raycast each scene with its custom camera, however non threejs engines require custom code, so if a custom raycast method is provided, it should be used instead of the threejs raycaster
 		if (scenesWithTransformCamera.length > 0) {
 
 			scenesWithTransformCamera.forEach(scene => {
