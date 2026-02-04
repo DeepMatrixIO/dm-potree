@@ -1,7 +1,5 @@
 /build
-/test
-/test1
-/360
+/dist
 node_modules
 docs/.marking_your_own_pointcloud_loader.md.html
 docs/.file_format.md.html
@@ -11,13 +9,18 @@ docs/.materials_and_rendermodes.md.html
 docs/.how_to_create_your_own_pointcloud_loader.md.html
 examples/index.html
 .project
-libs/CesiumUnminified
-/examples/page.html
+
+
 /resources/icons/index.html
 /examples/page.html
-dist/*
-libs/giro3d
-/libs/three.js_*
+/examples/page.html
+
+
+libs
+# /libs/giro3d
+# /libs/three.js_*
+# /libs/CesiumUnminified
+
 /pointclouds/retz
 /pointclouds/NVIDIA_Ph01-20160403_tiles_converted
 /pointclouds/D
@@ -41,7 +44,5 @@ libs/giro3d
 /examples/persisted*
 /pointclouds/*
 /example/data/*
-dist/*
-libs/*
-example/workers*
-example/potree*
+/example/workers*
+/example/potree*
