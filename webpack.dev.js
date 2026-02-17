@@ -13,8 +13,8 @@ import config from './webpack.config.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const __context = path.resolve('./example');
-console.log(__filename);
-console.log(__dirname);
+console.log("wp.dev FILENAME: ",__filename);
+console.log("wp.dev DIRNAME: ",__dirname);
 
 
 
@@ -37,6 +37,13 @@ const serveConfig = {
 		// compress: true,
 
 		port: 5200,
+
+		devMiddleware: {
+			writeToDisk: (filePath) => {
+				return /potree\.css$/.test(filePath) || /workers/.test(filePath) || /\.html$/.test(filePath);
+			},
+		},
+
 		// client: {
 		// 	logging: 'verbose', // Add this line for verbose client logs
 		// 	overlay: true,      // Shows errors/warnings in browser overlay
@@ -172,22 +179,54 @@ const serveConfig = {
 	plugins: [
 		new CopyPlugin({
 			patterns: [
-				{
-					from: "data",
-					to: "data"
-				},
+				// {
+				// 	from: "data",
+				// 	to: "data"
+				// },
 				{
 					from: path.resolve(__dirname, 'src/workers'),
 					to: path.resolve(__context, 'workers'),
+					transform(content, absoluteFrom) {
+						console.log('[CopyPlugin Debug] Processing:', absoluteFrom);
+						return content;
+					}
 				},
+
+
+{
+					from: path.resolve(__dirname, 'src/modules/loader'),
+					to: path.resolve(__context, 'loader/workers'),
+					transform(content, absoluteFrom) {
+						console.log('[CopyPlugin Debug] Processing:', absoluteFrom);
+						return content;
+					}
+				},
+
 				{
 					from: path.resolve(__dirname, 'src/lines'),
 					to: path.resolve(__dirname, 'dist/lines'),
+					transform(content, absoluteFrom) {
+						console.log('[CopyPlugin Debug] Processing:', absoluteFrom);
+						return content;
+					}
 				},
 				{
 					from: path.resolve(__dirname, 'src/viewer/potree.css'),
-					to: path.resolve(__dirname, 'dist/potree.css'),
-				}
+					to: path.resolve('example/potree/potree.css'),
+					transform(content, absoluteFrom) {
+						console.log('[CopyPlugin Debug] Processing:', absoluteFrom);
+						return content;
+					}
+				},
+{
+					from: path.resolve(__dirname, 'src/viewer/sidebar.html'),
+					to: path.resolve('example/potree/sidebar.html'),
+					transform(content, absoluteFrom) {
+						console.log('[CopyPlugin Debug] Processing:', absoluteFrom);
+						return content;
+					}
+				},
+
 
 
 			]

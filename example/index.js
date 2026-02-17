@@ -111,8 +111,14 @@ document.body.onload = function () {
 	// @ts-ignore
 	document.body.onresize();
 
+	let octreePath= "pointclouds/vegetation_zone_ROW_175_20_2_71860e0d.las_converted/metadata.json";
+	// let octreeName = "vegetation";
+	// let octreePath= "pointclouds/dense_cloud_crop2_out_a6ac0ecb.las_converted/metadata.json";
+		// let octreePath= "pointclouds/calkini_dem_k8_r1_r2_class1_segmented_1751888546983_segmented_1751977953588_segmented_1751978171236_ebff23d6.las_converted/metadata.json";
 
-	Potree.loadPointCloud("pointclouds/vegetation_zone_ROW_75_20_1_64930dd1.las_converted/metadata.json", "vegetation", function (e) {
+	let octreeName = "dense_cloud";
+
+	Potree.loadPointCloud(octreePath, octreeName, function (e) {
 		sceneSG.addPointCloud(e.pointcloud);
 		//sceneSG.view.position.set(590030, 231767, 1007);
 		viewer.zoomTo(e.pointcloud)
