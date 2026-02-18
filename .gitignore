@@ -47,4 +47,5 @@ libs
 /pointclouds/*
 /example/data/*
 /example/workers*
+/example/loader
 /example/potree*

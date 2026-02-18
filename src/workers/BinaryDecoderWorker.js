@@ -21,7 +21,7 @@ Potree = {};
 onmessage = function (event) {
 
 	performance.mark("binary-decoder-start");
-	
+
 	let buffer = event.data.buffer;
 	let pointAttributes = event.data.pointAttributes;
 	let numPoints = buffer.byteLength / pointAttributes.byteSize;
@@ -32,20 +32,20 @@ onmessage = function (event) {
 	let spacing = event.data.spacing;
 	let hasChildren = event.data.hasChildren;
 	let name = event.data.name;
-	
+
 	let tightBoxMin = [ Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY ];
 	let tightBoxMax = [ Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY ];
 	let mean = [0, 0, 0];
-	
+
 
 	let attributeBuffers = {};
 	let inOffset = 0;
 	for (let pointAttribute of pointAttributes.attributes) {
-		
+
 		if (pointAttribute.name === "POSITION_CARTESIAN") {
 			let buff = new ArrayBuffer(numPoints * 4 * 3);
 			let positions = new Float32Array(buff);
-		
+
 			for (let j = 0; j < numPoints; j++) {
 				let x, y, z;
 
@@ -146,7 +146,7 @@ onmessage = function (event) {
 				x = x / length;
 				y = y / length;
 				z = z / length;
-				
+
 				normals[3 * j + 0] = x;
 				normals[3 * j + 1] = y;
 				normals[3 * j + 2] = z;
@@ -161,7 +161,7 @@ onmessage = function (event) {
 				let x = view.getFloat32(inOffset + j * pointAttributes.byteSize + 0, true);
 				let y = view.getFloat32(inOffset + j * pointAttributes.byteSize + 4, true);
 				let z = view.getFloat32(inOffset + j * pointAttributes.byteSize + 8, true);
-				
+
 				normals[3 * j + 0] = x;
 				normals[3 * j + 1] = y;
 				normals[3 * j + 2] = z;
@@ -173,7 +173,7 @@ onmessage = function (event) {
 			let f32 = new Float32Array(buff);
 
 			let TypedArray = typedArrayMapping[pointAttribute.type.name];
-			preciseBuffer = new TypedArray(numPoints);
+			let preciseBuffer = new TypedArray(numPoints);
 
 			let [min, max] = [Infinity, -Infinity];
 			let [offset, scale] = [0, 1];
@@ -203,7 +203,7 @@ onmessage = function (event) {
 					}
 				}
 
-				
+
 
 				if(pointAttribute.initialRange != null){
 					offset = pointAttribute.initialRange[0];
@@ -214,7 +214,7 @@ onmessage = function (event) {
 				}
 			}
 
-			
+
 
 			for(let j = 0; j < numPoints; j++){
 				let value = getter(inOffset + j * pointAttributes.byteSize, true);
@@ -230,7 +230,7 @@ onmessage = function (event) {
 
 			pointAttribute.range = [min, max];
 
-			attributeBuffers[pointAttribute.name] = { 
+			attributeBuffers[pointAttribute.name] = {
 				buffer: buff,
 				preciseBuffer: preciseBuffer,
 				attribute: pointAttribute,
@@ -249,7 +249,7 @@ onmessage = function (event) {
 		for (let i = 0; i < numPoints; i++) {
 			indices[i] = i;
 		}
-		
+
 		attributeBuffers["INDICES"] = { buffer: buff, attribute: PointAttribute.INDICES };
 	}
 
@@ -282,8 +282,8 @@ onmessage = function (event) {
 
 			let vecAttribute = new PointAttribute(name, PointAttributeTypes.DATA_TYPE_FLOAT, 3);
 
-			attributeBuffers[name] = { 
-				buffer: buffer, 
+			attributeBuffers[name] = {
+				buffer: buffer,
 				attribute: vecAttribute,
 			};
 

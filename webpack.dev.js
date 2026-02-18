@@ -184,8 +184,8 @@ const serveConfig = {
 				// 	to: "data"
 				// },
 				{
-					from: path.resolve(__dirname, 'src/workers'),
-					to: path.resolve(__context, 'workers'),
+					from: path.resolve(__dirname, 'build/potree/workers'),
+					to: path.resolve(__context, 'workers_'),
 					transform(content, absoluteFrom) {
 						console.log('[CopyPlugin Debug] Processing:', absoluteFrom);
 						return content;
@@ -194,7 +194,7 @@ const serveConfig = {
 
 
 {
-					from: path.resolve(__dirname, 'src/modules/loader'),
+					from: path.resolve(__dirname, 'build/potree/workers'),
 					to: path.resolve(__context, 'loader/workers'),
 					transform(content, absoluteFrom) {
 						console.log('[CopyPlugin Debug] Processing:', absoluteFrom);

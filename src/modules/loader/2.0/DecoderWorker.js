@@ -16,7 +16,7 @@ const typedArrayMapping = {
 	"double": Float64Array,
 };
 
-Potree = {};
+// Potree = {};
 
 onmessage = function (event) {
 
@@ -25,7 +25,7 @@ onmessage = function (event) {
 	let tStart = performance.now();
 
 	let view = new DataView(buffer);
-	
+
 	let attributeBuffers = {};
 	let attributeOffset = 0;
 
@@ -57,13 +57,13 @@ onmessage = function (event) {
 
 	let numOccupiedCells = 0;
 	for (let pointAttribute of pointAttributes.attributes) {
-		
+
 		if(["POSITION_CARTESIAN", "position"].includes(pointAttribute.name)){
 			let buff = new ArrayBuffer(numPoints * 4 * 3);
 			let positions = new Float32Array(buff);
-		
+
 			for (let j = 0; j < numPoints; j++) {
-				
+
 				let pointOffset = j * bytesPerPoint;
 
 				let x = (view.getInt32(pointOffset + attributeOffset + 0, true) * scale[0]) + offset[0] - min.x;
@@ -104,7 +104,7 @@ onmessage = function (event) {
 			let f32 = new Float32Array(buff);
 
 			let TypedArray = typedArrayMapping[pointAttribute.type.name];
-			preciseBuffer = new TypedArray(numPoints);
+			let preciseBuffer = new TypedArray(numPoints);
 
 			let [offset, scale] = [0, 1];
 
@@ -137,7 +137,7 @@ onmessage = function (event) {
 				preciseBuffer[j] = value;
 			}
 
-			attributeBuffers[pointAttribute.name] = { 
+			attributeBuffers[pointAttribute.name] = {
 				buffer: buff,
 				preciseBuffer: preciseBuffer,
 				attribute: pointAttribute,
@@ -161,7 +161,7 @@ onmessage = function (event) {
 		for (let i = 0; i < numPoints; i++) {
 			indices[i] = i;
 		}
-		
+
 		attributeBuffers["INDICES"] = { buffer: buff, attribute: PointAttribute.INDICES };
 	}
 
@@ -195,8 +195,8 @@ onmessage = function (event) {
 
 			let vecAttribute = new PointAttribute(name, PointAttributeTypes.DATA_TYPE_FLOAT, 3);
 
-			attributeBuffers[name] = { 
-				buffer: buffer, 
+			attributeBuffers[name] = {
+				buffer: buffer,
 				attribute: vecAttribute,
 			};
 
