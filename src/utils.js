@@ -700,9 +700,6 @@ export class Utils {
 
 			return ray;
 
-
-
-
 		}
 	}
 

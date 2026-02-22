@@ -5,7 +5,7 @@
  */
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {Raycaster, Vector2,MOUSE} from 'three'
+import {Raycaster, Vector2, MOUSE} from 'three'
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";
 import {Utils} from "../utils.js";
@@ -1357,17 +1357,30 @@ export class InputHandler extends EventDispatcher {
 
 				if (scene.visible) {
 
-					let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
-					let ray = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);
+					if (scene.customRaycaster) {//if the scene used a custom Raycaster, specific method is implemented to get the intersections.
 
-					let raycaster = new Raycaster();
-					raycaster.params.Line.threshold = 0.4;
-					raycaster.ray.set(ray.origin, ray.direction);
-					let intersect = raycaster.intersectObject(scene, true);
+						//the scene with custom raycaster also have a transformCamera, used to transform from potree to custom scene position
+
+						let ray = Utils.mouseToRay(this.mouse, scene.transformCamera(), this.domElement.clientWidth, this.domElement.clientHeight);
+						//thew ray is created wrt to the custom scene and custom camera position
+						let intersect = scene.customRaycast(ray);//finally, the scene is raycasted using threeejs or other custom engine like cesium
+
+					}
+					else {//use this raycaster, i.e. use
+						let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
+						let ray = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);
+
+						let raycaster = new Raycaster();
+						raycaster.params.Line.threshold = 0.4;
+						raycaster.ray.set(ray.origin, ray.direction);
+						let intersect = raycaster.intersectObject(scene, true);
+
+					}
 					if (intersect.length) {
 						intersect[0].rootScene = scene;//link to root node with events for 3dTilesRendered structure
 						intersections = intersections.concat(intersect);
 					}
+
 				}
 			})
 
