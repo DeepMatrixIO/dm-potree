@@ -21,9 +21,13 @@ export class Compass{
 			const p1 = camera.getWorldPosition(new THREE.Vector3());
 			const p2 = p1.clone().add(direction);
 
-			const projection = viewer.getProjection();
+			const projection = viewer.getProjection().proj;
+			if(isNaN(p2.x) || isNaN(p2.y)){
+				console.log("Compas direction not available.")
+				return;
+			}
 			const azimuth = Utils.computeAzimuth(p1, p2, projection);
-			
+
 			this.dom.css("transform", `rotateZ(${-azimuth}rad)`);
 		});
 
@@ -49,8 +53,8 @@ export class Compass{
 	}
 
 	createElement(){
-		const style = `style="position: absolute; top: 10px; right: 10px; z-index: 10000; width: 64px;"`;
-		const img = $(`<img src="${Potree.resourcePath}/images/compas.svg" ${style} />`);
+		const style = `style="position: absolute; top: 50px; right: 50px; z-index: 10000; width: 64px;"`;
+		const img = $(`<img id="compass" src="${Potree.resourcePath}/images/compas.svg" ${style} />`);
 
 		return img;
 	}

@@ -59,7 +59,10 @@ export class Viewer extends EventDispatcher {
 
 		//spatial information
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
+		this._crs = null;//value of the current runtime crs code
+
 		this.isFeetBasedProjection = false;
+
 		this._ecefPerspectiveCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 		this._ecefOrthographicCamera = new THREE.OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
 
@@ -392,6 +395,19 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+
+	//crs code and projection are different. crs is the identifier while projection is the proj4 string used for transformations
+	get crs() {
+		return this._crs;
+	}
+
+	set crs(value) {
+		if (value != null) {
+			this._crs = value;
+			console.log('setting potree current crs')
+		}
+	}
+
 	get projection() {
 		return this._projection;
 	}
@@ -452,7 +468,12 @@ export class Viewer extends EventDispatcher {
 			if (this.projection == '') {return;}
 
 			if (this.projection == null) {
-				this.projection = this.getProjection();
+
+
+				const {crs, proj} = this.getProjection();
+				this.projection = proj
+				this.crs = crs;
+
 				if (this.projection) {
 					proj4.defs("pointcloud", this.projection)
 					proj4.defs(
@@ -599,7 +620,9 @@ export class Viewer extends EventDispatcher {
 			if (this.projection == '') {return;}
 
 			if (this.projection == null) {
-				this.projection = this.getProjection();
+				const {crs, proj} = this.getProjection();
+				this.projection = proj;
+				this.crs = crs;
 				if (this.projection) {
 					proj4.defs("pointcloud", this.projection)
 					proj4.defs(
@@ -1435,11 +1458,15 @@ export class Viewer extends EventDispatcher {
 
 	//enforcing an proj4 projection definition for the first valid def
 	getProjection() {
-		let proj = this.projection
+		let proj = this.projection;
+		let crs = this.crs;
 		if (!proj || proj === null) {
-			proj = this.getFirstValidProjection();
+			let validProjection = this.getFirstValidProjection();
+			proj = validProjection.proj;
+			crs = validProjection.epsg;
+			// proj = this.getFirstValidProjection().proj;
 		}
-		return proj;
+		return {crs: crs, proj: proj};
 	}
 
 	/**
@@ -1453,9 +1480,9 @@ export class Viewer extends EventDispatcher {
 		let pc = this.scene.pointclouds.find((pc) => pc.projection && pc.projection != '');
 		if (pc && pc.projection) {
 			console.log(pc.projection);
-			return pc.projection;
+			return {epsg: pc.crs, proj: pc.projection};
 		}
-		return null;
+		return {epsg: null, proj: null};
 
 	}
 
@@ -1871,7 +1898,7 @@ export class Viewer extends EventDispatcher {
 					} else {
 
 						proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-						proj4.defs("pointcloud", this.getFirstValidProjection());
+						proj4.defs("pointcloud", this.getFirstValidProjection().proj);
 						let transform = proj4("WGS84", "pointcloud");
 
 						const buffer = await file.arrayBuffer();
