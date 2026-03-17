@@ -25,7 +25,7 @@ export class Profile extends THREE.Object3D {
 		this._modifiable = true;
 
 		this.sphereGeometry = new THREE.SphereGeometry(0.4, 10, 10);
-		this.color = new THREE.Color(0xff0000);
+		this.color = new THREE.Color(0xA0FCFD);
 		this.lineColor = new THREE.Color(0xff0000);
 
 		//this.add(new THREE.AmbientLight(0xffffff,0.2));
@@ -139,7 +139,7 @@ export class Profile extends THREE.Object3D {
 			this.edges.push(edge);
 
 			let boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-			let boxMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.2});
+			let boxMaterial = new THREE.MeshBasicMaterial({color: 0xA0FCFD, transparent: true, opacity: 0.2});
 			let box = new THREE.Mesh(boxGeometry, boxMaterial);
 			box.visible = false;
 

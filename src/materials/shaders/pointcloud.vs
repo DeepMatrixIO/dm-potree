@@ -1448,7 +1448,7 @@ void doClipping(bool inside) {
 	if(insideProfileCount > 0) {
 
 		//some color
-		vColor.r += 0.5f; // or colorize later
+		vColor.r = 0.627f; vColor.g = 0.988f; vColor.b = 0.992f; // previous only more red
 		return;//if return, means profile goes on top
 	}
 
