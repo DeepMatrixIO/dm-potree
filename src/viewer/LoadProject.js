@@ -191,8 +191,9 @@ function loadGeopackage(viewer, geopackage) {
 	}
 
 
-	const {crs,proj}=viewer.getProjection();
-	const projection = proj;
+	// const {crs,proj}=viewer.getProjection();
+	// const projection = proj;
+	const projection = viewer.projection
 
 	proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
 	proj4.defs("pointcloud", projection);

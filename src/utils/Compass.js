@@ -3,9 +3,9 @@ import * as THREE from "../../libs/three.js/build/three.module.js";
 
 import {Utils} from "../utils.js";
 
-export class Compass{
+export class Compass {
 
-	constructor(viewer){
+	constructor(viewer) {
 		this.viewer = viewer;
 
 		this.visible = false;
@@ -21,8 +21,10 @@ export class Compass{
 			const p1 = camera.getWorldPosition(new THREE.Vector3());
 			const p2 = p1.clone().add(direction);
 
-			const projection = viewer.getProjection().proj;
-			if(isNaN(p2.x) || isNaN(p2.y)){
+			// const projection = viewer.getProjection().proj;
+			const projection = viewer.projection;
+
+			if (!projection || isNaN(p2.x) || isNaN(p2.y)) {
 				console.log("Compas direction not available.")
 				return;
 			}
@@ -31,7 +33,7 @@ export class Compass{
 			this.dom.css("transform", `rotateZ(${-azimuth}rad)`);
 		});
 
-		this.dom.click( () => {
+		this.dom.click(() => {
 			viewer.setTopView();
 		});
 
@@ -41,21 +43,26 @@ export class Compass{
 		this.setVisible(this.visible);
 	}
 
-	setVisible(visible){
+	setVisible(visible) {
 		this.visible = visible;
 
 		const value = visible ? "" : "none";
 		this.dom.css("display", value);
 	}
 
-	isVisible(){
+	isVisible() {
 		return this.visible;
 	}
 
-	createElement(){
+	createElement() {
 		const style = `style="position: absolute; top: 50px; right: 50px; z-index: 10000; width: 64px;"`;
-		const img = $(`<img id="compass" src="${Potree.resourcePath}/images/compas.svg" ${style} />`);
+		try {
+			document.getElementById("compass")?.remove();
+		} catch (e) {
+			// ignore
+		}
 
+		const img = $(`<img id="compass" src="${Potree.resourcePath}/images/compas.svg" ${style} />`);
 		return img;
 	}
 
