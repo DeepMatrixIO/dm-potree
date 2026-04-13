@@ -53,13 +53,17 @@ export class Viewer extends EventDispatcher {
 		this.customUpdates = []; //ADDED by  @jguerrer // runs on each  loop before general update.i.e. viewer.scene.scene  or others. Check also Input Handler for other ways
 		this.ecefRenderers = [];//ADDED by  @jguerrer // To render it before all other
 		this.extraRenders = [];//ADDED by  @jguerrer // runs on each loop after potree  render loop
+		this.removalQueue = [];//used  for cleanups
+
+
+
 		this.currentWGS84Position = {lat: 0, lon: 0, alt: 0};//ADDED by  @jguerrer // updated on each loop before general update.
 		this.currentECEFPosition = {x: 0, y: 0, z: 0};//ADDED by  @jguerrer // runs on each loop before general update.
 		this.unitConversionFactor = 1.0;//
 
 		//spatial information
 		this._projection = null;//value of the current runtime prjection, if not defined, takes the first valid pointcloud projection definition
-		this._crs = null;//value of the current runtime crs code
+		this._crs = null;//value of the current runtime crs code or EPSG code
 
 		this.isFeetBasedProjection = false;
 
@@ -715,10 +719,17 @@ export class Viewer extends EventDispatcher {
 	}
 
 	//ADDED by  @jguerrer
+	//On custom layers, a layer update is required and performed before existing main update/render loop.
+	// An object with a refresh function is required, and a visible property to avoid unnecessary updates.
+	// Examples include the use of custom html annotations or additional renderers for ECEF datasets.
+	//as this array holds a reference to the object implementing the refresh function,
+
+	// Custom updates can be also removed form the array to avoid empry checks or nulls
 	triggerUpdates() {
 		try {
 			this.customUpdates.forEach((item) => {
-				if (item.visible) {
+
+				if (item ?? item.visible) {
 					item.refresh(this);
 				}
 			});
@@ -734,10 +745,74 @@ export class Viewer extends EventDispatcher {
 		})
 	};
 
+
+	//items are only added for removal
+	removeCustomUpdate(item) {
+		this.removalQueue.push(item);//may have repeated objects
+	}
+
+	//renderable items are only added for removal
+	removeExtraRenderer(renderer) {
+		this.removalQueue.push(renderer);
+	}
+
+	removeCustomECEFRenderer(renderer) {
+		this.removalQueue.push(renderer);
+	}
+
+
+
+
+	// After rendering, process the queue
+	processRemovals() {
+		this.removalQueue.forEach(item => {
+			const indexUpdates = this.customUpdates.indexOf(item);
+			if (indexUpdates !== -1) {
+				// this.customUpdates.splice(indexUpdates, 1);//not so efficient
+				//swap and pop instead
+				//swap  the removed object with the last item. Order may not be enforced anymore
+				this.customUpdates[indexUpdates] = this.customUpdates[this.customUpdates.length - 1];
+				this.customUpdates.pop();
+			}
+
+		});
+
+
+		this.extraRenders.forEach(renderer => {
+			const indexRenders = this.extraRenders.indexOf(renderer);
+			if (indexRenders !== -1) {
+				// this.extraRenders.splice(indexRenders, 1);
+				//swap and pop instead
+				this.extraRenders[indexRenders] = this.extraRenders[this.extraRenders.length - 1];
+				this.extraRenders.pop();
+			}
+		});
+
+
+
+		this.ecefRenderers.forEach(renderer => {
+			const indexRenders = this.ecefRenderers.indexOf(renderer);
+			if (indexRenders !== -1) {
+				// this.ecefRenderers.splice(indexRenders, 1);
+				//swap and pop instead
+				this.ecefRenderers[indexRenders] = this.ecefRenderers[this.ecefRenderers.length - 1];
+				this.ecefRenderers.pop();
+			}
+
+			this.removalQueue.length = 0;
+		});
+
+	}
+
+
 	//ADDED by  @jguerrer
+	//updated so instead of storing a renderer function, pass an object and invoke the renderer
+	//  function if the object is visible.
+	// This allows to have custom renderers that can be turned on and off without needing to remove them from the array
+	//habing object allows to discard and cleanup
 	extraRenderers(timestamp) {
 		try {
-			if (this.extraRenders != null) {//added by jguerrer to enable Cesium extra render, requires an extra attr
+			if (this.extraRenders != null) {//added by jguerrer to enable Cesium extra render
 				this.extraRenders.forEach((newRender) => newRender(timestamp));
 			}
 		} catch (e) {
@@ -2961,7 +3036,7 @@ export class Viewer extends EventDispatcher {
 		this.extraRenderers(timestamp)//added by jguerrer to enable Cesium extra render, requires an extra attr
 
 
-
+		this.processRemovals();//if something was marked as removed, get rid of it
 
 		// let vrActive = viewer.renderer.xr.isPresenting;
 		// if(vrActive){
@@ -3180,9 +3255,14 @@ export class Viewer extends EventDispatcher {
 			}
 
 			// Clear custom arrays
-			this.customUpdates = [];
+			this.customUpdates = [];//should be manages via mgmnt functions
 			this.ecefRenderers = [];
-			this.extraRenders = [];
+			this.extraRenders = [];//should be manages via mgmnt functions, add, remove, etc
+			this.removalQueue = [];//objects to remove from the the customUpdate object and extraRender. May be duplicated but non televant as is done a single cycle
+
+
+
+
 			this.extraTools = [];
 
 			// Dispose GUI elements
