@@ -24,7 +24,7 @@
     "build": "npm run build_old",
     "build:workers": "webpack --config webpack.workers.js",
     "build:module": "npm run build:workers && webpack --mode production --config webpack.prod.js",
-    "start": "npm run build:module && webpack serve --config webpack.dev.js --mode development --progress --port 5200",
+    "start": "npm run build:module && webpack serve --config webpack.dev.js --mode development --progress --port 5200 --open",
     "postinstall": "npm run build"
   },
   "dependencies": {
