@@ -27,25 +27,25 @@
 	<script src="../libs/jstree/jstree.js"></script>
 	<script src="../build/potree/potree.js"></script>
 	<script src="../libs/plasio/js/laslaz.js"></script>
-	
+
 	<div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 0px; ">
 		<div id="potree_render_area" style="background-image: url('../build/potree/resources/images/background.jpg');"></div>
 		<div id="potree_sidebar_container"> </div>
 	</div>
-	
+
 	<script type="module">
 
 	import * as THREE from "../libs/three.js/build/three.module.js";
-	
+
 		window.viewer = new Potree.Viewer(document.getElementById("potree_render_area"));
-		
+
 		viewer.setEDLEnabled(true);
 		viewer.setFOV(60);
 		viewer.setPointBudget(5_000_000);
 		viewer.loadSettingsFromURL();
-		
+
 		viewer.setDescription("");
-		
+
 		viewer.loadGUI(() => {
 			viewer.setLanguage('en');
 			//$("#menu_appearance").next().show();
@@ -54,14 +54,14 @@
 			$("#menu_filters").next().show();
 			viewer.toggleSidebar();
 		});
-		
+
 		Potree.loadPointCloud("http://5.9.65.151/mschuetz/potree/resources/pointclouds/opentopography/CA13_1.4/cloud.js", "CA13", async function(e){
 			viewer.scene.addPointCloud(e.pointcloud);
 			let material = e.pointcloud.material;
 			material.size = 0.7;
 			material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
 			material.activeAttributeName = "rgba";
-			
+
 			viewer.scene.view.setView(
 				[693943.373, 3915593.308, 1051.287],
 				[694667.183, 3916308.972, -96.390],
@@ -69,7 +69,8 @@
 
 			{ // load a geopackage
 				proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-				proj4.defs("pointcloud", viewer.getProjection());
+				// proj4.defs("pointcloud", viewer.getProjection());
+				proj4.defs("pointcloud", viewer.projection);
 				const params = {
 					transform: proj4("WGS84", "pointcloud"),
 				};
@@ -79,9 +80,9 @@
 				viewer.scene.addGeopackage(geopackage);
 			}
 		});
-		
+
 	</script>
-	
-	
+
+
   </body>
 </html>

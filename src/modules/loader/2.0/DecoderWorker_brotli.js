@@ -1,8 +1,10 @@
 
 
 // import {Version} from "../../Version.js";
-import {PointAttributes, PointAttribute, PointAttributeTypes} from "../../../loader/PointAttributes.js";
-import {BrotliDecode} from "../../../../libs/brotli/decode.js";
+
+//TODO remove for wprkers
+// import {PointAttributes, PointAttribute, PointAttributeTypes} from "../../../loader/PointAttributes.js";
+//import {BrotliDecode} from "../../../../libs/brotli/decode.js";
 
 const typedArrayMapping = {
 	"int8":   Int8Array,
@@ -26,9 +28,9 @@ function dealign24b(mortoncode){
 	// ..a..b..c..d..e..f..g..h..i..j..k..l..m..n..o..p
 	let x = mortoncode;
 
-	//          ..a..b..c..d..e..f..g..h..i..j..k..l..m..n..o..p                     ..a..b..c..d..e..f..g..h..i..j..k..l..m..n..o..p 
-	//          ..a.....c.....e.....g.....i.....k.....m.....o...                     .....b.....d.....f.....h.....j.....l.....n.....p 
-	//          ....a.....c.....e.....g.....i.....k.....m.....o.                     .....b.....d.....f.....h.....j.....l.....n.....p 
+	//          ..a..b..c..d..e..f..g..h..i..j..k..l..m..n..o..p                     ..a..b..c..d..e..f..g..h..i..j..k..l..m..n..o..p
+	//          ..a.....c.....e.....g.....i.....k.....m.....o...                     .....b.....d.....f.....h.....j.....l.....n.....p
+	//          ....a.....c.....e.....g.....i.....k.....m.....o.                     .....b.....d.....f.....h.....j.....l.....n.....p
 	x = ((x & 0b001000001000001000001000) >>  2) | ((x & 0b000001000001000001000001) >> 0);
 	//          ....ab....cd....ef....gh....ij....kl....mn....op                     ....ab....cd....ef....gh....ij....kl....mn....op
 	//          ....ab..........ef..........ij..........mn......                     ..........cd..........gh..........kl..........op
@@ -43,7 +45,7 @@ function dealign24b(mortoncode){
 	//          ................................abcdefgh........                     ........................................ijklmnop
 	x = ((x & 0b000000000000000000000000) >> 16) | ((x & 0b000000000000000011111111) >> 0);
 
-	// sucessfully realigned! 
+	// sucessfully realigned!
 	//................................abcdefghijklmnop
 
 	return x;
@@ -57,7 +59,7 @@ onmessage = function (event) {
 
 	let tStart = performance.now();
 
-	let buffer; 
+	let buffer;
 	if(numPoints === 0){
 		buffer = {buffer: new ArrayBuffer(0)};
 	}else{
@@ -70,7 +72,7 @@ onmessage = function (event) {
 	}
 
 	let view = new DataView(buffer.buffer);
-	
+
 	let attributeBuffers = {};
 	let attributeOffset = 0;
 
@@ -100,7 +102,7 @@ onmessage = function (event) {
 	let numOccupiedCells = 0;
 	let byteOffset = 0;
 	for (let pointAttribute of pointAttributes.attributes) {
-		
+
 
 		if(["POSITION_CARTESIAN", "position"].includes(pointAttribute.name)){
 
@@ -108,7 +110,7 @@ onmessage = function (event) {
 
 			let buff = new ArrayBuffer(numPoints * 4 * 3);
 			let positions = new Float32Array(buff);
-		
+
 			for (let j = 0; j < numPoints; j++) {
 
 
@@ -119,16 +121,16 @@ onmessage = function (event) {
 
 				byteOffset += 16;
 
-				let X = dealign24b((mc_3 & 0x00FFFFFF) >>> 0) 
+				let X = dealign24b((mc_3 & 0x00FFFFFF) >>> 0)
 						| (dealign24b(((mc_3 >>> 24) | (mc_2 << 8)) >>> 0) << 8);
 
-				let Y = dealign24b((mc_3 & 0x00FFFFFF) >>> 1) 
+				let Y = dealign24b((mc_3 & 0x00FFFFFF) >>> 1)
 						| (dealign24b(((mc_3 >>> 24) | (mc_2 << 8)) >>> 1) << 8)
-						
 
-				let Z = dealign24b((mc_3 & 0x00FFFFFF) >>> 2) 
+
+				let Z = dealign24b((mc_3 & 0x00FFFFFF) >>> 2)
 						| (dealign24b(((mc_3 >>> 24) | (mc_2 << 8)) >>> 2) << 8)
-						
+
 
 				if(mc_1 != 0 || mc_2 != 0){
 					X = X | (dealign24b((mc_1 & 0x00FFFFFF) >>> 0) << 16)
@@ -183,7 +185,7 @@ onmessage = function (event) {
 				// 	debugger;
 				// }
 
-				
+
 
 
 				// let mc_upper = view.getBigUint64(byteOffset + 0, true);
@@ -275,19 +277,19 @@ onmessage = function (event) {
 				let mc_1 = view.getUint32(byteOffset +  0, true);
 				byteOffset += 8;
 
-				let r = dealign24b((mc_1 & 0x00FFFFFF) >>> 0) 
+				let r = dealign24b((mc_1 & 0x00FFFFFF) >>> 0)
 						| (dealign24b(((mc_1 >>> 24) | (mc_0 << 8)) >>> 0) << 8);
 
-				let g = dealign24b((mc_1 & 0x00FFFFFF) >>> 1) 
+				let g = dealign24b((mc_1 & 0x00FFFFFF) >>> 1)
 						| (dealign24b(((mc_1 >>> 24) | (mc_0 << 8)) >>> 1) << 8);
 
-				let b = dealign24b((mc_1 & 0x00FFFFFF) >>> 2) 
+				let b = dealign24b((mc_1 & 0x00FFFFFF) >>> 2)
 						| (dealign24b(((mc_1 >>> 24) | (mc_0 << 8)) >>> 2) << 8);
 
 				// let bits = mask_b0[mc_1 >>> 24];
-				
+
 				// if(((r >> 8) & 0b11) !== bits){
-				// 	debugger;	
+				// 	debugger;
 				// }
 
 				// let r = dealign24b(mc0 >> 0) | (dealign24b(mc1 >> 0) << 8);
@@ -342,7 +344,7 @@ onmessage = function (event) {
 				preciseBuffer[j] = value;
 			}
 
-			attributeBuffers[pointAttribute.name] = { 
+			attributeBuffers[pointAttribute.name] = {
 				buffer: buff,
 				preciseBuffer: preciseBuffer,
 				attribute: pointAttribute,
@@ -366,7 +368,7 @@ onmessage = function (event) {
 		for (let i = 0; i < numPoints; i++) {
 			indices[i] = i;
 		}
-		
+
 		attributeBuffers["INDICES"] = { buffer: buff, attribute: PointAttribute.INDICES };
 	}
 
@@ -400,8 +402,8 @@ onmessage = function (event) {
 
 			let vecAttribute = new PointAttribute(name, PointAttributeTypes.DATA_TYPE_FLOAT, 3);
 
-			attributeBuffers[name] = { 
-				buffer: buffer, 
+			attributeBuffers[name] = {
+				buffer: buffer,
 				attribute: vecAttribute,
 			};
 

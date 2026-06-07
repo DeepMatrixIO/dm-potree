@@ -46,6 +46,7 @@ libs
 /examples/persisted*
 /pointclouds/*
 /example/data/*
+# //need to create a custom rule for workers
 /example/workers*
 /example/loader
 /example/potree*

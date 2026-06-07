@@ -1,7 +1,8 @@
 
 
 // import {Version} from "../../Version.js";
-import {PointAttributes, PointAttribute, PointAttributeTypes} from "../../../loader/PointAttributes.js";
+//TODO remove  for workers
+// import {PointAttributes, PointAttribute, PointAttributeTypes} from "../../../loader/PointAttributes.js";
 
 const typedArrayMapping = {
 	"int8":   Int8Array,
