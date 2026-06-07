@@ -21,7 +21,7 @@ import {MeasuringTool} from "../utils/MeasuringTool.js";
 import {ProfileTool} from "../utils/ProfileTool.js";
 import {VolumeTool} from "../utils/VolumeTool.js";
 
-import {VRButton} from '../../libs/three.js/extra/VRButton.js';
+import {VRButton} from '../../libs/three.js/examples/jsm/webxr/VRButton.js';//using std locations
 import {EventDispatcher} from "../EventDispatcher.js";
 import {ClassificationScheme} from "../materials/ClassificationScheme.js";
 import {DeviceOrientationControls} from "../navigation/DeviceOrientationControls.js";
