@@ -45,3 +45,8 @@ libs/giro3d
 /dist/*
 /example/*
 /build/*
+!/libs/three.js/extra/*
+/libs/three.js/examples/*
+!/libs/three.js/examples/jsm/
+/libs/three.js/examples/jsm/*
+!/libs/three.js/examples/jsm/webxr/
