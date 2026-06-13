@@ -112,14 +112,14 @@ export class NodeLoader {
 
 			}
 
-			let workerPath;
-			if (this.metadata.encoding === "BROTLI") {
-				// workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker_brotli.js';
-				workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker_brotli.js';
-			} else {
-				// workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker.js';
+			const workerFile = this.metadata.encoding === "BROTLI"
+				? 'DecoderWorker_brotli.js'
+				: 'DecoderWorker.js';
 
-				workerPath = '/workers/2.0/DecoderWorker.js';
+			// Vite module build writes workers to /example/workers while scriptPath is /dist.
+			let workerPath = `${Potree.scriptPath}/workers/2.0/${workerFile}`;
+			if (Potree.scriptPath.endsWith('/dist')) {
+				workerPath = `${window.location.origin}/example/workers/2.0/${workerFile}`;
 			}
 
 			let worker = Potree.workerPool.getWorker(workerPath);

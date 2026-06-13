@@ -17,6 +17,20 @@ const typedArrayMapping = {
 	"double": Float64Array,
 };
 
+const POINT_ATTRIBUTE_TYPES = {
+	DATA_TYPE_FLOAT: {ordinal: 1, name: "float", size: 4},
+	DATA_TYPE_UINT32: {ordinal: 7, name: "uint32", size: 4},
+};
+
+const INDICES_ATTRIBUTE = {
+	name: "INDICES",
+	type: POINT_ATTRIBUTE_TYPES.DATA_TYPE_UINT32,
+	numElements: 1,
+	byteSize: 4,
+	description: "",
+	range: [Infinity, -Infinity],
+};
+
 // Potree = {};
 
 onmessage = function (event) {
@@ -163,7 +177,7 @@ onmessage = function (event) {
 			indices[i] = i;
 		}
 
-		attributeBuffers["INDICES"] = { buffer: buff, attribute: PointAttribute.INDICES };
+		attributeBuffers["INDICES"] = { buffer: buff, attribute: INDICES_ATTRIBUTE };
 	}
 
 
@@ -194,7 +208,14 @@ onmessage = function (event) {
 				iElement++;
 			}
 
-			let vecAttribute = new PointAttribute(name, PointAttributeTypes.DATA_TYPE_FLOAT, 3);
+			let vecAttribute = {
+				name: name,
+				type: POINT_ATTRIBUTE_TYPES.DATA_TYPE_FLOAT,
+				numElements: 3,
+				byteSize: 12,
+				description: "",
+				range: [Infinity, -Infinity],
+			};
 
 			attributeBuffers[name] = {
 				buffer: buffer,
