@@ -5,6 +5,8 @@ export {Viewer} from  "./viewer/viewer.js";//this is the module in charge
 export {PScene} from "./viewer/Scene.js";//this is the module in charge
 
 
+export {CameraMode, ClipMethod, ClipTask, ElevationGradientRepeat, MOUSE, PointShape, PointSizeType, TreeType} from "./defines.js";
+
 export {Action} from "./Actions.js";
 export {AnimationPath} from "./AnimationPath.js";
 export {Annotation} from "./Annotation.js";
@@ -68,7 +70,7 @@ export {ProfileTool} from "./utils/ProfileTool.js";
 export {ScreenBoxSelectTool} from "./utils/ScreenBoxSelectTool.js";
 export {SpotLightHelper} from "./utils/SpotLightHelper.js";
 export {TransformationTool} from "./utils/TransformationTool.js";
-export {Volume} from "./utils/Volume.js";
+export {Volume,SphereVolume} from "./utils/Volume.js";
 export {VolumeTool} from "./utils/VolumeTool.js";
 
 export {HierarchicalSlider} from "./viewer/HierarchicalSlider.js";

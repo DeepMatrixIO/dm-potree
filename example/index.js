@@ -76,7 +76,7 @@ document.body.onload = function () {
 	viewer.setFOV(60);
 	viewer.setPointBudget(1_000_000);
 	viewer.loadSettingsFromURL();
-	// viewer.setBackground("skybox");//is crashing due to missing loader
+	viewer.setBackground("skybox");//is crashing due to missing loader
 
 
 	console.log(potree_viewer)

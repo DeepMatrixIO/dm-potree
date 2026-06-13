@@ -179,53 +179,53 @@ export class Annotation extends EventDispatcher {
 		let annotationStartOffset = this.offset.clone();
 
 		// Replace jQuery UI draggable with interact.js (install via npm)
-		import('interactjs').then(interact => {
-			interact(this.domElement)
-				.draggable({
-					onstart: (event) => {
-						annotationStartPos = this.position.clone();
-						annotationStartOffset = this.offset.clone();
-						let titlebar = this.domElement.querySelector(".annotation-titlebar");
-						if (titlebar) {
-							titlebar.style.pointerEvents = 'none';
-						}
-					},
-					onend: () => {
-						let titlebar = this.domElement.querySelector(".annotation-titlebar");
-						if (titlebar) {
-							titlebar.style.pointerEvents = '';
-						}
-					},
-					onmove: (event) => {
-						let renderAreaWidth = viewer.renderer.getSize(new Vector2()).width;
+		// import('interactjs').then(interact => {
+		// 	interact(this.domElement)
+		// 		.draggable({
+		// 			onstart: (event) => {
+		// 				annotationStartPos = this.position.clone();
+		// 				annotationStartOffset = this.offset.clone();
+		// 				let titlebar = this.domElement.querySelector(".annotation-titlebar");
+		// 				if (titlebar) {
+		// 					titlebar.style.pointerEvents = 'none';
+		// 				}
+		// 			},
+		// 			onend: () => {
+		// 				let titlebar = this.domElement.querySelector(".annotation-titlebar");
+		// 				if (titlebar) {
+		// 					titlebar.style.pointerEvents = '';
+		// 				}
+		// 			},
+		// 			onmove: (event) => {
+		// 				let renderAreaWidth = viewer.renderer.getSize(new Vector2()).width;
 
-						let diff = {
-							x: event.dx,
-							y: event.dy
-						};
+		// 				let diff = {
+		// 					x: event.dx,
+		// 					y: event.dy
+		// 				};
 
-						let nDiff = {
-							x: -(diff.x / renderAreaWidth) * 2,
-							y: (diff.y / renderAreaWidth) * 2
-						};
+		// 				let nDiff = {
+		// 					x: -(diff.x / renderAreaWidth) * 2,
+		// 					y: (diff.y / renderAreaWidth) * 2
+		// 				};
 
-						let camera = viewer.scene.getActiveCamera();
-						let oldScreenPos = new Vector3()
-							.addVectors(annotationStartPos, annotationStartOffset)
-							.project(camera);
+		// 				let camera = viewer.scene.getActiveCamera();
+		// 				let oldScreenPos = new Vector3()
+		// 					.addVectors(annotationStartPos, annotationStartOffset)
+		// 					.project(camera);
 
-						let newScreenPos = oldScreenPos.clone();
-						newScreenPos.x += nDiff.x;
-						newScreenPos.y += nDiff.y;
+		// 				let newScreenPos = oldScreenPos.clone();
+		// 				newScreenPos.x += nDiff.x;
+		// 				newScreenPos.y += nDiff.y;
 
-						let newPos = newScreenPos.clone();
-						newPos.unproject(camera);
+		// 				let newPos = newScreenPos.clone();
+		// 				newPos.unproject(camera);
 
-						let newOffset = new Vector3().subVectors(newPos, this.position);
-						this.offset.copy(newOffset);
-					}
-				});
-		});
+		// 				let newOffset = new Vector3().subVectors(newPos, this.position);
+		// 				this.offset.copy(newOffset);
+		// 			}
+		// 		});
+		// });
 
 		let updateCallback = () => {
 			let position = this.position;
