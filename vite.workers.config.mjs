@@ -8,7 +8,7 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       input: {
-        BinaryDecoderWorker: 'src/workers/BinaryDecoderWorker.js',
+        'BinaryDecoderWorker': 'src/workers/BinaryDecoderWorker.js',
         '2.0/DecoderWorker': 'src/modules/loader/2.0/DecoderWorker.js',
         '2.0/DecoderWorker_brotli': 'src/modules/loader/2.0/DecoderWorker_brotli.js',
       },
