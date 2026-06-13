@@ -20,11 +20,11 @@
     "start_old": "gulp watch",
     "build_old": "gulp build pack",
     "build_bad": "webpack --mode production",
-    "dev": "webpack --mode development --watch --progress --stats-children",
+    "dev": "vite --port 5200 --open",
     "build": "npm run build_old",
-    "build:workers": "webpack --config webpack.workers.js",
-    "build:module": "npm run build:workers && webpack --mode production --config webpack.prod.js",
-    "start": "npm run build:module && webpack serve --config webpack.dev.js --mode development --progress --port 5200 --open",
+    "build:workers": "vite build --config vite.workers.config.mjs",
+    "build:module": "npm run build:workers && vite build",
+    "start": "npm run build:module && npm run dev",
     "postinstall": "npm run build"
   },
   "dependencies": {
@@ -59,6 +59,8 @@
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
     "style-loader": "^4.0.0",
+    "vite": "^5.4.19",
+    "vite-plugin-static-copy": "^1.0.6",
     "webpack": "^5.101.3",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^4.15.1"

@@ -50,3 +50,5 @@ libs
 /example/workers*
 /example/loader
 /example/potree*
+
+/trash/
