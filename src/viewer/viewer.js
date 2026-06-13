@@ -60,16 +60,12 @@ import * as TWEEN from '@tweenjs/tween.js';//0.15, now at eol
 // import {interact} from 'interactjs'
 export class Viewer extends EventDispatcher {
 
-	ecef = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'; // ECEF
-	wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
-	webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
-
-	ecef = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'; // ECEF
-	wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
-	webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
-
 	constructor(domElement, args = {}) {
 		super();
+
+		this.ecef = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'; // ECEF
+		this.wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
+		this.webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
 
 		this.TWEENGROUP = new TWEEN.Group();
 		////// additions

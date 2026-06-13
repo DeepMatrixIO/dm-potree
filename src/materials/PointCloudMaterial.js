@@ -20,7 +20,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	constructor(parameters = {}) {
 		super();
 
-
+		this.customRenderer = true;
 
 		this.visibleNodesTexture = Utils.generateDataTexture(
 			2048,
@@ -281,8 +281,6 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	// 1 set custom  defines for the shader
 	// 2 provide functions to populate shader uniform values
 	// 3 functions to commit the uniforms and values to the shader
-
-	customRenderer = true;//an object
 
 
 
