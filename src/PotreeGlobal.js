@@ -88,7 +88,7 @@ import {PointCloudMaterial} from "./materials/PointCloudMaterial.js";
 // export {FirstPersonControls} from "./navigation/FirstPersonControls.js";
 // export {OrbitControls} from "./navigation/OrbitControls.js";
 
-import {update} from "three/examples/jsm/libs/tween.module.js";
+// import {update} from "three/examples/jsm/libs/tween.module.js";
 //export {VRControls} from "./navigation/VRControls.js";
 
 import "./extensions/OrthographicCamera.js";

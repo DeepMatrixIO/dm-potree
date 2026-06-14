@@ -52,3 +52,15 @@ libs
 /example/potree*
 
 /trash/
+/dist/potree_module_index.js
+# current output as module
+/dist/*
+/build/*
+
+
+/example/*
+
+# threejs comes from node_modules
+/libs/three.js/
+
+/src/examples/

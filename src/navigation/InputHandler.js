@@ -1357,28 +1357,50 @@ export class InputHandler extends EventDispatcher {
 
 				if (scene.visible) {
 
+					//@ts-ignore
 					if (scene.customRaycaster) {//if the scene used a custom Raycaster, specific method is implemented to get the intersections.
 
 						//the scene with custom raycaster also have a transformCamera, used to transform from potree to custom scene position
 
-						let ray = Utils.mouseToRay(this.mouse, scene.transformCamera(), this.domElement.clientWidth, this.domElement.clientHeight);
+						// let ray = Utils.mouseToRay(this.mouse, scene.transformCamera(), this.domElement.clientWidth, this.domElement.clientHeight);
 						//thew ray is created wrt to the custom scene and custom camera position
-						let intersect = scene.customRaycast(ray);//finally, the scene is raycasted using threeejs or other custom engine like cesium
+						//@ts-ignore
+						let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
+						//@ts-ignore
+						let intersect = scene.customRaycaster(this.mouse.x	, this.mouse.y, customCamera );//finally, the scene is raycasted using threeejs or other custom engine like cesium
 
-					}
-					else {//use this raycaster, i.e. use
+						//the intersects contains
+
+						// Type Definitions Description
+						// distance:number	The distance from the ray's origin to the intersection point.
+						// distanceToRay:number	 Some 3D objects e.g. Points provide the distance of the intersection to the nearest point on the ray. For other objects it will be undefined.
+						// point:Vector3	The intersection point, in world coordinates.
+						// face:Object	The face that has been intersected.
+						// faceIndex:number	The face index.
+						// object:Object3D	The 3D object that has been intersected.
+						// uv:Vector2	U,V coordinates at point of intersection.
+						// uv1:Vector2	Second set of U,V coordinates at point of intersection.
+						// normal:Vector3	Interpolated normal vector at point of intersection.
+						// instanceId:number	The index number of the instance where the ray intersects the InstancedMesh.
+
+
+						if (intersect.length) {
+							// intersect[0].rootScene = scene;//link to root node  with events for 3dTilesRendered structure
+							intersections = intersections.concat(intersect);
+						}
+					} else {//ECEF camera but no custom raycaster, using threejs raycaster with transformed camera
+
 						let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
 						let ray = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);
 
-						let raycaster = new Raycaster();
+						let raycaster = new THREE.Raycaster();
 						raycaster.params.Line.threshold = 0.4;
 						raycaster.ray.set(ray.origin, ray.direction);
 						let intersect = raycaster.intersectObject(scene, true);
-
-					}
-					if (intersect.length) {
-						intersect[0].rootScene = scene;//link to root node with events for 3dTilesRendered structure
-						intersections = intersections.concat(intersect);
+						if (intersect.length) {
+							intersect[0].rootScene = scene;//link to root node with events for 3dTilesRendered structure
+							intersections = intersections.concat(intersect);
+						}
 					}
 
 				}

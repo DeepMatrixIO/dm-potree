@@ -204,10 +204,10 @@ export class BoxVolume extends Volume {
 
 		}
 
-		this.material = new MeshBasicMaterial({
+		this.material = new THREE.MeshBasicMaterial({
 			color: 0x0000ff,
 			transparent: true,
-			opacity: 0.3,
+			opacity: 0.4,
 			depthTest: true,
 			depthWrite: false
 		});

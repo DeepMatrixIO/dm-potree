@@ -140,7 +140,7 @@ export class Profile extends Object3D {
 			this.edges.push(edge);
 
 			let boxGeometry = new BoxGeometry(1, 1, 1);
-			let boxMaterial = new MeshBasicMaterial({color: 0xff0000, transparent: true, opacity: 0.2});
+			let boxMaterial = new MeshBasicMaterial({color: 0xA0FCFD, transparent: true, opacity: 0.2});
 			let box = new Mesh(boxGeometry, boxMaterial);
 			box.visible = false;
 

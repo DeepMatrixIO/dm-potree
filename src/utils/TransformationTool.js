@@ -5,6 +5,29 @@ import {Utils} from "../utils.js";
 import * as TWEEN from '@tweenjs/tween.js';//from 0.15 to 25, now at eol
 
 export class TransformationTool {
+
+
+	ROTATION_X = "rotation.x";
+	ROTATION_Y = "rotation.y";
+	ROTATION_Z = "rotation.z";
+	TRANSLATION_X = "translation.x";
+	TRANSLATION_Y = "translation.y";
+	TRANSLATION_Z = "translation.z";
+	SCALE_X_POS = "scale.x+";
+	SCALE_X_NEG = "scale.x-";
+	SCALE_Y_POS = "scale.y+";
+	SCALE_Y_NEG = "scale.y-";
+	SCALE_Z_POS = "scale.z+";
+	SCALE_Z_NEG = "scale.z-";
+
+	FOCUS_X_POS = "focus.x+";
+	FOCUS_X_NEG = "focus.x-";
+	FOCUS_Y_POS = "focus.y+";
+	FOCUS_Y_NEG = "focus.y-";
+	FOCUS_Z_POS = "focus.z+";
+	FOCUS_Z_NEG = "focus.z-";
+
+
 	constructor(viewer) {
 		this.viewer = viewer;
 
@@ -15,13 +38,16 @@ export class TransformationTool {
 		this.dragging = false;
 		this.showPickVolumes = false;
 
+
+
+
 		this.viewer.inputHandler.registerInteractiveScene(this.scene);
 		this.viewer.inputHandler.addEventListener('selection_changed', (e) => {
 			for (let selected of this.selection) {
 				this.viewer.inputHandler.blacklist.delete(selected);
 			}
 
-			this.selection = e.selection;
+			this.selection = e.selection;//must have an event or other to callback when selected, ideally an interface
 
 			for (let selected of this.selection) {
 				this.viewer.inputHandler.blacklist.add(selected);
@@ -35,33 +61,40 @@ export class TransformationTool {
 
 		this.activeHandle = null;
 		this.scaleHandles = {
-			"scale.x+": {name: "scale.x+", node: new Object3D(), color: red, alignment: [+1, +0, +0]},
-			"scale.x-": {name: "scale.x-", node: new Object3D(), color: red, alignment: [-1, +0, +0]},
-			"scale.y+": {name: "scale.y+", node: new Object3D(), color: green, alignment: [+0, +1, +0]},
-			"scale.y-": {name: "scale.y-", node: new Object3D(), color: green, alignment: [+0, -1, +0]},
-			"scale.z+": {name: "scale.z+", node: new Object3D(), color: blue, alignment: [+0, +0, +1]},
-			"scale.z-": {name: "scale.z-", node: new Object3D(), color: blue, alignment: [+0, +0, -1]},
+			[this.SCALE_X_POS]: {name: this.SCALE_X_POS, node: new THREE.Object3D(), color: red, alignment: [+1, +0, +0], enabled: true},
+			[this.SCALE_X_NEG]: {name: this.SCALE_X_NEG, node: new THREE.Object3D(), color: red, alignment: [-1, +0, +0], enabled: true},
+			[this.SCALE_Y_POS]: {name: this.SCALE_Y_POS, node: new THREE.Object3D(), color: green, alignment: [+0, +1, +0], enabled: true},
+			[this.SCALE_Y_NEG]: {name: this.SCALE_Y_NEG, node: new THREE.Object3D(), color: green, alignment: [+0, -1, +0], enabled: true},
+			[this.SCALE_Z_POS]: {name: this.SCALE_Z_POS, node: new THREE.Object3D(), color: blue, alignment: [+0, +0, +1], enabled: true},
+			[this.SCALE_Z_NEG]: {name: this.SCALE_Z_NEG, node: new THREE.Object3D(), color: blue, alignment: [+0, +0, -1], enabled: true},
 		};
 		this.focusHandles = {
-			"focus.x+": {name: "focus.x+", node: new Object3D(), color: red, alignment: [+1, +0, +0]},
-			"focus.x-": {name: "focus.x-", node: new Object3D(), color: red, alignment: [-1, +0, +0]},
-			"focus.y+": {name: "focus.y+", node: new Object3D(), color: green, alignment: [+0, +1, +0]},
-			"focus.y-": {name: "focus.y-", node: new Object3D(), color: green, alignment: [+0, -1, +0]},
-			"focus.z+": {name: "focus.z+", node: new Object3D(), color: blue, alignment: [+0, +0, +1]},
-			"focus.z-": {name: "focus.z-", node: new Object3D(), color: blue, alignment: [+0, +0, -1]},
+			[this.FOCUS_X_POS]: {name: this.FOCUS_X_POS, node: new THREE.Object3D(), color: red, alignment: [+1, +0, +0], enabled: true},
+			[this.FOCUS_X_NEG]: {name: this.FOCUS_X_NEG, node: new THREE.Object3D(), color: red, alignment: [-1, +0, +0], enabled: true},
+			[this.FOCUS_Y_POS]: {name: this.FOCUS_Y_POS, node: new THREE.Object3D(), color: green, alignment: [+0, +1, +0], enabled: true},
+			[this.FOCUS_Y_NEG]: {name: this.FOCUS_Y_NEG, node: new THREE.Object3D(), color: green, alignment: [+0, -1, +0], enabled: true},
+			[this.FOCUS_Z_POS]: {name: this.FOCUS_Z_POS, node: new THREE.Object3D(), color: blue, alignment: [+0, +0, +1], enabled: true},
+			[this.FOCUS_Z_NEG]: {name: this.FOCUS_Z_NEG, node: new THREE.Object3D(), color: blue, alignment: [+0, +0, -1], enabled: true},
 		};
 		this.translationHandles = {
-			"translation.x": {name: "translation.x", node: new Object3D(), color: red, alignment: [1, 0, 0]},
-			"translation.y": {name: "translation.y", node: new Object3D(), color: green, alignment: [0, 1, 0]},
-			"translation.z": {name: "translation.z", node: new Object3D(), color: blue, alignment: [0, 0, 1]},
+			[this.TRANSLATION_X]: {name: this.TRANSLATION_X, node: new THREE.Object3D(), color: red, alignment: [1, 0, 0], enabled: true},
+			[this.TRANSLATION_Y]: {name: this.TRANSLATION_Y, node: new THREE.Object3D(), color: green, alignment: [0, 1, 0], enabled: true},
+			[this.TRANSLATION_Z]: {name: this.TRANSLATION_Z, node: new THREE.Object3D(), color: blue, alignment: [0, 0, 1], enabled: true},
 		};
 		this.rotationHandles = {
-			"rotation.x": {name: "rotation.x", node: new Object3D(), color: red, alignment: [1, 0, 0]},
-			"rotation.y": {name: "rotation.y", node: new Object3D(), color: green, alignment: [0, 1, 0]},
-			"rotation.z": {name: "rotation.z", node: new Object3D(), color: blue, alignment: [0, 0, 1]},
+			[this.ROTATION_X]: {name: this.ROTATION_X, node: new THREE.Object3D(), color: red, alignment: [1, 0, 0], enabled: true},
+			[this.ROTATION_Y]: {name: this.ROTATION_Y, node: new THREE.Object3D(), color: green, alignment: [0, 1, 0], enabled: true},
+			[this.ROTATION_Z]: {name: this.ROTATION_Z, node: new THREE.Object3D(), color: blue, alignment: [0, 0, 1], enabled: true},
 		};
 		this.handles = Object.assign({}, this.scaleHandles, this.focusHandles, this.translationHandles, this.rotationHandles);
 		this.pickVolumes = [];
+
+		//different handles can be disabled at will
+
+
+
+
+
 
 		this.initializeScaleHandles();
 		this.initializeFocusHandles();
@@ -471,9 +504,9 @@ export class TransformationTool {
 		let handle = this.activeHandle;
 		let camera = this.viewer.scene.getActiveCamera();
 
-		if (!handle) {
+		if (!handle || !handle.enabled) {
 			return
-		};
+		}
 
 		let localNormal = new Vector3(...handle.alignment);
 		let n = new Vector3();
@@ -547,6 +580,11 @@ export class TransformationTool {
 		let handle = this.activeHandle;
 		let camera = this.viewer.scene.getActiveCamera();
 
+		if (!handle || !handle.enabled) {
+			return;
+		}
+
+
 		if (!drag.intersectionStart && handle) {
 			drag.intersectionStart = drag.location;
 			drag.objectStart = drag.object.getWorldPosition(new Vector3());
@@ -606,6 +644,10 @@ export class TransformationTool {
 		let drag = e.drag;
 		let handle = this.activeHandle;
 		let camera = this.viewer.scene.getActiveCamera();
+
+		if (!handle || !handle.enabled) {
+			return;
+		}
 
 		if (!drag.intersectionStart) {
 			drag.intersectionStart = drag.location;
@@ -677,17 +719,26 @@ export class TransformationTool {
 		}
 	}
 
+	//toggled by raycasting handles or by clicking empty space
 	setActiveHandle(handle) {
 		if (this.dragging) {
 			return;
 		}
 
+		//TODO if handle is disabled, set active handle to null instead
+
 		if (this.activeHandle === handle) {
 			return;
 		}
 
+		// if(handle && !handle.enabled){
+		// 	handle = null;
+		// 	return;
+		// }
+
 		this.activeHandle = handle;
 
+		//not a handle , make translucent
 		if (handle === null) {
 			for (let handleName of Object.keys(this.handles)) {
 				let handle = this.handles[handleName];
@@ -695,6 +746,7 @@ export class TransformationTool {
 			}
 		}
 
+		//activehandles are highlighted
 		for (let handleName of Object.keys(this.focusHandles)) {
 			let handle = this.focusHandles[handleName];
 
@@ -704,6 +756,7 @@ export class TransformationTool {
 				handle.node.setOpacity(0.4)
 			}
 		}
+
 
 		for (let handleName of Object.keys(this.translationHandles)) {
 			let handle = this.translationHandles[handleName];
@@ -730,7 +783,7 @@ export class TransformationTool {
 		for (let handleName of Object.keys(this.scaleHandles)) {
 			let handle = this.scaleHandles[handleName];
 
-			if (this.activeHandle === handle) {
+			if (this.activeHandle === handle && handle.enabled) {//crashes
 				handle.node.setOpacity(1.0);
 
 				let relatedFocusHandle = this.focusHandles[handle.name.replace("scale", "focus")];
@@ -764,12 +817,142 @@ export class TransformationTool {
 
 	}
 
+
+	//all rotation angles should be managed at the same time
+	toggleRotationHandles(x, y, z) {
+		this.rotationHandles[this.ROTATION_X].enabled = x;//override their value
+		this.rotationHandles[this.ROTATION_Y].enabled = y;
+		this.rotationHandles[this.ROTATION_Z].enabled = z;
+
+		this.rotationHandles[this.ROTATION_X].node.setOpacity(x ? 0.9 : 0);
+		this.rotationHandles[this.ROTATION_Y].node.setOpacity(y ? 0.9 : 0);
+		this.rotationHandles[this.ROTATION_Z].node.setOpacity(z ? 0.9 : 0);
+
+	}
+
+	toggleRotationHandle(key, value) {
+		if (key.startsWith("rotation")) {
+			this.rotationHandles[key].enabled = value;//override their value
+			this.rotationHandles[key].node.setOpacity(value ? 0.9 : 0);
+		}
+	}
+
+
+	//by default enables all, unles stated otherwise
+	enableRotationHandles() {
+		this.toggleRotationHandles(true, true, true);
+	}
+
+	disableRotationHandles() {
+		this.toggleRotationHandles(false, false, false);
+	}
+
+
+	toggleTranslationHandles(x, y, z) {
+		this.translationHandles["translation.x"].enabled = x;
+		this.translationHandles["translation.y"].enabled = y;
+		this.translationHandles["translation.z"].enabled = z;
+
+		this.translationHandles["translation.x"].node.setOpacity(x ? 0.9 : 0);
+		this.translationHandles["translation.y"].node.setOpacity(y ? 0.9 : 0);
+		this.translationHandles["translation.z"].node.setOpacity(z ? 0.9 : 0);
+	}
+
+	toggleTranslationHandle(key, value) {
+		if (key.startsWith("translation")) {
+			this.translationHandles[key].enabled = value;//override their value
+			this.translationHandles[key].node.setOpacity(value ? 0.9 : 0);
+		}
+	}
+
+
+
+	//translation control
+	disableTranslationHandles() {
+		for (let handleName of Object.keys(this.translationHandles)) {
+			let handle = this.translationHandles[handleName];
+			handle.enabled = false;
+			handle.node.setOpacity(0);
+		}
+	}
+
+	enableTranslationHandles() {
+		for (let handleName of Object.keys(this.translationHandles)) {
+			let handle = this.translationHandles[handleName];
+			handle.enabled = true;
+			handle.node.setOpacity(0.4);
+		}
+	}
+
+
+
+	//focus control, or eye
+	disableFocusHandles() {
+		for (let handleName of Object.keys(this.focusHandles)) {
+			let handle = this.focusHandles[handleName];
+			handle.enabled = false;
+			handle.node.setOpacity(0);
+		}
+	}
+
+	enableFocusHandles() {
+		for (let handleName of Object.keys(this.focusHandles)) {
+			let handle = this.focusHandles[handleName];
+			handle.enabled = true;
+			handle.node.setOpacity(0.4);
+		}
+	}
+
+	toggleScaleHandles(x, y, z) {
+		this.scaleHandles[this.SCALE_X_POS].enabled = x;
+		this.scaleHandles[this.SCALE_X_NEG].enabled = x;
+		this.scaleHandles[this.SCALE_Y_POS].enabled = y;
+		this.scaleHandles[this.SCALE_Y_NEG].enabled = y;
+		this.scaleHandles[this.SCALE_Z_POS].enabled = z;
+		this.scaleHandles[this.SCALE_Z_NEG].enabled = z;
+
+		this.scaleHandles[this.SCALE_X_POS].node.setOpacity(x ? 0.9 : 0);
+		this.scaleHandles[this.SCALE_X_NEG].node.setOpacity(x ? 0.9 : 0);
+		this.scaleHandles[this.SCALE_Y_POS].node.setOpacity(y ? 0.9 : 0);
+		this.scaleHandles[this.SCALE_Y_NEG].node.setOpacity(y ? 0.9 : 0);
+		this.scaleHandles[this.SCALE_Z_POS].node.setOpacity(z ? 0.9 : 0);
+		this.scaleHandles[this.SCALE_Z_NEG].node.setOpacity(z ? 0.9 : 0);
+	}
+
+	//its responsability of the caller to make sure that the correct handle is toggled, since this method does not check if the key is valid
+	toggleScaleHandle(key, value) {
+		if (key.startsWith("scale")) {
+			this.scaleHandles[key].enabled = value;//override their value
+			this.scaleHandles[key].node.setOpacity(value ? 0.9 : 0);
+		}
+	}
+
+
+
+
+	disableScaleHandles() {
+		for (let handleName of Object.keys(this.scaleHandles)) {
+			let handle = this.scaleHandles[handleName];
+			handle.enabled = false;
+			handle.node.setOpacity(0);
+		}
+	}
+
+	enableScaleHandles() {
+		for (let handleName of Object.keys(this.scaleHandles)) {
+			let handle = this.scaleHandles[handleName];
+			handle.enabled = true;
+			handle.node.setOpacity(0.4);
+		}
+	}
+
+	/////
 	update() {
 
 		if (this.selection.length === 1
-		&& this.selection.at(0).modifiable !== undefined
-		&& this.selection.at(0).modifiable
-		){
+			&& this.selection.at(0).modifiable !== undefined
+			&& this.selection.at(0).modifiable
+		) {
 
 			this.scene.visible = true;
 
@@ -791,7 +974,7 @@ export class TransformationTool {
 			this.scene.updateMatrixWorld();
 
 			{
-				// adjust scale of components
+				// adjust visible scale of components
 				for (let handleName of Object.keys(this.handles)) {
 					let handle = this.handles[handleName];
 					let node = handle.node;
@@ -822,9 +1005,9 @@ export class TransformationTool {
 					let tObject = tWorld.clone().invert();
 					let camObjectPos = camera.getWorldPosition(new Vector3()).applyMatrix4(tObject);
 
-					let x = this.rotationHandles["rotation.x"].node.rotation;
-					let y = this.rotationHandles["rotation.y"].node.rotation;
-					let z = this.rotationHandles["rotation.z"].node.rotation;
+					let x = this.rotationHandles[this.ROTATION_X].node.rotation;
+					let y = this.rotationHandles[this.ROTATION_Y].node.rotation;
+					let z = this.rotationHandles[this.ROTATION_Z].node.rotation;
 
 					x.order = "ZYX";
 					y.order = "ZYX";
@@ -872,6 +1055,7 @@ export class TransformationTool {
 					}
 				}
 
+				//casting elements
 				{
 					let ray = Utils.mouseToRay(mouse, camera, domElement.clientWidth, domElement.clientHeight);
 					let raycaster = new Raycaster(ray.origin, ray.direction);
@@ -880,21 +1064,26 @@ export class TransformationTool {
 					if (intersects.length > 0) {
 						let I = intersects[0];
 						let handleName = I.object.handle;
-						this.setActiveHandle(this.handles[handleName]);
+						if (this.handles[handleName].enabled) {
+							this.setActiveHandle(this.handles[handleName]);
+						} else {
+							this.setActiveHandle(null);
+						}
+
 					} else {
 						this.setActiveHandle(null);
 					}
 				}
 
-				//
-				for (let handleName of Object.keys(this.scaleHandles)) {
-					let handle = this.handles[handleName];
-					let node = handle.node;
-					let alignment = handle.alignment;
+				//???
+				// for (let handleName of Object.keys(this.scaleHandles)) {
+				// 	let handle = this.handles[handleName];
+				// 	let node = handle.node;
+				// 	let alignment = handle.alignment;
 
 
 
-				}
+				// }
 			}
 
 		} else {
