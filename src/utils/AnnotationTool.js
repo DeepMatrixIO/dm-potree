@@ -1,5 +1,3 @@
-
-// import * as THREE from "../../libs/js/build/module.js";
 import {Mesh, MeshNormalMaterial, SphereGeometry} from 'three';
 import {Annotation} from "../Annotation.js";
 import {EventDispatcher} from "../EventDispatcher.js";

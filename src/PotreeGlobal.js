@@ -117,7 +117,7 @@ export class Potree {
 		this.version = {
 			major: 1,
 			minor: 8,
-			suffix: '.1'
+			suffix: '.2'
 
 		};
 

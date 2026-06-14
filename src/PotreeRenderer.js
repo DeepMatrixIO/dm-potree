@@ -1,6 +1,6 @@
 
 // import {max, mix} from "three/tsl";
-import {Matrix4,Texture, LinearFilter, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipMapNearestFilter, NearestMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipMapLinearFilter, UnsignedByteType, UnsignedShort4444Type, UnsignedShort5551Type, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, AddEquation, SubtractEquation, ReverseSubtractEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, MinEquation, MaxEquation, UnsignedInt248Type, DataTexture, CanvasTexture, OrthographicCamera} from 'three'
+import {Matrix4,Texture, LinearFilter, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipMapNearestFilter, NearestMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipMapLinearFilter, UnsignedByteType, UnsignedShort4444Type, UnsignedShort5551Type, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, AddEquation, SubtractEquation, ReverseSubtractEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, MinEquation, MaxEquation, UnsignedInt248Type, DataTexture, CanvasTexture, OrthographicCamera, RedFormat, RGFormat} from 'three'
 // import * as THREE from 'three';
 import {PointCloudTree} from "./PointCloudTree.js";
 import {ClipTask, ElevationGradientRepeat, PointSizeType} from "./defines.js";
@@ -2079,7 +2079,7 @@ export class Renderer {
 				//commiting filter uniforms
 
 				gl.uniform4iv(lfilterList, filter_list);
-				gl.uniform1fv(lfilterFloatConstants, filter_float_constants);
+				gl.uniform1fv(lfilterFloatConstants, filter_float_constants);//mayu be missing lfilterFloatConstants
 				gl.uniform1iv(lfilterIntConstants, filter_int_constants);
 
 

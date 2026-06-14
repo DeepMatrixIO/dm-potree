@@ -26,11 +26,11 @@ import {TransformationTool} from "../utils/TransformationTool.js";
 import {BoxVolume} from "../utils/Volume.js";
 import {EDLRenderer} from "./EDLRenderer.js";
 import {HQSplatRenderer} from "./HQSplatRenderer.js";
-import {MapView} from "./map.js";
+import {MapView} from "./map.js";//requires OL.
 import {PotreeRenderer} from "./PotreeRenderer.js";
 import {ProfileWindow, ProfileWindowController} from "./profile.js";
 import {PScene} from "./Scene.js";
-import {Sidebar} from "./sidebar.js";
+import {Sidebar} from "./sidebar.js";//not in use
 
 import {AnnotationTool} from "../utils/AnnotationTool.js";
 import {MeasuringTool} from "../utils/MeasuringTool.js";
@@ -64,9 +64,7 @@ export class Viewer extends EventDispatcher {
 	wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
 	webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
 
-	ecef = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'; // ECEF
-	wgs84 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +type=crs'; // WGS84
-	webmerc = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +a=6378137 +b=6378137 +units=m +no_defs +type=crs'; // WebMercator
+
 
 	constructor(domElement, args = {}) {
 		super();
@@ -260,7 +258,7 @@ export class Viewer extends EventDispatcher {
 			this.compass = null;
 
 			this.skybox = null;
-			this.clock = new Clock();
+			this.clock = new Clock();//deprecated ar threejs 183, but still works and is used in some places to get delta time
 			this.background = null;
 
 			this.initThree();
@@ -271,7 +269,7 @@ export class Viewer extends EventDispatcher {
 				this.initDragAndDrop();
 			}
 
-			if (typeof Stats !== "undefined") {
+			if (typeof Stats !== "undefined") {//??where does it comes from?
 				this.stats = new Stats();
 				this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
 				document.body.appendChild(this.stats.dom);

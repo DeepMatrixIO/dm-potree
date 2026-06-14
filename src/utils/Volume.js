@@ -1,8 +1,6 @@
 
 import {BoxGeometry, BufferAttribute, BufferGeometry, Color, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, Object3D, Sphere, SphereGeometry, Vector3} from 'three';
 
-// import * as THREE from "../../libs/js/build/module.js";
-
 import {TextSprite} from "../TextSprite.js";
 import {FilterIntType} from "./FilterConsts.js";
 
@@ -57,7 +55,7 @@ export class Volume extends Object3D {
 		return this._groupId;
 	}
 	set groupId(value) {
-			this._groupId = value;
+		this._groupId = value;
 	}
 
 	get visible() {
@@ -152,14 +150,13 @@ export class BoxVolume extends Volume {
 
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = 'box_' + this.constructor.counter;
-		this.visible= true;
+		this.visible = true;
 		let boxGeometry = new BoxGeometry(1, 1, 1);
 		boxGeometry.computeBoundingBox();
 
 		//let boxFrameGeometry = new Geometry();
 		let boxFrameGeometry = new BufferGeometry();
 		{
-			let Vector3 = Vector3;
 
 			let vertices = [
 
@@ -264,66 +261,66 @@ export class BoxVolume extends Volume {
 		return Math.abs(this.scale.x * this.scale.y * this.scale.z);
 	}
 
-toJSON() {
-    let data = super.toJSON();
-    data.uuid = this.uuid;
-    data.name = this.constructor.name;
-    data._clip = this._clip;
-    data._modifiable = this._modifiable;
-    data.name = this.name;
-    data.visible = this.visible;
-    data._visible = this._visible;
-    data.intType = this.intType;
-    data.initialized = this._initialized;
-	data.color = this.color.getHex(); // store the color of the box
+	toJSON() {
+		let data = super.toJSON();
+		data.uuid = this.uuid;
+		data.name = this.constructor.name;
+		data._clip = this._clip;
+		data._modifiable = this._modifiable;
+		data.name = this.name;
+		data.visible = this.visible;
+		data._visible = this._visible;
+		data.intType = this.intType;
+		data.initialized = this._initialized;
+		data.color = this.color.getHex(); // store the color of the box
 
-    data.matrix = this.matrix.toArray();
-    data.matrixWorld = this.matrixWorld.toArray();
-	data.groupId = this.groupId;
+		data.matrix = this.matrix.toArray();
+		data.matrixWorld = this.matrixWorld.toArray();
+		data.groupId = this.groupId;
 
-    return data;
-}
+		return data;
+	}
 
 	static fromJSON(data) {
-    let volume = new BoxVolume({
-        clip: data._clip,
-        modifiable: data._modifiable
-    });
+		let volume = new BoxVolume({
+			clip: data._clip,
+			modifiable: data._modifiable
+		});
 
-    // Set basic properties
-	volume.groupId = data.groupId;
-    volume._initialized = true;
-    volume.uuid = data.uuid;
-    volume.name = data.name;
-    volume._modifiable = data._modifiable;
-    volume.intType = data.intType || FilterIntType.BOXVOLUME;
+		// Set basic properties
+		volume.groupId = data.groupId;
+		volume._initialized = true;
+		volume.uuid = data.uuid;
+		volume.name = data.name;
+		volume._modifiable = data._modifiable;
+		volume.intType = data.intType || FilterIntType.BOXVOLUME;
 
-    // Restore visibility
-    volume._visible = data._visible !== undefined ? data._visible : data.visible;
-    volume._clip = data._clip;
+		// Restore visibility
+		volume._visible = data._visible !== undefined ? data._visible : data.visible;
+		volume._clip = data._clip;
 
-    // Restore transformation
-    volume.matrix.fromArray(data.matrix);
-    volume.matrix.decompose(volume.position, volume.quaternion, volume.scale);
+		// Restore transformation
+		volume.matrix.fromArray(data.matrix);
+		volume.matrix.decompose(volume.position, volume.quaternion, volume.scale);
 
-    // Apply matrix world if available
-    if (data.matrixWorld) {
-        volume.matrixWorld.fromArray(data.matrixWorld);
-    }
+		// Apply matrix world if available
+		if (data.matrixWorld) {
+			volume.matrixWorld.fromArray(data.matrixWorld);
+		}
 
-    // Update matrices and visibility
-    volume.updateMatrix();
-    volume.updateMatrixWorld(true);
+		// Update matrices and visibility
+		volume.updateMatrix();
+		volume.updateMatrixWorld(true);
 
 
 
-	volume.color = new Color(data.color || 0x0000ff); // restore color, default to blue if not set
-	// volume.box.material.color.set(volume.color);
-    // Important: Call update to refresh visibility and geometry
-    volume.update();
+		volume.color = new Color(data.color || 0x0000ff); // restore color, default to blue if not set
+		// volume.box.material.color.set(volume.color);
+		// Important: Call update to refresh visibility and geometry
+		volume.update();
 
-    return volume;
-}
+		return volume;
+	}
 
 	get intType() {
 		return this._intType;

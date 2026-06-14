@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {FloatType, UnsignedIntType, Vector2, Vector3,RGBAFormat, NearestFilter} from 'three';
+import {FloatType, UnsignedIntType, Vector2, Vector3,RGBAFormat, NearestFilter, WebGLRenderTarget, DepthTexture} from 'three';
 import {PointShape} from "../defines.js";
 import {NormalizationEDLMaterial} from "../materials/NormalizationEDLMaterial.js";
 import {NormalizationMaterial} from "../materials/NormalizationMaterial.js";

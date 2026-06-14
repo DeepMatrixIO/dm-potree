@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {Box3, BufferAttribute, BufferGeometry, MathUtils, Matrix4, Mesh, MeshNormalMaterial, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer} from 'three';
+import {Box2, Box3, BufferAttribute, BufferGeometry, MathUtils, Matrix4, Mesh, MeshNormalMaterial, OrthographicCamera, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer} from 'three';
 import {EventDispatcher} from "../EventDispatcher.js";
 import {PointCloudTree} from "../PointCloudTree.js";
 import {Points} from "../Points.js";

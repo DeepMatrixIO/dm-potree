@@ -1393,7 +1393,7 @@ export class InputHandler extends EventDispatcher {
 						let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
 						let ray = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);
 
-						let raycaster = new THREE.Raycaster();
+						let raycaster = new Raycaster();
 						raycaster.params.Line.threshold = 0.4;
 						raycaster.ray.set(ray.origin, ray.direction);
 						let intersect = raycaster.intersectObject(scene, true);

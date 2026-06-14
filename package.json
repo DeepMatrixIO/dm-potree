@@ -26,7 +26,9 @@
     "build:workers": "vite build --config vite.workers.config.mjs",
     "build:module": "npm run build:workers && vite build",
     "start": "npm run build:module && npm run dev",
-	"dev": "vite --port 5200 --open",
+  	"dev": "vite --port 5200 --open",
+    "check:imports": "node scripts/check-missing-imports.mjs --scope src --allow Potree,viewer",
+    "check:imports:all": "node scripts/check-missing-imports.mjs --scope all --allow Potree,viewer",
     "postinstall": "npm run build"
   },
   "dependencies": {

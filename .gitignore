@@ -64,3 +64,6 @@ libs
 /libs/three.js/
 
 /src/examples/
+
+# Script outputs for checking not added
+/tmp/
