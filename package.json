@@ -20,11 +20,13 @@
     "start_old": "gulp watch",
     "build_old": "gulp build pack",
     "build_bad": "webpack --mode production",
-    "dev": "vite --port 5200 --open",
-    "build": "npm run build_old",
+
+
+    "build": "npm run build:module",
     "build:workers": "vite build --config vite.workers.config.mjs",
     "build:module": "npm run build:workers && vite build",
     "start": "npm run build:module && npm run dev",
+	"dev": "vite --port 5200 --open",
     "postinstall": "npm run build"
   },
   "dependencies": {

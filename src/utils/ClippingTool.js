@@ -1,12 +1,14 @@
 
 
 // import * as THREE from "../../libs/js/build/module.js";
-import { Vector2, Scene} from 'three'
+import { Vector2, Scene,MOUSE} from 'three'; //do not use defines, as are different values
 
 import {ClipVolume} from "./ClipVolume.js";
 import {PolygonClipVolume} from "./PolygonClipVolume.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";
+
+
 
 export class ClippingTool extends EventDispatcher {
 
@@ -78,7 +80,7 @@ export class ClippingTool extends EventDispatcher {
 		let domElement = this.viewer.renderer.domElement;
 		let canvasSize = this.viewer.renderer.getSize(new Vector2());
 
-		let svg = $(`
+		let svgMarkup = `
 		<svg height="${canvasSize.height}" width="${canvasSize.width}" style="position:absolute; pointer-events: none">
 
 			<defs>
@@ -106,8 +108,9 @@ export class ClippingTool extends EventDispatcher {
 				marker-mid="url(#diamond)"
 				marker-end="url(#diamond)"
 				/>
-		</svg>`);
-		$(domElement.parentElement).append(svg);
+		</svg>`;
+		let svg = new DOMParser().parseFromString(svgMarkup, "image/svg+xml").documentElement;
+		domElement.parentElement.appendChild(svg);
 
 		let polyClipVol = new PolygonClipVolume(this.viewer.scene.getActiveCamera().clone());
 		this.viewer.dispatchEvent({
@@ -129,11 +132,11 @@ export class ClippingTool extends EventDispatcher {
 				polyClipVol.addMarker();
 
 				// SVC Screen Line
-				svg.find("polyline").each((index, target) => {
-					let newPoint = svg[0].createSVGPoint();
+				svg.querySelectorAll("polyline").forEach((target) => {
+					let newPoint = svg.createSVGPoint();
 					newPoint.x = e.offsetX;
 					newPoint.y = e.offsetY;
-					let polyline = target.points.appendItem(newPoint);
+					target.points.appendItem(newPoint);
 				});
 
 

@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {TorusGeometry, PlaneGeometry, BackSide, BoxGeometry, BufferGeometry, Float32BufferAttribute, Line3, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, Object3D, Raycaster, Scene, SphereGeometry, TextureLoader, Vector3, Vector4} from 'three';
+import {TorusGeometry, PlaneGeometry, BackSide, BoxGeometry, BufferGeometry, Float32BufferAttribute, Line3, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, Object3D, Raycaster, Scene, SphereGeometry, TextureLoader, Vector3, Vector4, Plane} from 'three';
 import {Utils} from "../utils.js";
 import * as TWEEN from '@tweenjs/tween.js';//from 0.15 to 25, now at eol
 
@@ -61,30 +61,30 @@ export class TransformationTool {
 
 		this.activeHandle = null;
 		this.scaleHandles = {
-			[this.SCALE_X_POS]: {name: this.SCALE_X_POS, node: new THREE.Object3D(), color: red, alignment: [+1, +0, +0], enabled: true},
-			[this.SCALE_X_NEG]: {name: this.SCALE_X_NEG, node: new THREE.Object3D(), color: red, alignment: [-1, +0, +0], enabled: true},
-			[this.SCALE_Y_POS]: {name: this.SCALE_Y_POS, node: new THREE.Object3D(), color: green, alignment: [+0, +1, +0], enabled: true},
-			[this.SCALE_Y_NEG]: {name: this.SCALE_Y_NEG, node: new THREE.Object3D(), color: green, alignment: [+0, -1, +0], enabled: true},
-			[this.SCALE_Z_POS]: {name: this.SCALE_Z_POS, node: new THREE.Object3D(), color: blue, alignment: [+0, +0, +1], enabled: true},
-			[this.SCALE_Z_NEG]: {name: this.SCALE_Z_NEG, node: new THREE.Object3D(), color: blue, alignment: [+0, +0, -1], enabled: true},
+			[this.SCALE_X_POS]: {name: this.SCALE_X_POS, node: new Object3D(), color: red, alignment: [+1, +0, +0], enabled: true},
+			[this.SCALE_X_NEG]: {name: this.SCALE_X_NEG, node: new Object3D(), color: red, alignment: [-1, +0, +0], enabled: true},
+			[this.SCALE_Y_POS]: {name: this.SCALE_Y_POS, node: new Object3D(), color: green, alignment: [+0, +1, +0], enabled: true},
+			[this.SCALE_Y_NEG]: {name: this.SCALE_Y_NEG, node: new Object3D(), color: green, alignment: [+0, -1, +0], enabled: true},
+			[this.SCALE_Z_POS]: {name: this.SCALE_Z_POS, node: new Object3D(), color: blue, alignment: [+0, +0, +1], enabled: true},
+			[this.SCALE_Z_NEG]: {name: this.SCALE_Z_NEG, node: new Object3D(), color: blue, alignment: [+0, +0, -1], enabled: true},
 		};
 		this.focusHandles = {
-			[this.FOCUS_X_POS]: {name: this.FOCUS_X_POS, node: new THREE.Object3D(), color: red, alignment: [+1, +0, +0], enabled: true},
-			[this.FOCUS_X_NEG]: {name: this.FOCUS_X_NEG, node: new THREE.Object3D(), color: red, alignment: [-1, +0, +0], enabled: true},
-			[this.FOCUS_Y_POS]: {name: this.FOCUS_Y_POS, node: new THREE.Object3D(), color: green, alignment: [+0, +1, +0], enabled: true},
-			[this.FOCUS_Y_NEG]: {name: this.FOCUS_Y_NEG, node: new THREE.Object3D(), color: green, alignment: [+0, -1, +0], enabled: true},
-			[this.FOCUS_Z_POS]: {name: this.FOCUS_Z_POS, node: new THREE.Object3D(), color: blue, alignment: [+0, +0, +1], enabled: true},
-			[this.FOCUS_Z_NEG]: {name: this.FOCUS_Z_NEG, node: new THREE.Object3D(), color: blue, alignment: [+0, +0, -1], enabled: true},
+			[this.FOCUS_X_POS]: {name: this.FOCUS_X_POS, node: new Object3D(), color: red, alignment: [+1, +0, +0], enabled: true},
+			[this.FOCUS_X_NEG]: {name: this.FOCUS_X_NEG, node: new Object3D(), color: red, alignment: [-1, +0, +0], enabled: true},
+			[this.FOCUS_Y_POS]: {name: this.FOCUS_Y_POS, node: new Object3D(), color: green, alignment: [+0, +1, +0], enabled: true},
+			[this.FOCUS_Y_NEG]: {name: this.FOCUS_Y_NEG, node: new Object3D(), color: green, alignment: [+0, -1, +0], enabled: true},
+			[this.FOCUS_Z_POS]: {name: this.FOCUS_Z_POS, node: new Object3D(), color: blue, alignment: [+0, +0, +1], enabled: true},
+			[this.FOCUS_Z_NEG]: {name: this.FOCUS_Z_NEG, node: new Object3D(), color: blue, alignment: [+0, +0, -1], enabled: true},
 		};
 		this.translationHandles = {
-			[this.TRANSLATION_X]: {name: this.TRANSLATION_X, node: new THREE.Object3D(), color: red, alignment: [1, 0, 0], enabled: true},
-			[this.TRANSLATION_Y]: {name: this.TRANSLATION_Y, node: new THREE.Object3D(), color: green, alignment: [0, 1, 0], enabled: true},
-			[this.TRANSLATION_Z]: {name: this.TRANSLATION_Z, node: new THREE.Object3D(), color: blue, alignment: [0, 0, 1], enabled: true},
+			[this.TRANSLATION_X]: {name: this.TRANSLATION_X, node: new Object3D(), color: red, alignment: [1, 0, 0], enabled: true},
+			[this.TRANSLATION_Y]: {name: this.TRANSLATION_Y, node: new Object3D(), color: green, alignment: [0, 1, 0], enabled: true},
+			[this.TRANSLATION_Z]: {name: this.TRANSLATION_Z, node: new Object3D(), color: blue, alignment: [0, 0, 1], enabled: true},
 		};
 		this.rotationHandles = {
-			[this.ROTATION_X]: {name: this.ROTATION_X, node: new THREE.Object3D(), color: red, alignment: [1, 0, 0], enabled: true},
-			[this.ROTATION_Y]: {name: this.ROTATION_Y, node: new THREE.Object3D(), color: green, alignment: [0, 1, 0], enabled: true},
-			[this.ROTATION_Z]: {name: this.ROTATION_Z, node: new THREE.Object3D(), color: blue, alignment: [0, 0, 1], enabled: true},
+			[this.ROTATION_X]: {name: this.ROTATION_X, node: new Object3D(), color: red, alignment: [1, 0, 0], enabled: true},
+			[this.ROTATION_Y]: {name: this.ROTATION_Y, node: new Object3D(), color: green, alignment: [0, 1, 0], enabled: true},
+			[this.ROTATION_Z]: {name: this.ROTATION_Z, node: new Object3D(), color: blue, alignment: [0, 0, 1], enabled: true},
 		};
 		this.handles = Object.assign({}, this.scaleHandles, this.focusHandles, this.translationHandles, this.rotationHandles);
 		this.pickVolumes = [];

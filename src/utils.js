@@ -1,5 +1,5 @@
 
-import {PlaneGeometry, Box3, BoxGeometry, BufferGeometry, Camera, DataTexture, Line, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, NearestFilter, Object3D, PerspectiveCamera, Ray, Raycaster, RGBAFormat, RGBFormat, Scene, SphereGeometry, TextureLoader, Vector3, Vector4, OrthographicCamera, BackSide} from 'three';
+import {PlaneGeometry, Box3, BoxGeometry, BufferGeometry, Camera, DataTexture, Line, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, NearestFilter, Object3D, PerspectiveCamera, Ray, Raycaster, RGBAFormat, RGBFormat, Scene, SphereGeometry, TextureLoader, Vector3, Vector4, OrthographicCamera, BackSide, PlaneHelper } from 'three';
 
 import {XHRFactory} from "./XHRFactory.js";
 import {Measure} from "./utils/Measure.js";

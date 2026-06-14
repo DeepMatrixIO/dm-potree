@@ -1,6 +1,6 @@
 
 
-import {Frustum, Matrix4, Vector3} from 'three';
+import {Frustum, Matrix4, Vector3,Plane} from 'three';
 
 import {ClipMethod, ClipTask} from "./defines.js";
 import {Box3Helper} from "./utils/Box3Helper.js";

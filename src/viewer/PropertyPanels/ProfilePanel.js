@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../../libs/js/build/module.js";
-import {Vector3,Matrix4} from 'three'
+import {Vector3,Matrix4,Plane} from 'three'
 import {MeasurePanel} from "./MeasurePanel.js";
 
 export class ProfilePanel extends MeasurePanel{

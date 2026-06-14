@@ -1,5 +1,5 @@
 
-import {Vector3,Matrix4,Sphere,  Box3, Line3} from 'three'
+import {Vector3,Matrix4,Sphere,  Box3, Line3,Plane} from 'three'
 import {BinaryHeap} from "./BinaryHeap.js";
 import {Points} from "./Points.js";
 
