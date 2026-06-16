@@ -92,6 +92,7 @@ export class Viewer extends EventDispatcher {
 		this.renderArea = domElement;
 		this.guiLoaded = false;
 		this.guiLoadTasks = [];
+		this._sidebarOpen = false;
 
 		this.onVrListeners = [];
 
@@ -412,7 +413,8 @@ export class Viewer extends EventDispatcher {
 
 			this.renderer.setAnimationLoop(this.loop.bind(this));
 
-			this.loadGUI = this.loadGUI.bind(this);
+			//this.loadGUI = this.loadGUI.bind(this); //thi is meant to be called explicitly, to avoid heavy dependencies
+			//the load GUI should be an external asset
 
 
 
@@ -1756,17 +1758,22 @@ export class Viewer extends EventDispatcher {
 
 	};
 
+	//explicit action to modofy the render area for sidebar.  Should be removed or placed outside.
+
 	toggleSidebar() {
 		try {
-			let renderArea = document.getElementById('potree_render_area');
-			// let isVisible = renderArea.css('left') !== '0px';
+			const sidebarArea = this.renderArea.querySelector('#potree_sidebar_container');
+			if (!sidebarArea) return;
 
-			let isVisible = renderArea.style.left !== '0px';
+			const sidebarWidth = 300;
+			this._sidebarOpen = !this._sidebarOpen;
 
-			if (isVisible) {
-				renderArea.style.left = '0px';
+			if (this._sidebarOpen) {
+				sidebarArea.style.display = '';
+				this.renderer.domElement.style.left = `${sidebarWidth}px`;
 			} else {
-				renderArea.style.left = '300px';
+				sidebarArea.style.display = 'none';
+				this.renderer.domElement.style.left = '0px';
 			}
 		} catch (e) {
 			console.error("Error toggling sidebar viewer.toggleSidebar", e);
@@ -1803,7 +1810,17 @@ export class Viewer extends EventDispatcher {
 	}
 
 
-	//add all graphical elements
+	//add all graphical elements, which may be ommited on std module and required explicit loading
+
+	// it initializes a Sidebar from sidebar.html which subsecuently loads profile.html  and map.
+
+	//is we disable map, no more ol is needed here
+	//
+
+	//it looks for potree_sidebar_container and potree_quick_buttons in the dom, so they need to be present in the html file
+	//profile is openly added and is not restricted to be present
+
+
 	loadGUI(callback) {
 
 		if (callback) {
@@ -1811,7 +1828,12 @@ export class Viewer extends EventDispatcher {
 		}
 
 		let viewer = this;
-		let sidebarContainer = document.getElementById('potree_sidebar_container');
+		let sidebarContainer = this.renderArea.querySelector('#potree_sidebar_container');
+		if (!sidebarContainer) {
+			sidebarContainer = document.createElement('div');
+			sidebarContainer.id = 'potree_sidebar_container';
+			this.renderArea.appendChild(sidebarContainer);
+		}
 
 		// Load sidebar.html using fetch instead of jQuery.load
 		// fetch(new URL(Potree.scriptPath + '/sidebar.html').href)
@@ -1824,6 +1846,8 @@ export class Viewer extends EventDispatcher {
 				// Set styles directly
 				sidebarContainer.style.width = '300px';
 				sidebarContainer.style.height = '100%';
+				this._sidebarOpen = true;
+				this.renderer.domElement.style.left = '300px';
 
 				let imgMenuToggle = document.createElement('img');
 				// imgMenuToggle.src = new URL(Potree.resourcePath + '/icons/menu_button.svg').href;
@@ -1839,7 +1863,13 @@ export class Viewer extends EventDispatcher {
 				imgMapToggle.onclick = e => {this.toggleMap();};
 				imgMapToggle.id = 'potree_map_toggle';
 
-				let elButtons = document.getElementById('potree_quick_buttons');
+				let elButtons = this.renderArea.querySelector('#potree_quick_buttons');
+				if (!elButtons) {
+					elButtons = document.createElement('div');
+					elButtons.id = 'potree_quick_buttons';
+					elButtons.className = 'quick_buttons_container';
+					this.renderArea.appendChild(elButtons);
+				}
 				elButtons.appendChild(imgMenuToggle);
 				elButtons.appendChild(imgMapToggle);
 
@@ -1876,108 +1906,108 @@ export class Viewer extends EventDispatcher {
 				// 			document.body.appendChild(elProfile.firstChild);
 				// 		}
 
-						// 		// Replace jQuery UI draggable/resizable with a library or custom implementation
-						// 		// Example: Using interact.js (install via npm)
+				// 		// Replace jQuery UI draggable/resizable with a library or custom implementation
+				// 		// Example: Using interact.js (install via npm)
 
-						// 		//removed for testing unless find another way
-						// 		import('interactjs').then(interact => {
-						// 			interact('#profile_window')
-						// 				.draggable({
-						// 					// Configure drag options
-						// 				})
-						// 				.resizable({
-						// 					// Configure resize options
-						// 				});
-						// 		});
-
-
+				// 		//removed for testing unless find another way
+				// 		import('interactjs').then(interact => {
+				// 			interact('#profile_window')
+				// 				.draggable({
+				// 					// Configure drag options
+				// 				})
+				// 				.resizable({
+				// 					// Configure resize options
+				// 				});
+				// 		});
 
 
-						// 		// Document ready equivalent
-						// 		document.addEventListener('DOMContentLoaded', () => {
-						// 			this.guiLoaded = true;
-						// 			for (let task of this.guiLoadTasks) {
-						// 				task();
-						// 			}
-						// 		});
-						// 	});
-					});
 
-				return this.promiseGuiLoaded();
-			}
+
+				// 		// Document ready equivalent
+				// 		document.addEventListener('DOMContentLoaded', () => {
+				// 			this.guiLoaded = true;
+				// 			for (let task of this.guiLoadTasks) {
+				// 				task();
+				// 			}
+				// 		});
+				// 	});
+			});
+
+		return this.promiseGuiLoaded();
+	}
 
 	setLanguage(lang) {
-				i18next.changeLanguage(lang);
-				// Apply translations to body or specific elements
-				document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
-			}
+		i18next.changeLanguage(lang);
+		// Apply translations to body or specific elements
+		document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
+	}
 
 	setServer(server) {
-				this.server = server;
-			}
+		this.server = server;
+	}
 
 	initDragAndDrop() {
-				function allowDrag(e) {
-				e.dataTransfer.dropEffect = 'copy';
-				e.preventDefault();
-			}
+		function allowDrag(e) {
+			e.dataTransfer.dropEffect = 'copy';
+			e.preventDefault();
+		}
 
 		let dropHandler = async (event) => {
-				console.log(event);
-				event.preventDefault();
+			console.log(event);
+			event.preventDefault();
 
-				for (const item of event.dataTransfer.items) {
-					console.log(item);
+			for (const item of event.dataTransfer.items) {
+				console.log(item);
 
-					if (item.kind !== "file") {
-						continue;
-					}
+				if (item.kind !== "file") {
+					continue;
+				}
 
-					const file = item.getAsFile();
+				const file = item.getAsFile();
 
-					const isJson5 = file.name.toLowerCase().endsWith(".json5");
-					const isGeoPackage = file.name.toLowerCase().endsWith(".gpkg");
+				const isJson5 = file.name.toLowerCase().endsWith(".json5");
+				const isGeoPackage = file.name.toLowerCase().endsWith(".gpkg");
 
-					if (isJson5) {
-						try {
+				if (isJson5) {
+					try {
 
-							const text = await file.text();
-							const json = JSON5.parse(text);
+						const text = await file.text();
+						const json = JSON5.parse(text);
 
-							if (json.type === "Potree") {
-								Potree.loadProject(viewer, json);
-							}
-						} catch (e) {
-							console.error("failed to parse the dropped file as JSON");
-							console.error(e);
+						if (json.type === "Potree") {
+							Potree.loadProject(viewer, json);
 						}
-					} else if (isGeoPackage) {
-						const hasPointcloud = viewer.scene.pointclouds.length > 0;
+					} catch (e) {
+						console.error("failed to parse the dropped file as JSON");
+						console.error(e);
+					}
+				} else if (isGeoPackage) {
+					const hasPointcloud = viewer.scene.pointclouds.length > 0;
 
-						if (!hasPointcloud) {
-							let msg = "At least one point cloud is needed that specifies the ";
-							msg += "coordinate reference system before loading vector data.";
-							console.error(msg);
-						} else {
+					if (!hasPointcloud) {
+						let msg = "At least one point cloud is needed that specifies the ";
+						msg += "coordinate reference system before loading vector data.";
+						console.error(msg);
+					} else {
 
 						proj4.defs("WGS84", "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
 						proj4.defs("pointcloud", this.getFirstValidProjection());
 						let transform = proj4("WGS84", "pointcloud");
 
-							const buffer = await file.arrayBuffer();
+						const buffer = await file.arrayBuffer();
 
-							const params = {
-								transform: transform,
-								source: file.name,
-							};
+						const params = {
+							transform: transform,
+							source: file.name,
+						};
 
-							const geo = await Potree.GeoPackageLoader.loadBuffer(buffer, params);
-							viewer.scene.addGeopackage(geo);
-						}
+						const geo = await Potree.GeoPackageLoader.loadBuffer(buffer, params);
+						viewer.scene.addGeopackage(geo);
 					}
-
 				}
-			};
+
+			}
+		};
 
 
 		document.body.addEventListener("dragenter", allowDrag);
@@ -2856,7 +2886,8 @@ export class Viewer extends EventDispatcher {
 		let pRenderer = this.getPRenderer();
 
 		{ // resize
-			const width = this.scaleFactor * this.renderArea.clientWidth;
+			const sidebarOffset = this._sidebarOpen ? 300 : 0;
+			const width = this.scaleFactor * (this.renderArea.clientWidth - sidebarOffset);
 			const height = this.scaleFactor * this.renderArea.clientHeight;
 
 			this.renderer.setSize(width, height);
@@ -3269,7 +3300,7 @@ export class Viewer extends EventDispatcher {
 			}
 
 			// Remove DOM elements
-			$('#potree_sidebar_container').empty();
+			$('potree_sidebar_container').empty();
 			$('#potree_map').remove();
 			$('#potree_description').empty();
 			$('#potree_annotation_container').empty();

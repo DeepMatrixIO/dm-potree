@@ -42,7 +42,7 @@ document.body.onload = function () {
 	<script src="./libs/proj4/proj4.js"></script>
 	<script src="./libs/openlayers3/ol.js"></script>
 	<script src="./libs/i18next/i18next.js"></script>
-	<script src="./libs/jstree/jstree.js"></script>
+    <!--<script src="./libs/jstree/jstree.js"></script> -->
 
 	<script src="./libs/plasio/js/laslaz.js"></script>
 	`
@@ -89,11 +89,15 @@ document.body.onload = function () {
 
 	viewer.setScene(sceneSG);
 
+
+	//classic potree viewer contains a gUi
+	//that is removed in favour
 	viewer.loadGUI(() => {//no more jquery pls
 		viewer.setLanguage('en');
 		// $("#menu_scene").next().show();
 		viewer.toggleSidebar();
 	});
+
 
 
 	//profile needs to be added
