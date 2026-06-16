@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {Line3, Ray, Scene, Vector2, Vector3} from 'three';
+import {Box2, Line3, Ray, Scene, Vector2, Vector3} from 'three';
 import {PointSizeType} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {KeyCodes} from "../KeyCodes.js";

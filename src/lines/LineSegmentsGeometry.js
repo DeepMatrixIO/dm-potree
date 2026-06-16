@@ -1,4 +1,14 @@
 //lines
+// import {
+// 	Box3,
+// 	Float32BufferAttribute,
+// 	InstancedBufferGeometry,
+// 	InstancedInterleavedBuffer,
+// 	InterleavedBufferAttribute,
+// 	Sphere,
+// 	Vector3,
+// } from '../build/three.module.js';
+
 import {
 	Box3,
 	Float32BufferAttribute,
@@ -7,7 +17,11 @@ import {
 	InterleavedBufferAttribute,
 	Sphere,
 	Vector3,
+	WireframeGeometry
 } from 'three';
+
+
+
 
 //to add new methods and attributes
 class LineSegmentsGeometry extends InstancedBufferGeometry {

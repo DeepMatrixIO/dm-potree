@@ -1,6 +1,6 @@
-import {LineGeometry} from './LineGeometry.js';
-import {LineMaterial} from './LineMaterial.js';
-import {LineSegments2} from './LineSegments2.js';
+import {LineGeometry} from '../lines/LineGeometry.js';
+import {LineMaterial} from '../lines/LineMaterial.js';
+import {LineSegments2} from '../lines/LineSegments2.js';
 
 
 class Line2 extends LineSegments2 {

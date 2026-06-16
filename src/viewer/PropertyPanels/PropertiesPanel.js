@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../../libs/js/build/module.js";
-import {Color} from 'three';
+import {Camera, Color} from 'three';
 import {Annotation} from "../../Annotation.js";
 import {ElevationGradientRepeat, PointShape, PointSizeType} from "../../defines.js";
 import {Gradients} from "../../materials/Gradients.js";
@@ -79,8 +79,10 @@ export class PropertiesPanel{
 	setPointCloud(pointcloud){
 
 		let material = pointcloud.material;
+		const jq = window.jQuery;
 
-		let panel = $(`
+		const panelTemplate = document.createElement("template");
+		panelTemplate.innerHTML = `
 			<div class="scene_content selectable">
 				<ul class="pv-menu-list">
 
@@ -237,10 +239,17 @@ export class PropertiesPanel{
 
 				</ul>
 			</div>
-		`);
+		`;
+
+		const panelEl = panelTemplate.content.firstElementChild;
+		let panel = {
+			el: panelEl,
+			find: (selector) => jq(panelEl.querySelector(selector)),
+			i18n: () => jq(panelEl).i18n(),
+		};
 
 		panel.i18n();
-		this.container.append(panel);
+		this.container.append(panel.el);
 
 		{ // POINT SIZE
 			let sldPointSize = panel.find(`#sldPointSize`);
@@ -332,7 +341,7 @@ export class PropertiesPanel{
 			this.addVolatileListener(material, "backface_changed", update);
 			update();
 
-			let blockBackface = $('#materials_backface_container');
+			let blockBackface = panel.find('#materials_backface_container');
 			blockBackface.css('display', 'none');
 
 			const pointAttributes = pointcloud.pcoGeometry.pointAttributes;
@@ -346,7 +355,7 @@ export class PropertiesPanel{
 					// let value = ui.item.value;
 					let value = ui.item.checked;
 					console.log(value);
-					material.backfaceCulling = value; // $('#set_freeze').prop("checked");
+					material.backfaceCulling = value;
 				}
 			});
 			*/
@@ -406,7 +415,8 @@ export class PropertiesPanel{
 
 			let attributeSelection = panel.find('#optMaterial');
 			for(let option of options){
-				let elOption = $(`<option>${option}</option>`);
+				let elOption = document.createElement("option");
+				elOption.textContent = option;
 				attributeSelection.append(elOption);
 			}
 
@@ -467,16 +477,16 @@ export class PropertiesPanel{
 
 				}
 
-				let blockWeights = $('#materials\\.composite_weight_container');
-				let blockElevation = $('#materials\\.elevation_container');
-				let blockRGB = $('#materials\\.rgb_container');
-				let blockExtra = $('#materials\\.extra_container');
-				let blockColor = $('#materials\\.color_container');
-				let blockIntensity = $('#materials\\.intensity_container');
-				let blockIndex = $('#materials\\.index_container');
-				let blockTransition = $('#materials\\.transition_container');
-				let blockGps = $('#materials\\.gpstime_container');
-				let blockMatcap = $('#materials\\.matcap_container');
+				let blockWeights = panel.find('#materials\\.composite_weight_container');
+				let blockElevation = panel.find('#materials\\.elevation_container');
+				let blockRGB = panel.find('#materials\\.rgb_container');
+				let blockExtra = panel.find('#materials\\.extra_container');
+				let blockColor = panel.find('#materials\\.color_container');
+				let blockIntensity = panel.find('#materials\\.intensity_container');
+				let blockIndex = panel.find('#materials\\.index_container');
+				let blockTransition = panel.find('#materials\\.transition_container');
+				let blockGps = panel.find('#materials\\.gpstime_container');
+				let blockMatcap = panel.find('#materials\\.matcap_container');
 
 				blockIndex.css('display', 'none');
 				blockIntensity.css('display', 'none');
@@ -544,17 +554,15 @@ export class PropertiesPanel{
 			let elSchemeContainer = panel.find("#elevation_gradient_scheme_selection");
 
 			for(let scheme of schemes){
-				let elScheme = $(`
-					<span style="flex-grow: 1;">
-					</span>
-				`);
+				let elScheme = document.createElement("span");
+				elScheme.style.flexGrow = "1";
 
 				const svg = Potree.Utils.createSvgGradient(scheme.values);
 				svg.setAttributeNS(null, "class", `button-icon`);
 
-				elScheme.append($(svg));
+				elScheme.appendChild(svg);
 
-				elScheme.click( () => {
+				elScheme.addEventListener("click", () => {
 					material.gradient = Gradients[scheme.name];
 				});
 
@@ -595,11 +603,12 @@ export class PropertiesPanel{
 			let elMatcapContainer = panel.find("#matcap_scheme_selection");
 
 			for(let matcap of matcaps){
-				let elMatcap = $(`
-						<img src="${matcap.icon}" class="button-icon" style="width: 25%;" />
-				`);
+				let elMatcap = document.createElement("img");
+				elMatcap.src = matcap.icon;
+				elMatcap.className = "button-icon";
+				elMatcap.style.width = "25%";
 
-				elMatcap.click( () => {
+				elMatcap.addEventListener("click", () => {
 					material.matcap = matcap.icon.substring(matcap.icon.lastIndexOf('/'));
 				});
 
