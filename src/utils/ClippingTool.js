@@ -1,7 +1,7 @@
 
 
 // import * as THREE from "../../libs/js/build/module.js";
-import { Vector2, Scene,MOUSE} from 'three'; //do not use defines, as are different values
+import { Vector2, Scene, MOUSE as THREE_MOUSE} from 'three'; //do not use defines, as are different values
 
 import {ClipVolume} from "./ClipVolume.js";
 import {PolygonClipVolume} from "./PolygonClipVolume.js";
@@ -80,8 +80,10 @@ export class ClippingTool extends EventDispatcher {
 		let domElement = this.viewer.renderer.domElement;
 		let canvasSize = this.viewer.renderer.getSize(new Vector2());
 
+		//is not properly positioned
+		//check as the jquery code was replaced
 		let svgMarkup = `
-		<svg height="${canvasSize.height}" width="${canvasSize.width}" style="position:absolute; pointer-events: none">
+		<svg xmlns="http://www.w3.org/2000/svg" height="${canvasSize.height}" width="${canvasSize.width}" style="position:absolute; left:0; top:0; pointer-events:none; z-index:1000; overflow:visible;">
 
 			<defs>
 				 <marker id="diamond" markerWidth="24" markerHeight="24" refX="12" refY="12"
@@ -90,19 +92,19 @@ export class ClippingTool extends EventDispatcher {
 				</marker>
 			</defs>
 
-			<polyline  stroke="black"
-
-				style="stroke:rgb(0, 0, 0);
-				fill-opacity:0.5;
-				polygon-fill="rgba(200,0,0,0.5)"
-				stroke-width:6;"
+			<polyline
+				stroke="rgb(0, 0, 0)"
+				fill="rgba(200,0,0,0.5)"
+				fill-opacity="0.5"
+				stroke-width="6"
 				stroke-dasharray="9, 6"
 				stroke-dashoffset="2"
 				/>
 
-			<polyline fill="none" stroke="black"
-				style="stroke:rgb(255, 255, 255);
-				stroke-width:2;"
+			<polyline
+				fill="none"
+				stroke="rgb(255, 255, 255)"
+				stroke-width="2"
 				stroke-dasharray="5, 10"
 				marker-start="url(#diamond)"
 				marker-mid="url(#diamond)"
@@ -110,13 +112,16 @@ export class ClippingTool extends EventDispatcher {
 				/>
 		</svg>`;
 		let svg = new DOMParser().parseFromString(svgMarkup, "image/svg+xml").documentElement;
+		if (window.getComputedStyle(domElement.parentElement).position === "static") {
+			domElement.parentElement.style.position = "relative";
+		}
 		domElement.parentElement.appendChild(svg);
 
 		let polyClipVol = new PolygonClipVolume(this.viewer.scene.getActiveCamera().clone());
-		this.viewer.dispatchEvent({
-			type: "cancel_insertions", source: polyClipVol, reason: "start_insertion"
-		});
-		polyClipVol.initialized = false;
+		// this.viewer.dispatchEvent({
+		// 	type: "cancel_insertions", source: polyClipVol, reason: "start_insertion"
+		// });
+		// polyClipVol.initialized = false;
 		this.dispatchEvent({"type": "start_inserting_clipping_volume"});
 
 		this.viewer.scene.addPolygonClipVolume(polyClipVol);
@@ -127,16 +132,15 @@ export class ClippingTool extends EventDispatcher {
 		};
 
 		let insertionCallback = (e) => {
-			if (e.button === MOUSE.LEFT) {
+			if (e.button === THREE_MOUSE.LEFT) {
 
 				polyClipVol.addMarker();
 
 				// SVC Screen Line
 				svg.querySelectorAll("polyline").forEach((target) => {
-					let newPoint = svg.createSVGPoint();
-					newPoint.x = e.offsetX;
-					newPoint.y = e.offsetY;
-					target.points.appendItem(newPoint);
+					let newPoint = `${e.offsetX},${e.offsetY}`;
+					let points = target.getAttribute("points") || "";
+					target.setAttribute("points", points ? `${points} ${newPoint}` : newPoint);
 				});
 
 
@@ -146,7 +150,7 @@ export class ClippingTool extends EventDispatcher {
 
 				this.viewer.inputHandler.startDragging(
 					polyClipVol.markers[polyClipVol.markers.length - 1]);
-			} else if (e.button === MOUSE.RIGHT) {
+			} else if (e.button === THREE_MOUSE.RIGHT) {
 
 				cancel.callback(e);
 			}
