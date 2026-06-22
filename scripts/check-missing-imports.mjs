@@ -38,6 +38,8 @@ const allowNames = allowArg
 const tmpDir = path.join(repoRoot, "tmp", "missing-imports-check");
 const tsconfigPath = path.join(tmpDir, "tsconfig.json");
 const globalsPath = path.join(tmpDir, "allowed-globals.d.ts");
+const reportMdPath = path.join(repoRoot, "tmp", "check-imports-report.md");
+const reportJsonPath = path.join(repoRoot, "tmp", "check-imports-report.json");
 
 const includeByScope = {
   src: ["../../src/**/*.js", "./allowed-globals.d.ts"],
@@ -127,27 +129,102 @@ for (const line of lines) {
   });
 }
 
+function buildReportData(status, extra = {}) {
+  const byFile = new Map();
+  for (const issue of unresolved) {
+    const current = byFile.get(issue.file) || [];
+    current.push(issue);
+    byFile.set(issue.file, current);
+  }
+
+  const sortedFiles = [...byFile.entries()].sort((a, b) => b[1].length - a[1].length);
+  const files = sortedFiles.map(([file, issues]) => ({ file, count: issues.length, issues }));
+
+  return {
+    status,
+    timestamp: new Date().toISOString(),
+    scope,
+    allowedGlobals: allowNames,
+    unresolvedCount: unresolved.length,
+    fileCount: files.length,
+    files,
+    ...extra
+  };
+}
+
+function writeReports(reportData) {
+  const mdLines = [];
+  mdLines.push("# Missing Imports/Globals Check Report");
+  mdLines.push("");
+  mdLines.push(`- Status: ${reportData.status}`);
+  mdLines.push(`- Timestamp: ${reportData.timestamp}`);
+  mdLines.push(`- Scope: ${reportData.scope}`);
+  mdLines.push(`- Allowed globals: ${reportData.allowedGlobals.join(", ") || "(none)"}`);
+  mdLines.push(`- Unresolved identifiers: ${reportData.unresolvedCount}`);
+  mdLines.push(`- Files affected: ${reportData.fileCount}`);
+
+  if (reportData.note) {
+    mdLines.push(`- Note: ${reportData.note}`);
+  }
+
+  mdLines.push("");
+
+  if (reportData.files.length > 0) {
+    mdLines.push("## Files");
+    mdLines.push("");
+
+    for (const fileEntry of reportData.files) {
+      mdLines.push(`### ${fileEntry.file} (${fileEntry.count})`);
+      mdLines.push("");
+      for (const issue of fileEntry.issues) {
+        mdLines.push(`- ${issue.line}:${issue.column} ${issue.code} ${issue.message}`);
+      }
+      mdLines.push("");
+    }
+  }
+
+  if (reportData.rawOutput && reportData.rawOutput.trim().length > 0) {
+    mdLines.push("## Raw TypeScript Output");
+    mdLines.push("");
+    mdLines.push("```text");
+    mdLines.push(reportData.rawOutput.trim());
+    mdLines.push("```");
+    mdLines.push("");
+  }
+
+  writeFileSync(reportMdPath, `${mdLines.join("\n")}\n`, "utf8");
+  writeFileSync(reportJsonPath, `${JSON.stringify(reportData, null, 2)}\n`, "utf8");
+}
+
 if (unresolved.length === 0) {
   if (run.status !== 0) {
+    const reportData = buildReportData("error", {
+      note: "TypeScript exited with errors, but none matched unresolved identifier diagnostics.",
+      rawOutput: output
+    });
+    writeReports(reportData);
+
     console.error("TypeScript reported errors, but none matched unresolved-identifier codes TS2304/TS2552/TS2580.");
     if (output.trim().length > 0) {
       console.error(output.trim());
     }
+    console.error(`Report written to ${reportMdPath}`);
+    console.error(`Report written to ${reportJsonPath}`);
     process.exit(1);
   }
 
+  const reportData = buildReportData("ok");
+  writeReports(reportData);
+
   console.log(`OK: no missing globals/import identifiers found (scope=${scope}).`);
+  console.log(`Report written to ${reportMdPath}`);
+  console.log(`Report written to ${reportJsonPath}`);
   process.exit(0);
 }
 
-const byFile = new Map();
-for (const issue of unresolved) {
-  const current = byFile.get(issue.file) || [];
-  current.push(issue);
-  byFile.set(issue.file, current);
-}
-
-const sortedFiles = [...byFile.entries()].sort((a, b) => b[1].length - a[1].length);
+const reportData = buildReportData("failed");
+writeReports(reportData);
+const sortedFiles = reportData.files.map((entry) => [entry.file, entry.issues]);
 
 console.error(`Found ${unresolved.length} unresolved identifier issues in ${sortedFiles.length} files (scope=${scope}).`);
 for (const [file, issues] of sortedFiles) {
@@ -159,4 +236,6 @@ for (const [file, issues] of sortedFiles) {
 }
 
 console.error("\nTip: adjust allowed globals with --allow=Potree,viewer,AnotherGlobal");
+console.error(`Report written to ${reportMdPath}`);
+console.error(`Report written to ${reportJsonPath}`);
 process.exit(1);

@@ -92,11 +92,13 @@ document.body.onload = function () {
 
 	//classic potree viewer contains a gUi
 	//that is removed in favour
-	viewer.loadGUI(() => {//no more jquery pls
-		viewer.setLanguage('en');
-		// $("#menu_scene").next().show();
-		viewer.toggleSidebar();
-	});
+
+
+	// viewer.loadGUI(() => {//no more jquery pls
+	// 	viewer.setLanguage('en');
+	// 	// $("#menu_scene").next().show();
+	// 	viewer.toggleSidebar();
+	// });
 
 
 

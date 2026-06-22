@@ -1772,16 +1772,12 @@ export class Viewer extends EventDispatcher {
 		try {
 			const sidebarArea = this.renderArea.querySelector('#potree_sidebar_container');
 			if (!sidebarArea) return;
-
-			const sidebarWidth = 300;
 			this._sidebarOpen = !this._sidebarOpen;
 
 			if (this._sidebarOpen) {
 				sidebarArea.style.display = '';
-				this.renderer.domElement.style.left = `${sidebarWidth}px`;
 			} else {
 				sidebarArea.style.display = 'none';
-				this.renderer.domElement.style.left = '0px';
 			}
 		} catch (e) {
 			console.error("Error toggling sidebar viewer.toggleSidebar", e);
@@ -1851,9 +1847,6 @@ export class Viewer extends EventDispatcher {
 			.then(response => response.text())
 			.then(html => {
 				sidebarContainer.innerHTML = html;
-				// Set styles directly
-				sidebarContainer.style.width = '300px';
-				sidebarContainer.style.height = '100%';
 				this._sidebarOpen = true;
 				this.renderer.domElement.style.left = '300px';
 				//toggle button

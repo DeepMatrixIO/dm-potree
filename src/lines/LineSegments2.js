@@ -68,9 +68,10 @@ class LineSegments2 extends Mesh {
 	}
 
 	//receives a given raycaster and an array of intersectable objects
-	//Implementation to get intersections between a casted ray(raycaster) and this object.
+	//Implementation to get intersections between a casted ray(raycaster) and this object. 
 	//Intersections are stored in the array "intersects"
 	raycast(raycaster, intersects) {
+		const viewer = window.viewer;
 
 		var start = new Vector4();
 		var end = new Vector4();
@@ -85,9 +86,10 @@ class LineSegments2 extends Mesh {
 		//return function raycast() {
 
 		if (raycaster.camera === null) {
-
-			console.error('LineSegments2: "Raycaster.camera" needs to be set in order to raycast against LineSegments2.');
-
+			//console.error( 'LineSegments2: "Raycaster.camera" needs to be set in order to raycast against LineSegments2.' );
+			//@ts-ignore
+			raycaster.camera = viewer.scene.getActiveCamera(); //hack to make it work due to the missing camera on the raycaster. Uses a global variable.
+			//return;
 		}
 
 		var threshold = (raycaster.params.Line2 !== undefined) ? raycaster.params.Line2.threshold || 0 : 0;
@@ -191,7 +193,7 @@ class LineSegments2 extends Mesh {
 
 				ray.distanceSqToSegment(line.start, line.end, point, pointOnLine);
 
-				//array of intersected objects
+				//array of intersected objects 
 				if (intersects === undefined) intersects = [];
 				if (intersects === null) intersects = [];
 

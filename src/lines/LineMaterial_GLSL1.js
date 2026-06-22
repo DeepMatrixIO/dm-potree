@@ -4,10 +4,7 @@ import {
 	UniformsLib,
 	UniformsUtils,
 	Vector2
-} from 'three';
-
-const GLSL1 = '100';
-const GLSL3 = '300 es';
+} from '../build/three.module.js';
 
 /**
  * parameters = {
@@ -30,8 +27,7 @@ UniformsLib.line = {
 	dashSize: {value: 1},
 	dashOffset: {value: 0},
 	gapSize: {value: 1}, // todo FIX - maybe change to totalSize
-	opacity: {value: 1},
-	//use_dash: {value: false}//was missing for the fragment shader but is not really considered
+	opacity: {value: 1}
 
 };
 
@@ -52,9 +48,6 @@ ShaderLib['line'] = {
 		#include <logdepthbuf_pars_vertex>
 		#include <clipping_planes_pars_vertex>
 
-
-		//#define USE_DASH 0//parameter based
-
 		uniform float linewidth;
 		uniform vec2 resolution;
 
@@ -68,10 +61,10 @@ ShaderLib['line'] = {
 
 		#ifdef USE_DASH
 
-			uniform float dashScale;//uniform parameter
-			attribute float instanceDistanceStart;//from LineSegments2 computeLineDistances geometry
-			attribute float instanceDistanceEnd;//from LineSegments2 computeLineDistances geometry
-			varying float vLineDistance;//setting varying if dashing
+			uniform float dashScale;
+			attribute float instanceDistanceStart;
+			attribute float instanceDistanceEnd;
+			varying float vLineDistance;
 
 		#endif
 
@@ -219,7 +212,7 @@ ShaderLib['line'] = {
 		varying vec2 vUv;
 
 		// added
-		out vec4 fragColor;
+		//out vec4 fragColor;
 
 		void main() {
 
@@ -248,12 +241,12 @@ ShaderLib['line'] = {
 			#include <logdepthbuf_fragment>
 			#include <color_fragment>
 
-			//gl_FragColor = vec4( diffuseColor.rgb, diffuseColor.a );//glsl 1
-			fragColor = vec4( diffuseColor.rgb, diffuseColor.a );//glsl 3
+			gl_FragColor = vec4( diffuseColor.rgb, diffuseColor.a );
+			//fragColor = vec4( diffuseColor.rgb, diffuseColor.a );
 
 			#include <tonemapping_fragment>
 			//#include <encodings_fragment>//deprecated 			
-			//#include <colorspace_fragment>
+			#include <colorspace_fragment>
 			#include <fog_fragment>
 			#include <premultiplied_alpha_fragment>
 
@@ -264,10 +257,10 @@ ShaderLib['line'] = {
 //this needs to a revamp on getting rid of es5
 class LineMaterial extends ShaderMaterial {
 
-	defines = {USE_DASH: 0};//used to be here but is not used
 
 	constructor(parameters = {}) {
 		super({
+
 			type: 'LineMaterial',
 
 			uniforms: UniformsUtils.clone(ShaderLib['line'].uniforms),
@@ -275,37 +268,14 @@ class LineMaterial extends ShaderMaterial {
 			vertexShader: ShaderLib['line'].vertexShader,
 			fragmentShader: ShaderLib['line'].fragmentShader,
 
-			clipping: true, // required for clipping support
-
-			//this.dashed = true;//is it setting the USE_DASH variable?
-			defines: parameters.use_dash ? {USE_DASH: 1} : {}//used to be here but is not used
-			//this.uniforms.USE_DASH.value = true;//this may set the parameter
+			clipping: true // required for clipping support
 
 		});
-		this.glslVersion = GLSL3;//yet does not work as three.js still uses glsl 1
+		this.glslVersion = GLSL3;//this is not defined
 		this.isLineMaterial = true;
 		this.dashed = false;
-
 		Object.defineProperties(this, {
 
-			//required to have an use_dash property, not in std implementation
-			use_dash: {
-
-				enumerable: true,
-
-				get: function () {
-
-					return this.defines.USE_DASH;
-
-				},
-
-				set: function (value) {
-
-					this.defines.USE_DASH = value ? 1 : 0;
-
-				}
-			}
-			,
 			color: {
 
 				enumerable: true,
@@ -452,9 +422,9 @@ class LineMaterial extends ShaderMaterial {
 
 		});
 
-		this.setValues(parameters);//uses ShaderMAterial to set
 
-		// 
+
+		this.setValues(parameters);//where does it come from?
 
 	};
 
