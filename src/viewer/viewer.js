@@ -26,11 +26,13 @@ import {TransformationTool} from "../utils/TransformationTool.js";
 import {BoxVolume} from "../utils/Volume.js";
 import {EDLRenderer} from "./EDLRenderer.js";
 import {HQSplatRenderer} from "./HQSplatRenderer.js";
-import {MapView} from "./map.js";//requires OL.
 import {PotreeRenderer} from "./PotreeRenderer.js";
-import {ProfileWindow, ProfileWindowController} from "./profile.js";
 import {PScene} from "./Scene.js";
-import {Sidebar} from "./sidebar.js";//not in use
+
+
+import {MapView} from "./map.js";//requires OL.
+import {ProfileWindow, ProfileWindowController} from "./profile.js";
+import {Sidebar} from "./sidebar.js";//not in use but it populates the sidebar functions
 
 import {AnnotationTool} from "../utils/AnnotationTool.js";
 import {MeasuringTool} from "../utils/MeasuringTool.js";
@@ -38,15 +40,20 @@ import {ProfileTool} from "../utils/ProfileTool.js";
 import {VolumeTool} from "../utils/VolumeTool.js";
 
 // import {VRButton} from '../../libs/js/extra/VRButton.js';
+
 import {EventDispatcher} from "../EventDispatcher.js";
 import {ClassificationScheme} from "../materials/ClassificationScheme.js";
 import {DeviceOrientationControls} from "../navigation/DeviceOrientationControls.js";
 import {EarthControls} from "../navigation/EarthControls.js";
 import {FirstPersonControls} from "../navigation/FirstPersonControls.js";
+
 import {InputHandler} from "../navigation/InputHandler.js";
+
 import {OrbitControls} from "../navigation/OrbitControls.js";
 //import {VRControls} from "../navigation/VRControls.js";
+
 import {Compass} from "../utils/Compass.js";
+
 import {NavigationCube} from "./NavigationCube.js";
 
 import JSON5 from "../../libs/json5-2.1.3/json5.mjs";
@@ -93,6 +100,7 @@ export class Viewer extends EventDispatcher {
 		this.guiLoaded = false;
 		this.guiLoadTasks = [];
 		this._sidebarOpen = false;
+		this.sidebar = null;
 
 		this.onVrListeners = [];
 
@@ -1848,13 +1856,14 @@ export class Viewer extends EventDispatcher {
 				sidebarContainer.style.height = '100%';
 				this._sidebarOpen = true;
 				this.renderer.domElement.style.left = '300px';
-
+				//toggle button
 				let imgMenuToggle = document.createElement('img');
 				// imgMenuToggle.src = new URL(Potree.resourcePath + '/icons/menu_button.svg').href;
 				imgMenuToggle.src = '/icons/menu_button.svg';
 				imgMenuToggle.onclick = this.toggleSidebar;
 				imgMenuToggle.classList.add('potree_menu_toggle');
 
+				//map toggle
 				let imgMapToggle = document.createElement('img');
 				// imgMapToggle.src = new URL(Potree.resourcePath + '/icons/map_icon.png').href;
 				imgMapToggle.src = '/icons/map_icon.png'
@@ -1863,6 +1872,7 @@ export class Viewer extends EventDispatcher {
 				imgMapToggle.onclick = e => {this.toggleMap();};
 				imgMapToggle.id = 'potree_map_toggle';
 
+				//quickButtons
 				let elButtons = this.renderArea.querySelector('#potree_quick_buttons');
 				if (!elButtons) {
 					elButtons = document.createElement('div');
@@ -1872,6 +1882,10 @@ export class Viewer extends EventDispatcher {
 				}
 				elButtons.appendChild(imgMenuToggle);
 				elButtons.appendChild(imgMapToggle);
+
+				this.sidebar = new Sidebar(this);//not really workking as needs a sidebar_Root
+				sidebar.init();
+
 
 				// Migrate i18n to i18next (install via npm)
 				// import('i18next').then(i18next => {
