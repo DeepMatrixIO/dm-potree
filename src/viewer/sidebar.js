@@ -31,7 +31,14 @@ export class Sidebar {
 		this.profileTool = viewer.profileTool;
 		this.volumeTool = viewer.volumeTool;
 
-		this.dom = document.querySelector("#sidebar_root");
+		let sidebarRoot = document.querySelector('#sidebar_root');
+		if (!sidebarRoot) {
+			sidebarRoot = document.createElement('div');
+			sidebarRoot.id = 'sidebar_root';
+			const container = viewer.renderArea.querySelector('#potree_sidebar_container') || viewer.renderArea;
+			container.appendChild(sidebarRoot);
+		}
+		this.dom = $(sidebarRoot);
 	}
 
 	createToolIcon(icon, title, callback) {
