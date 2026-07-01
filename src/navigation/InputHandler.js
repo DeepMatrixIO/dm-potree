@@ -1305,9 +1305,24 @@ export class InputHandler extends EventDispatcher {
 		return intersections;
 	}
 
-	//split the raycasting betwen native  camera and ECEF cameras or others.
-	//Others implement a transformCamera method or even custon raycaster
-	//if transform camera is used, camera is transformed from current projection to ecef
+	/**
+	 *  Retrieves the scenes or elements registered and being currently hovered by the mouse.
+	 * The returned array is sorted by distance to the camera, with the closest element first.
+
+	 * There is a managanement on cameras. One for native camera and another for ECEF or other custom cameras defined by customRaycaster.
+	 * The raycasting is split between the two types of cameras, allowing for accurate interaction with objects in different coordinate systems.
+
+	 * Only scenes or object with events registered on the followsing list are considered interactable: \
+	 * ['mouseup', 'mousemove', 'mouseover', 'mouseleave', 'drag', 'drop', 'click', 'select', 'deselect'].
+	 *
+	 * In certain cases, just to discover an interactable object may be too expensive and may be required to better provide a fast raycaster based on bbox or other.
+	 *
+	 * Once an object is within the list, further events are triggered according to Input Handler
+	 *
+	 */
+
+
+	//
 	getHoveredElements() {
 		let scenes = this.interactiveScenes.concat(this.scene.scene);
 
@@ -1331,8 +1346,8 @@ export class InputHandler extends EventDispatcher {
 		let ray = Utils.mouseToRay(this.mouse, camera, this.domElement.clientWidth, this.domElement.clientHeight);
 
 		//raycasting is split into two parts, one for native camera and one for ECEF cameras
-		const scenesWithTransformCamera = interactables.filter(scene => scene.transformCamera);
-		const scenesWithoutTransformCamera = interactables.filter(scene => !scene.transformCamera);
+		const scenesWithTransformCamera = interactables.filter(scene => scene.transformCamera); //if it has a transformCamera method, it is assumed to be an custom camera
+		const scenesWithoutTransformCamera = interactables.filter(scene => !scene.transformCamera);//keept native to current projection
 
 		let intersections = [];
 
@@ -1367,7 +1382,10 @@ export class InputHandler extends EventDispatcher {
 						//@ts-ignore
 						let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
 						//@ts-ignore
-						let intersect = scene.customRaycaster(this.mouse.x	, this.mouse.y, customCamera );//finally, the scene is raycasted using threeejs or other custom engine like cesium
+						// let customRay = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);//ray is just a direction vector
+
+						//little bit hardcoded but on ly depends on mouse position, rather that explicit directions.
+						let intersect = scene.customRaycaster( this.mouse.x, this.mouse.y, this.domElement.clientWidth, this.domElement.clientHeight, customCamera);//finally, the scene is raycasted using threeejs or other custom engine like cesium
 
 						//the intersects contains
 
@@ -1385,17 +1403,17 @@ export class InputHandler extends EventDispatcher {
 
 
 						if (intersect.length) {
-							// intersect[0].rootScene = scene;//link to root node  with events for 3dTilesRendered structure
+							intersect[0].rootScene = scene;//link to root node  with events for 3dTilesRendered structure
 							intersections = intersections.concat(intersect);
 						}
 					} else {//ECEF camera but no custom raycaster, using threejs raycaster with transformed camera
 
 						let customCamera = scene.transformCamera();//required method, origina changes, direction remains??
-						let ray = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);
+						let customRay = Utils.mouseToRay(this.mouse, customCamera, this.domElement.clientWidth, this.domElement.clientHeight);
 
-						let raycaster = new Raycaster();
+						let raycaster = new Raycaster();//avoid this object creation
 						raycaster.params.Line.threshold = 0.4;
-						raycaster.ray.set(ray.origin, ray.direction);
+						raycaster.ray.set(customRay.origin, customRay.direction);
 						let intersect = raycaster.intersectObject(scene, true);
 						if (intersect.length) {
 							intersect[0].rootScene = scene;//link to root node with events for 3dTilesRendered structure

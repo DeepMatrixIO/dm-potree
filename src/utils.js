@@ -692,12 +692,10 @@ export class Utils {
 			};
 
 			let vector = new Vector3(normalizedMouse.x, normalizedMouse.y, 0.5);
-			let origin = camera.position.clone();
-			vector.unproject(camera);
-			let direction = new Vector3().subVectors(vector, origin).normalize();
-
-			let ray = new Ray(origin, direction);
-
+			const origin = camera.position.clone();
+			let unprojected = vector.unproject(camera);//may be an added function on vector
+			const direction = new Vector3().subVectors(unprojected, origin).normalize();
+			const ray = new Ray(origin, direction);
 			return ray;
 
 		}
