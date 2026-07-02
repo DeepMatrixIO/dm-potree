@@ -446,7 +446,12 @@ export class InputHandler extends EventDispatcher {
 				if (hovered.rootScene !== undefined) {//must have rootScene
 
 					if (hovered.rootScene._listeners['dblclick']) {
-						hovered.rootScene.dispatchEvent({type: 'dblclick', source: hovered});
+						hovered.rootScene.dispatchEvent({
+							type: 'dblclick',
+							source: hovered,
+							mouse: this.mouse,
+
+							});
 					}
 				}
 			}//adding additional cases where the event is not directly attached to the object bot to root as rootScene
