@@ -30,6 +30,7 @@ export default defineConfig({
         { src: 'src/viewer/potree.css', dest: 'potree' },
         { src: 'src/viewer/*.html', dest: 'potree' },
         { src: 'src/lines/**/*', dest: 'lines' },
+		{ src: 'example/workers/**/*', dest: 'workers' },
       ],
     }),
   ],
