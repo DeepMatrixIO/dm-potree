@@ -4,8 +4,9 @@
 
 //TODO remove for wprkers
 // import {PointAttributes, PointAttribute, PointAttributeTypes} from "../../../loader/PointAttributes.js";
-//import {BrotliDecode} from "../../../../libs/brotli/decode.js";
+import {BrotliDecode} from "../../../../libs/brotli/decode.js";
 
+const finalVersion=true;
 const typedArrayMapping = {
 	"int8":   Int8Array,
 	"int16":  Int16Array,
@@ -33,7 +34,7 @@ const INDICES_ATTRIBUTE = {
 	range: [Infinity, -Infinity],
 };
 
-Potree = {};
+// Potree = {};
 
 function dealign24b(mortoncode){
 	// see https://stackoverflow.com/questions/45694690/how-i-can-remove-all-odds-bits-in-c
