@@ -10,7 +10,8 @@ export class AnnotationPanel{
 		this._update = () => { this.update(); };
 
 		let copyIconPath = `${Potree.resourcePath}/icons/copy.svg`;
-		this.elContent = $(`
+		const template = document.createElement("template");
+		template.innerHTML = `
 		<div class="propertypanel_content">
 			<table>
 				<tr>
@@ -37,18 +38,19 @@ export class AnnotationPanel{
 
 				<div class="heading">Description</div>
 				<div id="annotation_description" contenteditable="true">
-					A longer description of this annotation. 
+					A longer description of this annotation.
 						Can be multiple lines long. TODO: the user should be able
-						to modify title and description. 
+						to modify title and description.
 				</div>
 
 			</div>
 
 		</div>
-		`);
+		`;
+		this.elContent = template.content.firstElementChild;
 
-		this.elCopyPosition = this.elContent.find("img[name=copyPosition]");
-		this.elCopyPosition.click( () => {
+		this.elCopyPosition = this.elContent.querySelector("img[name=copyPosition]");
+		this.elCopyPosition.addEventListener("click", () => {
 			let pos = this.annotation.position.toArray();
 			let msg = pos.map(c => c.toFixed(3)).join(", ");
 			Utils.clipboardCopy(msg);
@@ -58,17 +60,19 @@ export class AnnotationPanel{
 					{duration: 3000});
 		});
 
-		this.elTitle = this.elContent.find("#annotation_title").html(annotation.title);
-		this.elDescription = this.elContent.find("#annotation_description").html(annotation.description);
+		this.elTitle = this.elContent.querySelector("#annotation_title");
+		this.elTitle.innerHTML = annotation.title;
+		this.elDescription = this.elContent.querySelector("#annotation_description");
+		this.elDescription.innerHTML = annotation.description;
 
-		this.elTitle[0].addEventListener("input", () => {
-			const title = this.elTitle.html();
+		this.elTitle.addEventListener("input", () => {
+			const title = this.elTitle.innerHTML;
 			annotation.title = title;
 
 		}, false);
 
-		this.elDescription[0].addEventListener("input", () => {
-			const description = this.elDescription.html();
+		this.elDescription.addEventListener("input", () => {
+			const description = this.elDescription.innerHTML;
 			annotation.description = description;
 		}, false);
 
@@ -79,12 +83,12 @@ export class AnnotationPanel{
 		const {annotation, elContent, elTitle, elDescription} = this;
 
 		let pos = annotation.position.toArray().map(c => Utils.addCommas(c.toFixed(3)));
-		elContent.find("#annotation_position_x").html(pos[0]);
-		elContent.find("#annotation_position_y").html(pos[1]);
-		elContent.find("#annotation_position_z").html(pos[2]);
+		elContent.querySelector("#annotation_position_x").innerHTML = pos[0];
+		elContent.querySelector("#annotation_position_y").innerHTML = pos[1];
+		elContent.querySelector("#annotation_position_z").innerHTML = pos[2];
 
-		elTitle.html(annotation.title);
-		elDescription.html(annotation.description);
+		elTitle.innerHTML = annotation.title;
+		elDescription.innerHTML = annotation.description;
 
 
 	}

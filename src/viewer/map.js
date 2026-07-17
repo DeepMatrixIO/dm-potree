@@ -109,12 +109,16 @@ export class MapView {
 			return;
 		}
 
-		this.elMap = $('#potree_map');
-		this.elMap.draggable({handle: $('#potree_map_header')});
-		this.elMap.resizable();
+		this.elMap = document.getElementById('potree_map');
+		const elMapHeader = document.getElementById('potree_map_header');
+		this.makeDraggable(this.elMap, elMapHeader);
+		this.elMap.style.resize = 'both';
+		this.elMap.style.overflow = 'auto';
 
-		this.elTooltip = $(`<div style="position: relative; z-index: 100"></div>`);
-		this.elMap.append(this.elTooltip);
+		this.elTooltip = document.createElement('div');
+		this.elTooltip.style.position = 'relative';
+		this.elTooltip.style.zIndex = '100';
+		this.elMap.appendChild(this.elTooltip);
 
 		let extentsLayer = this.getExtentsLayer();
 		let cameraLayer = this.getCameraLayer();
@@ -334,10 +338,10 @@ export class MapView {
 				let coordinates = feature.getGeometry().getCoordinates();
 				let p = this.map.getPixelFromCoordinate(coordinates);
 
-				this.elTooltip.html(annotation.title);
-				this.elTooltip.css('display', '');
-				this.elTooltip.css('left', `${p[0]}px`);
-				this.elTooltip.css('top', `${p[1]}px`);
+				this.elTooltip.innerHTML = annotation.title;
+				this.elTooltip.style.display = '';
+				this.elTooltip.style.left = `${p[0]}px`;
+				this.elTooltip.style.top = `${p[1]}px`;
 			};
 
 			feature.onClick = evt => {
@@ -755,12 +759,44 @@ export class MapView {
 
 	}
 
+	makeDraggable(element, handle) {
+		if (!element || !handle) return;
+
+		let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+		const onMouseMove = (e) => {
+			const dx = e.clientX - startX;
+			const dy = e.clientY - startY;
+			element.style.left = `${startLeft + dx}px`;
+			element.style.top = `${startTop + dy}px`;
+		};
+
+		const onMouseUp = () => {
+			document.removeEventListener('mousemove', onMouseMove);
+			document.removeEventListener('mouseup', onMouseUp);
+		};
+
+		handle.addEventListener('mousedown', (e) => {
+			startX = e.clientX;
+			startY = e.clientY;
+			const rect = element.getBoundingClientRect();
+			const parentRect = element.offsetParent ? element.offsetParent.getBoundingClientRect() : {left: 0, top: 0};
+			startLeft = rect.left - parentRect.left;
+			startTop = rect.top - parentRect.top;
+
+			document.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('mouseup', onMouseUp);
+			e.preventDefault();
+		});
+	}
+
 	toggle() {
-		if (this.elMap.is(':visible')) {
-			this.elMap.css('display', 'none');
+		const isVisible = this.elMap.style.display !== 'none' && getComputedStyle(this.elMap).display !== 'none';
+		if (isVisible) {
+			this.elMap.style.display = 'none';
 			this.enabled = false;
 		} else {
-			this.elMap.css('display', 'block');
+			this.elMap.style.display = 'block';
 			this.enabled = true;
 		}
 	}
@@ -770,15 +806,14 @@ export class MapView {
 			return;
 		}
 
-		let pm = $('#potree_map');
-
 		if (!this.enabled) {
 			return;
 		}
 
 		// resize
 		let mapSize = this.map.getSize();
-		let resized = (pm.width() !== mapSize[0] || pm.height() !== mapSize[1]);
+		let rect = this.elMap.getBoundingClientRect();
+		let resized = (rect.width !== mapSize[0] || rect.height !== mapSize[1]);
 		if (resized) {
 			this.map.updateSize();
 		}

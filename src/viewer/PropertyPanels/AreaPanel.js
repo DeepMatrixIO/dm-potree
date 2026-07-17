@@ -7,7 +7,8 @@ export class AreaPanel extends MeasurePanel{
 		super(viewer, measurement, propertiesPanel);
 
 		let removeIconPath = Potree.resourcePath + '/icons/remove.svg';
-		this.elContent = $(`
+		const template = document.createElement("template");
+		template.innerHTML = `
 			<div class="measurement_content selectable">
 				<span class="coordinates_table_container"></span>
 				<br>
@@ -21,10 +22,11 @@ export class AreaPanel extends MeasurePanel{
 					<img name="remove" class="button-icon" src="${removeIconPath}" style="width: 16px; height: 16px"/>
 				</div>
 			</div>
-		`);
+		`;
+		this.elContent = template.content.firstElementChild;
 
-		this.elRemove = this.elContent.find("img[name=remove]");
-		this.elRemove.click( () => {
+		this.elRemove = this.elContent.querySelector("img[name=remove]");
+		this.elRemove.addEventListener("click", () => {
 			this.viewer.scene.removeMeasurement(measurement);
 		});
 
@@ -36,11 +38,11 @@ export class AreaPanel extends MeasurePanel{
 	}
 
 	update(){
-		let elCoordiantesContainer = this.elContent.find('.coordinates_table_container');
-		elCoordiantesContainer.empty();
-		elCoordiantesContainer.append(this.createCoordinatesTable(this.measurement.points.map(p => p.position)));
+		let elCoordiantesContainer = this.elContent.querySelector('.coordinates_table_container');
+		elCoordiantesContainer.innerHTML = "";
+		elCoordiantesContainer.appendChild(this.createCoordinatesTable(this.measurement.points.map(p => p.position)));
 
-		let elArea = this.elContent.find(`#measurement_area`);
-		elArea.html(this.measurement.getArea().toFixed(3));
+		let elArea = this.elContent.querySelector(`#measurement_area`);
+		elArea.innerHTML = this.measurement.getArea().toFixed(3);
 	}
 };

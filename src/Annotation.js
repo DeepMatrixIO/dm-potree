@@ -77,7 +77,7 @@ export class Annotation extends EventDispatcher {
 			this.dispatchEvent({type: 'click', target: this});
 		};
 
-		this.elTitle.click(this.clickTitle);
+		this.elTitle.addEventListener('click', this.clickTitle);
 
 		this.actions = this.actions.map(a => {
 			if (a instanceof Action) {
@@ -167,8 +167,8 @@ export class Annotation extends EventDispatcher {
 				start.x = start.x - xa;
 			}
 
-			domElement.css("left", `${start.x}px`);
-			domElement.css("top", `${start.y}px`);
+			domElement.style.left = `${start.x}px`;
+			domElement.style.top = `${start.y}px`;
 
 		};
 
@@ -353,7 +353,7 @@ export class Annotation extends EventDispatcher {
 		}
 
 		this._title = title;
-		this.elTitle.empty();
+		this.elTitle.innerHTML = "";
 		this.elTitle.append(this._title);
 
 		this.dispatchEvent({
@@ -373,8 +373,8 @@ export class Annotation extends EventDispatcher {
 
 		this._description = description;
 
-		const elDescriptionContent = this.elDescription.find(".annotation-description-content");
-		elDescriptionContent.empty();
+		const elDescriptionContent = this.elDescription.querySelector(".annotation-description-content");
+		elDescriptionContent.innerHTML = "";
 		elDescriptionContent.append(this._description);
 
 		this.dispatchEvent({
@@ -491,21 +491,21 @@ export class Annotation extends EventDispatcher {
 
 	setHighlighted(highlighted) {
 		if (highlighted) {
-			this.domElement.css('opacity', '0.8');
-			this.elTitlebar.css('box-shadow', '0 0 5px #fff');
-			this.domElement.css('z-index', '1000');
+			this.domElement.style.opacity = '0.8';
+			this.elTitlebar.style.boxShadow = '0 0 5px #fff';
+			this.domElement.style.zIndex = '1000';
 
 			if (this._description) {
 				this.descriptionVisible = true;
-				this.elDescription.fadeIn(200);
-				this.elDescription.css('position', 'relative');
+				this.elDescription.style.display = 'block';
+				this.elDescription.style.position = 'relative';
 			}
 		} else {
-			this.domElement.css('opacity', '0.5');
-			this.elTitlebar.css('box-shadow', '');
-			this.domElement.css('z-index', '100');
+			this.domElement.style.opacity = '0.5';
+			this.elTitlebar.style.boxShadow = '';
+			this.domElement.style.zIndex = '100';
 			this.descriptionVisible = false;
-			this.elDescription.css('display', 'none');
+			this.elDescription.style.display = 'none';
 		}
 
 		this.isHighlighted = highlighted;

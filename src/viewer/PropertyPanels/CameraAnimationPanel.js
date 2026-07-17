@@ -1,5 +1,6 @@
 
 import {Utils} from "../../utils.js";
+import {createSlider} from "../../utils/VanillaSlider.js";
 
 export class CameraAnimationPanel{
 	constructor(viewer, propertiesPanel, animation){
@@ -7,7 +8,8 @@ export class CameraAnimationPanel{
 		this.propertiesPanel = propertiesPanel;
 		this.animation = animation;
 
-		this.elContent = $(`
+		const template = document.createElement("template");
+		template.innerHTML = `
 			<div class="propertypanel_content">
 				<span id="animation_keyframes"></span>
 
@@ -15,7 +17,7 @@ export class CameraAnimationPanel{
 
 					<span style="display:flex">
 						<span style="display:flex; align-items: center; padding-right: 10px">Duration: </span>
-						<input name="spnDuration" value="5.0" style="flex-grow: 1; width:100%">
+						<input name="spnDuration" type="number" min="0" step="0.01" value="5.0" style="flex-grow: 1; width:100%">
 					</span>
 
 					<span>Time: </span><span id="lblTime"></span> <div id="sldTime"></div>
@@ -23,58 +25,38 @@ export class CameraAnimationPanel{
 					<input name="play" type="button" value="play"/>
 				</span>
 			</div>
-		`);
+		`;
+		this.elContent = template.content.firstElementChild;
 
-		const elPlay = this.elContent.find("input[name=play]");
-		elPlay.click( () => {
+		const elPlay = this.elContent.querySelector("input[name=play]");
+		elPlay.addEventListener("click", () => {
 			animation.play();
 		});
 
-		const elSlider = this.elContent.find('#sldTime');
-		elSlider.slider({
+		const elSlider = this.elContent.querySelector('#sldTime');
+		createSlider(elSlider, {
 			value: 0,
 			min: 0,
 			max: 1,
 			step: 0.001,
-			slide: (event, ui) => { 
+			slide: (event, ui) => {
 				animation.set(ui.value);
 			}
 		});
 
-		let elDuration = this.elContent.find(`input[name=spnDuration]`);
-		elDuration.spinner({
-			min: 0, max: 300, step: 0.01,
-			numberFormat: 'n',
-			start: () => {},
-			spin: (event, ui) => {
-				let value = elDuration.spinner('value');
+		let elDuration = this.elContent.querySelector(`input[name=spnDuration]`);
+		elDuration.value = animation.getDuration();
+		elDuration.addEventListener("input", () => {
+			let value = parseFloat(elDuration.value);
+			if(!isNaN(value)){
 				animation.setDuration(value);
-			},
-			change: (event, ui) => {
-				let value = elDuration.spinner('value');
-				animation.setDuration(value);
-			},
-			stop: (event, ui) => {
-				let value = elDuration.spinner('value');
-				animation.setDuration(value);
-			},
-			incremental: (count) => {
-				let value = elDuration.spinner('value');
-				let step = elDuration.spinner('option', 'step');
-
-				let delta = value * 0.05;
-				let increments = Math.max(1, parseInt(delta / step));
-
-				return increments;
 			}
 		});
-		elDuration.spinner('value', animation.getDuration());
-		elDuration.spinner('widget').css('width', '100%');
 
-		const elKeyframes = this.elContent.find("#animation_keyframes");
+		const elKeyframes = this.elContent.querySelector("#animation_keyframes");
 
 		const updateKeyframes = () => {
-			elKeyframes.empty();
+			elKeyframes.innerHTML = "";
 
 			//let index = 0;
 
@@ -83,24 +65,27 @@ export class CameraAnimationPanel{
 			// 			</span>
 
 			const addNewKeyframeItem = (index) => {
-				let elNewKeyframe = $(`
+				const template = document.createElement("template");
+				template.innerHTML = `
 					<div style="display: flex; margin: 0.2em 0em">
 						<span style="flex-grow: 1"></span>
 						<input type="button" name="add" value="insert control point" />
 						<span style="flex-grow: 1"></span>
 					</div>
-				`);
+				`;
+				const elNewKeyframe = template.content.firstElementChild;
 
-				const elAdd = elNewKeyframe.find("input[name=add]");
-				elAdd.click( () => {
+				const elAdd = elNewKeyframe.querySelector("input[name=add]");
+				elAdd.addEventListener("click", () => {
 					animation.createControlPoint(index);
 				});
 
-				elKeyframes.append(elNewKeyframe);
+				elKeyframes.appendChild(elNewKeyframe);
 			};
 
 			const addKeyframeItem = (index) => {
-				let elKeyframe = $(`
+				const template = document.createElement("template");
+				template.innerHTML = `
 					<div style="display: flex; margin: 0.2em 0em">
 						<span style="flex-grow: 0;">
 							<img name="assign" src="${Potree.resourcePath}/icons/assign.svg" style="width: 1.5em; height: 1.5em"/>
@@ -115,32 +100,33 @@ export class CameraAnimationPanel{
 							<img name="delete" src="${Potree.resourcePath}/icons/remove.svg" style="width: 1.5em; height: 1.5em"/>
 						</span>
 					</div>
-				`);
+				`;
+				const elKeyframe = template.content.firstElementChild;
 
-				const elAssign = elKeyframe.find("img[name=assign]");
-				const elMove = elKeyframe.find("img[name=move]");
-				const elDelete = elKeyframe.find("img[name=delete]");
+				const elAssign = elKeyframe.querySelector("img[name=assign]");
+				const elMove = elKeyframe.querySelector("img[name=move]");
+				const elDelete = elKeyframe.querySelector("img[name=delete]");
 
-				elAssign.click( () => {
+				elAssign.addEventListener("click", () => {
 					const cp = animation.controlPoints[index];
 
 					cp.position.copy(viewer.scene.view.position);
 					cp.target.copy(viewer.scene.view.getPivot());
 				});
 
-				elMove.click( () => {
+				elMove.addEventListener("click", () => {
 					const cp = animation.controlPoints[index];
 
 					viewer.scene.view.position.copy(cp.position);
 					viewer.scene.view.lookAt(cp.target);
 				});
 
-				elDelete.click( () => {
+				elDelete.addEventListener("click", () => {
 					const cp = animation.controlPoints[index];
 					animation.removeControlPoint(cp);
 				});
 
-				elKeyframes.append(elKeyframe);
+				elKeyframes.appendChild(elKeyframe);
 			};
 
 			let index = 0;
@@ -148,7 +134,7 @@ export class CameraAnimationPanel{
 			addNewKeyframeItem(index);
 
 			for(const cp of animation.controlPoints){
-				
+
 				addKeyframeItem(index);
 				index++;
 				addNewKeyframeItem(index);
@@ -170,6 +156,6 @@ export class CameraAnimationPanel{
 	}
 
 	update(){
-		
+
 	}
 };

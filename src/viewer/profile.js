@@ -242,8 +242,8 @@ export class ProfileWindow extends EventDispatcher {
 		super();
 
 		this.viewer = viewer;
-		this.elRoot = $('#profile_window');
-		this.renderArea = this.elRoot.find('#profileCanvasContainer');
+		this.elRoot = document.getElementById('profile_window');
+		this.renderArea = this.elRoot ? this.elRoot.querySelector('#profileCanvasContainer') : null;
 		this.svg = d3.select('svg#profileSVG');
 		this.mouseIsDown = false;
 
@@ -258,54 +258,57 @@ export class ProfileWindow extends EventDispatcher {
 		this.autoFitEnabled = true; // completely disable/enable
 		this.autoFit = false; // internal
 
+		const setIconSrc = (id, src) => {
+			const el = document.getElementById(id);
+			if (el) el.src = src;
+		};
+
 		let cwIcon = `${exports.resourcePath}/icons/arrow_cw.svg`;
-		$('#potree_profile_rotate_cw').attr('src', cwIcon);
+		setIconSrc('potree_profile_rotate_cw', cwIcon);
 
 		let ccwIcon = `${exports.resourcePath}/icons/arrow_ccw.svg`;
-		$('#potree_profile_rotate_ccw').attr('src', ccwIcon);
+		setIconSrc('potree_profile_rotate_ccw', ccwIcon);
 
 		let forwardIcon = `${exports.resourcePath}/icons/arrow_up.svg`;
-		$('#potree_profile_move_forward').attr('src', forwardIcon);
+		setIconSrc('potree_profile_move_forward', forwardIcon);
 
 		let backwardIcon = `${exports.resourcePath}/icons/arrow_down.svg`;
-		$('#potree_profile_move_backward').attr('src', backwardIcon);
+		setIconSrc('potree_profile_move_backward', backwardIcon);
 
 		let dxf2DIcon = `${exports.resourcePath}/icons/file_dxf_2d.svg`;
-		$('#potree_download_dxf2D_icon').attr('src', dxf2DIcon);
+		setIconSrc('potree_download_dxf2D_icon', dxf2DIcon);
 
 		let dxf3DIcon = `${exports.resourcePath}/icons/file_dxf_3d.svg`;
-		$('#potree_download_dxf3D_icon').attr('src', dxf3DIcon);
+		setIconSrc('potree_download_dxf3D_icon', dxf3DIcon);
 
 		let csvIcon = `${exports.resourcePath}/icons/file_csv_2d.svg`;
-		$('#potree_download_csv_icon').attr('src', csvIcon);
+		setIconSrc('potree_download_csv_icon', csvIcon);
 
 		let lasIcon = `${exports.resourcePath}/icons/file_las_3d.svg`;
-		$('#potree_download_las_icon').attr('src', lasIcon);
+		setIconSrc('potree_download_las_icon', lasIcon);
 
 		let closeIcon = `${exports.resourcePath}/icons/close.svg`;
-		$('#closeProfileContainer').attr("src", closeIcon);
+		setIconSrc('closeProfileContainer', closeIcon);
 
 		this.initTHREE();
 		this.initSVG();
 		this.initListeners();
 
 		this.pRenderer = new Renderer(this.renderer);
-
-		this.elRoot.i18n();
 	}
 
 	initListeners() {
-		$(window).resize(() => {
+		window.addEventListener('resize', () => {
 			if (this.enabled) {
 				this.render();
 			}
 		});
 
-		this.renderArea.mousedown(e => {
+		this.renderArea.addEventListener('mousedown', e => {
 			this.mouseIsDown = true;
 		});
 
-		this.renderArea.mouseup(e => {
+		this.renderArea.addEventListener('mouseup', e => {
 			this.mouseIsDown = false;
 		});
 
@@ -318,12 +321,12 @@ export class ProfileWindow extends EventDispatcher {
 			this.viewerPickSphere.scale.set(scale, scale, scale);
 		};
 
-		this.renderArea.mousemove(e => {
+		this.renderArea.addEventListener('mousemove', e => {
 			if (this.pointclouds.size === 0) {
 				return;
 			}
 
-			let rect = this.renderArea[0].getBoundingClientRect();
+			let rect = this.renderArea.getBoundingClientRect();
 			let x = e.clientX - rect.left;
 			let y = e.clientY - rect.top;
 
@@ -358,7 +361,7 @@ export class ProfileWindow extends EventDispatcher {
 						point.position[2] + closest.pointcloud.position.z
 					]);
 
-					this.elRoot.find('#profileSelectionProperties').fadeIn(200);
+					this.elRoot.querySelector('#profileSelectionProperties').style.display = '';
 					this.pickSphere.visible = true;
 					this.pickSphere.scale.set(0.5 * radius, 0.5 * radius, 0.5 * radius);
 					this.pickSphere.position.set(point.mileage, 0, position[2]);
@@ -373,7 +376,7 @@ export class ProfileWindow extends EventDispatcher {
 					}
 
 
-					let info = this.elRoot.find('#profileSelectionProperties');
+					let info = this.elRoot.querySelector('#profileSelectionProperties');
 					let html = '<table>';
 
 					for (let attributeName of Object.keys(point)) {
@@ -431,7 +434,7 @@ export class ProfileWindow extends EventDispatcher {
 						}
 					}
 					html += '</table>';
-					info.html(html);
+					info.innerHTML = html;
 
 					this.selectedPoint = point;
 				} else {
@@ -485,10 +488,10 @@ export class ProfileWindow extends EventDispatcher {
 			this.render();
 			this.updateScales();
 		};
-		$(this.renderArea)[0].addEventListener('mousewheel', onWheel, false);
-		$(this.renderArea)[0].addEventListener('DOMMouseScroll', onWheel, false); // Firefox
+		this.renderArea.addEventListener('mousewheel', onWheel, false);
+		this.renderArea.addEventListener('DOMMouseScroll', onWheel, false); // Firefox
 
-		$('#closeProfileContainer').click(() => {
+		document.getElementById('closeProfileContainer')?.addEventListener('click', () => {
 			this.hide();
 		});
 
@@ -519,44 +522,44 @@ export class ProfileWindow extends EventDispatcher {
 			return points;
 		};
 
-		$('#potree_download_dxf2D_icon').click(() => {
+		document.getElementById('potree_download_dxf2D_icon')?.addEventListener('click', () => {
 
 			const points = getProfilePoints();
 
 			const string = DXFProfileExporter.toString(points, true);
 
 			const blob = new Blob([string], {type: "text/string"});
-			$('#potree_download_profile_dxf2D_link').attr('href', URL.createObjectURL(blob));
+			document.getElementById('potree_download_profile_dxf2D_link')?.setAttribute('href', URL.createObjectURL(blob));
 		});
 
-		$('#potree_download_dxf3D_icon').click(() => {
+		document.getElementById('potree_download_dxf3D_icon')?.addEventListener('click', () => {
 
 			const points = getProfilePoints(true);
 
 			const string = DXFProfileExporter.toString(points);
 
 			const blob = new Blob([string], {type: "text/string"});
-			$('#potree_download_profile_dxf3D_link').attr('href', URL.createObjectURL(blob));
+			document.getElementById('potree_download_profile_dxf3D_link')?.setAttribute('href', URL.createObjectURL(blob));
 		});
 
-		$('#potree_download_csv_icon').click(() => {
+		document.getElementById('potree_download_csv_icon')?.addEventListener('click', () => {
 
 			let points = getProfilePoints(true);
 
 			let string = CSVExporter.toString(points);
 
 			let blob = new Blob([string], {type: "text/string"});
-			$('#potree_download_profile_ortho_link').attr('href', URL.createObjectURL(blob));
+			document.getElementById('potree_download_profile_ortho_link')?.setAttribute('href', URL.createObjectURL(blob));
 		});
 
-		$('#potree_download_las_icon').click(() => {
+		document.getElementById('potree_download_las_icon')?.addEventListener('click', () => {
 
 			let points = getProfilePoints(true);
 
 			let buffer = LASExporter.toLAS(points);
 
 			let blob = new Blob([buffer], {type: "application/octet-binary"});
-			$('#potree_download_profile_link').attr('href', URL.createObjectURL(blob));
+			document.getElementById('potree_download_profile_link')?.setAttribute('href', URL.createObjectURL(blob));
 		});
 	}
 
@@ -662,10 +665,10 @@ export class ProfileWindow extends EventDispatcher {
 		this.renderer.setClearColor(0x000000, 0);
 		this.renderer.setSize(10, 10);
 		this.renderer.autoClear = false;
-		this.renderArea.append($(this.renderer.domElement));
+		this.renderArea.appendChild(this.renderer.domElement);
 		this.renderer.domElement.tabIndex = '2222';
-		$(this.renderer.domElement).css('width', '100%');
-		$(this.renderer.domElement).css('height', '100%');
+		this.renderer.domElement.style.width = '100%';
+		this.renderer.domElement.style.height = '100%';
 
 
 		{
@@ -702,9 +705,9 @@ export class ProfileWindow extends EventDispatcher {
 	}
 
 	initSVG() {
-		let width = this.renderArea[0].clientWidth;
-		let height = this.renderArea[0].clientHeight;
-		let marginLeft = this.renderArea[0].offsetLeft;
+		let width = this.renderArea.clientWidth;
+		let height = this.renderArea.clientHeight;
+		let marginLeft = this.renderArea.offsetLeft;
 
 		this.svg.selectAll('*').remove();
 
@@ -770,8 +773,8 @@ export class ProfileWindow extends EventDispatcher {
 		this.projectedBox.union(entry.projectedBox);
 
 		if (this.autoFit && this.autoFitEnabled) {
-			let width = this.renderArea[0].clientWidth;
-			let height = this.renderArea[0].clientHeight;
+			let width = this.renderArea.clientWidth;
+			let height = this.renderArea.clientHeight;
 
 			let size = this.projectedBox.getSize(new Vector3());
 
@@ -794,7 +797,8 @@ export class ProfileWindow extends EventDispatcher {
 		for (let [key, value] of this.pointclouds.entries()) {
 			numPoints += value.points.reduce((a, i) => a + i.numPoints, 0);
 		}
-		$(`#profile_num_points`).html(Utils.addCommas(numPoints));
+		const elNumPoints = document.getElementById('profile_num_points');
+		if (elNumPoints) elNumPoints.innerHTML = Utils.addCommas(numPoints);
 
 	}
 
@@ -820,25 +824,26 @@ export class ProfileWindow extends EventDispatcher {
 		}
 		this.pickSphere.visible = false;
 
-		this.elRoot.find('#profileSelectionProperties').hide();
+		const elSelectionProperties = this.elRoot.querySelector('#profileSelectionProperties');
+		if (elSelectionProperties) elSelectionProperties.style.display = 'none';
 
 		this.render();
 	}
 
 	show() {
-		this.elRoot.fadeIn();
+		if (this.elRoot) this.elRoot.style.display = '';
 		this.enabled = true;
 	}
 
 	hide() {
-		this.elRoot.fadeOut();
+		if (this.elRoot) this.elRoot.style.display = 'none';
 		this.enabled = false;
 	}
 
 	updateScales() {
 
-		let width = this.renderArea[0].clientWidth;
-		let height = this.renderArea[0].clientHeight;
+		let width = this.renderArea.clientWidth;
+		let height = this.renderArea.clientHeight;
 
 		let left = (-width / 2) / this.scale.x;
 		let right = (+width / 2) / this.scale.x;
@@ -856,7 +861,7 @@ export class ProfileWindow extends EventDispatcher {
 		this.scaleY.domain([this.camera.bottom + this.camera.position.z, this.camera.top + this.camera.position.z])
 			.range([height, 0]);
 
-		let marginLeft = this.renderArea[0].offsetLeft;
+		let marginLeft = this.renderArea.offsetLeft;
 
 		this.xAxis.scale(this.scaleX)
 			.orient('bottom')
@@ -903,8 +908,8 @@ export class ProfileWindow extends EventDispatcher {
 	}
 
 	render() {
-		let width = this.renderArea[0].clientWidth;
-		let height = this.renderArea[0].clientHeight;
+		let width = this.renderArea.clientWidth;
+		let height = this.renderArea.clientHeight;
 
 		let {renderer, pRenderer, camera, profileScene, scene} = this;
 		let {scaleX, pickSphere} = this;
@@ -962,19 +967,22 @@ export class ProfileWindowController {
 		});
 		this.viewer.scene.addEventListener("pointcloud_added", this._recompute);
 
-		$("#potree_profile_rotate_amount").val(parseInt(this.rotateAmount));
-		$("#potree_profile_rotate_amount").on("input", (e) => {
-			const str = $("#potree_profile_rotate_amount").val();
+		const elRotateAmount = document.getElementById("potree_profile_rotate_amount");
+		if (elRotateAmount) {
+			elRotateAmount.value = parseInt(this.rotateAmount);
+			elRotateAmount.addEventListener("input", (e) => {
+				const str = elRotateAmount.value;
 
-			if (!isNaN(str)) {
-				const value = parseFloat(str);
-				this.rotateAmount = value;
-				$("#potree_profile_rotate_amount").css("background-color", "")
-			} else {
-				$("#potree_profile_rotate_amount").css("background-color", "#ff9999")
-			}
+				if (!isNaN(str)) {
+					const value = parseFloat(str);
+					this.rotateAmount = value;
+					elRotateAmount.style.backgroundColor = "";
+				} else {
+					elRotateAmount.style.backgroundColor = "#ff9999";
+				}
 
-		});
+			});
+		}
 
 		const rotate = (radians) => {
 			const profile = this.profile;
@@ -998,17 +1006,17 @@ export class ProfileWindowController {
 			}
 		}
 
-		$("#potree_profile_rotate_cw").click(() => {
+		document.getElementById("potree_profile_rotate_cw")?.addEventListener("click", () => {
 			const radians = MathUtils.degToRad(this.rotateAmount);
 			rotate(-radians);
 		});
 
-		$("#potree_profile_rotate_ccw").click(() => {
+		document.getElementById("potree_profile_rotate_ccw")?.addEventListener("click", () => {
 			const radians = MathUtils.degToRad(this.rotateAmount);
 			rotate(radians);
 		});
 
-		$("#potree_profile_move_forward").click(() => {
+		document.getElementById("potree_profile_move_forward")?.addEventListener("click", () => {
 			const profile = this.profile;
 			const points = profile.points;
 			const start = points[0];
@@ -1026,7 +1034,7 @@ export class ProfileWindowController {
 			}
 		});
 
-		$("#potree_profile_move_backward").click(() => {
+		document.getElementById("potree_profile_move_backward")?.addEventListener("click", () => {
 			const profile = this.profile;
 			const points = profile.points;
 			const start = points[0];

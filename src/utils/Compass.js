@@ -28,7 +28,7 @@ export class Compass{
             this.dom.style.transform = `rotateZ(${-azimuth}rad)`;
         });
 
-		this.dom.click( () => {
+		this.dom.addEventListener('click', () => {
 			viewer.setTopView();
 		});
 

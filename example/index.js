@@ -94,11 +94,32 @@ document.body.onload = function () {
 	//that is removed in favour
 
 
-	// viewer.loadGUI(() => {//no more jquery pls
-	// 	viewer.setLanguage('en');
-	// 	// $("#menu_scene").next().show();
-	// 	viewer.toggleSidebar();
-	// });
+	viewer.loadGUI(() => {//no more jquery pls
+		viewer.setLanguage('en');
+		// $("#menu_scene").next().show();
+		viewer.toggleSidebar();
+
+		// Add floating test suite switch link at bottom of sidebar
+		const sidebar = document.getElementById('potree_sidebar_container');
+		if (sidebar) {
+			const linkDiv = document.createElement('div');
+			linkDiv.style.position = 'absolute';
+			linkDiv.style.bottom = '15px';
+			linkDiv.style.left = '15px';
+			linkDiv.style.right = '15px';
+			linkDiv.style.padding = '10px';
+			linkDiv.style.background = 'rgba(2, 132, 199, 0.2)';
+			linkDiv.style.border = '1px solid #0284c7';
+			linkDiv.style.borderRadius = '8px';
+			linkDiv.style.zIndex = '1000';
+			linkDiv.innerHTML = `
+				<a href="feature_test.html" style="color: #0ea5e9; text-decoration: none; font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+					<span>🧪</span> Open Feature Test Suite
+				</a>
+			`;
+			sidebar.appendChild(linkDiv);
+		}
+	});
 
 
 

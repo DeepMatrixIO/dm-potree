@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {BoxGeometry, BufferAttribute, BufferGeometry, Color, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, Object3D, SphereGeometry, Vector3} from 'three';
+import {BoxGeometry, BufferAttribute, BufferGeometry, Color, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshLambertMaterial, Object3D, SphereGeometry, Vector3} from 'three';
 import {Utils} from "../utils.js";
 
 const LineStrip = 0;

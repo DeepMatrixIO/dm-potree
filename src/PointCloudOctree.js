@@ -943,36 +943,43 @@ export class PointCloudOctree extends PointCloudTree {
 			let img = Utils.pixelsArrayToImage(buffer, w, h);
 			let screenshot = img.src;
 
+			const makeDebugImg = () => {
+				const el = document.createElement("img");
+				el.src = screenshot;
+				el.style.transform = "scaleY(-1)";
+				el.style.width = "300px";
+				return el;
+			};
+
 			if (!this.debugDIV1) {
 				this.debugDIV2 = null;
-				this.debugDIV1 = $(`
-					<div id="pickDebug_1}"
-					style="position: absolute;
+				this.debugDIV1 = document.createElement("div");
+				this.debugDIV1.id = "pickDebug_1";
+				this.debugDIV1.style.cssText = `
+					position: absolute;
 					right: 800px; width: 300px;
 					bottom: 44px; width: 300px;
 					z-index: 1000;
-					"></div>`);
-				$(document.body).append(this.debugDIV1);
+					`;
+				document.body.appendChild(this.debugDIV1);
 
-				this.debugDIV1.empty();
-				this.debugDIV1.append($(`<img src="${screenshot}"
-				style="transform: scaleY(-1); width: 300px"/>`));
+				this.debugDIV1.innerHTML = "";
+				this.debugDIV1.appendChild(makeDebugImg());
 			} else {
 				this.debugDIV1 = null;
-				this.debugDIV2 = $(`
-					<div id="pickDebug_2}"
-					style="position: absolute;
+				this.debugDIV2 = document.createElement("div");
+				this.debugDIV2.id = "pickDebug_2";
+				this.debugDIV2.style.cssText = `
+					position: absolute;
 					right: 400px; width: 300px;
 					bottom: 44px; width: 300px;
 					z-index: 1000;
-					"></div>`);
+					`;
 
+				document.body.appendChild(this.debugDIV2);
 
-				$(document.body).append(this.debugDIV2);
-
-				this.debugDIV2.empty();
-				this.debugDIV2.append($(`<img src="${screenshot}"
-				style="transform: scaleY(-1); width: 300px"/>`));
+				this.debugDIV2.innerHTML = "";
+				this.debugDIV2.appendChild(makeDebugImg());
 
 			}
 

@@ -8,7 +8,8 @@ export class DistancePanel extends MeasurePanel{
 		super(viewer, measurement, propertiesPanel);
 
 		let removeIconPath = Potree.resourcePath + '/icons/remove.svg';
-		this.elContent = $(`
+		const template = document.createElement("template");
+		template.innerHTML = `
 			<div class="measurement_content selectable">
 				<span class="coordinates_table_container"></span>
 				<br>
@@ -23,15 +24,16 @@ export class DistancePanel extends MeasurePanel{
 					<img name="remove" class="button-icon" src="${removeIconPath}" style="width: 16px; height: 16px"/>
 				</div>
 			</div>
-		`);
+		`;
+		this.elContent = template.content.firstElementChild;
 
-		this.elRemove = this.elContent.find("img[name=remove]");
-		this.elRemove.click( () => {
+		this.elRemove = this.elContent.querySelector("img[name=remove]");
+		this.elRemove.addEventListener("click", () => {
 			this.viewer.scene.removeMeasurement(measurement);
 		});
-		
-		this.elMakeProfile = this.elContent.find("input[name=make_profile]");
-		this.elMakeProfile.click( () => {
+
+		this.elMakeProfile = this.elContent.querySelector("input[name=make_profile]");
+		this.elMakeProfile.addEventListener("click", () => {
 			//measurement.points;
 			const profile = new Profile();
 
@@ -54,9 +56,9 @@ export class DistancePanel extends MeasurePanel{
 	}
 
 	update(){
-		let elCoordiantesContainer = this.elContent.find('.coordinates_table_container');
-		elCoordiantesContainer.empty();
-		elCoordiantesContainer.append(this.createCoordinatesTable(this.measurement.points.map(p => p.position)));
+		let elCoordiantesContainer = this.elContent.querySelector('.coordinates_table_container');
+		elCoordiantesContainer.innerHTML = "";
+		elCoordiantesContainer.appendChild(this.createCoordinatesTable(this.measurement.points.map(p => p.position)));
 
 		let positions = this.measurement.points.map(p => p.position);
 		let distances = [];
@@ -66,24 +68,22 @@ export class DistancePanel extends MeasurePanel{
 		}
 
 		let totalDistance = this.measurement.getTotalDistance().toFixed(3);
-		let elDistanceTable = this.elContent.find(`#distances_table`);
-		elDistanceTable.empty();
+		let elDistanceTable = this.elContent.querySelector(`#distances_table`);
+		elDistanceTable.innerHTML = "";
 
 		for (let i = 0; i < distances.length; i++) {
 			let label = (i === 0) ? 'Distances: ' : '';
 			let distance = distances[i];
-			let elDistance = $(`
-				<tr>
-					<th>${label}</th>
-					<td style="width: 100%; padding-left: 10px">${distance}</td>
-				</tr>`);
-			elDistanceTable.append(elDistance);
+			const elDistance = document.createElement("tr");
+			elDistance.innerHTML = `
+				<th>${label}</th>
+				<td style="width: 100%; padding-left: 10px">${distance}</td>`;
+			elDistanceTable.appendChild(elDistance);
 		}
 
-		let elTotal = $(`
-			<tr>
-				<th>Total: </td><td style="width: 100%; padding-left: 10px">${totalDistance}</th>
-			</tr>`);
-		elDistanceTable.append(elTotal);
+		const elTotal = document.createElement("tr");
+		elTotal.innerHTML = `
+			<th>Total: </td><td style="width: 100%; padding-left: 10px">${totalDistance}</th>`;
+		elDistanceTable.appendChild(elTotal);
 	}
 };

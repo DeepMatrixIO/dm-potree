@@ -7,7 +7,8 @@ export class CirclePanel extends MeasurePanel{
 		super(viewer, measurement, propertiesPanel);
 
 		let removeIconPath = Potree.resourcePath + '/icons/remove.svg';
-		this.elContent = $(`
+		const template = document.createElement("template");
+		template.innerHTML = `
 			<div class="measurement_content selectable">
 				<span class="coordinates_table_container"></span>
 				<br>
@@ -20,10 +21,11 @@ export class CirclePanel extends MeasurePanel{
 					<img name="remove" class="button-icon" src="${removeIconPath}" style="width: 16px; height: 16px"/>
 				</div>
 			</div>
-		`);
+		`;
+		this.elContent = template.content.firstElementChild;
 
-		this.elRemove = this.elContent.find("img[name=remove]");
-		this.elRemove.click( () => {
+		this.elRemove = this.elContent.querySelector("img[name=remove]");
+		this.elRemove.addEventListener("click", () => {
 			this.viewer.scene.removeMeasurement(measurement);
 		});
 
@@ -35,15 +37,15 @@ export class CirclePanel extends MeasurePanel{
 	}
 
 	update(){
-		let elCoordiantesContainer = this.elContent.find('.coordinates_table_container');
-		elCoordiantesContainer.empty();
-		elCoordiantesContainer.append(this.createCoordinatesTable(this.measurement.points.map(p => p.position)));
+		let elCoordiantesContainer = this.elContent.querySelector('.coordinates_table_container');
+		elCoordiantesContainer.innerHTML = "";
+		elCoordiantesContainer.appendChild(this.createCoordinatesTable(this.measurement.points.map(p => p.position)));
 
-		const elInfos = this.elContent.find(`#infos_table`);
+		const elInfos = this.elContent.querySelector(`#infos_table`);
 
 		if(this.measurement.points.length !== 3){
-			elInfos.empty();
-			
+			elInfos.innerHTML = "";
+
 			return;
 		}
 
@@ -54,20 +56,20 @@ export class CirclePanel extends MeasurePanel{
 		const center = Potree.Utils.computeCircleCenter(A, B, C);
 		const radius = center.distanceTo(A);
 		const circumference = 2 * Math.PI * radius;
-		
+
 		const format = (number) => {
 			return Potree.Utils.addCommas(number.toFixed(3));
 		};
 
-		
+
 		const txtCenter = `${format(center.x)} ${format(center.y)} ${format(center.z)}`;
 		const txtRadius = format(radius);
 		const txtCircumference = format(circumference);
 
 		const thStyle = `style="text-align: left"`;
 		const tdStyle = `style="width: 100%; padding: 5px;"`;
-		
-		elInfos.html(`
+
+		elInfos.innerHTML = `
 			<tr>
 				<th ${thStyle}>Center: </th>
 				<td ${tdStyle}></td>
@@ -85,6 +87,6 @@ export class CirclePanel extends MeasurePanel{
 				<th ${thStyle}>Circumference: </th>
 				<td ${tdStyle}>${txtCircumference}</td>
 			</tr>
-		`);
+		`;
 	}
 };

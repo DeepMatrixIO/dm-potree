@@ -1,5 +1,5 @@
 
-import {DirectionalLight, Scene, Vector2, Vector3} from "three";
+import {DirectionalLight, Scene, Vector2, Vector3, MOUSE} from "three";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
 import {Profile} from "./Profile.js";

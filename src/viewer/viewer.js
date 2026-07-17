@@ -65,6 +65,48 @@ import {SelectionTool} from "../dm_custom_tools/clustering/SelectionTool.js"; //
 // import * as TWEEN from '@tweenjs/tween.js';//0.15, now at eol
 import * as TWEEN from '@tweenjs/tween.js';//0.15, now at eol
 // import {interact} from 'interactjs'
+
+// Minimal vanilla-JS replacement for jQuery's slideToggle(). Animates an
+// element's height in/out depending on its current visibility, then
+// invokes the optional callback once the transition completes.
+function slideToggle(element, duration = 100, callback) {
+	const isHidden = element.style.display === "none" || getComputedStyle(element).display === "none";
+
+	element.style.overflow = "hidden";
+	element.style.transition = `height ${duration}ms ease`;
+
+	if (isHidden) {
+		element.style.display = "";
+		const targetHeight = element.scrollHeight + "px";
+		element.style.height = "0px";
+
+		requestAnimationFrame(() => {
+			element.style.height = targetHeight;
+		});
+
+		setTimeout(() => {
+			element.style.height = "";
+			element.style.overflow = "";
+			element.style.transition = "";
+			if (callback) callback();
+		}, duration);
+	} else {
+		element.style.height = element.scrollHeight + "px";
+
+		requestAnimationFrame(() => {
+			element.style.height = "0px";
+		});
+
+		setTimeout(() => {
+			element.style.display = "none";
+			element.style.height = "";
+			element.style.overflow = "";
+			element.style.transition = "";
+			if (callback) callback();
+		}, duration);
+	}
+}
+
 export class Viewer extends EventDispatcher {
 
 	ecef = '+proj=geocent +datum=WGS84 +units=m +no_defs +type=crs'; // ECEF
@@ -1877,7 +1919,7 @@ export class Viewer extends EventDispatcher {
 				elButtons.appendChild(imgMapToggle);
 
 				this.sidebar = new Sidebar(this);//not really workking as needs a sidebar_Root
-				sidebar.init();
+				this.sidebar.init();
 
 
 				// Migrate i18n to i18next (install via npm)
@@ -3101,7 +3143,7 @@ export class Viewer extends EventDispatcher {
 	postError(content, params = {}) {
 		let message = this.postMessage(content, params);
 
-		message.element.addClass("potree_message_error");
+		message.element.classList.add("potree_message_error");
 
 		return message;
 	}
@@ -3111,9 +3153,11 @@ export class Viewer extends EventDispatcher {
 
 		let animationDuration = 100;
 
-		message.element.css("display", "none");
-		message.elClose.click(() => {
-			message.element.slideToggle(animationDuration);
+		message.element.style.display = "none";
+		message.elClose.addEventListener("click", () => {
+			slideToggle(message.element, animationDuration, () => {
+				message.element.remove();
+			});
 
 			let index = this.messages.indexOf(message);
 			if (index >= 0) {
@@ -3123,7 +3167,7 @@ export class Viewer extends EventDispatcher {
 
 		this.elMessages.prepend(message.element);
 
-		message.element.slideToggle(animationDuration);
+		slideToggle(message.element, animationDuration);
 
 		this.messages.push(message);
 
@@ -3131,10 +3175,13 @@ export class Viewer extends EventDispatcher {
 			let fadeDuration = 500;
 			let slideOutDuration = 200;
 			setTimeout(() => {
-				message.element.animate({
-					opacity: 0
+				message.element.style.transition = `opacity ${fadeDuration}ms`;
+				message.element.style.opacity = "0";
+				setTimeout(() => {
+					slideToggle(message.element, slideOutDuration, () => {
+						message.element.remove();
+					});
 				}, fadeDuration);
-				message.element.slideToggle(slideOutDuration);
 			}, params.duration)
 		}
 
@@ -3307,14 +3354,21 @@ export class Viewer extends EventDispatcher {
 			}
 
 			// Remove DOM elements
-			$('potree_sidebar_container').empty();
-			$('#potree_map').remove();
-			$('#potree_description').empty();
-			$('#potree_annotation_container').empty();
-			$('#potree_quick_buttons').empty();
-			$('#message_listing').empty();
-			$('.annotation').remove();
-			$('#profile_window').remove();
+			const clearContent = (selector) => {
+				document.querySelectorAll(selector).forEach(el => { el.innerHTML = ""; });
+			};
+			const removeElements = (selector) => {
+				document.querySelectorAll(selector).forEach(el => el.remove());
+			};
+
+			clearContent('#potree_sidebar_container');
+			removeElements('#potree_map');
+			clearContent('#potree_description');
+			clearContent('#potree_annotation_container');
+			clearContent('#potree_quick_buttons');
+			clearContent('#message_listing');
+			removeElements('.annotation');
+			removeElements('#profile_window');
 
 			// Remove canvas and renderer DOM element
 			if (this.renderer && this.renderer.domElement) {
@@ -3452,9 +3506,9 @@ export class Viewer extends EventDispatcher {
 	removeAllEventListeners() {
 		try {
 			// Remove drag and drop listeners
-			$("body")[0].removeEventListener("dragenter", this.allowDrag);
-			$("body")[0].removeEventListener("dragover", this.allowDrag);
-			$("body")[0].removeEventListener("drop", this.dropHandler);
+			document.body.removeEventListener("dragenter", this.allowDrag);
+			document.body.removeEventListener("dragover", this.allowDrag);
+			document.body.removeEventListener("drop", this.dropHandler);
 
 			// Remove canvas event listeners
 			if (this.renderer && this.renderer.domElement) {

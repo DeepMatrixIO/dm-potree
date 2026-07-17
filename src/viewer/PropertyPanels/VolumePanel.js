@@ -29,7 +29,8 @@ export class VolumePanel extends MeasurePanel {
 			[SphereVolume, "rz"],
 		]).get(measurement.constructor);
 
-		this.elContent = $(`
+		this.elContent = document.createElement("template");
+		this.elContent.innerHTML = `
 			<div class="measurement_content selectable">
 				<span class="coordinates_table_container"></span>
 
@@ -103,20 +104,21 @@ export class VolumePanel extends MeasurePanel {
 					<img name="remove" class="button-icon" src="${removeIconPath}" style="width: 16px; height: 16px"/>
 				</div>
 			</div>
-		`);
+		`;
+		this.elContent = this.elContent.content.firstElementChild;
 
 		{ // download
-			this.elDownloadButton = this.elContent.find("input[name=download_volume]");
+			this.elDownloadButton = this.elContent.querySelector("input[name=download_volume]");
 
 			if (this.propertiesPanel.viewer.server) {
-				this.elDownloadButton.click(() => this.download());
+				this.elDownloadButton.addEventListener("click", () => this.download());
 			} else {
-				this.elDownloadButton.hide();
+				this.elDownloadButton.style.display = "none";
 			}
 		}
 
-		this.elCopyRotation = this.elContent.find("img[name=copyRotation]");
-		this.elCopyRotation.click(() => {
+		this.elCopyRotation = this.elContent.querySelector("img[name=copyRotation]");
+		this.elCopyRotation.addEventListener("click", () => {
 			let rotation = this.measurement.rotation.toArray().slice(0, 3);
 			let msg = rotation.map(c => c.toFixed(3)).join(", ");
 			Utils.clipboardCopy(msg);
@@ -126,8 +128,8 @@ export class VolumePanel extends MeasurePanel {
 				{duration: 3000});
 		});
 
-		this.elCopyScale = this.elContent.find("img[name=copyScale]");
-		this.elCopyScale.click(() => {
+		this.elCopyScale = this.elContent.querySelector("img[name=copyScale]");
+		this.elCopyScale.addEventListener("click", () => {
 			let scale = this.measurement.scale.toArray();
 			let msg = scale.map(c => c.toFixed(3)).join(", ");
 			Utils.clipboardCopy(msg);
@@ -137,29 +139,31 @@ export class VolumePanel extends MeasurePanel {
 				{duration: 3000});
 		});
 
-		this.elRemove = this.elContent.find("img[name=remove]");
-		this.elRemove.click(() => {
+		this.elRemove = this.elContent.querySelector("img[name=remove]");
+		this.elRemove.addEventListener("click", () => {
 			this.viewer.scene.removeVolume(measurement);
 		});
 
-		this.elContent.find("#volume_reset_orientation").click(() => {
+		this.elContent.querySelector("#volume_reset_orientation").addEventListener("click", () => {
 			measurement.rotation.set(0, 0, 0);
 		});
 
-		this.elContent.find("#volume_make_uniform").click(() => {
+		this.elContent.querySelector("#volume_make_uniform").addEventListener("click", () => {
 			let mean = (measurement.scale.x + measurement.scale.y + measurement.scale.z) / 3;
 			measurement.scale.set(mean, mean, mean);
 		});
 
-		this.elCheckClip = this.elContent.find('#volume_clip');
-		this.elCheckClip.click(event => {
+		this.elCheckClip = this.elContent.querySelector('#volume_clip');
+		this.elCheckClip.addEventListener("click", event => {
 			this.measurement.clip = event.target.checked;
 		});
 
-		this.elCheckShow = this.elContent.find('#volume_show');
-		this.elCheckShow.click(event => {
-			this.measurement.visible = event.target.checked;
-		});
+		this.elCheckShow = this.elContent.querySelector('#volume_show');
+		if(this.elCheckShow){
+			this.elCheckShow.addEventListener("click", event => {
+				this.measurement.visible = event.target.checked;
+			});
+		}
 
 		this.propertiesPanel.addVolatileListener(measurement, "position_changed", this._update);
 		this.propertiesPanel.addVolatileListener(measurement, "orientation_changed", this._update);
@@ -237,14 +241,14 @@ export class VolumePanel extends MeasurePanel {
 		}
 		let pointcloudsArg = pointcloudArgs.join(",");
 
-		let elMessage = this.elContent.find("div[name=download_message]");
+		let elMessage = this.elContent.querySelector("div[name=download_message]");
 
 		let error = (message) => {
-			elMessage.html(`<div style="color: #ff0000">ERROR: ${message}</div>`);
+			elMessage.innerHTML = `<div style="color: #ff0000">ERROR: ${message}</div>`;
 		};
 
 		let info = (message) => {
-			elMessage.html(`${message}`);
+			elMessage.innerHTML = `${message}`;
 		};
 
 		let handle = null;
@@ -351,9 +355,9 @@ export class VolumePanel extends MeasurePanel {
 
 	//removes toVector3
 	update() {
-		let elCoordiantesContainer = this.elContent.find('.coordinates_table_container');
-		elCoordiantesContainer.empty();
-		elCoordiantesContainer.append(this.createCoordinatesTable([this.measurement.position]));
+		let elCoordiantesContainer = this.elContent.querySelector('.coordinates_table_container');
+		elCoordiantesContainer.innerHTML = "";
+		elCoordiantesContainer.appendChild(this.createCoordinatesTable([this.measurement.position]));
 
 		{
 			let euler= this.measurement.rotation;
@@ -364,36 +368,38 @@ export class VolumePanel extends MeasurePanel {
 			angles = angles.map(v => 180 * v / Math.PI);
 			angles = angles.map(a => a.toFixed(1) + '\u00B0');
 
-			let elAlpha = this.elContent.find(`#angle_cell_alpha`);
-			let elBetta = this.elContent.find(`#angle_cell_betta`);
-			let elGamma = this.elContent.find(`#angle_cell_gamma`);
+			let elAlpha = this.elContent.querySelector(`#angle_cell_alpha`);
+			let elBetta = this.elContent.querySelector(`#angle_cell_betta`);
+			let elGamma = this.elContent.querySelector(`#angle_cell_gamma`);
 
-			elAlpha.html(angles[0]);
-			elBetta.html(angles[1]);
-			elGamma.html(angles[2]);
+			elAlpha.innerHTML = angles[0];
+			elBetta.innerHTML = angles[1];
+			elGamma.innerHTML = angles[2];
 		}
 
 		{
 			let dimensions = this.measurement.scale.toArray();
 			dimensions = dimensions.map(v => Utils.addCommas(v.toFixed(2)));
 
-			let elLength = this.elContent.find(`#cell_length`);
-			let elWidth = this.elContent.find(`#cell_width`);
-			let elHeight = this.elContent.find(`#cell_height`);
+			let elLength = this.elContent.querySelector(`#cell_length`);
+			let elWidth = this.elContent.querySelector(`#cell_width`);
+			let elHeight = this.elContent.querySelector(`#cell_height`);
 
-			elLength.html(dimensions[0]);
-			elWidth.html(dimensions[1]);
-			elHeight.html(dimensions[2]);
+			elLength.innerHTML = dimensions[0];
+			elWidth.innerHTML = dimensions[1];
+			elHeight.innerHTML = dimensions[2];
 		}
 
 		{
-			let elVolume = this.elContent.find(`#measurement_volume`);
+			let elVolume = this.elContent.querySelector(`#measurement_volume`);
 			let volume = this.measurement.getVolume();
-			elVolume.html(Utils.addCommas(volume.toFixed(2)));
+			elVolume.innerHTML = Utils.addCommas(volume.toFixed(2));
 		}
 
-		this.elCheckClip.prop("checked", this.measurement.clip);
-		this.elCheckShow.prop("checked", this.measurement.visible);
+		this.elCheckClip.checked = this.measurement.clip;
+		if(this.elCheckShow){
+			this.elCheckShow.checked = this.measurement.visible;
+		}
 
 	}
 };

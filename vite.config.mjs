@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   optimizeDeps: {
-    entries: ['index.html', 'example/index.js'],
+    entries: ['index.html', 'feature_test.html', 'example/index.js', 'example/feature_test.js'],
   },
   build: {
     outDir: 'dist',
@@ -30,7 +30,11 @@ export default defineConfig({
         { src: 'src/viewer/potree.css', dest: 'potree' },
         { src: 'src/viewer/*.html', dest: 'potree' },
         { src: 'src/lines/**/*', dest: 'lines' },
-		{ src: 'example/workers/**/*', dest: 'workers' },
+        { src: 'example/workers/**/*', dest: 'workers' },
+        { src: 'resources/**/*', dest: 'resources' },
+        { src: 'resources/**/*', dest: 'potree/resources' },
+        { src: 'examples/resources/**/*', dest: 'resources' },
+        { src: 'examples/resources/**/*', dest: 'potree/resources' },
       ],
     }),
   ],

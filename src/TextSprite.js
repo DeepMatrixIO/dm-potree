@@ -2,11 +2,15 @@
 //  * adapted from http://stemkoski.github.io/js/Sprite-Text-Labels.html
 //  */
 
-import {Texture,   LinearFilter,  SpriteMaterial, Sprite} from 'three'
+import {Texture, LinearFilter, SpriteMaterial, Sprite} from 'three'
 
-export class TextSprite extends Sprite{
+/**
+ * A sprite that displays text within a dom element always facing to the front, anchored to a threejs object.
+ */
 
-	constructor(text){
+export class TextSprite extends Sprite {
+
+	constructor(text) {
 		super();
 
 		let texture = new Texture();
@@ -15,7 +19,8 @@ export class TextSprite extends Sprite{
 		let spriteMaterial = new SpriteMaterial({
 			map: texture,
 			depthTest: false,
-			depthWrite: false});
+			depthWrite: false
+		});
 
 		this.texture = texture;
 
@@ -27,41 +32,41 @@ export class TextSprite extends Sprite{
 		this.borderThickness = 4;
 		this.fontface = 'Arial';
 		this.fontsize = 28;
-		this.borderColor = { r: 0, g: 0, b: 0, a: 1.0 };
-		this.backgroundColor = { r: 255, g: 255, b: 255, a: 1.0 };
+		this.borderColor = {r: 0, g: 0, b: 0, a: 1.0};
+		this.backgroundColor = {r: 255, g: 255, b: 255, a: 1.0};
 		this.textColor = {r: 255, g: 255, b: 255, a: 1.0};
 		this.text = '';
 
 		this.setText(text);
 	}
 
-	setText(text){
-		if (this.text !== text){
+	setText(text) {
+		if (this.text !== text) {
 			this.text = text;
 
 			this.update();
 		}
 	}
 
-	setTextColor(color){
+	setTextColor(color) {
 		this.textColor = color;
 
 		this.update();
 	}
 
-	setBorderColor(color){
+	setBorderColor(color) {
 		this.borderColor = color;
 
 		this.update();
 	}
 
-	setBackgroundColor(color){
+	setBackgroundColor(color) {
 		this.backgroundColor = color;
 
 		this.update();
 	}
 
-	update(){
+	update() {
 		let canvas = document.createElement('canvas');
 		let context = canvas.getContext('2d');
 		context.font = 'Bold ' + this.fontsize + 'px ' + this.fontface;
@@ -80,6 +85,7 @@ export class TextSprite extends Sprite{
 		// background color
 		context.fillStyle = 'rgba(' + this.backgroundColor.r + ',' + this.backgroundColor.g + ',' +
 			this.backgroundColor.b + ',' + this.backgroundColor.a + ')';
+
 		// border color
 		context.strokeStyle = 'rgba(' + this.borderColor.r + ',' + this.borderColor.g + ',' +
 			this.borderColor.b + ',' + this.borderColor.a + ')';
@@ -123,7 +129,7 @@ export class TextSprite extends Sprite{
 		this.sprite.scale.set(spriteWidth * 0.01, spriteHeight * 0.01, 1.0);
 	}
 
-	roundRect(ctx, x, y, w, h, r){
+	roundRect(ctx, x, y, w, h, r) {
 		ctx.beginPath();
 		ctx.moveTo(x + r, y);
 		ctx.lineTo(x + w - r, y);

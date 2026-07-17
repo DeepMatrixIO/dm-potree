@@ -20,13 +20,11 @@
     "start_old": "gulp watch",
     "build_old": "gulp build pack",
     "build_bad": "webpack --mode production",
-
-
     "build": "npm run build:module",
     "build:workers": "vite build --config vite.workers.config.mjs",
     "build:module": "npm run build:workers && vite build",
     "start": "npm run build:module && npm run dev",
-  	"dev": "vite --port 5200 --open",
+    "dev": "vite --port 5200 --open",
     "check:imports": "node scripts/check-missing-imports.mjs --scope src --allow Potree,viewer",
     "check:imports:all": "node scripts/check-missing-imports.mjs --scope all --allow Potree,viewer",
     "postinstall": "npm run build"
@@ -44,6 +42,7 @@
     "i18next": "^25.5.2",
     "interactjs": "^1.10.27",
     "json5": "^2.1.3",
+    "lil-gui": "^0.21.0",
     "proj4": "^2.19.10",
     "rollup": "^3.29.4",
     "s-": "^0.0.1",

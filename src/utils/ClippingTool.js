@@ -80,10 +80,13 @@ export class ClippingTool extends EventDispatcher {
 		let domElement = this.viewer.renderer.domElement;
 		let canvasSize = this.viewer.renderer.getSize(new Vector2());
 
-		//is not properly positioned
-		//check as the jquery code was replaced
+		// The svg overlay is appended to domElement.parentElement, but the point
+		// coordinates plotted onto it (e.offsetX/e.offsetY below) are relative to
+		// domElement (the canvas) itself. If the canvas is offset within its parent
+		// (e.g. shifted right when the sidebar is open), the svg must be positioned
+		// at that same offset, otherwise the drawn polygon lags behind the cursor.
 		let svgMarkup = `
-		<svg xmlns="http://www.w3.org/2000/svg" height="${canvasSize.height}" width="${canvasSize.width}" style="position:absolute; left:0; top:0; pointer-events:none; z-index:1000; overflow:visible;">
+		<svg xmlns="http://www.w3.org/2000/svg" height="${canvasSize.height}" width="${canvasSize.width}" style="position:absolute; left:${domElement.offsetLeft}px; top:${domElement.offsetTop}px; pointer-events:none; z-index:1000; overflow:visible;">
 
 			<defs>
 				 <marker id="diamond" markerWidth="24" markerHeight="24" refX="12" refY="12"

@@ -49,10 +49,14 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 
 		this.importance = 10;
 
-		let selectionBox = $(`<div style="position: absolute; border: 2px solid white; pointer-events: none; border-style:dashed"></div>`);// selection box style
-		$(domElement.parentElement).append(selectionBox);
-		selectionBox.css("right", "10px");
-		selectionBox.css("bottom", "10px");
+		let selectionBox = document.createElement("div");// selection box style
+		selectionBox.style.position = "absolute";
+		selectionBox.style.border = "2px solid white";
+		selectionBox.style.pointerEvents = "none";
+		selectionBox.style.borderStyle = "dashed";
+		domElement.parentElement.appendChild(selectionBox);
+		selectionBox.style.right = "10px";
+		selectionBox.style.bottom = "10px";
 
 
 
@@ -80,10 +84,14 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 			box2D.expandByPoint(mStart);
 			box2D.expandByPoint(mEnd);
 
-			selectionBox.css("left", `${box2D.min.x}px`);
-			selectionBox.css("top", `${box2D.min.y}px`);
-			selectionBox.css("width", `${box2D.max.x - box2D.min.x}px`);
-			selectionBox.css("height", `${box2D.max.y - box2D.min.y}px`);
+			// e.drag.start/end are relative to domElement (the canvas), but selectionBox is
+			// appended to domElement.parentElement. If the canvas is offset within its parent
+			// (e.g. shifted right when the sidebar is open), we need to add that offset here,
+			// otherwise the visual box lags behind the actual cursor/selection position.
+			selectionBox.style.left = `${box2D.min.x + domElement.offsetLeft}px`;
+			selectionBox.style.top = `${box2D.min.y + domElement.offsetTop}px`;
+			selectionBox.style.width = `${box2D.max.x - box2D.min.x}px`;
+			selectionBox.style.height = `${box2D.max.y - box2D.min.y}px`;
 
 			let camera = e.viewer.scene.getActiveCamera();
 			let size = e.viewer.renderer.getSize(new Vector2());//size of the canvas
@@ -124,7 +132,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 			// console.log("drop....................................................................");
 			this.importance = 0;
 
-			$(selectionBox).remove();
+			selectionBox.remove();
 
 			this.viewer.inputHandler.deselectAll();
 			this.viewer.inputHandler.toggleSelection(volume);
@@ -313,7 +321,7 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		let cancelKey = e => {
 			// console.log("Pressing cancel key ", e.key)
 			if (e.keyCode === KeyCodes.ESCAPE) {
-				$(selectionBox).remove();
+				selectionBox.remove();
 				this.viewer.dispatchEvent({type: "cancel_insertions"}, {
 					source: volume,
 					reason: "cancel_insertion"
@@ -349,7 +357,6 @@ export class ScreenBoxSelectTool extends EventDispatcher {
 		}
 		this.removeEventListener("drag");
 		this.removeEventListener("drop");
-		// $(selectionBox).remove();//still jquery
 		// this.viewer.scene.removeVolume(volume);
 		this.viewer.scene.removeMixedFilter(volume);
 		// this.dispatchEvent({type: "volume_insertion_canceled", volume: volume});

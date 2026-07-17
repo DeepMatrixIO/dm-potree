@@ -9,7 +9,8 @@ export class CameraPanel{
 		this._update = () => { this.update(); };
 
 		let copyIconPath = Potree.resourcePath + '/icons/copy.svg';
-		this.elContent = $(`
+		const template = document.createElement("template");
+		template.innerHTML = `
 		<div class="propertypanel_content">
 			<table>
 				<tr>
@@ -38,10 +39,11 @@ export class CameraPanel{
 				</tr>
 			</table>
 		</div>
-		`);
+		`;
+		this.elContent = template.content.firstElementChild;
 
-		this.elCopyPosition = this.elContent.find("img[name=copyPosition]");
-		this.elCopyPosition.click( () => {
+		this.elCopyPosition = this.elContent.querySelector("img[name=copyPosition]");
+		this.elCopyPosition.addEventListener("click", () => {
 			let pos = this.viewer.scene.getActiveCamera().position.toArray();
 			let msg = pos.map(c => c.toFixed(3)).join(", ");
 			Utils.clipboardCopy(msg);
@@ -51,8 +53,8 @@ export class CameraPanel{
 					{duration: 3000});
 		});
 
-		this.elCopyTarget = this.elContent.find("img[name=copyTarget]");
-		this.elCopyTarget.click( () => {
+		this.elCopyTarget = this.elContent.querySelector("img[name=copyTarget]");
+		this.elCopyTarget.addEventListener("click", () => {
 			let pos = this.viewer.scene.view.getPivot().toArray();
 			let msg = pos.map(c => c.toFixed(3)).join(", ");
 			Utils.clipboardCopy(msg);
@@ -74,13 +76,13 @@ export class CameraPanel{
 		let view = this.viewer.scene.view;
 
 		let pos = camera.position.toArray().map(c => Utils.addCommas(c.toFixed(3)));
-		this.elContent.find("#camera_position_x").html(pos[0]);
-		this.elContent.find("#camera_position_y").html(pos[1]);
-		this.elContent.find("#camera_position_z").html(pos[2]);
+		this.elContent.querySelector("#camera_position_x").innerHTML = pos[0];
+		this.elContent.querySelector("#camera_position_y").innerHTML = pos[1];
+		this.elContent.querySelector("#camera_position_z").innerHTML = pos[2];
 
 		let target = view.getPivot().toArray().map(c => Utils.addCommas(c.toFixed(3)));
-		this.elContent.find("#camera_target_x").html(target[0]);
-		this.elContent.find("#camera_target_y").html(target[1]);
-		this.elContent.find("#camera_target_z").html(target[2]);
+		this.elContent.querySelector("#camera_target_x").innerHTML = target[0];
+		this.elContent.querySelector("#camera_target_y").innerHTML = target[1];
+		this.elContent.querySelector("#camera_target_z").innerHTML = target[2];
 	}
 };

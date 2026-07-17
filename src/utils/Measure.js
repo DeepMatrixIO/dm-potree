@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {Color, Mesh, MeshBasicMaterial, MeshNormalMaterial, Object3D, SphereGeometry, Vector2, Vector3} from 'three';
+import {Color, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshNormalMaterial, Object3D, SphereGeometry, Vector2, Vector3} from 'three';
 import {Line2} from "../lines/Line2.js";
 import {LineGeometry} from "../lines/LineGeometry.js";
 import {LineMaterial} from "../lines/LineMaterial.js";

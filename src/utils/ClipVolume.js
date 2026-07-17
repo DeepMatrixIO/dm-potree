@@ -157,15 +157,23 @@ export class ClipVolume extends Object3D {
 				this.arrowZ.visible = false;
 			});
 			this.addEventListener("select", e => {
-				let scene_header = $("#" + this.name + " .scene_header");
-				if (!scene_header.next().is(":visible")) {
-					scene_header.click();
+				let scene_header = document.querySelector(`#${this.name} .scene_header`);
+				if (scene_header) {
+					let next = scene_header.nextElementSibling;
+					let isVisible = next && getComputedStyle(next).display !== "none" && next.offsetParent !== null;
+					if (!isVisible) {
+						scene_header.click();
+					}
 				}
 			});
 			this.addEventListener("deselect", e => {
-				let scene_header = $("#" + this.name + " .scene_header");
-				if (scene_header.next().is(":visible")) {
-					scene_header.click();
+				let scene_header = document.querySelector(`#${this.name} .scene_header`);
+				if (scene_header) {
+					let next = scene_header.nextElementSibling;
+					let isVisible = next && getComputedStyle(next).display !== "none" && next.offsetParent !== null;
+					if (isVisible) {
+						scene_header.click();
+					}
 				}
 			});
 		}

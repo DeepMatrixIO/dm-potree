@@ -1,6 +1,7 @@
 
 // import * as THREE from "../../../libs/js/build/module.js";
 import {Camera, Color} from 'three';
+import GUI from 'lil-gui';
 import {Annotation} from "../../Annotation.js";
 import {ElevationGradientRepeat, PointShape, PointSizeType} from "../../defines.js";
 import {Gradients} from "../../materials/Gradients.js";
@@ -48,7 +49,7 @@ export class PropertiesPanel{
 			task();
 		}
 		this.cleanupTasks = [];
-		this.container.empty();
+		this.container.innerHTML = "";
 
 		if(object instanceof PointCloudTree){
 			this.setPointCloud(object);
@@ -79,497 +80,91 @@ export class PropertiesPanel{
 	setPointCloud(pointcloud){
 
 		let material = pointcloud.material;
-		const jq = window.jQuery;
+		let viewer = this.viewer;
 
-		const panelTemplate = document.createElement("template");
-		panelTemplate.innerHTML = `
-			<div class="scene_content selectable">
-				<ul class="pv-menu-list">
+		this.container.innerHTML = "";
 
-				<li>
-				<span data-i18n="appearance.point_size"></span>:&nbsp;<span id="lblPointSize"></span> <div id="sldPointSize"></div>
-				</li>
-				<li>
-				<span data-i18n="appearance.min_point_size"></span>:&nbsp;<span id="lblMinPointSize"></span> <div id="sldMinPointSize"></div>
-				</li>
+		const gui = new GUI({container: this.container, title: "Point Cloud"});
+		gui.domElement.style.width = "100%";
 
-				<!-- SIZE TYPE -->
-				<li>
-					<label for="optPointSizing" class="pv-select-label" data-i18n="appearance.point_size_type">Point Sizing </label>
-					<select id="optPointSizing" name="optPointSizing">
-						<option>FIXED</option>
-						<option>ATTENUATED</option>
-						<option>ADAPTIVE</option>
-					</select>
-				</li>
+		// POINT SIZE
+		gui.add(material, "size", 0, 3, 0.01).name("Point Size").listen();
+		gui.add(material, "minSize", 0, 3, 0.01).name("Min Point Size").listen();
 
-				<!-- SHAPE -->
-				<li>
-					<label for="optShape" class="pv-select-label" data-i18n="appearance.point_shape"></label><br>
-					<select id="optShape" name="optShape">
-						<option>SQUARE</option>
-						<option>CIRCLE</option>
-						<option>PARABOLOID</option>
-					</select>
-				</li>
+		// POINT SIZING / SHAPE
+		gui.add(material, "pointSizeType", PointSizeType).name("Point Sizing").listen();
+		gui.add(material, "shape", PointShape).name("Point Shape").listen();
 
-				<li id="materials_backface_container">
-				<label><input id="set_backface_culling" type="checkbox" /><span data-i18n="appearance.backface_culling"></span></label>
-				</li>
+		// BACKFACE CULLING (only relevant if the point cloud has normals)
+		const pointAttributes = pointcloud.pcoGeometry.pointAttributes;
+		const hasNormals = pointAttributes.hasNormals ? pointAttributes.hasNormals() : false;
+		if(hasNormals){
+			gui.add(material, "backfaceCulling").name("Backface Culling").listen();
+		}
 
-				<!-- OPACITY -->
-				<li><span data-i18n="appearance.point_opacity"></span>:<span id="lblOpacity"></span><div id="sldOpacity"></div></li>
+		// OPACITY
+		gui.add(material, "opacity", 0, 1, 0.001).name("Opacity").listen();
 
-				<div class="divider">
-					<span>Attribute</span>
-				</div>
+		// ATTRIBUTE SELECTION
+		const attributes = pointcloud.pcoGeometry.pointAttributes.attributes;
+		let options = attributes.map(a => a.name);
 
-				<li>
-					<select id="optMaterial" name="optMaterial"></select>
-				</li>
+		const intensityIndex = options.indexOf("intensity");
+		if(intensityIndex >= 0){
+			options.splice(intensityIndex + 1, 0, "intensity gradient");
+		}
 
-				<div id="materials.composite_weight_container">
-					<div class="divider">
-						<span>Attribute Weights</span>
-					</div>
+		options.push("elevation", "color", "matcap", "indices", "level of detail", "composite");
 
-					<li>RGB: <span id="lblWeightRGB"></span> <div id="sldWeightRGB"></div>	</li>
-					<li>Intensity: <span id="lblWeightIntensity"></span> <div id="sldWeightIntensity"></div>	</li>
-					<li>Elevation: <span id="lblWeightElevation"></span> <div id="sldWeightElevation"></div>	</li>
-					<li>Classification: <span id="lblWeightClassification"></span> <div id="sldWeightClassification"></div>	</li>
-					<li>Return Number: <span id="lblWeightReturnNumber"></span> <div id="sldWeightReturnNumber"></div>	</li>
-					<li>Source ID: <span id="lblWeightSourceID"></span> <div id="sldWeightSourceID"></div>	</li>
-				</div>
+		const blacklist = ["POSITION_CARTESIAN", "position"];
+		options = options.filter(o => !blacklist.includes(o));
 
-				<div id="materials.rgb_container">
-					<div class="divider">
-						<span>RGB</span>
-					</div>
+		// FOLDERS FOR EACH ATTRIBUTE MODE
+		const folderWeights = gui.addFolder("Attribute Weights");
+		folderWeights.add(material, "weightRGB", 0, 1, 0.01).name("RGB").listen();
+		folderWeights.add(material, "weightIntensity", 0, 1, 0.01).name("Intensity").listen();
+		folderWeights.add(material, "weightElevation", 0, 1, 0.01).name("Elevation").listen();
+		folderWeights.add(material, "weightClassification", 0, 1, 0.01).name("Classification").listen();
+		folderWeights.add(material, "weightReturnNumber", 0, 1, 0.01).name("Return Number").listen();
+		folderWeights.add(material, "weightSourceID", 0, 1, 0.01).name("Source ID").listen();
 
-					<li>Gamma: <span id="lblRGBGamma"></span> <div id="sldRGBGamma"></div>	</li>
-					<li>Brightness: <span id="lblRGBBrightness"></span> <div id="sldRGBBrightness"></div>	</li>
-					<li>Contrast: <span id="lblRGBContrast"></span> <div id="sldRGBContrast"></div>	</li>
-				</div>
+		const folderRGB = gui.addFolder("RGB");
+		folderRGB.add(material, "rgbGamma", 0, 4, 0.01).name("Gamma").listen();
+		folderRGB.add(material, "rgbBrightness", -1, 1, 0.01).name("Brightness").listen();
+		folderRGB.add(material, "rgbContrast", -1, 1, 0.01).name("Contrast").listen();
 
-				<div id="materials.extra_container">
-					<div class="divider">
-						<span>Extra Attribute</span>
-					</div>
-
-					<li><span data-i18n="appearance.extra_range"></span>: <span id="lblExtraRange"></span> <div id="sldExtraRange"></div></li>
-
-					<li>Gamma: <span id="lblExtraGamma"></span> <div id="sldExtraGamma"></div></li>
-					<li>Brightness: <span id="lblExtraBrightness"></span> <div id="sldExtraBrightness"></div></li>
-					<li>Contrast: <span id="lblExtraContrast"></span> <div id="sldExtraContrast"></div></li>
-				</div>
-
-				<div id="materials.matcap_container">
-					<div class="divider">
-						<span>MATCAP</span>
-					</div>
-
-					<li>
-						<div id="matcap_scheme_selection" style="display: flex; flex-wrap: wrap;"> </div>
-					</li>
-				</div>
-
-				<div id="materials.color_container">
-					<div class="divider">
-						<span>Color</span>
-					</div>
-
-					<input id="materials.color.picker" />
-				</div>
-
-
-				<div id="materials.elevation_container">
-					<div class="divider">
-						<span>Elevation</span>
-					</div>
-
-					<li><span data-i18n="appearance.elevation_range"></span>: <span id="lblHeightRange"></span> <div id="sldHeightRange"></div>	</li>
-
-					<li>
-						<selectgroup id="gradient_repeat_option">
-							<option id="gradient_repeat_clamp" value="CLAMP">Clamp</option>
-							<option id="gradient_repeat_repeat" value="REPEAT">Repeat</option>
-							<option id="gradient_repeat_mirrored_repeat" value="MIRRORED_REPEAT">Mirrored Repeat</option>
-						</selectgroup>
-					</li>
-
-					<li>
-						<span>Gradient Scheme:</span>
-						<div id="elevation_gradient_scheme_selection" style="display: flex; padding: 1em 0em">
-						</div>
-					</li>
-				</div>
-
-				<div id="materials.transition_container">
-					<div class="divider">
-						<span>Transition</span>
-					</div>
-
-					<li>transition: <span id="lblTransition"></span> <div id="sldTransition"></div>	</li>
-				</div>
-
-				<div id="materials.intensity_container">
-					<div class="divider">
-						<span>Intensity</span>
-					</div>
-
-					<li>Range: <span id="lblIntensityRange"></span> <div id="sldIntensityRange"></div>	</li>
-					<li>Gamma: <span id="lblIntensityGamma"></span> <div id="sldIntensityGamma"></div>	</li>
-					<li>Brightness: <span id="lblIntensityBrightness"></span> <div id="sldIntensityBrightness"></div>	</li>
-					<li>Contrast: <span id="lblIntensityContrast"></span> <div id="sldIntensityContrast"></div>	</li>
-				</div>
-
-				<div id="materials.gpstime_container">
-					<div class="divider">
-						<span>GPS Time</span>
-					</div>
-
-				</div>
-
-				<div id="materials.index_container">
-					<div class="divider">
-						<span>Indices</span>
-					</div>
-				</div>
-
-
-				</ul>
-			</div>
-		`;
-
-		const panelEl = panelTemplate.content.firstElementChild;
-		let panel = {
-			el: panelEl,
-			find: (selector) => jq(panelEl.querySelector(selector)),
-			i18n: () => jq(panelEl).i18n(),
+		const folderExtra = gui.addFolder("Extra Attribute");
+		const extraRangeProxy = {
+			get min(){
+				let name = material.activeAttributeName;
+				let r = material.getRange(name);
+				return r ? r[0] : 0;
+			},
+			set min(v){
+				let name = material.activeAttributeName;
+				let attribute = pointcloud.getAttribute(name);
+				let r = material.getRange(name) || (attribute ? [...attribute.range] : [0, 1]);
+				material.setRange(name, [v, r[1]]);
+			},
+			get max(){
+				let name = material.activeAttributeName;
+				let r = material.getRange(name);
+				return r ? r[1] : 1;
+			},
+			set max(v){
+				let name = material.activeAttributeName;
+				let attribute = pointcloud.getAttribute(name);
+				let r = material.getRange(name) || (attribute ? [...attribute.range] : [0, 1]);
+				material.setRange(name, [r[0], v]);
+			},
 		};
-
-		panel.i18n();
-		this.container.append(panel.el);
-
-		{ // POINT SIZE
-			let sldPointSize = panel.find(`#sldPointSize`);
-			let lblPointSize = panel.find(`#lblPointSize`);
-
-			sldPointSize.slider({
-				value: material.size,
-				min: 0,
-				max: 3,
-				step: 0.01,
-				slide: function (event, ui) { material.size = ui.value; }
-			});
-
-			let update = (e) => {
-				lblPointSize.html(material.size.toFixed(2));
-				sldPointSize.slider({value: material.size});
-			};
-			this.addVolatileListener(material, "point_size_changed", update);
-
-			update();
-		}
-
-		{ // MINIMUM POINT SIZE
-			let sldMinPointSize = panel.find(`#sldMinPointSize`);
-			let lblMinPointSize = panel.find(`#lblMinPointSize`);
-
-			sldMinPointSize.slider({
-				value: material.size,
-				min: 0,
-				max: 3,
-				step: 0.01,
-				slide: function (event, ui) { material.minSize = ui.value; }
-			});
-
-			let update = (e) => {
-				lblMinPointSize.html(material.minSize.toFixed(2));
-				sldMinPointSize.slider({value: material.minSize});
-			};
-			this.addVolatileListener(material, "point_size_changed", update);
-
-			update();
-		}
-
-		{ // POINT SIZING
-			let strSizeType = Object.keys(PointSizeType)[material.pointSizeType];
-
-			let opt = panel.find(`#optPointSizing`);
-			opt.selectmenu();
-			opt.val(strSizeType).selectmenu('refresh');
-
-			opt.selectmenu({
-				change: (event, ui) => {
-					material.pointSizeType = PointSizeType[ui.item.value];
-				}
-			});
-		}
-
-		{ // SHAPE
-			let opt = panel.find(`#optShape`);
-
-			opt.selectmenu({
-				change: (event, ui) => {
-					let value = ui.item.value;
-
-					material.shape = PointShape[value];
-				}
-			});
-
-			let update = () => {
-				let typename = Object.keys(PointShape)[material.shape];
-
-				opt.selectmenu().val(typename).selectmenu('refresh');
-			};
-			this.addVolatileListener(material, "point_shape_changed", update);
-
-			update();
-		}
-
-		{ // BACKFACE CULLING
-
-			let opt = panel.find(`#set_backface_culling`);
-			opt.click(() => {
-				material.backfaceCulling = opt.prop("checked");
-			});
-			let update = () => {
-				let value = material.backfaceCulling;
-				opt.prop("checked", value);
-			};
-			this.addVolatileListener(material, "backface_changed", update);
-			update();
-
-			let blockBackface = panel.find('#materials_backface_container');
-			blockBackface.css('display', 'none');
-
-			const pointAttributes = pointcloud.pcoGeometry.pointAttributes;
-			const hasNormals = pointAttributes.hasNormals ? pointAttributes.hasNormals() : false;
-			if(hasNormals) {
-				blockBackface.css('display', 'block');
-			}
-			/*
-			opt.checkboxradio({
-				clicked: (event, ui) => {
-					// let value = ui.item.value;
-					let value = ui.item.checked;
-					console.log(value);
-					material.backfaceCulling = value;
-				}
-			});
-			*/
-		}
-
-		{ // OPACITY
-			let sldOpacity = panel.find(`#sldOpacity`);
-			let lblOpacity = panel.find(`#lblOpacity`);
-
-			sldOpacity.slider({
-				value: material.opacity,
-				min: 0,
-				max: 1,
-				step: 0.001,
-				slide: function (event, ui) {
-					material.opacity = ui.value;
-				}
-			});
-
-			let update = (e) => {
-				lblOpacity.html(material.opacity.toFixed(2));
-				sldOpacity.slider({value: material.opacity});
-			};
-			this.addVolatileListener(material, "opacity_changed", update);
-
-			update();
-		}
-
-		{
-
-			const attributes = pointcloud.pcoGeometry.pointAttributes.attributes;
-
-			let options = [];
-
-			options.push(...attributes.map(a => a.name));
-
-			const intensityIndex = options.indexOf("intensity");
-			if(intensityIndex >= 0){
-				options.splice(intensityIndex + 1, 0, "intensity gradient");
-			}
-
-			options.push(
-				"elevation",
-				"color",
-				'matcap',
-				'indices',
-				'level of detail',
-				'composite'
-			);
-
-			const blacklist = [
-				"POSITION_CARTESIAN",
-				"position",
-			];
-
-			options = options.filter(o => !blacklist.includes(o));
-
-			let attributeSelection = panel.find('#optMaterial');
-			for(let option of options){
-				let elOption = document.createElement("option");
-				elOption.textContent = option;
-				attributeSelection.append(elOption);
-			}
-
-			let updateMaterialPanel = (event, ui) => {
-				let selectedValue = attributeSelection.selectmenu().val();
-				material.activeAttributeName = selectedValue;
-
-				let attribute = pointcloud.getAttribute(selectedValue);
-
-				if(selectedValue === "intensity gradient"){
-					attribute = pointcloud.getAttribute("intensity");
-				}
-
-				const isIntensity = attribute ? ["intensity", "intensity gradient"].includes(attribute.name) : false;
-
-				if(isIntensity){
-					if(pointcloud.material.intensityRange[0] === Infinity){
-						pointcloud.material.intensityRange = attribute.range;
-					}
-
-					const [min, max] = attribute.range;
-
-					panel.find('#sldIntensityRange').slider({
-						range: true,
-						min: min, max: max, step: 0.01,
-						values: [min, max],
-						slide: (event, ui) => {
-							let min = ui.values[0];
-							let max = ui.values[1];
-							material.intensityRange = [min, max];
-						}
-					});
-				} else if(attribute){
-					const [min, max] = attribute.range;
-
-					let selectedRange = material.getRange(attribute.name);
-
-					if(!selectedRange){
-						selectedRange = [...attribute.range];
-					}
-
-					let minMaxAreNumbers = typeof min === "number" && typeof max === "number";
-
-					if(minMaxAreNumbers){
-						panel.find('#sldExtraRange').slider({
-							range: true,
-							min: min,
-							max: max,
-							step: 0.01,
-							values: selectedRange,
-							slide: (event, ui) => {
-								let [a, b] = ui.values;
-
-								material.setRange(attribute.name, [a, b]);
-							}
-						});
-					}
-
-				}
-
-				let blockWeights = panel.find('#materials\\.composite_weight_container');
-				let blockElevation = panel.find('#materials\\.elevation_container');
-				let blockRGB = panel.find('#materials\\.rgb_container');
-				let blockExtra = panel.find('#materials\\.extra_container');
-				let blockColor = panel.find('#materials\\.color_container');
-				let blockIntensity = panel.find('#materials\\.intensity_container');
-				let blockIndex = panel.find('#materials\\.index_container');
-				let blockTransition = panel.find('#materials\\.transition_container');
-				let blockGps = panel.find('#materials\\.gpstime_container');
-				let blockMatcap = panel.find('#materials\\.matcap_container');
-
-				blockIndex.css('display', 'none');
-				blockIntensity.css('display', 'none');
-				blockElevation.css('display', 'none');
-				blockRGB.css('display', 'none');
-				blockExtra.css('display', 'none');
-				blockColor.css('display', 'none');
-				blockWeights.css('display', 'none');
-				blockTransition.css('display', 'none');
-				blockMatcap.css('display', 'none');
-				blockGps.css('display', 'none');
-
-				if (selectedValue === 'composite') {
-					blockWeights.css('display', 'block');
-					blockElevation.css('display', 'block');
-					blockRGB.css('display', 'block');
-					blockIntensity.css('display', 'block');
-				} else if (selectedValue === 'elevation') {
-					blockElevation.css('display', 'block');
-				} else if (selectedValue === 'RGB and Elevation') {
-					blockRGB.css('display', 'block');
-					blockElevation.css('display', 'block');
-				} else if (selectedValue === 'rgba') {
-					blockRGB.css('display', 'block');
-				} else if (selectedValue === 'color') {
-					blockColor.css('display', 'block');
-				} else if (selectedValue === 'intensity') {
-					blockIntensity.css('display', 'block');
-				} else if (selectedValue === 'intensity gradient') {
-					blockIntensity.css('display', 'block');
-				} else if (selectedValue === "indices" ){
-					blockIndex.css('display', 'block');
-				} else if (selectedValue === "matcap" ){
-					blockMatcap.css('display', 'block');
-				} else if (selectedValue === "classification" ){
-					// add classification color selctor?
-				} else if (selectedValue === "gps-time" ){
-					blockGps.css('display', 'block');
-				} else if(selectedValue === "number of returns"){
-
-				} else if(selectedValue === "return number"){
-
-				} else if(["source id", "point source id"].includes(selectedValue)){
-
-				} else{
-					blockExtra.css('display', 'block');
-				}
-			};
-
-			attributeSelection.selectmenu({change: updateMaterialPanel});
-
-			let update = () => {
-				attributeSelection.val(material.activeAttributeName).selectmenu('refresh');
-			};
-			this.addVolatileListener(material, "point_color_type_changed", update);
-			this.addVolatileListener(material, "active_attribute_changed", update);
-
-			update();
-			updateMaterialPanel();
-		}
-
-		{
-			const schemes = Object.keys(Potree.Gradients).map(name => ({name: name, values: Gradients[name]}));
-
-			let elSchemeContainer = panel.find("#elevation_gradient_scheme_selection");
-
-			for(let scheme of schemes){
-				let elScheme = document.createElement("span");
-				elScheme.style.flexGrow = "1";
-
-				const svg = Potree.Utils.createSvgGradient(scheme.values);
-				svg.setAttributeNS(null, "class", `button-icon`);
-
-				elScheme.appendChild(svg);
-
-				elScheme.addEventListener("click", () => {
-					material.gradient = Gradients[scheme.name];
-				});
-
-				elSchemeContainer.append(elScheme);
-			}
-		}
-
+		const ctrlExtraMin = folderExtra.add(extraRangeProxy, "min").name("Range Min").listen();
+		const ctrlExtraMax = folderExtra.add(extraRangeProxy, "max").name("Range Max").listen();
+		folderExtra.add(material, "extraGamma", 0, 4, 0.01).name("Gamma").listen();
+		folderExtra.add(material, "extraBrightness", -1, 1, 0.01).name("Brightness").listen();
+		folderExtra.add(material, "extraContrast", -1, 1, 0.01).name("Contrast").listen();
+
+		const folderMatcap = gui.addFolder("MatCap");
 		{
 			let matcaps = [
 				{name: "Normals", icon: `${Potree.resourcePath}/icons/matcap/check_normal+y.jpg`},
@@ -600,278 +195,214 @@ export class PropertiesPanel{
 				{name: "Reflection Check Vertical", icon: `${Potree.resourcePath}/icons/matcap/reflection_check_vertical.jpg`},
 			];
 
-			let elMatcapContainer = panel.find("#matcap_scheme_selection");
+			let elMatcapContainer = document.createElement("div");
+			elMatcapContainer.style.display = "flex";
+			elMatcapContainer.style.flexWrap = "wrap";
+			elMatcapContainer.style.padding = "4px 8px";
 
 			for(let matcap of matcaps){
 				let elMatcap = document.createElement("img");
 				elMatcap.src = matcap.icon;
+				elMatcap.title = matcap.name;
 				elMatcap.className = "button-icon";
 				elMatcap.style.width = "25%";
+				elMatcap.style.cursor = "pointer";
 
 				elMatcap.addEventListener("click", () => {
 					material.matcap = matcap.icon.substring(matcap.icon.lastIndexOf('/'));
 				});
 
-				elMatcapContainer.append(elMatcap);
+				elMatcapContainer.appendChild(elMatcap);
 			}
+
+			folderMatcap.domElement.appendChild(elMatcapContainer);
 		}
 
+		const folderColor = gui.addFolder("Color");
+		const colorProxy = {
+			get color(){ return `#${material.color.getHexString()}`; },
+			set color(hex){ material.color = new Color(hex); },
+		};
+		folderColor.addColor(colorProxy, "color").name("Color").listen();
+
+		const folderElevation = gui.addFolder("Elevation");
+		const ctrlHeightMin = folderElevation.add(material, "heightMin").name("Height Min").listen();
+		const ctrlHeightMax = folderElevation.add(material, "heightMax").name("Height Max").listen();
+		folderElevation.add(viewer, "elevationGradientRepeat", ElevationGradientRepeat).name("Gradient Repeat").listen();
 		{
-			panel.find('#sldRGBGamma').slider({
-				value: material.rgbGamma,
-				min: 0, max: 4, step: 0.01,
-				slide: (event, ui) => {material.rgbGamma = ui.value}
-			});
+			const schemes = Object.keys(Potree.Gradients).map(name => ({name: name, values: Gradients[name]}));
 
-			panel.find('#sldRGBContrast').slider({
-				value: material.rgbContrast,
-				min: -1, max: 1, step: 0.01,
-				slide: (event, ui) => {material.rgbContrast = ui.value}
-			});
+			let elSchemeContainer = document.createElement("div");
+			elSchemeContainer.style.display = "flex";
+			elSchemeContainer.style.flexWrap = "wrap";
+			elSchemeContainer.style.padding = "4px 8px";
 
-			panel.find('#sldRGBBrightness').slider({
-				value: material.rgbBrightness,
-				min: -1, max: 1, step: 0.01,
-				slide: (event, ui) => {material.rgbBrightness = ui.value}
-			});
+			for(let scheme of schemes){
+				let elScheme = document.createElement("span");
+				elScheme.style.flexGrow = "1";
 
-			panel.find('#sldExtraGamma').slider({
-				value: material.extraGamma,
-				min: 0, max: 4, step: 0.01,
-				slide: (event, ui) => {material.extraGamma = ui.value}
-			});
+				const svg = Potree.Utils.createSvgGradient(scheme.values);
+				svg.setAttributeNS(null, "class", `button-icon`);
 
-			panel.find('#sldExtraBrightness').slider({
-				value: material.extraBrightness,
-				min: -1, max: 1, step: 0.01,
-				slide: (event, ui) => {material.extraBrightness = ui.value}
-			});
+				elScheme.appendChild(svg);
 
-			panel.find('#sldExtraContrast').slider({
-				value: material.extraContrast,
-				min: -1, max: 1, step: 0.01,
-				slide: (event, ui) => {material.extraContrast = ui.value}
-			});
-
-			panel.find('#sldHeightRange').slider({
-				range: true,
-				min: 0, max: 1000, step: 0.01,
-				values: [0, 1000],
-				slide: (event, ui) => {
-					material.heightMin = ui.values[0];
-					material.heightMax = ui.values[1];
-				}
-			});
-
-			panel.find('#sldIntensityGamma').slider({
-				value: material.intensityGamma,
-				min: 0, max: 4, step: 0.01,
-				slide: (event, ui) => {material.intensityGamma = ui.value}
-			});
-
-			panel.find('#sldIntensityContrast').slider({
-				value: material.intensityContrast,
-				min: -1, max: 1, step: 0.01,
-				slide: (event, ui) => {material.intensityContrast = ui.value}
-			});
-
-			panel.find('#sldIntensityBrightness').slider({
-				value: material.intensityBrightness,
-				min: -1, max: 1, step: 0.01,
-				slide: (event, ui) => {material.intensityBrightness = ui.value}
-			});
-
-			panel.find('#sldWeightRGB').slider({
-				value: material.weightRGB,
-				min: 0, max: 1, step: 0.01,
-				slide: (event, ui) => {material.weightRGB = ui.value}
-			});
-
-			panel.find('#sldWeightIntensity').slider({
-				value: material.weightIntensity,
-				min: 0, max: 1, step: 0.01,
-				slide: (event, ui) => {material.weightIntensity = ui.value}
-			});
-
-			panel.find('#sldWeightElevation').slider({
-				value: material.weightElevation,
-				min: 0, max: 1, step: 0.01,
-				slide: (event, ui) => {material.weightElevation = ui.value}
-			});
-
-			panel.find('#sldWeightClassification').slider({
-				value: material.weightClassification,
-				min: 0, max: 1, step: 0.01,
-				slide: (event, ui) => {material.weightClassification = ui.value}
-			});
-
-			panel.find('#sldWeightReturnNumber').slider({
-				value: material.weightReturnNumber,
-				min: 0, max: 1, step: 0.01,
-				slide: (event, ui) => {material.weightReturnNumber = ui.value}
-			});
-
-			panel.find('#sldWeightSourceID').slider({
-				value: material.weightSourceID,
-				min: 0, max: 1, step: 0.01,
-				slide: (event, ui) => {material.weightSourceID = ui.value}
-			});
-
-			panel.find(`#materials\\.color\\.picker`).spectrum({
-				flat: true,
-				showInput: true,
-				preferredFormat: 'rgb',
-				cancelText: '',
-				chooseText: 'Apply',
-				color: `#${material.color.getHexString()}`,
-				move: color => {
-					let cRGB = color.toRgb();
-					let tc = new Color().setRGB(cRGB.r / 255, cRGB.g / 255, cRGB.b / 255);
-					material.color = tc;
-				},
-				change: color => {
-					let cRGB = color.toRgb();
-					let tc = new Color().setRGB(cRGB.r / 255, cRGB.g / 255, cRGB.b / 255);
-					material.color = tc;
-				}
-			});
-
-			this.addVolatileListener(material, "color_changed", () => {
-				panel.find(`#materials\\.color\\.picker`)
-					.spectrum('set', `#${material.color.getHexString()}`);
-			});
-
-			let updateHeightRange = function () {
-
-
-				let aPosition = pointcloud.getAttribute("position");
-
-				let bMin, bMax;
-
-				if(aPosition){
-					// for new format 2.0 and loader that contain precomputed min/max of attributes
-					let min = aPosition.range[0][2];
-					let max = aPosition.range[1][2];
-					let width = max - min;
-
-					bMin = min - 0.2 * width;
-					bMax = max + 0.2 * width;
-				}else{
-					// for format up until exlusive 2.0
-					let box = [pointcloud.pcoGeometry.tightBoundingBox, pointcloud.getBoundingBoxWorld()]
-						.find(v => v !== undefined);
-
-					pointcloud.updateMatrixWorld(true);
-					box = Utils.computeTransformedBoundingBox(box, pointcloud.matrixWorld);
-
-					let bWidth = box.max.z - box.min.z;
-					bMin = box.min.z - 0.2 * bWidth;
-					bMax = box.max.z + 0.2 * bWidth;
-				}
-
-				let range = material.elevationRange;
-
-				panel.find('#lblHeightRange').html(`${range[0].toFixed(2)} to ${range[1].toFixed(2)}`);
-				panel.find('#sldHeightRange').slider({min: bMin, max: bMax, values: range});
-			};
-
-			let updateExtraRange = function () {
-
-				let attributeName = material.activeAttributeName;
-				let attribute = pointcloud.getAttribute(attributeName);
-
-				if(attribute == null){
-					return;
-				}
-
-				let range = material.getRange(attributeName);
-
-				if(range == null){
-					range = attribute.range;
-				}
-
-				// currently only supporting scalar ranges.
-				// rgba, normals, positions, etc have vector ranges, however
-				let isValidRange = (typeof range[0] === "number") && (typeof range[1] === "number");
-				if(!isValidRange){
-					return;
-				}
-
-				if(range){
-					let msg = `${range[0].toFixed(2)} to ${range[1].toFixed(2)}`;
-					panel.find('#lblExtraRange').html(msg);
-				}else{
-					panel.find("could not deduce range");
-				}
-			};
-
-			let updateIntensityRange = function () {
-				let range = material.intensityRange;
-
-				panel.find('#lblIntensityRange').html(`${parseInt(range[0])} to ${parseInt(range[1])}`);
-			};
-
-			{
-				updateHeightRange();
-				panel.find(`#sldHeightRange`).slider('option', 'min');
-				panel.find(`#sldHeightRange`).slider('option', 'max');
-			}
-
-			{
-				let elGradientRepeat = panel.find("#gradient_repeat_option");
-				elGradientRepeat.selectgroup({title: "Gradient"});
-
-				elGradientRepeat.find("input").click( (e) => {
-					this.viewer.setElevationGradientRepeat(ElevationGradientRepeat[e.target.value]);
+				elScheme.addEventListener("click", () => {
+					material.gradient = Gradients[scheme.name];
 				});
 
-				let current = Object.keys(ElevationGradientRepeat)
-					.filter(key => ElevationGradientRepeat[key] === this.viewer.elevationGradientRepeat);
-				elGradientRepeat.find(`input[value=${current}]`).trigger("click");
+				elSchemeContainer.appendChild(elScheme);
 			}
 
-			let onIntensityChange = () => {
-				let gamma = material.intensityGamma;
-				let contrast = material.intensityContrast;
-				let brightness = material.intensityBrightness;
-
-				updateIntensityRange();
-
-				panel.find('#lblIntensityGamma').html(gamma.toFixed(2));
-				panel.find('#lblIntensityContrast').html(contrast.toFixed(2));
-				panel.find('#lblIntensityBrightness').html(brightness.toFixed(2));
-
-				panel.find('#sldIntensityGamma').slider({value: gamma});
-				panel.find('#sldIntensityContrast').slider({value: contrast});
-				panel.find('#sldIntensityBrightness').slider({value: brightness});
-			};
-
-			let onRGBChange = () => {
-				let gamma = material.rgbGamma;
-				let contrast = material.rgbContrast;
-				let brightness = material.rgbBrightness;
-
-				panel.find('#lblRGBGamma').html(gamma.toFixed(2));
-				panel.find('#lblRGBContrast').html(contrast.toFixed(2));
-				panel.find('#lblRGBBrightness').html(brightness.toFixed(2));
-
-				panel.find('#sldRGBGamma').slider({value: gamma});
-				panel.find('#sldRGBContrast').slider({value: contrast});
-				panel.find('#sldRGBBrightness').slider({value: brightness});
-			};
-
-			this.addVolatileListener(material, "material_property_changed", updateExtraRange);
-			this.addVolatileListener(material, "material_property_changed", updateHeightRange);
-			this.addVolatileListener(material, "material_property_changed", onIntensityChange);
-			this.addVolatileListener(material, "material_property_changed", onRGBChange);
-
-			updateExtraRange();
-			updateHeightRange();
-			onIntensityChange();
-			onRGBChange();
+			folderElevation.domElement.appendChild(elSchemeContainer);
 		}
 
+		const folderIntensity = gui.addFolder("Intensity");
+		const intensityRangeProxy = {
+			get min(){ return material.intensityRange[0]; },
+			set min(v){ material.intensityRange = [v, material.intensityRange[1]]; },
+			get max(){ return material.intensityRange[1]; },
+			set max(v){ material.intensityRange = [material.intensityRange[0], v]; },
+		};
+		const ctrlIntensityMin = folderIntensity.add(intensityRangeProxy, "min").name("Range Min").listen();
+		const ctrlIntensityMax = folderIntensity.add(intensityRangeProxy, "max").name("Range Max").listen();
+		folderIntensity.add(material, "intensityGamma", 0, 4, 0.01).name("Gamma").listen();
+		folderIntensity.add(material, "intensityBrightness", -1, 1, 0.01).name("Brightness").listen();
+		folderIntensity.add(material, "intensityContrast", -1, 1, 0.01).name("Contrast").listen();
+
+		const updateHeightRangeBounds = () => {
+			let aPosition = pointcloud.getAttribute("position");
+
+			let bMin, bMax;
+
+			if(aPosition){
+				// for new format 2.0 and loader that contain precomputed min/max of attributes
+				let min = aPosition.range[0][2];
+				let max = aPosition.range[1][2];
+				let width = max - min;
+
+				bMin = min - 0.2 * width;
+				bMax = max + 0.2 * width;
+			}else{
+				// for format up until exlusive 2.0
+				let box = [pointcloud.pcoGeometry.tightBoundingBox, pointcloud.getBoundingBoxWorld()]
+					.find(v => v !== undefined);
+
+				pointcloud.updateMatrixWorld(true);
+				box = Utils.computeTransformedBoundingBox(box, pointcloud.matrixWorld);
+
+				let bWidth = box.max.z - box.min.z;
+				bMin = box.min.z - 0.2 * bWidth;
+				bMax = box.max.z + 0.2 * bWidth;
+			}
+
+			ctrlHeightMin.min(bMin).max(bMax);
+			ctrlHeightMax.min(bMin).max(bMax);
+		};
+
+		const updateExtraRangeBounds = () => {
+			let attributeName = material.activeAttributeName;
+			let attribute = pointcloud.getAttribute(attributeName);
+
+			if(attribute == null){
+				return;
+			}
+
+			// currently only supporting scalar ranges.
+			// rgba, normals, positions, etc have vector ranges, however
+			let [amin, amax] = attribute.range;
+			let isValidRange = (typeof amin === "number") && (typeof amax === "number");
+			if(!isValidRange){
+				return;
+			}
+
+			ctrlExtraMin.min(amin).max(amax);
+			ctrlExtraMax.min(amin).max(amax);
+		};
+
+		const updateIntensityRangeBounds = () => {
+			let attribute = pointcloud.getAttribute("intensity");
+			if(attribute == null){
+				return;
+			}
+
+			if(pointcloud.material.intensityRange[0] === Infinity){
+				pointcloud.material.intensityRange = attribute.range;
+			}
+
+			let [amin, amax] = attribute.range;
+			ctrlIntensityMin.min(amin).max(amax);
+			ctrlIntensityMax.min(amin).max(amax);
+		};
+
+		const updateMaterialPanel = () => {
+			let selectedValue = material.activeAttributeName;
+
+			let attribute = pointcloud.getAttribute(selectedValue);
+			if(selectedValue === "intensity gradient"){
+				attribute = pointcloud.getAttribute("intensity");
+			}
+
+			const isIntensity = attribute ? ["intensity", "intensity gradient"].includes(attribute.name) : false;
+
+			if(isIntensity){
+				updateIntensityRangeBounds();
+			} else if(attribute){
+				updateExtraRangeBounds();
+			}
+
+			folderWeights.hide();
+			folderElevation.hide();
+			folderRGB.hide();
+			folderExtra.hide();
+			folderColor.hide();
+			folderIntensity.hide();
+			folderMatcap.hide();
+
+			if (selectedValue === 'composite') {
+				folderWeights.show();
+				folderElevation.show();
+				folderRGB.show();
+				folderIntensity.show();
+			} else if (selectedValue === 'elevation') {
+				folderElevation.show();
+			} else if (selectedValue === 'RGB and Elevation') {
+				folderRGB.show();
+				folderElevation.show();
+			} else if (selectedValue === 'rgba') {
+				folderRGB.show();
+			} else if (selectedValue === 'color') {
+				folderColor.show();
+			} else if (selectedValue === 'intensity' || selectedValue === 'intensity gradient') {
+				folderIntensity.show();
+			} else if (selectedValue === "matcap") {
+				folderMatcap.show();
+			} else if (selectedValue === "classification") {
+				// add classification color selector?
+			} else if (selectedValue === "gps-time") {
+				// no dedicated controls currently
+			} else if (selectedValue === "indices" || selectedValue === "number of returns" || selectedValue === "return number"
+				|| ["source id", "point source id"].includes(selectedValue)) {
+				// no dedicated controls currently
+			} else {
+				folderExtra.show();
+			}
+		};
+
+		let attributeSelection = {activeAttributeName: material.activeAttributeName};
+		gui.add(material, "activeAttributeName", options).name("Attribute").listen().onChange(updateMaterialPanel);
+
+		this.addVolatileListener(material, "point_color_type_changed", updateMaterialPanel);
+		this.addVolatileListener(material, "active_attribute_changed", updateMaterialPanel);
+		this.addVolatileListener(material, "material_property_changed", () => {
+			updateExtraRangeBounds();
+			updateHeightRangeBounds();
+		});
+
+		updateHeightRangeBounds();
+		updateMaterialPanel();
+
 	}
+
 
 
 
@@ -919,22 +450,22 @@ export class PropertiesPanel{
 		let Panel = type.panel;
 
 		let panel = new Panel(this.viewer, object, this);
-		this.container.append(panel.elContent);
+		this.container.appendChild(panel.elContent);
 	}
 
 	setCamera(camera){
 		let panel = new CameraPanel(this.viewer, this);
-		this.container.append(panel.elContent);
+		this.container.appendChild(panel.elContent);
 	}
 
 	setAnnotation(annotation){
 		let panel = new AnnotationPanel(this.viewer, this, annotation);
-		this.container.append(panel.elContent);
+		this.container.appendChild(panel.elContent);
 	}
 
 	setCameraAnimation(animation){
 		let panel = new CameraAnimationPanel(this.viewer, this, animation)
-		this.container.append(panel.elContent);
+		this.container.appendChild(panel.elContent);
 	}
 
 }

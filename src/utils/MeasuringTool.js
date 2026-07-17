@@ -1,6 +1,6 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {DirectionalLight, MathUtils, Scene, Vector2, Vector3} from 'three';
+import {DirectionalLight, MathUtils, Scene, Vector2, Vector3,MOUSE} from 'three';
 import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
 import {Utils} from "../utils.js";
@@ -226,7 +226,7 @@ export class MeasuringTool extends EventDispatcher {
 		};
 
 		let insertionCallback = (e) => {
-			if (e.button === MOUSE.LEFT) {
+			if (e.button === MOUSE.LEFT) {//from THREE.js???
 				measure.addMarker(measure.points[measure.points.length - 1].position.clone());
 
 				if (measure.points.length >= measure.maxMarkers) {

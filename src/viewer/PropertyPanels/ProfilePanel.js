@@ -8,13 +8,14 @@ export class ProfilePanel extends MeasurePanel{
 		super(viewer, measurement, propertiesPanel);
 
 		let removeIconPath = Potree.resourcePath + '/icons/remove.svg';
-		this.elContent = $(`
+		const template = document.createElement("template");
+		template.innerHTML = `
 			<div class="measurement_content selectable">
 				<span class="coordinates_table_container"></span>
 				<br>
 				<span style="display:flex">
 					<span style="display:flex; align-items: center; padding-right: 10px">Width: </span>
-					<input id="sldProfileWidth" name="sldProfileWidth" value="5.06" style="flex-grow: 1; width:100%">
+					<input id="sldProfileWidth" name="sldProfileWidth" type="number" min="0" step="0.01" value="5.06" style="flex-grow: 1; width:100%">
 				</span>
 				<br>
 
@@ -34,66 +35,46 @@ export class ProfilePanel extends MeasurePanel{
 					<img name="remove" class="button-icon" src="${removeIconPath}" style="width: 16px; height: 16px"/>
 				</div>
 			</div>
-		`);
+		`;
+		this.elContent = template.content.firstElementChild;
 
-		this.elRemove = this.elContent.find("img[name=remove]");
-		this.elRemove.click( () => {
+		this.elRemove = this.elContent.querySelector("img[name=remove]");
+		this.elRemove.addEventListener("click", () => {
 			this.viewer.scene.removeProfile(measurement);
 		});
 
 		{ // download
-			this.elDownloadButton = this.elContent.find(`input[name=download_profile]`);
+			this.elDownloadButton = this.elContent.querySelector(`input[name=download_profile]`);
 
 			if(this.propertiesPanel.viewer.server){
-				this.elDownloadButton.click(() => this.download());
+				this.elDownloadButton.addEventListener("click", () => this.download());
 			} else {
-				this.elDownloadButton.hide();
+				this.elDownloadButton.style.display = "none";
 			}
 		}
 
-		{ // width spinner
-			let elWidthSlider = this.elContent.find(`#sldProfileWidth`);
+		{ // width input
+			let elWidthSlider = this.elContent.querySelector(`#sldProfileWidth`);
+			elWidthSlider.value = measurement.getWidth();
 
-			elWidthSlider.spinner({
-				min: 0, max: 10 * 1000 * 1000, step: 0.01,
-				numberFormat: 'n',
-				start: () => {},
-				spin: (event, ui) => {
-					let value = elWidthSlider.spinner('value');
+			elWidthSlider.addEventListener("input", () => {
+				let value = parseFloat(elWidthSlider.value);
+				if(!isNaN(value)){
 					measurement.setWidth(value);
-				},
-				change: (event, ui) => {
-					let value = elWidthSlider.spinner('value');
-					measurement.setWidth(value);
-				},
-				stop: (event, ui) => {
-					let value = elWidthSlider.spinner('value');
-					measurement.setWidth(value);
-				},
-				incremental: (count) => {
-					let value = elWidthSlider.spinner('value');
-					let step = elWidthSlider.spinner('option', 'step');
-
-					let delta = value * 0.05;
-					let increments = Math.max(1, parseInt(delta / step));
-
-					return increments;
 				}
 			});
-			elWidthSlider.spinner('value', measurement.getWidth());
-			elWidthSlider.spinner('widget').css('width', '100%');
 
 			let widthListener = (event) => {
-				let value = elWidthSlider.spinner('value');
+				let value = parseFloat(elWidthSlider.value);
 				if (value !== measurement.getWidth()) {
-					elWidthSlider.spinner('value', measurement.getWidth());
+					elWidthSlider.value = measurement.getWidth();
 				}
 			};
 			this.propertiesPanel.addVolatileListener(measurement, "width_changed", widthListener);
 		}
 
-		let elShow2DProfile = this.elContent.find(`#show_2d_profile`);
-		elShow2DProfile.click(() => {
+		let elShow2DProfile = this.elContent.querySelector(`#show_2d_profile`);
+		elShow2DProfile.addEventListener("click", () => {
 			this.propertiesPanel.viewer.profileWindow.show();
 			this.propertiesPanel.viewer.profileWindowController.setProfile(measurement);
 		});
@@ -106,9 +87,9 @@ export class ProfilePanel extends MeasurePanel{
 	}
 
 	update(){
-		let elCoordiantesContainer = this.elContent.find('.coordinates_table_container');
-		elCoordiantesContainer.empty();
-		elCoordiantesContainer.append(this.createCoordinatesTable(this.measurement.points));
+		let elCoordiantesContainer = this.elContent.querySelector('.coordinates_table_container');
+		elCoordiantesContainer.innerHTML = "";
+		elCoordiantesContainer.appendChild(this.createCoordinatesTable(this.measurement.points));
 	}
 
 	async download(){
@@ -180,14 +161,14 @@ export class ProfilePanel extends MeasurePanel{
 		}
 		let pointcloudsArg = pointcloudArgs.join(",");
 
-		let elMessage = this.elContent.find("div[name=download_message]");
+		let elMessage = this.elContent.querySelector("div[name=download_message]");
 
 		let error = (message) => {
-			elMessage.html(`<div style="color: #ff0000">ERROR: ${message}</div>`);
+			elMessage.innerHTML = `<div style="color: #ff0000">ERROR: ${message}</div>`;
 		};
 
 		let info = (message) => {
-			elMessage.html(`${message}`);
+			elMessage.innerHTML = `${message}`;
 		};
 
 		let handle = null;
