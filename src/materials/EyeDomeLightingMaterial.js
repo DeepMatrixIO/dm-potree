@@ -1,5 +1,5 @@
 
-import {Shaders} from "../../build/shaders/shaders.js";
+import {Shaders} from "./shaders/index.js";
 // import * as THREE from "../../libs/js/build/module.js";
 import {GLSL3, RawShaderMaterial} from 'three'
 

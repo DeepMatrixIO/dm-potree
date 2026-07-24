@@ -1,6 +1,6 @@
 
-import {RawShaderMaterial} from "three";
-import {Shaders} from "../../build/shaders/shaders.js";
+import {GLSL3, RawShaderMaterial} from "three";
+import {Shaders} from "./shaders/index.js";
 export class NormalizationMaterial extends RawShaderMaterial {
 
 	constructor(parameters = {}) {

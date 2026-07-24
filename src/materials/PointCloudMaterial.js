@@ -1,9 +1,9 @@
-import {Shaders} from "../../build/shaders/shaders.js";
+import {Shaders} from "./shaders/index.js";
+
 import {
 	AdditiveBlending,
 	CanvasTexture, Color, DataTexture, LessEqualDepth, LinearFilter, NearestFilter,
-	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader,
-// } from "../../libs/js/build/core.js";
+	NoBlending, RawShaderMaterial, RepeatWrapping, RGBAFormat, TextureLoader
 } from "three";
 // import * as THREE from 'three';
 
