@@ -343,13 +343,13 @@ export class Measure extends Object3D {
 
 	createSphereMaterial() {
 		//With no illumination the sphere will be black, changing to something else
-		let sphereMaterial = new MeshLambertMaterial({
-			//shading: SmoothShading,
-			color: this.color,
-			depthTest: false,
-			depthWrite: false
-		}
-		);
+		// let sphereMaterial = new MeshLambertMaterial({
+		// 	//shading: SmoothShading,
+		// 	color: this.color,
+		// 	depthTest: false,
+		// 	depthWrite: false
+		// }
+		// );
 
 		let sphereMaterial2 = new MeshBasicMaterial({
 			//shading: SmoothShading,
@@ -359,7 +359,7 @@ export class Measure extends Object3D {
 		}
 		);
 
-		return sphereMaterial;
+		return sphereMaterial2;
 	};
 
 	addMarker(point) {
@@ -405,9 +405,11 @@ export class Measure extends Object3D {
 
 		{ // edge labels
 			let edgeLabel = new TextSprite();
-			edgeLabel.setBorderColor({r: 0, g: 0, b: 0, a: 1.0});
-			edgeLabel.setBackgroundColor({r: 0, g: 0, b: 0, a: 1.0});
+			edgeLabel.setBorderColor({r: 0, g: 255, b: 0, a: 1.0});
+			edgeLabel.setBackgroundColor({r: 255, g: 0, b: 0, a: 1.0});
 			edgeLabel.material.depthTest = false;
+			edgeLabel.material.transparent = false;
+
 			edgeLabel.visible = false;
 			edgeLabel.fontsize = 16;
 			this.edgeLabels.push(edgeLabel);

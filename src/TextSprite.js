@@ -2,13 +2,13 @@
 //  * adapted from http://stemkoski.github.io/js/Sprite-Text-Labels.html
 //  */
 
-import {Texture, LinearFilter, SpriteMaterial, Sprite} from 'three'
+import {Texture, LinearFilter, SpriteMaterial, Sprite, Object3D} from 'three'
 
 /**
  * A sprite that displays text within a dom element always facing to the front, anchored to a threejs object.
  */
 
-export class TextSprite extends Sprite {
+export class TextSprite extends Object3D {
 
 	constructor(text) {
 		super();
@@ -19,7 +19,8 @@ export class TextSprite extends Sprite {
 		let spriteMaterial = new SpriteMaterial({
 			map: texture,
 			depthTest: false,
-			depthWrite: false
+			depthWrite: false,
+			transparent: true//added as one is canvas, other texture
 		});
 
 		this.texture = texture;
@@ -29,11 +30,11 @@ export class TextSprite extends Sprite {
 		this.sprite = new Sprite(this.material);
 		this.add(this.sprite);
 
-		this.borderThickness = 4;
+		this.borderThickness = 0;
 		this.fontface = 'Arial';
-		this.fontsize = 28;
-		this.borderColor = {r: 0, g: 0, b: 0, a: 1.0};
-		this.backgroundColor = {r: 255, g: 255, b: 255, a: 1.0};
+		this.fontsize = 18;
+		this.borderColor = {r: 255, g: 0, b: 0, a: 1.0};
+		this.backgroundColor = {r: 0, g: 0, b: 0, a: 1.0};
 		this.textColor = {r: 255, g: 255, b: 255, a: 1.0};
 		this.text = '';
 
@@ -103,6 +104,7 @@ export class TextSprite extends Sprite {
 		context.fillText(this.text, this.borderThickness + margin, this.fontsize + this.borderThickness);
 
 		let texture = new Texture(canvas);
+		texture.setBackgroundColor =  {r: 255, g: 0, b: 0, a: 1.0};
 		texture.minFilter = LinearFilter;
 		texture.magFilter = LinearFilter;
 		texture.needsUpdate = true;

@@ -72,6 +72,9 @@ export class PotreeRenderer {
 		/////////////////////////////////
 		viewer.ecefRenderer();//forcing b3dm and others before regular rendering
 		////////////////////////////////
+
+		viewer.preRender();//forcing custom renderers before regular rendering
+		////////////////////////////////
 		for(let pointcloud of this.viewer.scene.pointclouds){
 			const {material} = pointcloud;
 			material.useEDL = false;
@@ -106,6 +109,12 @@ export class PotreeRenderer {
 		// 							viewer.navigationCube.width, viewer.navigationCube.width);
 		// renderer.render(viewer.navigationCube, viewer.navigationCube.camera);
 		// renderer.setViewport(0, 0, width, height);
+
+	////////////////////////////////
+
+		viewer.postRender();//forcing custom renderers before regular rendering
+		////////////////////////////////
+
 
 		viewer.dispatchEvent({type: "render.pass.end",viewer: viewer});
 	}

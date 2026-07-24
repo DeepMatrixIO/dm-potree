@@ -821,6 +821,35 @@ export class Viewer extends EventDispatcher {
 		}
 	};
 
+	preRender(timestamp) {
+		try {
+			if (this.preRenderers.length) {
+				this.preRenderers.forEach((item) => {
+					if (item.visible) {
+						item.render(this);
+					}
+				});
+			}
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
+	postRender(timestamp) {
+		try {
+			if (this.postRenderers.length) {
+				this.postRenderers.forEach((item) => {
+					if (item.visible) {
+						item.render(this);
+					}
+				});
+			}
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
+
 	//ADDED by  @jguerrer
 	extraRenderers(timestamp) {
 		try {
@@ -3108,8 +3137,9 @@ export class Viewer extends EventDispatcher {
 		// Update registered items before general potree items
 		this.triggerUpdates();//added by jguerrer
 		this.update(this.clock.getDelta(), timestamp);// <------- Updates al data but not renders yet
-		this.render();//calls potreeRenderer, which renders all available scenes
-
+		///////////////////////////////
+		this.render();//calls potreeRenderer, which renders all available scenes, includes prerenderers within the Potree contrxt
+		//////////////////////////////////
 		this.extraRenderers(timestamp)//added by jguerrer to enable Cesium extra render, requires an extra attr
 
 
@@ -3337,10 +3367,17 @@ export class Viewer extends EventDispatcher {
 			}
 
 			// Clear custom arrays
-			this.customUpdates = [];
-			this.ecefRenderers = [];
-			this.extraRenders = [];
+			this.customUpdates = [];  //outside potree renderer and pre potree renderer
+			this.ecefRenderers = [];  //within potree renderer
+
+			this.extraRenders = [];//outside potreeRendered
+
+			this.preRenderers = [];  //within potree renderer   used by preRender
+			this.postRenderers = [];  //within potree renderer, used by postRender
+
 			this.extraTools = [];
+
+
 
 			// Dispose GUI elements
 			if (this.sidebar && this.sidebar.dispose) {
@@ -3355,7 +3392,7 @@ export class Viewer extends EventDispatcher {
 
 			// Remove DOM elements
 			const clearContent = (selector) => {
-				document.querySelectorAll(selector).forEach(el => { el.innerHTML = ""; });
+				document.querySelectorAll(selector).forEach(el => {el.innerHTML = "";});
 			};
 			const removeElements = (selector) => {
 				document.querySelectorAll(selector).forEach(el => el.remove());

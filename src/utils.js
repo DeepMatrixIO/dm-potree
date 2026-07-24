@@ -1,5 +1,5 @@
 
-import {PlaneGeometry, Box3, BoxGeometry, BufferGeometry, Camera, DataTexture, Line, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, NearestFilter, Object3D, PerspectiveCamera, Ray, Raycaster, RGBAFormat, RGBFormat, Scene, SphereGeometry, TextureLoader, Vector3, Vector4, OrthographicCamera, BackSide, PlaneHelper } from 'three';
+import {PlaneGeometry, Box3, BoxGeometry, BufferGeometry, Camera, DataTexture, Line, LineBasicMaterial, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshNormalMaterial, NearestFilter, Object3D, PerspectiveCamera, Ray, Raycaster, RGBAFormat, Scene, SphereGeometry, TextureLoader, Vector3, Vector4, OrthographicCamera, BackSide, PlaneHelper } from 'three';
 
 import {XHRFactory} from "./XHRFactory.js";
 import {Measure} from "./utils/Measure.js";
@@ -402,7 +402,7 @@ export class Utils {
 
 		// map.magFilter = NearestFilter;
 		let size = width * height;
-		let data = new Uint8Array(3 * size);
+		let data = new Uint8Array(4 * size);
 
 		let chroma = [1, 1.5, 1.7];
 		let max = gauss(0, 0);
@@ -420,13 +420,14 @@ export class Utils {
 
 				// d = Math.pow(d, 0.6);
 
-				data[3 * i + 0] = 255 * (d / 15 + 0.05 + r) * chroma[0];
-				data[3 * i + 1] = 255 * (d / 15 + 0.05 + r) * chroma[1];
-				data[3 * i + 2] = 255 * (d / 15 + 0.05 + r) * chroma[2];
+				data[4 * i + 0] = 255 * (d / 15 + 0.05 + r) * chroma[0];
+				data[4 * i + 1] = 255 * (d / 15 + 0.05 + r) * chroma[1];
+				data[4 * i + 2] = 255 * (d / 15 + 0.05 + r) * chroma[2];
+				data[4 * i + 3] = 255;
 			}
 		}
 
-		let texture = new DataTexture(data, width, height, RGBFormat);
+		let texture = new DataTexture(data, width, height, RGBAFormat);
 		texture.needsUpdate = true;
 
 		return texture;
