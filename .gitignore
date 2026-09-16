@@ -21,6 +21,8 @@ libs
 /libs/*
 !/libs/brotli/
 !/libs/brotli/**
+!/libs/json5-2.1.3/
+!/libs/json5-2.1.3/**
 # /libs/giro3d
 # /libs/three.js_*
 # /libs/CesiumUnminified
