@@ -4,7 +4,8 @@
 
 //TODO remove for wprkers
 // import {PointAttributes, PointAttribute, PointAttributeTypes} from "../../../loader/PointAttributes.js";
-import {BrotliDecode} from "../../../../libs/brotli/decode.js";
+
+import {BrotliDecode} from "../../../../libs/brotli/decode.js";//TODO. fix the missing  import
 
 const finalVersion=true;
 const typedArrayMapping = {

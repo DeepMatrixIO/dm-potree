@@ -17,6 +17,10 @@ examples/index.html
 
 
 libs
+!/libs/
+/libs/*
+!/libs/brotli/
+!/libs/brotli/**
 # /libs/giro3d
 # /libs/three.js_*
 # /libs/CesiumUnminified
