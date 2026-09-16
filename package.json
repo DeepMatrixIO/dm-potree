@@ -1,8 +1,8 @@
 {
-  "name": "potree",
+  "name": "dm_potree",
   "private": true,
   "version": "1.8.0",
-  "description": "WebGL2 point cloud viewer. Modernized",
+  "description": "WebGL2 point cloud viewer. Modernized. Module version.",
   "keywords": [
     "point",
     "cloud",
