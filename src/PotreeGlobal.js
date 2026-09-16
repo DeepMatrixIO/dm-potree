@@ -21,7 +21,7 @@ import * as DEFINES from "./defines.js";
 // import {updatePointClouds as _updatePointClouds, updateVisibility as _updateVisibility} from "./Potree_update_visibility.js";
 import * as POTREE_UPDATE_VISIBILITY from "./Potree_update_visibility.js";
 // export * from "./PotreeRenderer.js";
-// export * from "./ProfileRequest.js";
+import {ProfileRequest,ProfileData} from "./ProfileRequest.js";
 // export * from "./TextSprite.js";
 // export * from "./utils.js";
 // export * from "./Version.js";
@@ -172,6 +172,8 @@ export class Potree {
 		this.updateVisibility = POTREE_UPDATE_VISIBILITY.updateVisibility;
 
 		this.PointCloudMaterial=PointCloudMaterial;
+
+		this.ProfileRequest=ProfileRequest;
 
 		// window.Potree=this;
 		window.exports=this;//FIX for LRU and other imports

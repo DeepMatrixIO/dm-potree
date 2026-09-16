@@ -85,7 +85,7 @@ export class PotreeRenderer {
 		});
 
 		// render scene
-		renderer.render(viewer.scene.scene, camera);
+		renderer.render(viewer.scene.scene, camera);//renders all other objects other than pointclouds
 		viewer.dispatchEvent({type: "render.pass.scene",viewer: viewer});
 		////////////////////////////////
 		viewer.clippingTool.update();

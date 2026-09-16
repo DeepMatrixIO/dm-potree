@@ -2,6 +2,22 @@
 // import * as THREE from "../../../libs/js/build/module.js";
 import {Vector3,Matrix4,Plane} from 'three'
 import {MeasurePanel} from "./MeasurePanel.js";
+import {ProfileWindow, ProfileWindowController} from "../profile.js";
+import {makeDraggable, makeResizable} from "../../utils/VanillaWindowControls.js";
+
+// Fetches profile.html and injects #profile_window into the DOM the first time it's needed.
+async function ensureProfileWindowElement(){
+	if(document.getElementById('profile_window')){
+		return;
+	}
+
+	let response = await fetch('./potree/profile.html');
+	let html = await response.text();
+
+	let template = document.createElement('template');
+	template.innerHTML = html;
+	document.body.appendChild(template.content);
+}
 
 export class ProfilePanel extends MeasurePanel{
 	constructor(viewer, measurement, propertiesPanel){
@@ -73,8 +89,32 @@ export class ProfilePanel extends MeasurePanel{
 			this.propertiesPanel.addVolatileListener(measurement, "width_changed", widthListener);
 		}
 
+	//attach action or event to the profile window in viewer,
 		let elShow2DProfile = this.elContent.querySelector(`#show_2d_profile`);
-		elShow2DProfile.addEventListener("click", () => {
+		elShow2DProfile.addEventListener("click", async () => {
+
+			await ensureProfileWindowElement();
+
+			if(this.viewer.profileWindow === undefined){
+				this.viewer.profileWindow = new ProfileWindow(this.viewer);
+			}
+
+			if(this.viewer.profileWindowController === undefined){
+				this.viewer.profileWindowController = new ProfileWindowController(this.viewer);
+			}
+
+			let elProfileWindow = document.getElementById('profile_window');
+			let elProfileTitlebar = document.getElementById('profile_titlebar');
+
+			makeDraggable(elProfileWindow, {
+				handle: elProfileTitlebar,
+				containment: document.body,
+			});
+			makeResizable(elProfileWindow, {
+				containment: document.body,
+				handles: ['n', 'e', 's', 'w'],
+			});
+
 			this.propertiesPanel.viewer.profileWindow.show();
 			this.propertiesPanel.viewer.profileWindowController.setProfile(measurement);
 		});

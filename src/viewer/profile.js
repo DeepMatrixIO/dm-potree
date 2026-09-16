@@ -30,6 +30,125 @@ function copyMaterial(source, target) {
 	//target.updateShaderSource();
 }
 
+function createLinearScale(domain, range) {
+	let currentDomain = [...domain];
+	let currentRange = [...range];
+
+	return {
+		domain(newDomain) {
+			if (newDomain === undefined) {
+				return [...currentDomain];
+			}
+			currentDomain = [...newDomain];
+			return this;
+		},
+		range(newRange) {
+			if (newRange === undefined) {
+				return [...currentRange];
+			}
+			currentRange = [...newRange];
+			return this;
+		},
+		invert(value) {
+			const [domainMin, domainMax] = currentDomain;
+			const [rangeMin, rangeMax] = currentRange;
+			if (rangeMax === rangeMin) return domainMin;
+			const ratio = (value - rangeMin) / (rangeMax - rangeMin);
+			return domainMin + ratio * (domainMax - domainMin);
+		},
+		formatTick(value) {
+			if (Math.abs(value) >= 1000) return value.toFixed(0);
+			return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+		},
+	};
+}
+
+function createSimpleAxis(orientation) {
+	const axis = {
+		_scale: null,
+		_orient: orientation,
+		_ticks: 10,
+		_innerTickSize: 6,
+		_outerTickSize: 1,
+		_tickPadding: 10,
+		scale(scale) {
+			this._scale = scale;
+			return this;
+		},
+		orient(value) {
+			this._orient = value;
+			return this;
+		},
+		innerTickSize(value) {
+			this._innerTickSize = value;
+			return this;
+		},
+		outerTickSize(value) {
+			this._outerTickSize = value;
+			return this;
+		},
+		tickPadding(value) {
+			this._tickPadding = value;
+			return this;
+		},
+		ticks(value) {
+			this._ticks = value;
+			return this;
+		},
+		call(group) {
+			if (!group || !this._scale) {
+				return group;
+			}
+
+			const scale = this._scale;
+			const [domainMin, domainMax] = scale.domain();
+			const [rangeMin, rangeMax] = scale.range();
+			const tickCount = Math.max(2, Math.round(this._ticks));
+			const step = (domainMax - domainMin) / (tickCount - 1 || 1);
+
+			group.innerHTML = '';
+			for (let i = 0; i < tickCount; i++) {
+				const value = domainMin + step * i;
+				const ratio = (tickCount === 1) ? 0 : i / (tickCount - 1);
+				const position = rangeMin + (rangeMax - rangeMin) * ratio;
+				const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+				const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+				if (this._orient === 'bottom') {
+					line.setAttribute('x1', position);
+					line.setAttribute('x2', position);
+					line.setAttribute('y1', 0);
+					line.setAttribute('y2', this._innerTickSize);
+					text.setAttribute('x', position);
+					text.setAttribute('y', this._tickPadding + this._innerTickSize + 6);
+					text.setAttribute('text-anchor', 'middle');
+					text.textContent = scale.formatTick(value);
+				} else {
+					line.setAttribute('x1', 0);
+					line.setAttribute('x2', -this._innerTickSize);
+					line.setAttribute('y1', position);
+					line.setAttribute('y2', position);
+					text.setAttribute('x', -this._innerTickSize - this._tickPadding);
+					text.setAttribute('y', position + 4);
+					text.setAttribute('text-anchor', 'end');
+					text.textContent = scale.formatTick(value);
+				}
+
+				line.setAttribute('stroke', 'rgba(255,255,255,0.5)');
+				line.setAttribute('stroke-width', '1');
+				text.setAttribute('fill', '#9d9d9d');
+				text.setAttribute('font-size', '10px');
+				group.appendChild(line);
+				group.appendChild(text);
+			}
+
+			return group;
+		},
+	};
+
+	return axis;
+}
+
 
 class Batch {
 
@@ -244,7 +363,7 @@ export class ProfileWindow extends EventDispatcher {
 		this.viewer = viewer;
 		this.elRoot = document.getElementById('profile_window');
 		this.renderArea = this.elRoot ? this.elRoot.querySelector('#profileCanvasContainer') : null;
-		this.svg = d3.select('svg#profileSVG');
+		this.svg = document.getElementById('profileSVG');
 		this.mouseIsDown = false;
 
 		this.projectedBox = new Box3();
@@ -709,16 +828,22 @@ export class ProfileWindow extends EventDispatcher {
 		let height = this.renderArea.clientHeight;
 		let marginLeft = this.renderArea.offsetLeft;
 
-		this.svg.selectAll('*').remove();
+		if (!this.svg) {
+			return;
+		}
 
-		this.scaleX = d3.scale.linear()
-			.domain([this.camera.left + this.camera.position.x, this.camera.right + this.camera.position.x])
-			.range([0, width]);
-		this.scaleY = d3.scale.linear()
-			.domain([this.camera.bottom + this.camera.position.z, this.camera.top + this.camera.position.z])
-			.range([height, 0]);
+		this.svg.innerHTML = '';
 
-		this.xAxis = d3.svg.axis()
+		this.scaleX = createLinearScale(
+			[this.camera.left + this.camera.position.x, this.camera.right + this.camera.position.x],
+			[0, width]
+		);
+		this.scaleY = createLinearScale(
+			[this.camera.bottom + this.camera.position.z, this.camera.top + this.camera.position.z],
+			[height, 0]
+		);
+
+		this.xAxis = createSimpleAxis('bottom')
 			.scale(this.scaleX)
 			.orient('bottom')
 			.innerTickSize(-height)
@@ -726,7 +851,7 @@ export class ProfileWindow extends EventDispatcher {
 			.tickPadding(10)
 			.ticks(width / 50);
 
-		this.yAxis = d3.svg.axis()
+		this.yAxis = createSimpleAxis('left')
 			.scale(this.scaleY)
 			.orient('left')
 			.innerTickSize(-width)
@@ -734,15 +859,17 @@ export class ProfileWindow extends EventDispatcher {
 			.tickPadding(10)
 			.ticks(height / 20);
 
-		this.elXAxis = this.svg.append('g')
-			.attr('class', 'x axis')
-			.attr('transform', `translate(${marginLeft}, ${height})`)
-			.call(this.xAxis);
+		this.elXAxis = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		this.elXAxis.setAttribute('class', 'x axis');
+		this.elXAxis.setAttribute('transform', `translate(${marginLeft}, ${height})`);
+		this.xAxis.call(this.elXAxis);
+		this.svg.appendChild(this.elXAxis);
 
-		this.elYAxis = this.svg.append('g')
-			.attr('class', 'y axis')
-			.attr('transform', `translate(${marginLeft}, 0)`)
-			.call(this.yAxis);
+		this.elYAxis = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		this.elYAxis.setAttribute('class', 'y axis');
+		this.elYAxis.setAttribute('transform', `translate(${marginLeft}, 0)`);
+		this.yAxis.call(this.elYAxis);
+		this.svg.appendChild(this.elYAxis);
 	}
 
 	addPoints(pointcloud, points) {
@@ -754,7 +881,7 @@ export class ProfileWindow extends EventDispatcher {
 		let entry = this.pointclouds.get(pointcloud);
 		if (!entry) {
 			entry = new ProfileFakeOctree(pointcloud);
-			this.pointclouds.set(pointcloud, entry);
+			this.pointclouds.set(pointcloud, entry);//as a map, maps the given pointclouds objete to an entry
 			this.profileScene.add(entry);
 
 			let materialChanged = () => {
@@ -769,7 +896,7 @@ export class ProfileWindow extends EventDispatcher {
 			});
 		}
 
-		entry.addPoints(points);
+		entry.addPoints(points);//this should be where data is added.
 		this.projectedBox.union(entry.projectedBox);
 
 		if (this.autoFit && this.autoFitEnabled) {
@@ -791,7 +918,7 @@ export class ProfileWindow extends EventDispatcher {
 
 		//console.log(entry);
 
-		this.render();
+		this.render();//crashes while rendering.
 
 		let numPoints = 0;
 		for (let [key, value] of this.pointclouds.entries()) {
@@ -876,13 +1003,10 @@ export class ProfileWindow extends EventDispatcher {
 			.tickPadding(10)
 			.ticks(height / 20);
 
-
-		this.elXAxis
-			.attr('transform', `translate(${marginLeft}, ${height})`)
-			.call(this.xAxis);
-		this.elYAxis
-			.attr('transform', `translate(${marginLeft}, 0)`)
-			.call(this.yAxis);
+		this.elXAxis.setAttribute('transform', `translate(${marginLeft}, ${height})`);
+		this.xAxis.call(this.elXAxis);
+		this.elYAxis.setAttribute('transform', `translate(${marginLeft}, 0)`);
+		this.yAxis.call(this.elYAxis);
 	}
 
 	requestScaleUpdate() {
@@ -927,7 +1051,7 @@ export class ProfileWindow extends EventDispatcher {
 			target.size = 2;
 		}
 
-		pRenderer.render(profileScene, camera, null);
+		pRenderer.render(profileScene, camera, null);//potree renderer, burt  crashes as fakepotree nodes is null, so world
 
 		let radius = Math.abs(scaleX.invert(0) - scaleX.invert(5));
 

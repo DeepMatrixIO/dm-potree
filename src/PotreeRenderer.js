@@ -593,7 +593,9 @@ export class Renderer {
 		let gl = this.gl;
 		let webglBuffer = new WebGLBuffer();
 		webglBuffer.vao = gl.createVertexArray();
-		webglBuffer.numElements = geometry.attributes.position.count;
+		webglBuffer.numElements = Number.isFinite(geometry.drawRange.count)
+			? Math.min(geometry.drawRange.count, geometry.attributes.position.count)
+			: geometry.attributes.position.count;
 
 		gl.bindVertexArray(webglBuffer.vao);
 
@@ -735,6 +737,10 @@ export class Renderer {
 		let gl = this.gl;
 
 		let webglBuffer = this.buffers.get(geometry);
+
+		webglBuffer.numElements = Number.isFinite(geometry.drawRange.count)
+			? Math.min(geometry.drawRange.count, geometry.attributes.position.count)
+			: geometry.attributes.position.count;
 
 		gl.bindVertexArray(webglBuffer.vao);
 

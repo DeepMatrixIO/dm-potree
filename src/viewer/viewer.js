@@ -20,6 +20,7 @@ import {CameraMode, ClipMethod, ClipTask, ElevationGradientRepeat, LengthUnits} 
 import {Features} from "../Features.js";
 import {Renderer} from "../PotreeRenderer.js";
 import {Utils} from "../utils.js";
+import {makeDraggable, makeResizable} from "../utils/VanillaWindowControls.js";
 import {ClippingTool} from "../utils/ClippingTool.js";
 import {Message} from "../utils/Message.js";
 import {TransformationTool} from "../utils/TransformationTool.js";
@@ -1967,6 +1968,46 @@ export class Viewer extends EventDispatcher {
 				// 		document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
 				// 	});
 				// });
+
+
+					//appends the required html elements
+					fetch(new URL(Potree.scriptPath + '/profile.html').href)
+						.then(response => response.text())
+						.then(html => {
+							const template = document.createElement('template');
+							template.innerHTML = html;
+							document.body.appendChild(template.content);
+
+							this.profileWindow = new ProfileWindow(this);
+							this.profileWindowController = new ProfileWindowController(this);
+
+							//accessing the html components, but should be unaware of the implementation
+							const elProfileWindow = document.getElementById('profile_window');
+							const elProfileTitlebar = document.getElementById('profile_titlebar');
+
+							if (elProfileWindow && elProfileTitlebar) {
+								makeDraggable(elProfileWindow, {
+									handle: elProfileTitlebar,
+									containment: document.body,
+								});
+								makeResizable(elProfileWindow, {
+									containment: document.body,
+									handles: ['n', 'e', 's', 'w'],
+								});
+							}
+
+							this.guiLoaded = true;
+							for (let task of this.guiLoadTasks) {
+								task();
+							}
+						})
+						.catch(err => {
+							console.error('Failed to load profile window:', err);
+							this.guiLoaded = true;
+							for (let task of this.guiLoadTasks) {
+								task();
+							}
+						});
 
 				////////////////////////////////////////////////////// PROFILE WINDOW REMOVED FOR TESTING PURPOSES
 				// Load profile.html using fetch
