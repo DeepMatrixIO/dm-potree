@@ -823,7 +823,7 @@ export class Renderer {
 
 		let material = params.material ? params.material : octree.material;
 		let shadowMaps = params.shadowMaps == null ? [] : params.shadowMaps;
-		let view = camera.matrixWorldInverse;
+		let view = (camera && camera.matrixWorldInverse) ? camera.matrixWorldInverse : new Matrix4();
 
 		if (params.viewOverride) {
 			view = params.viewOverride;
@@ -844,7 +844,7 @@ export class Renderer {
 				}
 			}
 
-			let world = node.sceneNode.matrixWorld;
+			let world = (node.sceneNode && node.sceneNode.matrixWorld) ? node.sceneNode.matrixWorld : new Matrix4();
 			worldView.multiplyMatrices(view, world);//the world and view matrix is computed per node
 
 			if (visibilityTextureData) {

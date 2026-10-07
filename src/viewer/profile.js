@@ -1,9 +1,9 @@
 
 // import * as THREE from "../../libs/js/build/module.js";
-import {Box2, Box3, BufferAttribute, BufferGeometry, MathUtils, Matrix4, Mesh, MeshNormalMaterial, OrthographicCamera, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer} from 'three';
+import {Box2, Box3, BufferAttribute, BufferGeometry, MathUtils, Matrix4, Mesh, MeshNormalMaterial, OrthographicCamera, Points as THREEPoints, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer} from 'three';
 import {EventDispatcher} from "../EventDispatcher.js";
 import {PointCloudTree} from "../PointCloudTree.js";
-import {Points} from "../Points.js";
+import {Points as PotreePoints} from "../Points.js";
 import {Renderer} from "../PotreeRenderer.js";
 import {PointSizeType} from "../defines.js";
 import {CSVExporter} from "../exporter/CSVExporter.js";
@@ -107,7 +107,7 @@ function createSimpleAxis(orientation) {
 			const step = (domainMax - domainMin) / (tickCount - 1 || 1);
 
 			group.innerHTML = '';
-			for (let i = 0; i < tickCount; i++) {
+			for (let i = 0;i < tickCount;i++) {
 				const value = domainMin + step * i;
 				const ratio = (tickCount === 1) ? 0 : i / (tickCount - 1);
 				const position = rangeMin + (rangeMax - rangeMin) * ratio;
@@ -156,7 +156,10 @@ class Batch {
 		this.geometry = geometry;
 		this.material = material;
 
-		this.sceneNode = new Points(geometry, material);
+		this.name = "batch";
+		this.sceneNode = new THREEPoints(geometry, material);
+		this.sceneNode.name = "batch";
+		this.sceneNode.frustumCulled = false;
 
 		this.geometryNode = {
 			estimatedSpacing: 1.0,
@@ -223,7 +226,7 @@ class ProfileFakeOctree extends PointCloudTree {
 
 		let truePos = new Vector3();
 
-		for (let i = 0; i < data.numPoints; i++) {
+		for (let i = 0;i < data.numPoints;i++) {
 
 			if (updateRange.start + updateRange.count >= this.batchSize) {
 				// current batch full, start new batch
@@ -265,7 +268,7 @@ class ProfileFakeOctree extends PointCloudTree {
 				let target = geometry.attributes[attributeName];
 				let numElements = target.itemSize;
 
-				for (let item = 0; item < numElements; item++) {
+				for (let item = 0;item < numElements;item++) {
 					target.array[numElements * index + item] = source[numElements * i + item];
 				}
 			}
@@ -341,10 +344,10 @@ class ProfileFakeOctree extends PointCloudTree {
 		let data = new Uint8Array(this.visibleNodes.length * 4);
 		let offsets = new Map();
 
-		for (let i = 0; i < this.visibleNodes.length; i++) {
+		for (let i = 0;i < this.visibleNodes.length;i++) {
 			let node = this.visibleNodes[i];
 
-			offsets[node] = i;
+			offsets.set(node, i);
 		}
 
 
@@ -382,31 +385,35 @@ export class ProfileWindow extends EventDispatcher {
 			if (el) el.src = src;
 		};
 
-		let cwIcon = `${exports.resourcePath}/icons/arrow_cw.svg`;
+		const resourcePath = (typeof Potree !== 'undefined' && Potree.resourcePath)
+			? Potree.resourcePath
+			: ((typeof exports !== 'undefined' && exports.resourcePath) ? exports.resourcePath : './resources');
+
+		let cwIcon = `${resourcePath}/icons/arrow_cw.svg`;
 		setIconSrc('potree_profile_rotate_cw', cwIcon);
 
-		let ccwIcon = `${exports.resourcePath}/icons/arrow_ccw.svg`;
+		let ccwIcon = `${resourcePath}/icons/arrow_ccw.svg`;
 		setIconSrc('potree_profile_rotate_ccw', ccwIcon);
 
-		let forwardIcon = `${exports.resourcePath}/icons/arrow_up.svg`;
+		let forwardIcon = `${resourcePath}/icons/arrow_up.svg`;
 		setIconSrc('potree_profile_move_forward', forwardIcon);
 
-		let backwardIcon = `${exports.resourcePath}/icons/arrow_down.svg`;
+		let backwardIcon = `${resourcePath}/icons/arrow_down.svg`;
 		setIconSrc('potree_profile_move_backward', backwardIcon);
 
-		let dxf2DIcon = `${exports.resourcePath}/icons/file_dxf_2d.svg`;
+		let dxf2DIcon = `${resourcePath}/icons/file_dxf_2d.svg`;
 		setIconSrc('potree_download_dxf2D_icon', dxf2DIcon);
 
-		let dxf3DIcon = `${exports.resourcePath}/icons/file_dxf_3d.svg`;
+		let dxf3DIcon = `${resourcePath}/icons/file_dxf_3d.svg`;
 		setIconSrc('potree_download_dxf3D_icon', dxf3DIcon);
 
-		let csvIcon = `${exports.resourcePath}/icons/file_csv_2d.svg`;
+		let csvIcon = `${resourcePath}/icons/file_csv_2d.svg`;
 		setIconSrc('potree_download_csv_icon', csvIcon);
 
-		let lasIcon = `${exports.resourcePath}/icons/file_las_3d.svg`;
+		let lasIcon = `${resourcePath}/icons/file_las_3d.svg`;
 		setIconSrc('potree_download_las_icon', lasIcon);
 
-		let closeIcon = `${exports.resourcePath}/icons/close.svg`;
+		let closeIcon = `${resourcePath}/icons/close.svg`;
 		setIconSrc('closeProfileContainer', closeIcon);
 
 		this.initTHREE();
@@ -615,14 +622,14 @@ export class ProfileWindow extends EventDispatcher {
 		});
 
 		let getProfilePoints = (truePosition) => {
-			let points = new Points();
+			let points = new PotreePoints();
 
 			for (let [pointcloud, entry] of this.pointclouds) {
 				for (let pointSet of entry.points) {
 
 					let originPos = pointSet.data.position;
 					let truePointPosition = new Float64Array(originPos);
-					for (let i = 0; i < pointSet.numPoints; i++) {
+					for (let i = 0;i < pointSet.numPoints;i++) {
 
 						if (truePosition === true) {
 							truePointPosition[3 * i + 0] += pointcloud.position.x;
@@ -718,7 +725,7 @@ export class ProfileWindow extends EventDispatcher {
 				numTested++;
 				numTestedPoints += points.numPoints
 
-				for (let i = 0; i < points.numPoints; i++) {
+				for (let i = 0;i < points.numPoints;i++) {
 
 					let m = points.data.mileage[i] - mileage;
 					let e = points.data.position[3 * i + 2] - elevation + pointcloud.position.z;
@@ -784,7 +791,7 @@ export class ProfileWindow extends EventDispatcher {
 		this.renderer.setClearColor(0x000000, 0);
 		this.renderer.setSize(10, 10);
 		this.renderer.autoClear = false;
-		this.renderArea.appendChild(this.renderer.domElement);
+		this.renderArea.appendChild(this.renderer.domElement);//the renderArea is null
 		this.renderer.domElement.tabIndex = '2222';
 		this.renderer.domElement.style.width = '100%';
 		this.renderer.domElement.style.height = '100%';
@@ -1038,6 +1045,8 @@ export class ProfileWindow extends EventDispatcher {
 		let {renderer, pRenderer, camera, profileScene, scene} = this;
 		let {scaleX, pickSphere} = this;
 
+		camera.updateMatrixWorld();
+
 		renderer.setSize(width, height);
 
 		renderer.setClearColor(0x000000, 0);
@@ -1051,7 +1060,7 @@ export class ProfileWindow extends EventDispatcher {
 			target.size = 2;
 		}
 
-		pRenderer.render(profileScene, camera, null);//potree renderer, burt  crashes as fakepotree nodes is null, so world
+		pRenderer.render(profileScene, camera, null);
 
 		let radius = Math.abs(scaleX.invert(0) - scaleX.invert(5));
 
@@ -1125,7 +1134,7 @@ export class ProfileWindowController {
 
 			this.profileWindow.autoFitEnabled = false;
 
-			for (let i = 0; i < points.length; i++) {
+			for (let i = 0;i < points.length;i++) {
 				profile.setPosition(i, rotatedPoints[i]);
 			}
 		}
@@ -1153,7 +1162,7 @@ export class ProfileWindowController {
 
 			this.profileWindow.autoFitEnabled = false;
 
-			for (let i = 0; i < points.length; i++) {
+			for (let i = 0;i < points.length;i++) {
 				profile.setPosition(i, points[i].clone().add(move));
 			}
 		});
@@ -1171,7 +1180,7 @@ export class ProfileWindowController {
 
 			this.profileWindow.autoFitEnabled = false;
 
-			for (let i = 0; i < points.length; i++) {
+			for (let i = 0;i < points.length;i++) {
 				profile.setPosition(i, points[i].clone().add(move));
 			}
 		});
