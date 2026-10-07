@@ -21,7 +21,7 @@ import * as DEFINES from "./defines.js";
 // import {updatePointClouds as _updatePointClouds, updateVisibility as _updateVisibility} from "./Potree_update_visibility.js";
 import * as POTREE_UPDATE_VISIBILITY from "./Potree_update_visibility.js";
 // export * from "./PotreeRenderer.js";
-import {ProfileRequest,ProfileData} from "./ProfileRequest.js";
+import {ProfileRequest, ProfileData} from "./ProfileRequest.js";
 // export * from "./TextSprite.js";
 // export * from "./utils.js";
 // export * from "./Version.js";
@@ -135,7 +135,7 @@ export class Potree {
 		this.debug = {};
 
 
-		// let
+		// TODO enable this  or make it configurable as is not in use or set as root, so
 		this.scriptPath = "";
 
 		if (document.currentScript && document.currentScript.src) {
@@ -155,15 +155,15 @@ export class Potree {
 
 		/////
 
-		this.PointShape=DEFINES.PointShape;
-		this.PointSizeType=DEFINES.PointSizeType;
-		this.CameraMode=DEFINES.CameraMode;
-		this.ClipTask=DEFINES.ClipTask;
-		this.ClipMethod=DEFINES.ClipMethod;
-		this.ElevationGradientRepeat=DEFINES.ElevationGradientRepeat;
-		this.MOUSE=DEFINES.MOUSE;
-		this.TreeType=DEFINES.TreeType;
-		this.LengthUnits=DEFINES.LengthUnits;
+		this.PointShape = DEFINES.PointShape;
+		this.PointSizeType = DEFINES.PointSizeType;
+		this.CameraMode = DEFINES.CameraMode;
+		this.ClipTask = DEFINES.ClipTask;
+		this.ClipMethod = DEFINES.ClipMethod;
+		this.ElevationGradientRepeat = DEFINES.ElevationGradientRepeat;
+		this.MOUSE = DEFINES.MOUSE;
+		this.TreeType = DEFINES.TreeType;
+		this.LengthUnits = DEFINES.LengthUnits;
 
 		// this.Gradients=Gradients;
 		// this.allGradients=Gradients;
@@ -171,12 +171,12 @@ export class Potree {
 		this.updatePointClouds = POTREE_UPDATE_VISIBILITY.updatePointClouds;
 		this.updateVisibility = POTREE_UPDATE_VISIBILITY.updateVisibility;
 
-		this.PointCloudMaterial=PointCloudMaterial;
+		this.PointCloudMaterial = PointCloudMaterial;
 
-		this.ProfileRequest=ProfileRequest;
+		this.ProfileRequest = ProfileRequest;
 
 		// window.Potree=this;
-		window.exports=this;//FIX for LRU and other imports
+		window.exports = this;//FIX for LRU and other imports
 	}
 
 	// const
@@ -292,7 +292,7 @@ export class Potree {
 		}
 	}
 
-//needs to be updated to point to the file
+	//needs to be updated to point to the file
 
 	// updatePointClouds(scene, camera, renderer) {
 	// 	return _updatePointClouds(scene, camera, renderer);

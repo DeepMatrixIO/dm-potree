@@ -365,7 +365,17 @@ export class ProfileWindow extends EventDispatcher {
 
 		this.viewer = viewer;
 		this.elRoot = document.getElementById('profile_window');
-		this.renderArea = this.elRoot ? this.elRoot.querySelector('#profileCanvasContainer') : null;
+
+		let profileCanvasContainer = this.elRoot ? this.elRoot.querySelector('#profileCanvasContainer') : null;
+
+		if (!profileCanvasContainer) {
+			console.log("profileCanvasContainer is null, using viewer.renderer.domElement");
+			this.renderArea = this.viewer.renderer.domElement;///// must set a container somewhere
+		} else {
+			this.renderArea = profileCanvasContainer;
+		}
+		// this.renderArea = this.elRoot ? this.elRoot.querySelector('#profileCanvasContainer') : null;
+
 		this.svg = document.getElementById('profileSVG');
 		this.mouseIsDown = false;
 

@@ -1970,44 +1970,51 @@ export class Viewer extends EventDispatcher {
 				// });
 
 
-					//appends the required html elements
-					fetch(new URL(Potree.scriptPath + '/profile.html').href)
-						.then(response => response.text())
-						.then(html => {
-							const template = document.createElement('template');
-							template.innerHTML = html;
-							document.body.appendChild(template.content);
+				//appends the required html elements
+				// fetch(new URL(Potree.scriptPath + '/profile.html').href)//requires to fix scriptPath, which may be used extensively
+				fetch(new URL('/potree/profile.html').href)
+					.then(response => response.text())
+					.then(html => {
+						//1
+						const template = document.createElement('template');
+						template.innerHTML = html;
+						document.body.appendChild(template.content);//this
 
-							this.profileWindow = new ProfileWindow(this);
-							this.profileWindowController = new ProfileWindowController(this);
+						//2
+						this.profileWindow = new ProfileWindow(this);
 
-							//accessing the html components, but should be unaware of the implementation
-							const elProfileWindow = document.getElementById('profile_window');
-							const elProfileTitlebar = document.getElementById('profile_titlebar');
+						//3
+						this.profileWindowController = new ProfileWindowController(this);
 
-							if (elProfileWindow && elProfileTitlebar) {
-								makeDraggable(elProfileWindow, {
-									handle: elProfileTitlebar,
-									containment: document.body,
-								});
-								makeResizable(elProfileWindow, {
-									containment: document.body,
-									handles: ['n', 'e', 's', 'w'],
-								});
-							}
+						//accessing the html components, but should be unaware of the implementation
+						//4
+						const elProfileWindow = document.getElementById('profile_window');
+						const elProfileTitlebar = document.getElementById('profile_titlebar');
 
-							this.guiLoaded = true;
-							for (let task of this.guiLoadTasks) {
-								task();
-							}
-						})
-						.catch(err => {
-							console.error('Failed to load profile window:', err);
-							this.guiLoaded = true;
-							for (let task of this.guiLoadTasks) {
-								task();
-							}
-						});
+
+						if (elProfileWindow && elProfileTitlebar) {
+							makeDraggable(elProfileWindow, {
+								handle: elProfileTitlebar,
+								containment: document.body,
+							});
+							makeResizable(elProfileWindow, {
+								containment: document.body,
+								handles: ['n', 'e', 's', 'w'],
+							});
+						}
+
+						this.guiLoaded = true;
+						for (let task of this.guiLoadTasks) {
+							task();
+						}
+					})
+					.catch(err => {
+						console.error('Failed to load profile window:', err);
+						this.guiLoaded = true;
+						for (let task of this.guiLoadTasks) {
+							task();
+						}
+					});
 
 				////////////////////////////////////////////////////// PROFILE WINDOW REMOVED FOR TESTING PURPOSES
 				// Load profile.html using fetch
