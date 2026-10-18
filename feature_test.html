@@ -811,6 +811,30 @@
 							<button class="action-btn" id="btn-change-cliptask">▶ Cycle Filter</button>
 						</div>
 					</div>
+
+					<!-- Volume Line Tool -->
+					<div class="test-item" id="item-volume-line">
+						<div class="test-meta">
+							<div class="test-title-area">
+								<span class="test-title">14. Volume Line Tool (testTool)</span>
+								<span class="test-desc">Create BoxVolumes along a linestring array. Auto-filled with pointcloud bbox extremes.</span>
+							</div>
+							<div class="status-container">
+								<span class="status-badge status-idle" id="status-volume-line">Untested</span>
+							</div>
+						</div>
+						<div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+							<input type="text" id="input-volume-line" placeholder="[x0, y0, z0, x1, y1, z1, ...]"
+								style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #e5e7eb; border-radius: 4px;">
+							<button class="action-btn" id="btn-volume-line-bbox" title="Fill with Pointcloud BBox Extremes" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📦 BBox</button>
+						</div>
+						<div class="test-actions-row">
+							<label class="manual-check">
+								<input type="checkbox" id="check-volume-line"> Checked Passed
+							</label>
+							<button class="action-btn" id="btn-volume-line">▶ Test VolumeLine</button>
+						</div>
+					</div>
 				</div>
 			</div>
 

@@ -72,6 +72,7 @@ export {SpotLightHelper} from "./utils/SpotLightHelper.js";
 export {TransformationTool} from "./utils/TransformationTool.js";
 export {Volume,SphereVolume} from "./utils/Volume.js";
 export {VolumeTool} from "./utils/VolumeTool.js";
+export {SelectionLineTool, VolumeLineTool} from "./utils/VolumeLineTool.js";
 
 export {HierarchicalSlider} from "./viewer/HierarchicalSlider.js";
 // export {PScene} from "./viewer/Scene.js";

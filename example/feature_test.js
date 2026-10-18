@@ -1,4 +1,5 @@
 import { Potree, PScene, Viewer } from '../dist/potree_module.js';
+import { VolumeLineTool } from '../src/utils/VolumeLineTool.js';
 
 document.body.onload = function () {
 	// Add stylesheets dynamically
@@ -65,6 +66,7 @@ document.body.onload = function () {
 						viewer.zoomTo(e.pointcloud);
 						log("SUCCESS: 'Lion Takanawa' pointcloud added to scene.", "success");
 						setPassState('load-lion', true);
+						setTimeout(() => fillBBoxExtremes(false), 300);
 					});
 				} catch (err) {
 					log("ERROR loading Lion: " + err.message, "error");
@@ -87,6 +89,7 @@ document.body.onload = function () {
 						viewer.zoomTo(e.pointcloud);
 						log("SUCCESS: 'Vegetation' pointcloud added to scene.", "success");
 						setPassState('load-veg', true);
+						setTimeout(() => fillBBoxExtremes(false), 300);
 					});
 				} catch (err) {
 					log("ERROR loading Vegetation: " + err.message, "error");
@@ -348,6 +351,59 @@ document.body.onload = function () {
 					setPassState('change-cliptask', false);
 				}
 			}
+		},
+		'volume-line': {
+			id: 'volume-line',
+			name: 'Volume Line Tool (testTool)',
+			status: 'status-volume-line',
+			checkbox: 'check-volume-line',
+			passed: false,
+			run: async () => {
+				log("VOLUME LINE TOOL: Executing testTool with linestring coordinate array...");
+				try {
+					const input = document.getElementById('input-volume-line');
+					let raw = input ? input.value.trim() : '';
+
+					if (!raw) {
+						fillBBoxExtremes(true);
+						raw = input ? input.value.trim() : '';
+					}
+
+					if (!raw) {
+						log("ERROR: Coordinate array is empty and no pointcloud is loaded to infer bbox extremes.", "error");
+						setPassState('volume-line', false);
+						return;
+					}
+
+					let lineArray = null;
+					try {
+						if (raw.startsWith('[') && raw.endsWith(']')) {
+							lineArray = JSON.parse(raw);
+						}
+					} catch (e) {}
+
+					if (!lineArray || !Array.isArray(lineArray)) {
+						lineArray = raw.replace(/[\[\]]/g, '').split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+					}
+
+					if (!lineArray || lineArray.length < 6) {
+						log("ERROR: Invalid linestring array. Provide at least 2 points (6 numbers, e.g. [x0, y0, z0, x1, y1, z1]).", "error");
+						setPassState('volume-line', false);
+						return;
+					}
+
+					if (!viewer.volumeLineTool) {
+						viewer.volumeLineTool = new VolumeLineTool(viewer);
+					}
+
+					const count = viewer.volumeLineTool.testTool(lineArray);
+					log(`SUCCESS: VolumeLineTool.testTool created ${count} aligned BoxVolume(s) in scene.`, "success");
+					setPassState('volume-line', true);
+				} catch (err) {
+					log("ERROR running VolumeLineTool.testTool: " + err.message, "error");
+					setPassState('volume-line', false);
+				}
+			}
 		}
 	};
 
@@ -428,6 +484,59 @@ document.body.onload = function () {
 			</div>
 		`;
 	});
+
+	// BBox helper functions for VolumeLineTool test
+	function getPointCloudBBoxExtremes() {
+		if (!sceneSG || sceneSG.pointclouds.length === 0) {
+			return null;
+		}
+		const bbox = viewer.getBoundingBox();
+		if (bbox && isFinite(bbox.min.x) && isFinite(bbox.max.x)) {
+			return [
+				parseFloat(bbox.min.x.toFixed(3)),
+				parseFloat(bbox.min.y.toFixed(3)),
+				parseFloat(bbox.min.z.toFixed(3)),
+				parseFloat(bbox.max.x.toFixed(3)),
+				parseFloat(bbox.max.y.toFixed(3)),
+				parseFloat(bbox.max.z.toFixed(3))
+			];
+		}
+		const pc = sceneSG.pointclouds[0];
+		if (pc && pc.boundingBox) {
+			const b = pc.boundingBox;
+			return [
+				parseFloat(b.min.x.toFixed(3)),
+				parseFloat(b.min.y.toFixed(3)),
+				parseFloat(b.min.z.toFixed(3)),
+				parseFloat(b.max.x.toFixed(3)),
+				parseFloat(b.max.y.toFixed(3)),
+				parseFloat(b.max.z.toFixed(3))
+			];
+		}
+		return null;
+	}
+
+	function fillBBoxExtremes(force = false) {
+		const input = document.getElementById('input-volume-line');
+		if (!input) return;
+		if (!force && input.value.trim() !== '') return;
+
+		const extremes = getPointCloudBBoxExtremes();
+		if (extremes) {
+			input.value = JSON.stringify(extremes);
+			log(`Pointcloud bbox extremes loaded into text box: [${extremes.join(', ')}]`, 'info');
+		} else if (force) {
+			log("No pointcloud loaded yet to calculate bbox extremes. Load a pointcloud first.", "error");
+		}
+	}
+
+	const btnBBox = document.getElementById('btn-volume-line-bbox');
+	if (btnBBox) {
+		btnBBox.addEventListener('click', (e) => {
+			e.stopPropagation();
+			fillBBoxExtremes(true);
+		});
+	}
 
 	// Auto-calculate start conditions
 	recalculateProgress();

@@ -6,7 +6,12 @@ export class FilterIntType {
 	static POLYGONVOLUME = 4; //polygon filter
 	static POLYGON = 5; //polygon filter
 
-	static LOGICAL= 10; //point cloud volume filter, i.e. a point cloud is used as a filter
+	static LINEBOXVOLUME = 6; //line distance filter. Box drawn around a line, horizontally aligned. Simillar to profile definition.
+	static LINECYLINDERVOLUME = 7; //cylinder filter, mayu use 3
+	static LINEDISTANCEVOLUME = 8; //cylinder filter based on distance from the line to the nearest points
+
+
+	static LOGICAL = 10; //point cloud volume filter, i.e. a point cloud is used as a filter
 	static NONE = 255; //no filter
 }
 

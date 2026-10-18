@@ -1,0 +1,484 @@
+/**
+ *  Volume object created around a linestring, implemnted as a cylinder but indeed as a distance around a linestring
+ */
+
+import {BoxGeometry, BufferAttribute, BufferGeometry, Color, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, Object3D, Sphere, SphereGeometry, Vector3} from 'three';
+
+import {TextSprite} from "../TextSprite.js";
+import {FilterIntType} from "./FilterConsts.js";
+
+
+// may not be required to create a new volume
+export class LineVolume extends Object3D {
+	constructor(args = {}) {
+		super();
+		this._intType = FilterIntType.NONE; //default value, can be set by user
+		this._initialized = false; //used to signal that the volume is initialized, i.e. geometry and material are set
+		if (this.constructor.name === "Volume") {
+			console.warn("Can't create object of class Volume directly. Use classes BoxVolume or SphereVolume instead.");
+		}
+
+		//console.log(this);
+		//console.log(this.constructor);
+		//console.log(this.constructor.name);
+		this._groupId = args.groupId || 0; // used to group volumes, e.g. for filtering
+		this._clip = args.clip || false;
+		this.visible = true;
+		this.showVolumeLabel = true;
+		this._modifiable = args.modifiable || true;
+
+		this.label = new TextSprite('0');
+		this.label.setBorderColor({r: 0, g: 255, b: 0, a: 0.0});
+		this.label.setBackgroundColor({r: 0, g: 255, b: 0, a: 0.0});
+		this.label.material.depthTest = false;
+		this.label.material.depthWrite = false;
+		this.label.material.transparent = true;
+		this.label.position.y -= 0.5;
+		this.add(this.label);
+
+		this.label.updateMatrixWorld = () => {
+			let volumeWorldPos = new Vector3();
+			volumeWorldPos.setFromMatrixPosition(this.matrixWorld);
+			this.label.position.copy(volumeWorldPos);
+			this.label.updateMatrix();
+			this.label.matrixWorld.copy(this.label.matrix);
+			this.label.matrixWorldNeedsUpdate = false;
+
+			for (let i = 0, l = this.label.children.length;i < l;i++) {
+				this.label.children[i].updateMatrixWorld(true);
+			}
+		};
+
+		{ // event listeners
+			this.addEventListener('select', e => {});//dummy method to trigger InputHandle selectable.
+			this.addEventListener('deselect', e => {});
+		}
+
+	}
+
+	get groupId() {
+		return this._groupId;
+	}
+	set groupId(value) {
+		this._groupId = value;
+	}
+
+	get visible() {
+		return this._visible;
+	}
+
+	set visible(value) {
+		if (this._visible !== value) {
+			this._visible = value;
+
+			this.dispatchEvent({type: "visibility_changed", object: this});
+		}
+	}
+
+
+	get initialized() {
+		return this._initialized;
+	}
+
+	set initialized(value) {
+		if (this._initialized !== value) {
+			this._initialized = value;
+
+			//this.dispatchEvent({type: "visibility_changed", object: this});//create a proper event for this
+		}
+	}
+
+
+	getVolume() {
+		console.warn("override this in subclass");
+	}
+
+	update() {
+
+	};
+
+	raycast(raycaster, intersects) {
+
+	}
+
+	get clip() {
+		return this._clip;
+	}
+
+	set clip(value) {
+
+		if (this._clip !== value) {
+			this._clip = value;
+
+			this.update();
+
+			this.dispatchEvent({
+				type: "clip_changed",
+				object: this
+			});
+		}
+
+	}
+
+	get modifiable() {
+		return this._modifiable;
+	}
+
+	set modifiable(value) {
+		this._modifiable = value;
+
+		this.update();
+	}
+
+	get intType() {
+		return this._intType;
+	}
+
+};
+
+
+//BoxVolume isd always unitary centered at zero, but its definition is set by a transformation matrix
+// It can be set by
+//	volume.uuid = data.uuid;
+// volume.name = data.name;
+// volume.position.set(...data.position);
+// volume.rotation.set(...data.rotation);
+// volume.scale.set(...data.scale);
+// volume.visible = data.visible;
+// volume.clip = data.clip;
+
+
+
+
+
+export class LineBoxVolume extends TetVolume {
+
+	constructor(args = {}) {
+		super(args);
+
+		this._intType = FilterIntType.LINEBOXVOLUME; //default value, can be set by user
+
+		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
+		this.name = 'lineDistance_' + this.constructor.counter;
+		this.visible = true;
+
+		let boxGeometry = new BoxGeometry(1, 1, 1);//the geometric object should not be  set yet. For sake of simplicity, it
+		boxGeometry.computeBoundingBox();
+
+		//let boxFrameGeometry = new Geometry();
+		let boxFrameGeometry = new BufferGeometry();
+		{
+
+			let vertices = [
+
+				// bottom
+				new Vector3(-0.5, -0.5, 0.5),
+				new Vector3(0.5, -0.5, 0.5),
+				new Vector3(0.5, -0.5, 0.5),
+				new Vector3(0.5, -0.5, -0.5),
+				new Vector3(0.5, -0.5, -0.5),
+				new Vector3(-0.5, -0.5, -0.5),
+				new Vector3(-0.5, -0.5, -0.5),
+				new Vector3(-0.5, -0.5, 0.5),
+				// top
+				new Vector3(-0.5, 0.5, 0.5),
+				new Vector3(0.5, 0.5, 0.5),
+				new Vector3(0.5, 0.5, 0.5),
+				new Vector3(0.5, 0.5, -0.5),
+				new Vector3(0.5, 0.5, -0.5),
+				new Vector3(-0.5, 0.5, -0.5),
+				new Vector3(-0.5, 0.5, -0.5),
+				new Vector3(-0.5, 0.5, 0.5),
+				// sides
+				new Vector3(-0.5, -0.5, 0.5),
+				new Vector3(-0.5, 0.5, 0.5),
+				new Vector3(0.5, -0.5, 0.5),
+				new Vector3(0.5, 0.5, 0.5),
+				new Vector3(0.5, -0.5, -0.5),
+				new Vector3(0.5, 0.5, -0.5),
+				new Vector3(-0.5, -0.5, -0.5),
+				new Vector3(-0.5, 0.5, -0.5),
+			]
+			const positions = new Float32Array(vertices.length * 3);
+			for (let i = 0;i < vertices.length;i++) {
+				positions[i * 3] = vertices[i].x;
+				positions[i * 3 + 1] = vertices[i].y;
+				positions[i * 3 + 2] = vertices[i].z;
+			}
+
+
+			boxFrameGeometry.setAttribute('position', new BufferAttribute(positions, 3));
+
+
+		}
+
+		this.material = new MeshBasicMaterial({
+			color: 0x0000ff,
+			transparent: true,
+			opacity: 0.4,
+			depthTest: true,
+			depthWrite: false
+		});
+		this.box = new Mesh(boxGeometry, this.material);
+		this.box.geometry.computeBoundingBox();
+
+		//may use a blend or opacity to make selection transparent
+		//add next in custom volume class
+		//next two lines assign the highlight color  of the box
+		this.color = new Color(1.0, 0.0, 1.0);//this is the default color, magenta
+		this.actualClipTask = 1;//testing,  the highlighting color was never applied because the task was not set
+		//now need to set the boxcolor array to handle multiple boxes
+		//
+
+
+		this.boundingBox = this.box.geometry.boundingBox;
+		this.add(this.box);
+
+		this.frame = new LineSegments(boxFrameGeometry, new LineBasicMaterial({color: 0x000000}));
+		// this.frame.mode = Lines;
+		this.add(this.frame);//adds lines to draw at the volume border.
+
+		this.update();
+	}
+
+	update() {
+		this.boundingBox = this.box.geometry.boundingBox;
+		this.boundingSphere = this.boundingBox.getBoundingSphere(new Sphere());
+
+		if (this._clip) {
+			this.box.visible = false;
+			this.label.visible = false;
+		} else {
+			this.box.visible = true;
+			this.label.visible = this.showVolumeLabel;
+		}
+	}
+
+	raycast(raycaster, intersects) {
+		let is = [];
+		this.box.raycast(raycaster, is);
+
+		if (is.length > 0) {
+			let I = is[0];
+			intersects.push({
+				distance: I.distance,
+				object: this,
+				point: I.point.clone()
+			});
+		}
+	}
+
+	getVolume() {
+		return Math.abs(this.scale.x * this.scale.y * this.scale.z);
+	}
+
+	toJSON() {
+		let data = super.toJSON();
+		data.uuid = this.uuid;
+		data.name = this.constructor.name;
+		data._clip = this._clip;
+		data._modifiable = this._modifiable;
+		data.name = this.name;
+		data.visible = this.visible;
+		data._visible = this._visible;
+		data.intType = this.intType;
+		data.initialized = this._initialized;
+		data.color = this.color.getHex(); // store the color of the box
+
+		data.matrix = this.matrix.toArray();
+		data.matrixWorld = this.matrixWorld.toArray();
+		data.groupId = this.groupId;
+
+		return data;
+	}
+
+	static fromJSON(data) {
+		let volume = new BoxVolume({
+			clip: data._clip,
+			modifiable: data._modifiable
+		});
+
+		// Set basic properties
+		volume.groupId = data.groupId;
+		volume._initialized = true;
+		volume.uuid = data.uuid;
+		volume.name = data.name;
+		volume._modifiable = data._modifiable;
+		volume.intType = data.intType || FilterIntType.BOXVOLUME;
+
+		// Restore visibility
+		volume._visible = data._visible !== undefined ? data._visible : data.visible;
+		volume._clip = data._clip;
+
+		// Restore transformation
+		volume.matrix.fromArray(data.matrix);
+		volume.matrix.decompose(volume.position, volume.quaternion, volume.scale);
+
+		// Apply matrix world if available
+		if (data.matrixWorld) {
+			volume.matrixWorld.fromArray(data.matrixWorld);
+		}
+
+		// Update matrices and visibility
+		volume.updateMatrix();
+		volume.updateMatrixWorld(true);
+
+
+
+		volume.color = new Color(data.color || 0x0000ff); // restore color, default to blue if not set
+		// volume.box.material.color.set(volume.color);
+		// Important: Call update to refresh visibility and geometry
+		volume.update();
+
+		return volume;
+	}
+
+	get intType() {
+		return this._intType;
+	}
+	set intType(value) {
+		this._intType = value;
+	}
+
+};
+
+// window.BoxVolume = BoxVolume; // for global access, e.g. in Potree
+
+export class SphereVolume extends Volume {
+
+	constructor(args = {}) {
+		super(args);
+
+		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
+		this.name = 'sphere_' + this.constructor.counter;
+
+		let sphereGeometry = new SphereGeometry(1, 32, 32);
+		sphereGeometry.computeBoundingBox();
+
+		this.material = new MeshBasicMaterial({
+			color: 0x00ff00,
+			transparent: true,
+			opacity: 0.3,
+			depthTest: true,
+			depthWrite: false
+		});
+		this.sphere = new Mesh(sphereGeometry, this.material);
+		this.sphere.visible = false;
+		this.sphere.geometry.computeBoundingBox();
+		this.boundingBox = this.sphere.geometry.boundingBox;
+		this.add(this.sphere);
+
+		this.label.visible = false;
+
+
+		//let frameGeometry = new Geometry();
+		let frameGeometry = new BufferGeometry();
+
+		{
+			let steps = 64;
+			let uSegments = 8;
+			let vSegments = 5;
+			let r = 1;
+
+			for (let uSegment = 0;uSegment < uSegments;uSegment++) {
+
+				let alpha = (uSegment / uSegments) * Math.PI * 2;
+				let dirx = Math.cos(alpha);
+				let diry = Math.sin(alpha);
+
+				for (let i = 0;i <= steps;i++) {
+					let v = (i / steps) * Math.PI * 2;
+					let vNext = v + 2 * Math.PI / steps;
+
+					let height = Math.sin(v);
+					let xyAmount = Math.cos(v);
+
+					let heightNext = Math.sin(vNext);
+					let xyAmountNext = Math.cos(vNext);
+
+					let vertex = new Vector3(dirx * xyAmount, diry * xyAmount, height);
+					frameGeometry.vertices.push(vertex);
+
+					let vertexNext = new Vector3(dirx * xyAmountNext, diry * xyAmountNext, heightNext);
+					frameGeometry.vertices.push(vertexNext);
+				}
+			}
+
+			// creates rings at poles, just because it's easier to implement
+			for (let vSegment = 0;vSegment <= vSegments + 1;vSegment++) {
+
+				//let height = (vSegment / (vSegments + 1)) * 2 - 1; // -1 to 1
+				let uh = (vSegment / (vSegments + 1)); // -1 to 1
+				uh = (1 - uh) * (-Math.PI / 2) + uh * (Math.PI / 2);
+				let height = Math.sin(uh);
+
+				console.log(uh, height);
+
+				for (let i = 0;i <= steps;i++) {
+					let u = (i / steps) * Math.PI * 2;
+					let uNext = u + 2 * Math.PI / steps;
+
+					let dirx = Math.cos(u);
+					let diry = Math.sin(u);
+
+					let dirxNext = Math.cos(uNext);
+					let diryNext = Math.sin(uNext);
+
+					let xyAmount = Math.sqrt(1 - height * height);
+
+					let vertex = new Vector3(dirx * xyAmount, diry * xyAmount, height);
+					frameGeometry.vertices.push(vertex);
+
+					let vertexNext = new Vector3(dirxNext * xyAmount, diryNext * xyAmount, height);
+					frameGeometry.vertices.push(vertexNext);
+				}
+			}
+		}
+
+		this.frame = new LineSegments(frameGeometry, new LineBasicMaterial({color: 0x000000}));
+		this.add(this.frame);
+
+		let frameMaterial = new MeshBasicMaterial({wireframe: true, color: 0x000000});
+		this.frame = new Mesh(sphereGeometry, frameMaterial);
+		//this.add(this.frame);
+
+		//this.frame = new LineSegments(boxFrameGeometry, new LineBasicMaterial({color: 0x000000}));
+		// this.frame.mode = Lines;
+		//this.add(this.frame);
+
+		this.update();
+	}
+
+	update() {
+		this.boundingBox = this.sphere.geometry.boundingBox;
+		this.boundingSphere = this.boundingBox.getBoundingSphere(new Sphere());
+
+		//if (this._clip) {
+		//	this.sphere.visible = false;
+		//	this.label.visible = false;
+		//} else {
+		//	this.sphere.visible = true;
+		//	this.label.visible = this.showVolumeLabel;
+		//}
+	}
+
+	raycast(raycaster, intersects) {
+		let is = [];
+		this.sphere.raycast(raycaster, is);
+
+		if (is.length > 0) {
+			let I = is[0];
+			intersects.push({
+				distance: I.distance,
+				object: this,
+				point: I.point.clone()
+			});
+		}
+	}
+
+	// see https://en.wikipedia.org/wiki/Ellipsoid#Volume
+	getVolume() {
+		return (4 / 3) * Math.PI * this.scale.x * this.scale.y * this.scale.z;
+	}
+
+};
