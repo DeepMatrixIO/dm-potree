@@ -74,3 +74,4 @@ libs
 # Script outputs for checking not added
 /tmp/
 .atom8n
+.vscode

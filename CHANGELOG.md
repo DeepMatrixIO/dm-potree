@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### VolumeLineTool.js Integration
 - **`SelectionLineTool.fromMeasure(measure, options)`**: Directly consumes a `Measure` instance or measurement object to construct oriented box volumes along its linestring path.
+- **Color Palette & Filter Styling**: Added `DEFAULT_LINE_COLOR_RGB` (16 discrete RGBA color definitions derived from the Turbo colormap) and `DEFAULT_COLOR` constant for line volume rendering. Configured `addStaticFilterColor` and `addStaticStopFilter` across `testTool`, `fromGeoJSON`, and `fromArray` methods to apply volumetric filter coloring when attaching line box volumes to the scene.
 
 #### Test Suite & Feature Dashboard (`feature_test.html` & `example/feature_test.js`)
 - Added **"📏 Measure"** button in the Volume Line Tool test panel (`feature_test.html`) to automatically populate the input coordinates from any active linear distance measurement in the scene.
@@ -48,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Task Tracking (`.atom8n/My Board.kanban`)
 - Marked task `task_ulztpu_mveq3tq5` (*"Add function in Measure.js to convert line measurements into geojson and inti xyz array"*) as **Done**.
+
+#### Configuration
+- **`.gitignore`**: Added `.vscode` to ignored patterns.
 
 ### Fixed
 - **`Measure.js` & `Profile.js` Marker Hover Error**: Fixed `Uncaught TypeError: Cannot read properties of undefined (reading 'setHex')` occurring on mouseover when finishing measurements. Since marker spheres use `MeshBasicMaterial` (which lacks an `emissive` map), `mouseover` and `mouseleave` now safely guard `material.emissive` and gracefully fall back to lightness offset and color restoration on `material.color`.
