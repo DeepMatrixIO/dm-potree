@@ -359,7 +359,7 @@ document.body.onload = function () {
 			checkbox: 'check-volume-line',
 			passed: false,
 			run: async () => {
-				log("VOLUME LINE TOOL: Executing testTool with linestring coordinate array...");
+				log("VOLUME LINE TOOL: Executing testTool with linestring coordinate array or GeoJSON...");
 				try {
 					const input = document.getElementById('input-volume-line');
 					let raw = input ? input.value.trim() : '';
@@ -375,32 +375,41 @@ document.body.onload = function () {
 						return;
 					}
 
-					let lineArray = null;
+					if (!viewer.volumeLineTool) {
+						viewer.volumeLineTool = new VolumeLineTool(viewer);
+					}
+
+					let parsed = null;
 					try {
-						if (raw.startsWith('[') && raw.endsWith(']')) {
-							lineArray = JSON.parse(raw);
+						if (raw.startsWith('{') || raw.startsWith('[')) {
+							parsed = JSON.parse(raw);
 						}
 					} catch (e) {}
 
+					// Check if GeoJSON
+					if (parsed && typeof parsed === 'object' && (parsed.type === 'Feature' || parsed.type === 'FeatureCollection' || parsed.type === 'LineString')) {
+						const boxes = viewer.volumeLineTool.fromGeoJSON(parsed);
+						log(`SUCCESS: VolumeLineTool.fromGeoJSON created ${boxes.length} aligned BoxVolume(s) in scene from GeoJSON.`, "success");
+						setPassState('volume-line', true);
+						return;
+					}
+
+					let lineArray = parsed;
 					if (!lineArray || !Array.isArray(lineArray)) {
 						lineArray = raw.replace(/[\[\]]/g, '').split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
 					}
 
 					if (!lineArray || lineArray.length < 6) {
-						log("ERROR: Invalid linestring array. Provide at least 2 points (6 numbers, e.g. [x0, y0, z0, x1, y1, z1]).", "error");
+						log("ERROR: Invalid linestring array. Provide at least 2 points (6 numbers, e.g. [x0, y0, z0, x1, y1, z1]) or GeoJSON.", "error");
 						setPassState('volume-line', false);
 						return;
-					}
-
-					if (!viewer.volumeLineTool) {
-						viewer.volumeLineTool = new VolumeLineTool(viewer);
 					}
 
 					const count = viewer.volumeLineTool.testTool(lineArray);
 					log(`SUCCESS: VolumeLineTool.testTool created ${count} aligned BoxVolume(s) in scene.`, "success");
 					setPassState('volume-line', true);
 				} catch (err) {
-					log("ERROR running VolumeLineTool.testTool: " + err.message, "error");
+					log("ERROR running VolumeLineTool: " + err.message, "error");
 					setPassState('volume-line', false);
 				}
 			}
@@ -535,6 +544,23 @@ document.body.onload = function () {
 		btnBBox.addEventListener('click', (e) => {
 			e.stopPropagation();
 			fillBBoxExtremes(true);
+		});
+	}
+
+	const btnMeasure = document.getElementById('btn-volume-line-measure');
+	if (btnMeasure) {
+		btnMeasure.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const measurements = sceneSG.measurements || [];
+			const lineMeasure = measurements.find(m => m.points && m.points.length >= 2);
+			if (lineMeasure) {
+				const xyz = lineMeasure.toXYZArray();
+				const input = document.getElementById('input-volume-line');
+				if (input) input.value = JSON.stringify(xyz);
+				log(`SUCCESS: Loaded ${lineMeasure.points.length}-point line measurement into XYZ array: [${xyz.map(n => n.toFixed(2)).join(', ')}]`, 'success');
+			} else {
+				log("No line measurement with >= 2 points found in scene. Draw a line with Linear Distance Tool first.", "error");
+			}
 		});
 	}
 

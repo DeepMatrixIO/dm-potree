@@ -180,8 +180,28 @@ export class Profile extends Object3D {
 				}
 			};
 
-			let mouseover = (e) => e.object.material.emissive.setHex(0x888888);
-			let mouseleave = (e) => e.object.material.emissive.setHex(0x000000);
+			let mouseover = (e) => {
+				if (!e.object || !e.object.material) return;
+				if (e.object.material.emissive) {
+					e.object.material.emissive.setHex(0x888888);
+				} else if (e.object.material.color) {
+					e.object.material._origColor = e.object.material.color.getHex();
+					e.object.material.color.offsetHSL(0, 0, 0.25);
+				}
+			};
+
+			let mouseleave = (e) => {
+				if (!e.object || !e.object.material) return;
+				if (e.object.material.emissive) {
+					e.object.material.emissive.setHex(0x000000);
+				} else if (e.object.material.color) {
+					if (e.object.material._origColor !== undefined) {
+						e.object.material.color.setHex(e.object.material._origColor);
+					} else {
+						e.object.material.color.copy(this.color || 0xff0000);
+					}
+				}
+			};
 
 			sphere.addEventListener('drag', drag);
 			sphere.addEventListener('drop', drop);

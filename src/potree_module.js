@@ -60,7 +60,7 @@ export {ClippingTool} from "./utils/ClippingTool.js";
 export {ClipVolume} from "./utils/ClipVolume.js";
 export {Compass} from "./utils/Compass.js";
 // export { } from "./utils/GeoTIFF.js";//Old STYLE CODE, fix or remove it
-export {Measure} from "./utils/Measure.js";
+export {Measure, convertLineMeasurement, measureToGeoJSON, measureToXYZArray, measureToXYZ} from "./utils/Measure.js";
 export {MeasuringTool} from "./utils/MeasuringTool.js";
 export {Message} from "./utils/Message.js";
 export {PointCloudSM} from "./utils/PointCloudSM.js";

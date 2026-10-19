@@ -102,7 +102,7 @@ function createCircleLine() {
 	const coordinates = [];
 
 	let n = 128;
-	for (let i = 0; i <= n; i++) {
+	for (let i = 0;i <= n;i++) {
 		let u0 = 2 * Math.PI * (i / n);
 		let u1 = 2 * Math.PI * (i + 1) / n;
 
@@ -182,7 +182,7 @@ function createCircle() {
 	const coordinates = [];
 
 	let n = 128;
-	for (let i = 0; i <= n; i++) {
+	for (let i = 0;i <= n;i++) {
 		let u0 = 2 * Math.PI * (i / n);
 		let u1 = 2 * Math.PI * (i + 1) / n;
 
@@ -481,8 +481,28 @@ export class Measure extends Object3D {
 				}
 			};
 
-			let mouseover = (e) => e.object.material.emissive.setHex(0x888888);
-			let mouseleave = (e) => e.object.material.emissive.setHex(0x000000);
+			let mouseover = (e) => {
+				if (!e.object || !e.object.material) return;
+				if (e.object.material.emissive) {
+					e.object.material.emissive.setHex(0x888888);
+				} else if (e.object.material.color) {
+					e.object.material._origColor = e.object.material.color.getHex();
+					e.object.material.color.offsetHSL(0, 0, 0.25);
+				}
+			};
+
+			let mouseleave = (e) => {
+				if (!e.object || !e.object.material) return;
+				if (e.object.material.emissive) {
+					e.object.material.emissive.setHex(0x000000);
+				} else if (e.object.material.color) {
+					if (e.object.material._origColor !== undefined) {
+						e.object.material.color.setHex(e.object.material._origColor);
+					} else {
+						e.object.material.color.copy(this.color);
+					}
+				}
+			};
 
 			sphere.addEventListener('drag', drag);
 			sphere.addEventListener('drop', drop);
@@ -556,7 +576,7 @@ export class Measure extends Object3D {
 		let area = 0;
 		let j = this.points.length - 1;
 
-		for (let i = 0; i < this.points.length; i++) {
+		for (let i = 0;i < this.points.length;i++) {
 			let p1 = this.points[i].position;
 			let p2 = this.points[j].position;
 			area += (p2.x + p1.x) * (p1.y - p2.y);
@@ -573,7 +593,7 @@ export class Measure extends Object3D {
 
 		let distance = 0;
 
-		for (let i = 1; i < this.points.length; i++) {
+		for (let i = 1;i < this.points.length;i++) {
 			let prev = this.points[i - 1].position;
 			let curr = this.points[i].position;
 			let d = prev.distanceTo(curr);
@@ -653,13 +673,13 @@ export class Measure extends Object3D {
 		let lastIndex = this.points.length - 1;
 
 		let centroid = new Vector3();
-		for (let i = 0; i <= lastIndex; i++) {
+		for (let i = 0;i <= lastIndex;i++) {
 			let point = this.points[i];
 			centroid.add(point.position);
 		}
 		centroid.divideScalar(this.points.length);
 
-		for (let i = 0; i <= lastIndex; i++) {
+		for (let i = 0;i <= lastIndex;i++) {
 			let index = i;
 			let nextIndex = (i + 1 > lastIndex) ? 0 : i + 1;
 			let previousIndex = (i === 0) ? lastIndex : i - 1;
@@ -862,7 +882,7 @@ export class Measure extends Object3D {
 	};
 
 	raycast(raycaster, intersects) {
-		for (let i = 0; i < this.points.length; i++) {
+		for (let i = 0;i < this.points.length;i++) {
 			let sphere = this.spheres[i];
 
 			sphere.raycast(raycaster, intersects);
@@ -872,7 +892,7 @@ export class Measure extends Object3D {
 		// for scaled objects.
 		// see https://github.com/mrdoob/js/issues/5827
 		// TODO: remove this once the bug has been fixed
-		for (let i = 0; i < intersects.length; i++) {
+		for (let i = 0;i < intersects.length;i++) {
 			let I = intersects[i];
 			I.distance = raycaster.ray.origin.distanceTo(I.point);
 		}
@@ -960,4 +980,332 @@ export class Measure extends Object3D {
 		this.update();
 	}
 
+	/**
+	 * Returns an array of coordinate tuples [[x, y, z], ...] for all marker points in this measurement.
+	 *
+	 * @param {Object} [options={}]
+	 * @param {boolean} [options.closeLoop] - If true (or if measurement.closed), appends the first coordinate at the end.
+	 * @returns {Array<Array<number>>}
+	 */
+	getCoordinates(options = {}) {
+		const shouldClose = options.closeLoop !== undefined ? Boolean(options.closeLoop) : Boolean(this.closed);
+		const coords = [];
+		for (const pt of this.points) {
+			if (!pt) continue;
+			if (pt.position && typeof pt.position.x === 'number') {
+				coords.push([pt.position.x, pt.position.y, pt.position.z]);
+			} else if (typeof pt.x === 'number') {
+				coords.push([pt.x, pt.y, pt.z]);
+			} else if (Array.isArray(pt) && pt.length >= 3) {
+				coords.push([pt[0], pt[1], pt[2]]);
+			}
+		}
+
+		if (shouldClose && coords.length >= 2) {
+			const first = coords[0];
+			const last = coords[coords.length - 1];
+			if (first[0] !== last[0] || first[1] !== last[1] || first[2] !== last[2]) {
+				coords.push([first[0], first[1], first[2]]);
+			}
+		}
+
+		return coords;
+	}
+
+	/**
+	 * Converts the line measurement into an XYZ array.
+	 * Returns a flat array [x0, y0, z0, x1, y1, z1, ...] by default (ideal for shaders, buffers, and VolumeLineTool),
+	 * or an array of coordinate tuples [[x0, y0, z0], ...] if flatten is false.
+	 *
+	 * @param {boolean|Object} [options={}] - Options object or boolean for `flatten`
+	 * @param {boolean} [options.flatten=true] - Whether to return a 1D flat array [x0, y0, z0, ...]
+	 * @param {boolean} [options.closeLoop] - If true, appends the starting point to close the loop
+	 * @param {boolean} [options.asFloat32Array=false] - Whether to return a Float32Array
+	 * @returns {Array<number>|Array<Array<number>>|Float32Array}
+	 */
+	toXYZArray(options = {}) {
+		let flatten = true;
+		let asFloat32Array = false;
+		let closeLoop = this.closed;
+
+		if (typeof options === 'boolean') {
+			flatten = options;
+		} else if (options && typeof options === 'object') {
+			if (typeof options.flatten === 'boolean') {
+				flatten = options.flatten;
+			}
+			if (typeof options.asFloat32Array === 'boolean') {
+				asFloat32Array = options.asFloat32Array;
+			}
+			if (typeof options.closeLoop === 'boolean') {
+				closeLoop = options.closeLoop;
+			}
+		}
+
+		const coords = this.getCoordinates({closeLoop});
+
+		if (!flatten) {
+			return coords;
+		}
+
+		const flat = [];
+		for (let i = 0;i < coords.length;i++) {
+			flat.push(coords[i][0], coords[i][1], coords[i][2]);
+		}
+
+		if (asFloat32Array) {
+			return new Float32Array(flat);
+		}
+
+		return flat;
+	}
+
+	/**
+	 * Alias for toXYZArray.
+	 *
+	 * @param {boolean|Object} [options={}]
+	 * @returns {Array<number>|Array<Array<number>>|Float32Array}
+	 */
+	toXYZ(options = {}) {
+		return this.toXYZArray(options);
+	}
+
+	/**
+	 * Converts this line measurement into a GeoJSON representation.
+	 * Produces a GeoJSON Feature with a LineString geometry by default,
+	 * or a FeatureCollection / Geometry based on options.
+	 *
+	 * @param {Object} [options={}]
+	 * @param {boolean} [options.asFeature=true] - Return as a GeoJSON Feature (default)
+	 * @param {boolean} [options.asFeatureCollection=false] - Return wrapped in a GeoJSON FeatureCollection
+	 * @param {boolean} [options.geometryOnly=false] - Return only the GeoJSON LineString geometry
+	 * @param {boolean} [options.closeLoop] - Whether to close the line loop (defaults to this.closed)
+	 * @param {boolean} [options.asPolygon=false] - If true and closed, outputs a GeoJSON Polygon geometry instead of LineString
+	 * @param {boolean} [options.asString=false] - If true, returns stringified GeoJSON
+	 * @param {Object} [options.properties={}] - Extra properties to include in the Feature
+	 * @returns {Object|string} GeoJSON Feature, FeatureCollection, Geometry, or JSON string
+	 */
+	toGeoJSON(options = {}) {
+		const shouldClose = options.closeLoop !== undefined ? Boolean(options.closeLoop) : Boolean(this.closed);
+		const coords = this.getCoordinates({closeLoop: shouldClose});
+
+		const segmentLengths = [];
+		for (let i = 1;i < coords.length;i++) {
+			const dx = coords[i][0] - coords[i - 1][0];
+			const dy = coords[i][1] - coords[i - 1][1];
+			const dz = coords[i][2] - coords[i - 1][2];
+			segmentLengths.push(Math.sqrt(dx * dx + dy * dy + dz * dz));
+		}
+
+		const properties = {
+			name: this.name,
+			distance: this.getTotalDistance(),
+			closed: Boolean(this.closed),
+			pointCount: this.points.length,
+			segmentLengths,
+			...(options.properties || {})
+		};
+
+		let geometry;
+		if (options.asPolygon && shouldClose && coords.length >= 4) {
+			geometry = {
+				type: 'Polygon',
+				coordinates: [coords]
+			};
+		} else {
+			geometry = {
+				type: 'LineString',
+				coordinates: coords
+			};
+		}
+
+		let result;
+		if (options.geometryOnly) {
+			result = geometry;
+		} else {
+			const feature = {
+				type: 'Feature',
+				geometry,
+				properties
+			};
+
+			if (options.asFeatureCollection) {
+				result = {
+					type: 'FeatureCollection',
+					features: [feature]
+				};
+			} else {
+				result = feature;
+			}
+		}
+
+		if (options.asString || options.stringify) {
+			const indent = options.indent !== undefined ? options.indent : '\t';
+			return JSON.stringify(result, null, indent);
+		}
+
+		return result;
+	}
+
+	/**
+	 * Converts the line measurement into both GeoJSON and XYZ array formats simultaneously.
+	 *
+	 * @param {Object} [options={}]
+	 * @returns {{ geojson: Object, xyz: Array<number>, coordinates: Array<Array<number>>, totalDistance: number, pointCount: number }}
+	 */
+	toGeoJSONAndXYZ(options = {}) {
+		return {
+			geojson: this.toGeoJSON(options),
+			xyz: this.toXYZArray({...options, flatten: true}),
+			coordinates: this.toXYZArray({...options, flatten: false}),
+			totalDistance: this.getTotalDistance(),
+			pointCount: this.points.length
+		};
+	}
+
+	/**
+	 * Static helper to extract coordinates from a Measure, object with points, or point array.
+	 *
+	 * @param {Measure|Object|Array} measure
+	 * @param {Object} [options={}]
+	 * @returns {Array<Array<number>>}
+	 */
+	static getCoordinates(measure, options = {}) {
+		if (measure instanceof Measure) {
+			return measure.getCoordinates(options);
+		}
+		const dummy = new Measure();
+		if (Array.isArray(measure)) {
+			dummy.points = measure.map(p => (p && p.position) ? p : {position: p});
+		} else if (measure && Array.isArray(measure.points)) {
+			dummy.points = measure.points;
+			dummy.closed = Boolean(measure.closed);
+		}
+		return dummy.getCoordinates(options);
+	}
+
+	/**
+	 * Static helper to convert a line measurement into GeoJSON.
+	 *
+	 * @param {Measure|Object|Array} measure
+	 * @param {Object} [options={}]
+	 * @returns {Object|string}
+	 */
+	static toGeoJSON(measure, options = {}) {
+		if (measure instanceof Measure) {
+			return measure.toGeoJSON(options);
+		}
+		const dummy = new Measure();
+		if (Array.isArray(measure)) {
+			dummy.points = measure.map(p => (p && p.position) ? p : {position: p});
+		} else if (measure && Array.isArray(measure.points)) {
+			dummy.points = measure.points;
+			dummy.name = measure.name || dummy.name;
+			dummy.closed = Boolean(measure.closed);
+		}
+		return dummy.toGeoJSON(options);
+	}
+
+	/**
+	 * Static helper to convert a line measurement into an XYZ array.
+	 *
+	 * @param {Measure|Object|Array} measure
+	 * @param {boolean|Object} [options={}]
+	 * @returns {Array<number>|Array<Array<number>>|Float32Array}
+	 */
+	static toXYZArray(measure, options = {}) {
+		if (measure instanceof Measure) {
+			return measure.toXYZArray(options);
+		}
+		const dummy = new Measure();
+		if (Array.isArray(measure)) {
+			dummy.points = measure.map(p => (p && p.position) ? p : {position: p});
+		} else if (measure && Array.isArray(measure.points)) {
+			dummy.points = measure.points;
+			dummy.closed = Boolean(measure.closed);
+		}
+		return dummy.toXYZArray(options);
+	}
+
+	/**
+	 * Static alias for toXYZArray.
+	 */
+	static toXYZ(measure, options = {}) {
+		return Measure.toXYZArray(measure, options);
+	}
+
+	/**
+	 * Static helper to convert a line measurement into both GeoJSON and XYZ array.
+	 *
+	 * @param {Measure|Object|Array} measure
+	 * @param {Object} [options={}]
+	 * @returns {{ geojson: Object, xyz: Array<number>, coordinates: Array<Array<number>>, totalDistance: number, pointCount: number }}
+	 */
+	static toGeoJSONAndXYZ(measure, options = {}) {
+		if (measure instanceof Measure) {
+			return measure.toGeoJSONAndXYZ(options);
+		}
+		const dummy = new Measure();
+		if (Array.isArray(measure)) {
+			dummy.points = measure.map(p => (p && p.position) ? p : {position: p});
+		} else if (measure && Array.isArray(measure.points)) {
+			dummy.points = measure.points;
+			dummy.name = measure.name || dummy.name;
+			dummy.closed = Boolean(measure.closed);
+		}
+		return dummy.toGeoJSONAndXYZ(options);
+	}
+
+	/**
+	 * Static helper to convert a line measurement into both GeoJSON and XYZ array.
+	 */
+	static convertLineMeasurement(measure, options = {}) {
+		return Measure.toGeoJSONAndXYZ(measure, options);
+	}
+
 }
+
+/**
+ * Standalone function in Measure.js to convert line measurements into geojson and into xyz array.
+ *
+ * @param {Measure|Object|Array} measure - Measure instance, measurement object with points, or array of points
+ * @param {Object} [options={}] - Conversion options
+ * @returns {{ geojson: Object, xyz: Array<number>, coordinates: Array<Array<number>>, totalDistance: number, pointCount: number }}
+ */
+export function convertLineMeasurement(measure, options = {}) {
+	return Measure.convertLineMeasurement(measure, options);
+}
+
+/**
+ * Standalone function to convert a line measurement into GeoJSON.
+ *
+ * @param {Measure|Object|Array} measure
+ * @param {Object} [options={}]
+ * @returns {Object|string} GeoJSON representation
+ */
+export function measureToGeoJSON(measure, options = {}) {
+	return Measure.toGeoJSON(measure, options);
+}
+
+/**
+ * Standalone function to convert a line measurement into an XYZ array.
+ *
+ * @param {Measure|Object|Array} measure
+ * @param {boolean|Object} [options={}]
+ * @returns {Array<number>|Array<Array<number>>|Float32Array}
+ */
+export function measureToXYZArray(measure, options = {}) {
+	return Measure.toXYZArray(measure, options);
+}
+
+/**
+ * Standalone function alias to convert a line measurement into an XYZ array.
+ *
+ * @param {Measure|Object|Array} measure
+ * @param {boolean|Object} [options={}]
+ * @returns {Array<number>|Array<Array<number>>|Float32Array}
+ */
+export function measureToXYZ(measure, options = {}) {
+	return Measure.toXYZ(measure, options);
+}
+

@@ -32,6 +32,28 @@ const TURBO_16 = [
 const TURBO_16_REVERSED = [...TURBO_16].reverse();
 
 
+const DEFAULT_LINE_COLOR_RGB = [
+	{r: 48, g: 18, b: 59, a: 1},
+	{r: 65, g: 67, b: 167, a: 1},
+	{r: 71, g: 113, b: 233, a: 1},
+	{r: 62, g: 155, b: 254, a: 1},
+	{r: 34, g: 197, b: 226, a: 1},
+	{r: 26, g: 228, b: 182, a: 1},
+	{r: 70, g: 248, b: 132, a: 1},
+	{r: 136, g: 255, b: 78, a: 1},
+	{r: 185, g: 246, b: 53, a: 1},
+	{r: 225, g: 221, b: 55, a: 1},
+	{r: 251, g: 186, b: 57, a: 1},
+	{r: 253, g: 141, b: 39, a: 1},
+	{r: 240, g: 91, b: 18, a: 1},
+	{r: 214, g: 53, b: 6, a: 1},
+	{r: 175, g: 24, b: 1, a: 1},
+	{r: 122, g: 4, b: 3, a: 1}
+];
+
+
+const DEFAULT_COLOR = {r: 255, g: 255, b: 0, a: 0.1};
+
 export class SelectionLineTool {
 
 	constructor(viewer, options = {}) {
@@ -65,10 +87,11 @@ export class SelectionLineTool {
 
 		boxes.forEach(box => {
 			if (this.viewer && this.viewer.scene && !this.viewer.scene.volumes.includes(box)) {
-				box.clip = true;
-				this.viewer.scene.addVolume(box);
-				viewer.scene.addStaticFilterColor(0.7, 0.1, 0.1, 4);//adding a color to the volume, however is not adding stuff
-				this.viewer.scene.addStaticStopFilter();
+				// box.clip = true;//redundant
+				this.viewer.scene.addVolume(box);//
+				// this.viewer.scene.addStaticFilterColor(0.7, 0.1, 0.1, 4);//adding a color to the volume, however is not adding stuff
+				this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[0].r / 255, DEFAULT_LINE_COLOR_RGB[0].g / 255, DEFAULT_LINE_COLOR_RGB[0].b / 255, DEFAULT_LINE_COLOR_RGB[0].a, 4);//adding a color to the volume, however is not adding stuff
+				this.viewer.scene.addStaticStopFilter();//this should stop but it is not
 			}
 		});
 		console.log("added line boxes:", boxes.length);
@@ -115,11 +138,35 @@ export class SelectionLineTool {
 					this.boxVolumes.push(box);
 					if (this.scene) {
 						this.scene.addVolume(box);
+						//may add color here
+						this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+						this.viewer.scene.addStaticStopFilter();//this should stop but it is not
+
 					}
 				}
 			}
 		}
 		return this.boxVolumes;
+	}
+
+	/**
+	 * Takes a Measure instance (or measurement object) and creates BoxVolumes along its linestring.
+	 *
+	 * @param {Object} measure - Measure instance with toXYZArray / toGeoJSON methods or points
+	 * @param {Object} [options={}] - Options overriding defaults
+	 * @returns {Array<BoxVolume>}
+	 */
+	fromMeasure(measure, options = {}) {
+		if (!measure) return [];
+		if (typeof measure.toXYZArray === 'function') {
+			return this.fromArray(measure.toXYZArray(options), options);
+		} else if (typeof measure.toGeoJSON === 'function') {
+			return this.fromGeoJSON(measure.toGeoJSON(options), options);
+		} else if (Array.isArray(measure.points)) {
+			const coords = measure.points.map(p => (p && p.position) ? [p.position.x, p.position.y, p.position.z] : p);
+			return this.fromArray(coords, options);
+		}
+		return [];
 	}
 
 
@@ -148,6 +195,8 @@ export class SelectionLineTool {
 					this.boxVolumes.push(box);
 					if (this.scene) {
 						this.scene.addVolume(box);
+						this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+						this.viewer.scene.addStaticStopFilter();//this should stop but it is not
 					}
 				}
 			}
@@ -169,6 +218,8 @@ export class SelectionLineTool {
 				this.boxVolumes.push(box);
 				if (this.scene) {
 					this.scene.addVolume(box);
+					this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+					this.viewer.scene.addStaticStopFilter();//this should stop but it is not
 				}
 			}
 		}
