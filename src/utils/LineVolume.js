@@ -7,9 +7,9 @@ import {BoxGeometry, BufferAttribute, BufferGeometry, Color, LineBasicMaterial, 
 import {TextSprite} from "../TextSprite.js";
 import {FilterIntType} from "./FilterConsts.js";
 
-
-// may not be required to create a new volume
-export class LineVolume extends Object3D {
+import {Volume} from "./Volume.js";
+//Base class for Line volume. Differs from plain Volume as
+export class LineVolume extends Volume {
 	constructor(args = {}) {
 		super();
 		this._intType = FilterIntType.NONE; //default value, can be set by user
@@ -137,21 +137,24 @@ export class LineVolume extends Object3D {
 };
 
 
-//BoxVolume isd always unitary centered at zero, but its definition is set by a transformation matrix
+//LineBoxVolume is a BoxVolume with a different renderign mechamism set by the intType
+//shares the graphical feedback of BoxVolume  and most functions
+
+//  isd always unitary centered at zero, but its definition is set by a transformation matrix
 // It can be set by
 //	volume.uuid = data.uuid;
 // volume.name = data.name;
+
 // volume.position.set(...data.position);
 // volume.rotation.set(...data.rotation);
 // volume.scale.set(...data.scale);
+
 // volume.visible = data.visible;
 // volume.clip = data.clip;
 
 
 
-
-
-export class LineBoxVolume extends TetVolume {
+export class LineBoxVolume extends Volume {
 
 	constructor(args = {}) {
 		super(args);
@@ -254,6 +257,7 @@ export class LineBoxVolume extends TetVolume {
 		}
 	}
 
+	//tests if  a raycaster intersects the volume
 	raycast(raycaster, intersects) {
 		let is = [];
 		this.box.raycast(raycaster, is);
@@ -304,7 +308,7 @@ export class LineBoxVolume extends TetVolume {
 		volume.uuid = data.uuid;
 		volume.name = data.name;
 		volume._modifiable = data._modifiable;
-		volume.intType = data.intType || FilterIntType.BOXVOLUME;
+		volume.intType = data.intType || FilterIntType.LINEBOXVOLUME;
 
 		// Restore visibility
 		volume._visible = data._visible !== undefined ? data._visible : data.visible;

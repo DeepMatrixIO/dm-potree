@@ -8,6 +8,7 @@
 
 import {Vector3} from "three";
 import {BoxVolume} from "./Volume.js";
+import {LineBoxVolume} from "./LineVolume.js";
 
 const TURBO_16 = [
 	"#30123b",
@@ -114,7 +115,10 @@ export class SelectionLineTool {
 		const thickness = options.distance !== undefined ? options.distance * 2 : 10;
 		const width = options.width ?? thickness;
 		const height = options.height ?? thickness;
-		const box = new BoxVolume(options);
+
+		// const box = new BoxVolume(options);
+		const box = new LineBoxVolume(options);//exaatly the same but with
+
 		box.position.set((v1.x + v2.x) * 0.5, (v1.y + v2.y) * 0.5, (v1.z + v2.z) * 0.5);
 		box.rotation.set(0, 0, Math.atan2(dy, dx));
 		box.scale.set(length, width, height);
@@ -154,7 +158,7 @@ export class SelectionLineTool {
 	 *
 	 * @param {Object} measure - Measure instance with toXYZArray / toGeoJSON methods or points
 	 * @param {Object} [options={}] - Options overriding defaults
-	 * @returns {Array<BoxVolume>}
+	 * @returns {Array<LineBoxVolume>}
 	 */
 	fromMeasure(measure, options = {}) {
 		if (!measure) return [];
@@ -177,7 +181,7 @@ export class SelectionLineTool {
  *
  * @param {Array<number>|Array<Array<number>>} array - Flat array of coords or array of points
  * @param {Object} [options={}] - Options overriding defaults (stride, distance, width, height, etc.)
- * @returns {Array<BoxVolume>}
+ * @returns {Array<LineBoxVolume>}
  */
 	fromArray(array, options = {}) {
 		const mergedOptions = {...this.selectionLineFactory(), ...this.options, ...options};
@@ -227,6 +231,17 @@ export class SelectionLineTool {
 		return this.boxVolumes;
 	}
 
+	/**
+	 * Helper to extract line start and end coordinates in world space from a BoxVolume or its matrix.
+	 */
+	static extractBoxLineCoords(boxOrMatrix, isInverse = true) {
+		return extractBoxLineCoords(boxOrMatrix, isInverse);
+	}
+
+	extractBoxLineCoords(boxOrMatrix, isInverse = true) {
+		return extractBoxLineCoords(boxOrMatrix, isInverse);
+	}
+
 }
 
 function extractLineCoordinates(geometry) {
@@ -252,6 +267,37 @@ function extractLineCoordinates(geometry) {
 	}
 
 	return lines;
+}
+
+/**
+ * Extracts the extreme points of a box that align with the line in world coordinates.
+ * In the box's local space (created by VolumeLineTool), the line aligns with the X axis from -0.5 to 0.5.
+ *
+ * @param {LineBoxVolume|Matrix4|Object} boxOrMatrix - BoxVolume instance, {inverse: Matrix4}, or Matrix4 (inverse matrix by default, or world matrix if isInverse = false)
+ * @param {boolean} [isInverse=true] - Set to true if the matrix provided is the inverse matrix (clipBoxInvMat), false if already matrixWorld.
+ * @returns {[Vector3, Vector3] & {start: Vector3, end: Vector3, lineStart: Vector3, lineEnd: Vector3}}
+ */
+export function extractBoxLineCoords(boxOrMatrix, isInverse = true) {
+	if (!boxOrMatrix) return null;
+	let boxWorldMat;
+	if (boxOrMatrix.isMatrix4) {
+		boxWorldMat = isInverse ? boxOrMatrix.clone().invert() : boxOrMatrix.clone();
+	} else if (boxOrMatrix.matrixWorld) {
+		boxOrMatrix.updateMatrixWorld(true);
+		boxWorldMat = boxOrMatrix.matrixWorld;
+	} else if (boxOrMatrix.inverse && boxOrMatrix.inverse.isMatrix4) {
+		boxWorldMat = boxOrMatrix.inverse.clone().invert();
+	} else {
+		return null;
+	}
+	const start = new Vector3(-0.5, 0, 0).applyMatrix4(boxWorldMat);
+	const end = new Vector3(0.5, 0, 0).applyMatrix4(boxWorldMat);
+	const res = [start, end];
+	res.start = start;
+	res.end = end;
+	res.lineStart = start;
+	res.lineEnd = end;
+	return res;
 }
 
 export {SelectionLineTool as VolumeLineTool};

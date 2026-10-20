@@ -18,6 +18,13 @@ vec3 assignedColor = vec3(1.0f, 0.0f, 0.0f); //not in use, as it is always overw
 vec3 olderColor = vec3(0.0f, 0.0f, 1.0f); //
 vec3 activeColor = vec3(0.0f, 1.0f, 0.15f); // green
 
+// line distance coloring variables
+float lineDistance = -1.0; //computed if points are within the box, should be set to inf or a large value
+
+
+// float maxLineDistance = 0.0;
+// float minLineDistance = 0.0;
+
 int lastClassification = -1;//assigned based on the last valid filter operation with points inside. Colorize extracts the attribute index or first index as assigned classification. If the uniform contains it, visible, otherwise not.
 int currentClassification = -1;
 bool clip = false;
@@ -658,8 +665,8 @@ vec3 getElevation() {
 	// return cElevation;
 #endif
 
-// vec3 iso = vec3(0.0, 0.0, 0.0);
-// override the color at a given heights and tolerance
+	// vec3 iso = vec3(0.0, 0.0, 0.0);
+	// override the color at a given heights and tolerance
 #if defined(draw_isolines) && draw_isolines > 0
 	//	cElevation=isolinesRendering(cElevation).xyz;//considers only z position
 	// vec4 worldPosition = modelMatrix * vec4(position, 1.0);
@@ -1238,6 +1245,78 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point) {
 	return inside;
 }
 
+// Structure containing the line endpoints in world coordinates
+struct BoxLineCoords {
+	vec3 start;
+	vec3 end;
+	vec3 lineStart;
+	vec3 lineEnd;
+};
+
+// Extracts the extreme points from a BoxVolume's inverse matrix that align with the line in world coordinates.
+// Since the box created from VolumeLineTool aligns with the line along the local X axis (spanning -0.5 to 0.5),
+// local line start is (-0.5, 0.0, 0.0) and local line end is (0.5, 0.0, 0.0).
+// Inverting clipBoxInvMat recovers the box's world transformation matrix.
+BoxLineCoords extractBoxLineCoords(mat4 clipBoxInvMat) {
+	mat4 boxWorldMat = inverse(clipBoxInvMat);
+	vec4 pStart = boxWorldMat * vec4(-0.5f, 0.0f, 0.0f, 1.0f);
+	vec4 pEnd   = boxWorldMat * vec4( 0.5f, 0.0f, 0.0f, 1.0f);
+	vec3 s = pStart.xyz / pStart.w;
+	vec3 e = pEnd.xyz / pEnd.w;
+
+	BoxLineCoords coords;
+	coords.start = s;
+	coords.end = e;
+	coords.lineStart = s;
+	coords.lineEnd = e;
+	return coords;
+}
+
+// Overload using out parameters to return both vec3 values directly
+void extractBoxLineCoords(mat4 clipBoxInvMat, out vec3 lineStart, out vec3 lineEnd) {
+	mat4 boxWorldMat = inverse(clipBoxInvMat);
+	vec4 pStart = boxWorldMat * vec4(-0.5f, 0.0f, 0.0f, 1.0f);
+	vec4 pEnd   = boxWorldMat * vec4( 0.5f, 0.0f, 0.0f, 1.0f);
+	lineStart = pStart.xyz / pStart.w;
+	lineEnd   = pEnd.xyz / pEnd.w;
+}
+
+
+//function to test the distance to a line segment,  not exactly an ortho distance to the line segment
+//takes the distance to a line segment (from a point to a line segment (from a line start to a line end))
+bool lineSegmentOrtoDistance(vec3 point, vec3 lineStart, vec3 lineEnd) {
+	vec3 lineDir = lineEnd - lineStart;
+	vec3 pointDir = point - lineStart;
+	float t = dot(pointDir, lineDir) / dot(lineDir, lineDir);
+	if (t < 0.0) {
+		t = 0.0;
+	} else if (t > 1.0) {
+		t = 1.0;
+	}
+	vec3 closestPoint = lineStart + t * lineDir;
+	return distance(point, closestPoint) <= 1.0;
+
+}
+
+//this is a coarse test to speedup computations. small enough segments will make accuracy non relevant.
+//simply compute a distance. Not all points will be computed as a previous inside check was performed.
+
+float lineSegmentDistance(vec3 point, vec3 lineStart, vec3 lineEnd) {
+	float dist1 = distance(lineEnd , point);
+	float dist2 = distance(lineStart , point);
+	if (dist1 > dist2){
+		return dist1;
+	}else{
+		return dist2;
+	}
+
+
+}
+
+
+
+
+
 /** Takes an attribute, which for the time being is classification, but mostly a packed attribute index
  * and compares it against another value, either attribute or contant value
  *
@@ -1475,19 +1554,19 @@ void doClipping(bool inside) {
 
 	//Active comes from the clustering tool, so all segment ids should be tested
 
-// #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
-// 	for(int i = 0; i < num_clusteredpointsegments; i++) {
-// 		if(clusteredpointsegments[i] == seg_cluster_id) {
-// 			active_ = activeStates[i];
-// 			highlight = selectedStates[i];//not in use here
-// 			visible = visibleStates[i];//not in use here
-// 			highlightColor = vec3(0, 0, 1);
-// 			inside=true;
-// 			i = num_clusteredpointsegments;//finish loop
+	// #if defined(num_clusteredpointsegments) && num_clusteredpointsegments > 0
+	// 	for(int i = 0; i < num_clusteredpointsegments; i++) {
+	// 		if(clusteredpointsegments[i] == seg_cluster_id) {
+	// 			active_ = activeStates[i];
+	// 			highlight = selectedStates[i];//not in use here
+	// 			visible = visibleStates[i];//not in use here
+	// 			highlightColor = vec3(0, 0, 1);
+	// 			inside=true;
+	// 			i = num_clusteredpointsegments;//finish loop
 
-// 		}
-// 	}
-// #endif
+	// 		}
+	// 	}
+	// #endif
 
 	//all points have to set a clip task
 
@@ -1524,16 +1603,16 @@ void doClipping(bool inside) {
 
 	}
 
-// Light grayscale (75% intensity)
+	// Light grayscale (75% intensity)
 	float grayLight = 0.75f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b);
 
-// Medium grayscale (50% intensity)
+	// Medium grayscale (50% intensity)
 	float grayMedium = 0.5f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b);
 
-// Dark grayscale (25% intensity)
+	// Dark grayscale (25% intensity)
 	float grayDark = 0.25f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b);
 
-// Your 75% version (from line 1381)
+	// Your 75% version (from line 1381)
 	float grayScale75p = 3.0f * (0.299f * vColor.r + 0.587f * vColor.g + 0.114f * vColor.b) / 4.0f;
 
 	if(inside) {
@@ -1569,7 +1648,7 @@ void doClipping(bool inside) {
 		if(highlight) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
 		{
 			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+			//			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
 
 			//vec3 highlightColor = vec3(1.0f, 0.0f, 0.0f); //
 
@@ -1583,20 +1662,20 @@ void doClipping(bool inside) {
 			return;
 		}
 
-// 		if(colorize && !active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
-// 		{
-// 			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
-// //			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
+		// 		if(colorize && !active_) //STD potree code.  if highlight take the available box color and apply some greyscale .Default action for volumes and polygons is to highlight
+		// 		{
+		// 			//vec3 hColor = vec3(0.5f, 0.0f, 0.0f); // red
+		// //			vec3 hColor = vec3(1.0f, 1.07f, 0.0f); // yellow
 
-// 			vColor.r = highlightColor.r;
-// 			vColor.g = highlightColor.g;
-// 			vColor.b = highlightColor.b;
+		// 			vColor.r = highlightColor.r;
+		// 			vColor.g = highlightColor.g;
+		// 			vColor.b = highlightColor.b;
 
-// 			// vColor.r = 0.0f;
-// 			// vColor.g = 1.0f;
-// 			// vColor.b = 0.0f;
-// 			return;
-// 		}
+		// 			// vColor.r = 0.0f;
+		// 			// vColor.g = 1.0f;
+		// 			// vColor.b = 0.0f;
+		// 			return;
+		// 		}
 
 		if(clipTask == CLIPTASK_SHOW_OUTSIDE) {//render points outside normally or simply do nothing
 			//do not change its colour
@@ -1752,6 +1831,7 @@ bool checkInsideCluster() {
 #define FILTER_BOXVOLUME 1
 #define FILTER_POLYGON 4
 #define FILTER_POLYGONVOLUME 5
+#define FILTER_LINEBOXVOLUME 6//newer method on boxes but different rendering options and added distance function test. Requires info encoded
 #define FILTER_LOGIC 10
 #define FILTER_NONE 255
 
@@ -1804,133 +1884,173 @@ bool doFiltering(bool isInside) {
 
 	int logicFilterIndex = 0;
 
+
+
+
+	//////////////////////////////////////////
+	//large mixed filters section
 	{
-		// all objects must be defined
-#if defined(mixed_filters) && mixed_filters > 0
+	#if defined(mixed_filters) && mixed_filters > 0
 
-		// dont check other variables as they were required to reach this state, but are still commited
+			// dont check other variables as they were required to reach this state, but are still commited
 
-		// float current_value = aExtra; // move this attribute
-		for(int i = 0; i < mixed_filters; i++) {
-			bool isIn = true;
+			// float current_value = aExtra; // move this attribute
+			for(int i = 0; i < mixed_filters; i++) {
+				bool isIn = true;
 
-			// each entry in the filter list points to a filter type or an stop value
-			int filterType = uMixedFilters[i];
-///////////////////////////////////////////////////////////////
-		#if defined(num_clipboxes) && num_clipboxes > 0
-			if(filterType == FILTER_BOXVOLUME) {
-						// check if point ins inside box
+				// each entry in the filter list points to a filter type or an stop value
+				int filterType = uMixedFilters[i];
 
-				isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);
-				currentFilterChainValue = currentFilterChainValue && isIn;
+				///////////////////////////////////////////////////////////////
+				//point in clip box
+				#if defined(num_clipboxes) && num_clipboxes > 0
+					if(filterType == FILTER_BOXVOLUME) {
+								// check if point ins inside box
 
-				if(isIn) {
-					stopped = false;
-					colorize = true;
-					assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
-				}
-				boxFilterIndex++;
+						isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);
+						currentFilterChainValue = currentFilterChainValue && isIn;
 
-				continue; // continue to next
-			}
-		#endif
-////////////////////////////////////////////////////////////////
-#if defined(num_clippolygons) && num_clippolygons > 0
-			if(filterType == FILTER_POLYGONVOLUME) {
-				isIn = pointInClipPolygon(position, polygonFilterIndex);
-				currentFilterChainValue = currentFilterChainValue && isIn;
+						if(isIn) {
+							stopped = false;
+							colorize = true;
+							assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+						}
+						boxFilterIndex++;
 
-				//colorize version
-				if(isIn) {//change color based on object color
-					stopped = false;
-					colorize = true;//colorize has higher precedence over highlight
-					highlight = false;
-					assignedColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
-
-				}
-
-				polygonFilterIndex++;
-
-				continue; // continue to next
-			}
-#endif
-////////////////////////////////////////////////////////////////////
-#if defined(num_logical_filters) && num_logical_filters > 0
-
-			if(filterType == FILTER_LOGIC) {
-
-				int currentOperator = uFilterList[logicFilterIndex];
-				int attribIdx = uFilterList[logicFilterIndex + 1];
-				int index1 = uFilterList[logicFilterIndex + 2];
-				int index2 = uFilterList[logicFilterIndex + 3];
-				int listType = uFilterList[logicFilterIndex + 4];
-				logicFilterIndex += 5;
-
-				float currAttVal = 0.0f;
-				if(attribIdx == -3) {
-					currAttVal = worldPosition.z;
-				} else if(attribIdx == -2) {
-					currAttVal = worldPosition.y;
-				} else if(attribIdx == -1) {
-					currAttVal = worldPosition.x;
-				} else {
-					currAttVal = filterPackedAttributes[attribIdx];// testing with position.z
-				}
-
-//////////// STOP
-				if(currentOperator == OP_STOP) {
-					// stop value, means end of the filter list and final color set
-					if(i == 0) {
-						// if is the first filter, just return the false value
-						currentFilterChainValue = false; // return true or false, depending on the filters applied
+						continue; // continue to next
 					}
+				#endif
+				////////////////////////////////////////////////////////////////
+				///  code for boxlinevolume
+				/// a point in clip is the same but a distance function is computed and used to render on a scale
+				////////////////////////////////////////////////////////////////
+				#if defined(num_clipboxes) && num_clipboxes > 0
+					if(filterType == FILTER_LINEBOXVOLUME) {
+								// check if point ins inside box
+						isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);//same check
+						currentFilterChainValue = currentFilterChainValue && isIn;
 
-					if(currentFilterChainValue) {//if point is here, assignedColor is the current Color
-						olderColor = assignedColor;
-						lastClassification = currentClassification;
+						if(isIn) {
+							stopped = false;
+							colorize = true;
+
+							//line distnace should be computed
+							BoxLineCoords coords = extractBoxLineCoords(clipBoxes[boxFilterIndex] );
+							lineDistance = lineSegmentDistance(position, coords.lineStart, coords.lineEnd);
+							//distanceToLine
+							//the lines are encoded as deterministic line segments, i.e. explicit p1,p2 per segment, so a n segment line takes 2n values
+							//need an additional color funcion and distance function
+							assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);//box color
+
+						}
+						boxFilterIndex++;
+
+						continue; // continue to next
+					}
+				#endif
+				////////////////////////////////////////////////////////////////
+				//clip polygon volume
+				////////////////////////////////////////////////////////////////
+								#if defined(num_clippolygons) && num_clippolygons > 0
+					if(filterType == FILTER_POLYGONVOLUME) {
+						isIn = pointInClipPolygon(position, polygonFilterIndex);
+						currentFilterChainValue = currentFilterChainValue && isIn;
+
+						//colorize version
+						if(isIn) {//change color based on object color
+							stopped = false;
+							colorize = true;//colorize has higher precedence over highlight
+							highlight = false;
+							assignedColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
+
+						}
+
+						polygonFilterIndex++;
+
+						continue; // continue to next
+					}
+				#endif
+
+				////////////////////////////////////////////////////////////////////
+				// logical filters
+				////////////////////////////////////////////////////////////////////
+				#if defined(num_logical_filters) && num_logical_filters > 0
+				if(filterType == FILTER_LOGIC) {
+
+					int currentOperator = uFilterList[logicFilterIndex];
+					int attribIdx = uFilterList[logicFilterIndex + 1];
+					int index1 = uFilterList[logicFilterIndex + 2];
+					int index2 = uFilterList[logicFilterIndex + 3];
+					int listType = uFilterList[logicFilterIndex + 4];
+					logicFilterIndex += 5;
+
+					float currAttVal = 0.0f;
+					if(attribIdx == -3) {
+						currAttVal = worldPosition.z;
+					} else if(attribIdx == -2) {
+						currAttVal = worldPosition.y;
+					} else if(attribIdx == -1) {
+						currAttVal = worldPosition.x;
 					} else {
-						assignedColor = olderColor;//current block failed and must return to older color if any, but better
-						currentClassification = lastClassification;
+						currAttVal = filterPackedAttributes[attribIdx];// testing with position.z
 					}
 
-					if(stopped) {//if i just came from a stop
-						currentFilterChainValue = false;
+					//////////// STOP
+					if(currentOperator == OP_STOP) {
+						// stop value, means end of the filter list and final color set
+						if(i == 0) {
+							// if is the first filter, just return the false value
+							currentFilterChainValue = false; // return true or false, depending on the filters applied
+						}
+
+						if(currentFilterChainValue) {//if point is here, assignedColor is the current Color
+							olderColor = assignedColor;
+							lastClassification = currentClassification;
+						} else {
+							assignedColor = olderColor;//current block failed and must return to older color if any, but better
+							currentClassification = lastClassification;
+						}
+
+						if(stopped) {//if i just came from a stop
+							currentFilterChainValue = false;
+						}
+
+						globalValue = globalValue || currentFilterChainValue; // OR operation
+						currentFilterChainValue = true;						 // reset for next filter
+
+						// skip = false;									 // reset skip for next filter
+						stopped = true;
+						continue; // continue to next
+
+					} else {
+						/////////////logical
+						#if defined(num_float_values) && num_float_values > 0
+						isIn = doLogicalEval(currentOperator, attribIdx, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
+
+						currentFilterChainValue = currentFilterChainValue && isIn;
+
+						#endif
+
+						if(isIn) {//change color based on object color
+							stopped = false;
+							colorize = true;//colorize has higher precedence over highlight
+							highlight = false;
+
+						}
+
+						continue;
+
 					}
-
-					globalValue = globalValue || currentFilterChainValue; // OR operation
-					currentFilterChainValue = true;						 // reset for next filter
-
-					// skip = false;									 // reset skip for next filter
-					stopped = true;
-					continue; // continue to next
-
-				} else {
-/////////////logical
-					#if defined(num_float_values) && num_float_values > 0
-					isIn = doLogicalEval(currentOperator, attribIdx, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
-
-					currentFilterChainValue = currentFilterChainValue && isIn;
-
-					#endif
-
-					if(isIn) {//change color based on object color
-						stopped = false;
-						colorize = true;//colorize has higher precedence over highlight
-						highlight = false;
-
-					}
-
-					continue;
 
 				}
+				#endif  //end of logical filters section
 
-			}
-#endif
+			} //finish for loop
 
-		}
-
-#endif
+	#endif  //end sectio for mixed filters
 	}
+
+	////////////////////////////////////////////////////////
 	if(!stopped) {
 		globalValue = globalValue || currentFilterChainValue; // OR operation for the last filter
 		if(!currentFilterChainValue) {
@@ -2014,9 +2134,9 @@ void main() {
 	isInside = doFiltering(isInside); // position is in world space, so pass it as parameter
 
 		#if defined(visible_classes) && visible_classes > 0
-		if(isInside && currentClassification > -1) {
-				isVisible = uVisibleClasses[currentClassification];// == 0 ? 0 :1;
-			}
+	if(isInside && currentClassification > -1) {
+		isVisible = uVisibleClasses[currentClassification];// == 0 ? 0 :1;
+	}
 
 		#endif
 

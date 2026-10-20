@@ -1,4 +1,4 @@
-import {DirectionalLight, AmbientLight, PlaneGeometry,Box3, Camera, LinearFilter, Mesh, MeshBasicMaterial, NearestFilter, Object3D, OrthographicCamera, PerspectiveCamera, Ray, Scene, Vector3} from 'three';
+import {DirectionalLight, AmbientLight, PlaneGeometry, Box3, Camera, LinearFilter, Mesh, MeshBasicMaterial, NearestFilter, Object3D, OrthographicCamera, PerspectiveCamera, Ray, Scene, Vector3} from 'three';
 import {Annotation} from "../Annotation.js";
 import {CameraMode} from "../defines.js";
 import {EventDispatcher} from "../EventDispatcher.js";
@@ -218,6 +218,13 @@ export class PScene extends EventDispatcher {
 			filter = PointCloudFilter.fromJSON(jsonFilter);
 		}
 
+		//add LineBoxVolume support
+		if (jsonFilter.intType === FilterIntType.LINEBOXVOLUME) {
+			filter = LineBoxVolume.fromJSON(jsonFilter);
+			this.addVolume(filter);
+			this.addFilter(filter);
+		}
+
 		// this.filters.push(filter);//order is kept in this array
 		this.mixedFilters.push(filter);//order is kept in this array
 		// this.volumes.push(volume);
@@ -287,6 +294,48 @@ export class PScene extends EventDispatcher {
 		});
 		return filter;
 	}
+
+
+	//helper function to add coloring based on a predefined color gradient  as a Filter
+	addStaticDistanceGradient(startDistance, endDistance, gradient_name) {//filter i set of objects containing all items, making easier to manage items
+
+		//constructor(operator, attrIdx, optIdx1, optIdx2, listType, attributeList, integer_filter_values, float_filter_values)
+
+
+		// index1 = 0, //attr index
+		// index2 = 0, // attr or constant index
+		// index3 = -1, //optional constant index for dual value operations  or -1
+		// list_type = 0, //0 integer list by default, 1 float
+
+		// attributeList = [],
+		// integer_filter_values = [],
+		// float_filter_values = [],
+
+
+		let filter = new PointCloudFilter(
+			FilterOperationType.DISTANCE_MAP,//operator value
+			-1,//attrIdx
+			0, //array start index, 0 by default, moved after flattenning
+			5,//start offset + end offset + 3xn colors, so at least 5 values
+			1,//float array is used
+			[],//attribute list
+			[],//integer list not used
+			[start_offset, end_offset, r, g, b]//float list with color values
+
+		);
+
+		//to avoid issues, is just a JSON definition
+		//this.filters.push(filter);//order is kept in this array
+		this.mixedFilters.push(filter);//order is kept in this array
+		// this.volumes.push(volume);
+		this.dispatchEvent({
+			'type': 'filter_added',
+			'scene': this,
+			'filter': filter
+		});
+		return filter;
+	}
+
 
 
 
@@ -546,7 +595,7 @@ export class PScene extends EventDispatcher {
 			// do not use instance as custom classes cannot be found
 			for (let filter of this.mixedFilters) {
 				// if (filter instanceof BoxVolume || filter instanceof PolygonClipVolume) {
-				if (filter.intType === FilterIntType.BOXVOLUME || filter.intType === FilterIntType.POLYGON) {
+				if (filter.intType === FilterIntType.BOXVOLUME || filter.intType === FilterIntType.POLYGON || filter.intType === FilterIntType.LINEBOXVOLUME) {
 					json.mixedFilters.push(filter.toJSON());
 				} else if (filter.intType === FilterIntType.LOGICAL) {
 					json.mixedFilters.push(filter.toJSON());
@@ -575,6 +624,12 @@ export class PScene extends EventDispatcher {
 					let filter = BoxVolume.fromJSON(filterData);
 					this.addVolume(filter);
 					// this.addFilter(filter);
+				} else if (filterData.intType === FilterIntType.LINEBOXVOLUME) {
+					let filter = LineBoxVolume.fromJSON(filterData);
+					this.addVolume(filter);
+					// this.addFilter(filter);
+
+
 				} else if (filterData.intType === FilterIntType.POLYGON) {
 					let filter = PolygonClipVolume.fromJSON(filterData);
 					this.addPolygonClipVolume(filter);
