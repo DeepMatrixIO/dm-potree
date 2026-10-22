@@ -245,6 +245,7 @@ document.body.onload = function () {
 				log("Clearing all drawings, paths, volumes and measurements...");
 				try {
 					sceneSG.removeAllMeasurements();
+					activeMeasureForLineTool = null;
 					hideOnScreenInstructions();
 					log("SUCCESS: Drawing canvas cleared successfully.", "success");
 					setPassState('clear-measures', true);
@@ -578,13 +579,17 @@ document.body.onload = function () {
 		btnMeasure.addEventListener('click', (e) => {
 			e.stopPropagation();
 			const measurements = sceneSG.measurements || [];
-			const lineMeasure = measurements.find(m => m.points && m.points.length >= 2);
+			// Only take the latest measurement with at least 2 points to feed the VolumeLine
+			const lineMeasures = measurements.filter(m => m.points && m.points.length >= 2);
+			const lineMeasure = lineMeasures.length > 0 ? lineMeasures[lineMeasures.length - 1] : null;
 			if (lineMeasure) {
 				activeMeasureForLineTool = lineMeasure;
-				const xyz = lineMeasure.toXYZArray();
+				const xyz = typeof lineMeasure.toXYZArray === 'function'
+					? lineMeasure.toXYZArray()
+					: lineMeasure.points.map(p => [p.position.x, p.position.y, p.position.z]).flat();
 				const input = document.getElementById('input-volume-line');
 				if (input) input.value = JSON.stringify(xyz);
-				log(`SUCCESS: Loaded live ${lineMeasure.points.length}-point line measurement. When tested, boxes will be live-bound to this measurement so moving its nodes updates box position and rotation in real-time.`, 'success');
+				log(`SUCCESS: Loaded latest live ${lineMeasure.points.length}-point line measurement. When tested, boxes will be live-bound to this measurement so moving its nodes updates box position and rotation in real-time.`, 'success');
 			} else {
 				log("No line measurement with >= 2 points found in scene. Draw a line with Linear Distance Tool first.", "error");
 			}
