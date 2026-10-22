@@ -17,6 +17,7 @@ import {
 	WebGLRenderer
 } from "three";
 import {CameraMode, ClipMethod, ClipTask, ElevationGradientRepeat, LengthUnits} from "../defines.js";
+import {FilterIntType} from "../utils/FilterConsts.js";
 import {Features} from "../Features.js";
 import {Renderer} from "../PotreeRenderer.js";
 import {Utils} from "../utils.js";
@@ -2597,17 +2598,30 @@ export class Viewer extends EventDispatcher {
 		}
 
 		{ // update in built clip boxes
+			let mixedFilters = this.scene.mixedFilters.filter(filt => {
+				if (!filt.visible || !filt.initialized) return false;
+				if (filt.clip !== undefined && !filt.clip) return false;
+				return true;
+			});
+
 			let boxes = [];
 
-			// volumes with clipping enabled
-			//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
-			boxes.push(...this.scene.volumes.filter(v => (v.clip && v.visible && v instanceof BoxVolume)));//for in built boxes
+			// Maintain exact order of box volumes matching mixedFilters sequence,
+			// so shader's boxFilterIndex aligns precisely with clipBoxes
+			for (let filt of mixedFilters) {
+				if (filt && (filt.intType === FilterIntType.BOXVOLUME || filt.intType === FilterIntType.LINEBOXVOLUME)) {
+					if (!boxes.includes(filt)) {
+						boxes.push(filt);
+					}
+				}
+			}
 
-			// volumes with clipping enabled
-			//boxes.push(...this.scene.volumes.filter(v => (v.clip)));
-			boxes.push(...this.scene.volumes.filter(v => (v.clip && v.visible && !(v instanceof BoxVolume))));//add non built in boxes
-
-			//only if custom boxes are present, this applies, but must change it.
+			// Include any remaining clipping volumes in this.scene.volumes that were not in mixedFilters
+			for (let vol of this.scene.volumes) {
+				if (vol && vol.clip && vol.visible && !boxes.includes(vol)) {
+					boxes.push(vol);
+				}
+			}
 
 			// profile segments
 			let profileBoxes = [];
@@ -2639,7 +2653,19 @@ export class Viewer extends EventDispatcher {
 
 			//////////////
 
-			let clipPolygons = this.scene.polygonClipVolumes.filter(vol => vol.initialized && vol.visible);//checking visilibity to avoid/ignore it. Works on std or not std clip polygon
+			let clipPolygons = [];
+			for (let filt of mixedFilters) {
+				if (filt && (filt.intType === FilterIntType.POLYGON || filt.intType === FilterIntType.POLYGONVOLUME)) {
+					if (!clipPolygons.includes(filt)) {
+						clipPolygons.push(filt);
+					}
+				}
+			}
+			for (let vol of this.scene.polygonClipVolumes) {
+				if (vol && vol.initialized && vol.visible && !clipPolygons.includes(vol)) {
+					clipPolygons.push(vol);
+				}
+			}
 
 
 
@@ -2690,7 +2716,11 @@ export class Viewer extends EventDispatcher {
 		// takes scene data into pointcloudmaterial, to be rendered in potreeRenderer
 		{
 			//1) retrieve mixed filter list
-			let mixedFilters = this.scene.mixedFilters.filter(filt => filt.visible && filt.initialized);//checking visilibity to avoid/ignore it
+			let mixedFilters = this.scene.mixedFilters.filter(filt => {
+				if (!filt.visible || !filt.initialized) return false;
+				if (filt.clip !== undefined && !filt.clip) return false;
+				return true;
+			});
 
 
 			// let filterList = this.scene.filters.filter(filter => vol.enabled);//checking visilibity to avoid/ignore it

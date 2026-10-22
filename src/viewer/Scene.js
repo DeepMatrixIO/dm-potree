@@ -460,11 +460,10 @@ export class PScene extends EventDispatcher {
 	removeVolume(volume) {
 
 
-		// let indexMixedFilter = this.mixedFilters.indexOf(volume);
-		// if (indexMixedFilter > -1) {
-		// 	this.mixedFilters.splice(indexMixedFilter, 1);
-
-		// }
+		let indexMixedFilter = this.mixedFilters.indexOf(volume);
+		if (indexMixedFilter > -1) {
+			this.mixedFilters.splice(indexMixedFilter, 1);
+		}
 
 		let index = this.volumes.indexOf(volume);
 		if (index > -1) {
