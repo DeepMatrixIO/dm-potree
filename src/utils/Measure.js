@@ -1014,7 +1014,7 @@ export class Measure extends Object3D {
 
 	/**
 	 * Converts the line measurement into an XYZ array.
-	 * Returns a flat array [x0, y0, z0, x1, y1, z1, ...] by default (ideal for shaders, buffers, and VolumeLineTool),
+	 * Returns a flat array [x0, y0, z0, x1, y1, z1, ...] by default (ideal for shaders, buffers, and LineVolumeTool),
 	 * or an array of coordinate tuples [[x0, y0, z0], ...] if flatten is false.
 	 *
 	 * @param {boolean|Object} [options={}] - Options object or boolean for `flatten`

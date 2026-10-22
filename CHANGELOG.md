@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Measure.js Line Measurement Conversion & Export (`task_ulztpu_mveq3tq5`)
 - **`getCoordinates(options)`**: Extracts marker positions as coordinate tuples `[[x, y, z], ...]`. Supports `closeLoop: true` (or `this.closed`) to append the closing coordinate when forming a loop.
 - **`toXYZArray(options)` / `toXYZ(options)`**: Converts line measurements into an XYZ array:
-  - Flat 1D array `[x0, y0, z0, x1, y1, z1, ...]` by default (`flatten: true`), ideal for shaders, buffer geometries, and `VolumeLineTool`.
+  - Flat 1D array `[x0, y0, z0, x1, y1, z1, ...]` by default (`flatten: true`), ideal for shaders, buffer geometries, and `LineVolumeTool`.
   - Nested coordinate tuples `[[x0, y0, z0], ...]` when `flatten: false`.
   - `Float32Array` when `asFloat32Array: true`.
   - Supports automatic loop closing via `closeLoop: true`.
@@ -39,13 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Module Exports (`src/potree_module.js`)**:
   - Exported `convertLineMeasurement`, `measureToGeoJSON`, `measureToXYZArray`, and `measureToXYZ` alongside `Measure`.
 
-#### VolumeLineTool.js Integration
+#### LineVolumeTool.js Integration
 - **`SelectionLineTool.fromMeasure(measure, options)`**: Directly consumes a `Measure` instance or measurement object to construct oriented box volumes along its linestring path.
 - **Color Palette & Filter Styling**: Added `DEFAULT_LINE_COLOR_RGB` (16 discrete RGBA color definitions derived from the Turbo colormap) and `DEFAULT_COLOR` constant for line volume rendering. Configured `addStaticFilterColor` and `addStaticStopFilter` across `testTool`, `fromGeoJSON`, and `fromArray` methods to apply volumetric filter coloring when attaching line box volumes to the scene.
 
 #### Test Suite & Feature Dashboard (`feature_test.html` & `example/feature_test.js`)
 - Added **"📏 Measure"** button in the Volume Line Tool test panel (`feature_test.html`) to automatically populate the input coordinates from any active linear distance measurement in the scene.
-- Added GeoJSON format parsing in `example/feature_test.js` so `VolumeLineTool` test can execute directly from either flat/nested arrays or GeoJSON LineString / Feature / FeatureCollection objects.
+- Added GeoJSON format parsing in `example/feature_test.js` so `LineVolumeTool` test can execute directly from either flat/nested arrays or GeoJSON LineString / Feature / FeatureCollection objects.
 
 #### Task Tracking (`.atom8n/My Board.kanban`)
 - Marked task `task_ulztpu_mveq3tq5` (*"Add function in Measure.js to convert line measurements into geojson and inti xyz array"*) as **Done**.
@@ -62,6 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **`LineVolume.js`**: `LineVolume` and `LineBoxVolume` classes for volumetric selection and clipping around linestrings.
-- **`VolumeLineTool.js`**: `SelectionLineTool` / `VolumeLineTool` for creating chains of bounding box volumes along arbitrary polylines.
+- **`LineVolumeTool.js`**: `SelectionLineTool` / `LineVolumeTool` for creating chains of bounding box volumes along arbitrary polylines.
 - Added `FilterConsts.js` definitions for line box volumes (`LINEBOXVOLUME`).
 - Interactive feature test dashboard (`feature_test.html` and `example/feature_test.js`) with suite coverage for loading, navigation, linear distance, height calculator, picking, clipping boxes, and volume line generation.

@@ -214,9 +214,6 @@ export class PScene extends EventDispatcher {
 			this.addVolume(filter);
 			this.addFilter(filter);
 		}
-		if (jsonFilter.intType === FilterIntType.LOGICAL) {
-			filter = PointCloudFilter.fromJSON(jsonFilter);
-		}
 
 		//add LineBoxVolume support
 		if (jsonFilter.intType === FilterIntType.LINEBOXVOLUME) {
@@ -224,6 +221,12 @@ export class PScene extends EventDispatcher {
 			this.addVolume(filter);
 			this.addFilter(filter);
 		}
+
+		if (jsonFilter.intType === FilterIntType.LOGICAL) {
+			filter = PointCloudFilter.fromJSON(jsonFilter);
+		}
+
+
 
 		// this.filters.push(filter);//order is kept in this array
 		this.mixedFilters.push(filter);//order is kept in this array
@@ -297,30 +300,17 @@ export class PScene extends EventDispatcher {
 
 
 	//helper function to add coloring based on a predefined color gradient  as a Filter
-	addStaticDistanceGradient(startDistance, endDistance, gradient_name) {//filter i set of objects containing all items, making easier to manage items
-
-		//constructor(operator, attrIdx, optIdx1, optIdx2, listType, attributeList, integer_filter_values, float_filter_values)
-
-
-		// index1 = 0, //attr index
-		// index2 = 0, // attr or constant index
-		// index3 = -1, //optional constant index for dual value operations  or -1
-		// list_type = 0, //0 integer list by default, 1 float
-
-		// attributeList = [],
-		// integer_filter_values = [],
-		// float_filter_values = [],
-
+	addStaticDistanceGradient(startDistance, endDistance, numColors, gradient) {//filter i set of objects containing all items, making easier to manage items
 
 		let filter = new PointCloudFilter(
 			FilterOperationType.DISTANCE_MAP,//operator value
-			-1,//attrIdx
-			0, //array start index, 0 by default, moved after flattenning
-			5,//start offset + end offset + 3xn colors, so at least 5 values
+			numColors,//attrIdx, how many colors
+			0, //start index, ussualy zero in non flattened form
+			2 + (numColors * 3),
 			1,//float array is used
 			[],//attribute list
 			[],//integer list not used
-			[start_offset, end_offset, r, g, b]//float list with color values
+			[startDistance, endDistance, ...gradient]//float list with color values
 
 		);
 

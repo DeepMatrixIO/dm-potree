@@ -122,6 +122,7 @@ uniform float uOrthoHeight;
 #define OP_XOR 25
 
 #define OP_COLORIZE 100// sets global color and returns true
+#define OP_DISTANCE_MAP 101// sets global color and returns true
 
 #define OP_STOP 254
 #define OP_ALL 255
@@ -1254,7 +1255,7 @@ struct BoxLineCoords {
 };
 
 // Extracts the extreme points from a BoxVolume's inverse matrix that align with the line in world coordinates.
-// Since the box created from VolumeLineTool aligns with the line along the local X axis (spanning -0.5 to 0.5),
+// Since the box created from LineVolumeTool aligns with the line along the local X axis (spanning -0.5 to 0.5),
 // local line start is (-0.5, 0.0, 0.0) and local line end is (0.5, 0.0, 0.0).
 // Inverting clipBoxInvMat recovers the box's world transformation matrix.
 BoxLineCoords extractBoxLineCoords(mat4 clipBoxInvMat) {
@@ -1302,15 +1303,15 @@ bool lineSegmentOrtoDistance(vec3 point, vec3 lineStart, vec3 lineEnd) {
 //simply compute a distance. Not all points will be computed as a previous inside check was performed.
 
 float lineSegmentDistance(vec3 point, vec3 lineStart, vec3 lineEnd) {
-	float dist1 = distance(lineEnd , point);
-	float dist2 = distance(lineStart , point);
-	if (dist1 > dist2){
-		return dist1;
-	}else{
-		return dist2;
+	vec3 lineDir = lineEnd - lineStart;
+	vec3 pointDir = point - lineStart;
+	float lenSq = dot(lineDir, lineDir);
+	if (lenSq < 1e-6) {
+		return distance(point, lineStart);
 	}
-
-
+	float t = clamp(dot(pointDir, lineDir) / lenSq, 0.0f, 1.0f);
+	vec3 closestPoint = lineStart + t * lineDir;
+	return distance(point, closestPoint);
 }
 
 
@@ -1328,7 +1329,61 @@ bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float c
 	bool result = false;
 #if defined(num_float_values) && num_float_values > 0
 
-	if(operator == OP_COLORIZE) {
+	if(operator == OP_DISTANCE_MAP) {//takes a list of predefined colors to render based on distance. Does not have anything to do with classification
+
+		result = true;
+		//have to check if i am inside
+		// olderColor = assignedColor;
+
+
+		//have to scale the colors between the min and max distance, i.e. first color
+
+
+		// lineDistance = 0.0f;
+
+
+		float minDistance = uFloatFilterValues[startIndex];
+		float maxDistance = uFloatFilterValues[startIndex + 1];
+		if( minDistance <= lineDistance  && lineDistance <= maxDistance ){
+
+
+			float numSlots = float(attributeIdx); //attrbiuteindex is the number of slots in color range
+			float slotWidth = (maxDistance - minDistance )/ numSlots;
+			//postpone the line distance computation until this stage
+
+			// lineDistance=8.0f;//is not properly obtained
+			int slotIdx = int((lineDistance - minDistance )/ slotWidth);
+	// int slotIdx = clamp(int((lineDistance - minDistance) / slotWidth), 0, int(numSlots) - 1);
+			//get the color for this slot from the predefined array
+			assignedColor = vec3(uFloatFilterValues[startIndex + 2 + slotIdx*3], uFloatFilterValues[startIndex + 2 + slotIdx*3 + 1], uFloatFilterValues[startIndex + 2 + slotIdx*3 + 2]);
+			//assignedColor = vec3(uFloatFilterValues[startIndex + 2 + 0], uFloatFilterValues[startIndex + 2 +  1], uFloatFilterValues[startIndex + 2 +  2]);
+			//  assignedColor = vec3(1.0,0.5,1.0);
+			colorize = true;//was true
+			highlight = false;//may not be required and was false
+		}else{
+
+			 #if defined(visible_classes) && visible_classes > 0
+			 // //  //takes as classification value
+			 lastClassification = currentClassification;
+			 currentClassification = attributeIdx;
+			 // // isVisible = uVisibleClasses[attributeIdx];// == 0 ? 0 :1;
+			 // // // isVisibleClassification=true;
+			 #endif
+
+
+			result=false;
+			colorize=false;
+			highlight=false;
+		}
+
+
+		//as this is not assigned to classification, skip it so it stays at -1
+
+
+
+		//clipTask= CLIPTASK_COLORIZE;
+
+	} else if(operator == OP_COLORIZE) {
 
 		//have to check if i am inside
 		// olderColor = assignedColor;
@@ -1350,7 +1405,11 @@ bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float c
 		#endif
 		//clipTask= CLIPTASK_COLORIZE;
 
-	} else if(operator == OP_EQUALS_CONST) {
+	}
+
+
+
+	else if(operator == OP_EQUALS_CONST) {
 		result = attributeValue == uFloatFilterValues[startIndex];
 	} else if(operator == OP_EQUALS_ATTRIBUTE) {
 		result = attributeValue == attributeValue;
@@ -1437,6 +1496,11 @@ bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float c
 	else if(operator == OP_OUTSIDE_RANGE_EXCEXC) // not working
 	{
 		result = attributeValue <= uFloatFilterValues[startIndex] || attributeValue >= uFloatFilterValues[endIndex];
+	}else{//for debug
+		result=true;//was inside, keep inside for debug
+		assignedColor = vec3(1.0,1.0,0.0);
+		colorize = true;
+		highlight = false;
 	}
 
 #endif
@@ -1932,15 +1996,22 @@ bool doFiltering(bool isInside) {
 
 						if(isIn) {
 							stopped = false;
-							colorize = true;
+							colorize = true;//was true
 
 							//line distnace should be computed
 							BoxLineCoords coords = extractBoxLineCoords(clipBoxes[boxFilterIndex] );
-							lineDistance = lineSegmentDistance(position, coords.lineStart, coords.lineEnd);
+							lineDistance = lineSegmentDistance(worldPosition.xyz, coords.lineStart, coords.lineEnd);
+
+
+
+							//lineDistance = 5.0f;
+
 							//distanceToLine
 							//the lines are encoded as deterministic line segments, i.e. explicit p1,p2 per segment, so a n segment line takes 2n values
 							//need an additional color funcion and distance function
-							assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);//box color
+
+							//assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);//box color
+							assignedColor = vec3(1.0,1.0,1.0);//box color
 
 						}
 						boxFilterIndex++;
@@ -2137,6 +2208,12 @@ void main() {
 	if(isInside && currentClassification > -1) {
 		isVisible = uVisibleClasses[currentClassification];// == 0 ? 0 :1;
 	}
+
+	//adding a custom case for not rendering based on class colors but using Logical Filters
+	if(isInside ) {
+		isVisible = 1;// == 0 ? 0 :1;
+	}
+
 
 		#endif
 

@@ -332,11 +332,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 	// 	//extraDefines.push('#define distance_to_point 0');//renders based on distance to a given point position, requires the pointRef[x,y,z]  uniform
 	// 	//extraDefines.push('#define num_ranges 0');//Isolines
-
 	// 	//extraDefines.push('#define draw_isolines 1');//enables the function
-
 	// 	extraDefines.push('#define custom_range 1');//custom rendering of extra attributes on custom range other than data range
-
 	// 	// extraDefines.push('#define filter_pc 1');//eNABLES POINTCLOUD FILTERING FOR SELECTION
 
 

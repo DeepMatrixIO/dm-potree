@@ -6,11 +6,11 @@
  *
  */
 
-import {Vector3} from "three";
+import {Matrix4, Vector3} from "three";
 import {BoxVolume} from "./Volume.js";
 import {LineBoxVolume} from "./LineVolume.js";
 
-const TURBO_16 = [
+export const TURBO_16 = [
 	"#30123b",
 	"#4143a7",
 	"#4771e9",
@@ -30,7 +30,113 @@ const TURBO_16 = [
 ];
 
 // If mapping distance where closer = higher warning (0 = Red, Far = Blue):
-const TURBO_16_REVERSED = [...TURBO_16].reverse();
+export const TURBO_16_REVERSED = [...TURBO_16].reverse();
+
+// turbo_16 float array [r, g, b, r, g, b, ...] normalized to [0.0, 1.0]
+export const turbo_16_array = [
+	48 / 255, 18 / 255, 59 / 255,   // #30123b
+	65 / 255, 67 / 255, 167 / 255,  // #4143a7
+	71 / 255, 113 / 255, 233 / 255, // #4771e9
+	62 / 255, 155 / 255, 254 / 255, // #3e9bfe
+	34 / 255, 197 / 255, 226 / 255, // #22c5e2
+	26 / 255, 228 / 255, 182 / 255, // #1ae4b6
+	70 / 255, 248 / 255, 132 / 255, // #46f884
+	136 / 255, 255 / 255, 78 / 255, // #88ff4e
+	185 / 255, 246 / 255, 53 / 255, // #b9f635
+	225 / 255, 221 / 255, 55 / 255, // #e1dd37
+	251 / 255, 186 / 255, 57 / 255, // #faba39
+	253 / 255, 141 / 255, 39 / 255, // #fd8d27
+	240 / 255, 91 / 255, 18 / 255,  // #f05b12
+	214 / 255, 53 / 255, 6 / 255,   // #d63506
+	175 / 255, 24 / 255, 1 / 255,   // #af1801
+	122 / 255, 4 / 255, 3 / 255     // #7a0403
+];
+
+export const TURBO_16_ARRAY = turbo_16_array;
+
+export const turbo_16_array_reversed = [
+	122 / 255, 4 / 255, 3 / 255,    // #7a0403
+	175 / 255, 24 / 255, 1 / 255,   // #af1801
+	214 / 255, 53 / 255, 6 / 255,   // #d63506
+	240 / 255, 91 / 255, 18 / 255,  // #f05b12
+	253 / 255, 141 / 255, 39 / 255, // #fd8d27
+	251 / 255, 186 / 255, 57 / 255, // #faba39
+	225 / 255, 221 / 255, 55 / 255, // #e1dd37
+	185 / 255, 246 / 255, 53 / 255, // #b9f635
+	136 / 255, 255 / 255, 78 / 255, // #88ff4e
+	70 / 255, 248 / 255, 132 / 255, // #46f884
+	26 / 255, 228 / 255, 182 / 255, // #1ae4b6
+	34 / 255, 197 / 255, 226 / 255, // #22c5e2
+	62 / 255, 155 / 255, 254 / 255, // #3e9bfe
+	71 / 255, 113 / 255, 233 / 255, // #4771e9
+	65 / 255, 67 / 255, 167 / 255,  // #4143a7
+	48 / 255, 18 / 255, 59 / 255    // #30123b
+];
+
+export const TURBO_16_ARRAY_REVERSED = turbo_16_array_reversed;
+
+export const TURBO_8 = [
+	"#30123b",
+	"#4771e9",
+	"#22c5e2",
+	"#46f884",
+	"#e1dd37",
+	"#fd8d27",
+	"#d63506",
+	"#7a0403"
+];
+export const TURBO_8_REVERSED = [...TURBO_8].reverse();
+
+// turbo_8 float array [r, g, b, r, g, b, ...] normalized to [0.0, 1.0]
+export const turbo_8_array = [
+	48 / 255, 18 / 255, 59 / 255,   // #30123b
+	71 / 255, 113 / 255, 233 / 255, // #4771e9
+	34 / 255, 197 / 255, 226 / 255, // #22c5e2
+	70 / 255, 248 / 255, 132 / 255, // #46f884
+	225 / 255, 221 / 255, 55 / 255, // #e1dd37
+	253 / 255, 141 / 255, 39 / 255, // #fd8d27
+	214 / 255, 53 / 255, 6 / 255,   // #d63506
+	122 / 255, 4 / 255, 3 / 255     // #7a0403
+];
+export const TURBO_8_ARRAY = turbo_8_array;
+
+export const turbo_8_array_reversed = [
+	122 / 255, 4 / 255, 3 / 255,    // #7a0403
+	214 / 255, 53 / 255, 6 / 255,   // #d63506
+	253 / 255, 141 / 255, 39 / 255, // #fd8d27
+	225 / 255, 221 / 255, 55 / 255, // #e1dd37
+	70 / 255, 248 / 255, 132 / 255, // #46f884
+	34 / 255, 197 / 255, 226 / 255, // #22c5e2
+	71 / 255, 113 / 255, 233 / 255, // #4771e9
+	48 / 255, 18 / 255, 59 / 255    // #30123b
+];
+export const TURBO_8_ARRAY_REVERSED = turbo_8_array_reversed;
+
+export const TURBO_4 = [
+	"#30123b",
+	"#1ae4b6",
+	"#faba39",
+	"#7a0403"
+];
+export const TURBO_4_REVERSED = [...TURBO_4].reverse();
+
+// turbo_4 float array [r, g, b, r, g, b, ...] normalized to [0.0, 1.0]
+export const turbo_4_array = [
+	48 / 255, 18 / 255, 59 / 255,   // #30123b
+	26 / 255, 228 / 255, 182 / 255, // #1ae4b6
+	251 / 255, 186 / 255, 57 / 255, // #faba39
+	122 / 255, 4 / 255, 3 / 255     // #7a0403
+];
+export const TURBO_4_ARRAY = turbo_4_array;
+
+export const turbo_4_array_reversed = [
+	122 / 255, 4 / 255, 3 / 255,    // #7a0403
+	251 / 255, 186 / 255, 57 / 255, // #faba39
+	26 / 255, 228 / 255, 182 / 255, // #1ae4b6
+	70 / 255, 248 / 255, 132 / 255,    // #46f884
+];
+export const TURBO_4_ARRAY_REVERSED = turbo_4_array_reversed;
+
 
 
 const DEFAULT_LINE_COLOR_RGB = [
@@ -73,8 +179,8 @@ export class SelectionLineTool {
 			distanceFunction: "alignedBox",//cylinder, ortho distance
 			colorScheme: {
 				scheme: "discreteColorMap",
-				size: 16,
-				"map": TURBO_16_REVERSED,
+				size: 4,
+				"map": TURBO_4_REVERSED,
 			},
 
 		}
@@ -91,7 +197,10 @@ export class SelectionLineTool {
 				// box.clip = true;//redundant
 				this.viewer.scene.addVolume(box);//
 				// this.viewer.scene.addStaticFilterColor(0.7, 0.1, 0.1, 4);//adding a color to the volume, however is not adding stuff
-				this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[0].r / 255, DEFAULT_LINE_COLOR_RGB[0].g / 255, DEFAULT_LINE_COLOR_RGB[0].b / 255, DEFAULT_LINE_COLOR_RGB[0].a, 4);//adding a color to the volume, however is not adding stuff
+				//this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[0].r / 255, DEFAULT_LINE_COLOR_RGB[0].g / 255, DEFAULT_LINE_COLOR_RGB[0].b / 255, DEFAULT_LINE_COLOR_RGB[0].a, 4);//adding a color to the volume, however is not adding stuff
+				let gradient = TURBO_4_ARRAY_REVERSED;
+				// this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+				this.viewer.scene.addStaticDistanceGradient(1, 50, gradient.length / 3, gradient);
 				this.viewer.scene.addStaticStopFilter();//this should stop but it is not
 			}
 		});
@@ -108,10 +217,11 @@ export class SelectionLineTool {
 	createBox(p1, p2, options = {}) {
 		const v1 = Array.isArray(p1) ? new Vector3(p1[0], p1[1], p1[2] || 0) : p1;
 		const v2 = Array.isArray(p2) ? new Vector3(p2[0], p2[1], p2[2] || 0) : p2;
-		const dx = v2.x - v1.x;
-		const dy = v2.y - v1.y;
-		const length = Math.hypot(dx, dy);
+		const dir = new Vector3().subVectors(v2, v1);
+		const length = dir.length();
 		if (length < 1e-6) return null;
+		dir.normalize();
+
 		const thickness = options.distance !== undefined ? options.distance * 2 : 10;
 		const width = options.width ?? thickness;
 		const height = options.height ?? thickness;
@@ -120,7 +230,18 @@ export class SelectionLineTool {
 		const box = new LineBoxVolume(options);//exaatly the same but with
 
 		box.position.set((v1.x + v2.x) * 0.5, (v1.y + v2.y) * 0.5, (v1.z + v2.z) * 0.5);
-		box.rotation.set(0, 0, Math.atan2(dy, dx));
+
+		// Align box's local X-axis with the 3D direction of the line segment
+		let up = new Vector3(0, 0, 1);
+		if (Math.abs(dir.dot(up)) > 0.999) {
+			up = new Vector3(0, 1, 0);
+		}
+		const right = new Vector3().crossVectors(up, dir).normalize();
+		const normal = new Vector3().crossVectors(dir, right).normalize();
+
+		const rotMat = new Matrix4().makeBasis(dir, right, normal);
+		box.quaternion.setFromRotationMatrix(rotMat);
+
 		box.scale.set(length, width, height);
 		box.visible = true;
 		box.initialized = true;
@@ -143,7 +264,10 @@ export class SelectionLineTool {
 					if (this.scene) {
 						this.scene.addVolume(box);
 						//may add color here
-						this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+						//this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+						let gradient = TURBO_4_ARRAY_REVERSED;
+						// this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+						this.viewer.scene.addStaticDistanceGradient(0, 5, gradient.length / 3, gradient);
 						this.viewer.scene.addStaticStopFilter();//this should stop but it is not
 
 					}
@@ -199,7 +323,9 @@ export class SelectionLineTool {
 					this.boxVolumes.push(box);
 					if (this.scene) {
 						this.scene.addVolume(box);
-						this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+						//this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+						let gradient = TURBO_4_ARRAY_REVERSED;
+						this.viewer.scene.addStaticDistanceGradient(0, 5, gradient.length / 3, gradient);
 						this.viewer.scene.addStaticStopFilter();//this should stop but it is not
 					}
 				}
@@ -222,7 +348,10 @@ export class SelectionLineTool {
 				this.boxVolumes.push(box);
 				if (this.scene) {
 					this.scene.addVolume(box);
-					this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+					// this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+					let gradient = TURBO_4_ARRAY_REVERSED;
+					// this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
+					this.viewer.scene.addStaticDistanceGradient(0, 5, gradient.length / 3, gradient);
 					this.viewer.scene.addStaticStopFilter();//this should stop but it is not
 				}
 			}

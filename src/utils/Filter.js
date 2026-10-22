@@ -37,7 +37,7 @@ export class PointCloudFilter {
 	) {
 
 
-	 // used to group volumes, e.g. for filtering
+		// used to group volumes, e.g. for filtering
 		this.operator = operator; //filter operation type, default is STOP
 		this.name = this.getFilterName(); //filter operation type, default is STOP
 		//this.enabled = true; //filter is enabled by default
@@ -77,6 +77,22 @@ export class PointCloudFilter {
 			this.name = "COLORIZE";
 			return;
 		}
+
+		if (operator === FilterOperationType.DISTANCE_MAP) {
+			//colorize is tied to agiven list of classes and visiblity.
+
+			this.filterList.push([
+				operator,
+				index1,
+				index2,
+				index3,
+				list_type])
+			this.name = "DISTANCE_MAP";
+			z
+			return;
+		}
+
+
 
 		if (
 			integer_filter_values.length === 0 &&
@@ -250,7 +266,7 @@ export class PointCloudFilter {
 		return this._groupId;
 	}
 	set groupId(value) {
-			this._groupId = value;
+		this._groupId = value;
 	}
 
 
