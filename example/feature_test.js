@@ -1,5 +1,5 @@
-import { Potree, PScene, Viewer } from '../dist/potree_module.js';
-import { VolumeLineTool } from '../src/utils/VolumeLineTool.js';
+import {Potree, PScene, Viewer} from '../dist/potree_module.js';
+import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
 
 document.body.onload = function () {
 	// Add stylesheets dynamically
@@ -410,6 +410,7 @@ document.body.onload = function () {
 					setPassState('volume-line', true);
 				} catch (err) {
 					log("ERROR running VolumeLineTool: " + err.message, "error");
+					console.log("ERROR running VolumeLineTool: " + err.message, "error");
 					setPassState('volume-line', false);
 				}
 			}

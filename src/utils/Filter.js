@@ -88,7 +88,6 @@ export class PointCloudFilter {
 				index3,
 				list_type])
 			this.name = "DISTANCE_MAP";
-			z
 			return;
 		}
 
