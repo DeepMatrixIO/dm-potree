@@ -1344,36 +1344,23 @@ bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float c
 
 		float minDistance = uFloatFilterValues[startIndex];
 		float maxDistance = uFloatFilterValues[startIndex + 1];
-		if( minDistance <= lineDistance  && lineDistance <= maxDistance ){
+		if(minDistance <= lineDistance && lineDistance <= maxDistance) {
+			float numSlots = float(attributeIdx); // attributeIdx is the number of slots in color range
+			float slotWidth = (maxDistance - minDistance) / numSlots;
+			int slotIdx = clamp(int((lineDistance - minDistance) / slotWidth), 0, int(numSlots) - 1);
 
-
-			float numSlots = float(attributeIdx); //attrbiuteindex is the number of slots in color range
-			float slotWidth = (maxDistance - minDistance )/ numSlots;
-			//postpone the line distance computation until this stage
-
-			// lineDistance=8.0f;//is not properly obtained
-			int slotIdx = int((lineDistance - minDistance )/ slotWidth);
-	// int slotIdx = clamp(int((lineDistance - minDistance) / slotWidth), 0, int(numSlots) - 1);
-			//get the color for this slot from the predefined array
-			assignedColor = vec3(uFloatFilterValues[startIndex + 2 + slotIdx*3], uFloatFilterValues[startIndex + 2 + slotIdx*3 + 1], uFloatFilterValues[startIndex + 2 + slotIdx*3 + 2]);
-			//assignedColor = vec3(uFloatFilterValues[startIndex + 2 + 0], uFloatFilterValues[startIndex + 2 +  1], uFloatFilterValues[startIndex + 2 +  2]);
-			//  assignedColor = vec3(1.0,0.5,1.0);
-			colorize = true;//was true
-			highlight = false;//may not be required and was false
-		}else{
-
-			 #if defined(visible_classes) && visible_classes > 0
-			 // //  //takes as classification value
-			 lastClassification = currentClassification;
-			 currentClassification = attributeIdx;
-			 // // isVisible = uVisibleClasses[attributeIdx];// == 0 ? 0 :1;
-			 // // // isVisibleClassification=true;
-			 #endif
-
-
-			result=false;
-			colorize=false;
-			highlight=false;
+			// get the color for this slot from the predefined array
+			assignedColor = vec3(
+				uFloatFilterValues[startIndex + 2 + slotIdx * 3],
+				uFloatFilterValues[startIndex + 2 + slotIdx * 3 + 1],
+				uFloatFilterValues[startIndex + 2 + slotIdx * 3 + 2]
+			);
+			colorize = true;
+			highlight = false;
+		} else {
+			result = false;
+			colorize = false;
+			highlight = false;
 		}
 
 

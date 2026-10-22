@@ -72,7 +72,7 @@ export {SpotLightHelper} from "./utils/SpotLightHelper.js";
 export {TransformationTool} from "./utils/TransformationTool.js";
 export {Volume,SphereVolume} from "./utils/Volume.js";
 export {VolumeTool} from "./utils/VolumeTool.js";
-export {SelectionLineTool, VolumeLineTool} from "./utils/VolumeLineTool.js";
+export {SelectionLineTool, VolumeLineTool, extractBoxLineCoords, TURBO_16, TURBO_16_REVERSED, TURBO_16_ARRAY, TURBO_16_ARRAY_REVERSED, TURBO_8, TURBO_8_REVERSED, TURBO_8_ARRAY, TURBO_8_ARRAY_REVERSED, TURBO_4, TURBO_4_REVERSED, TURBO_4_ARRAY, TURBO_4_ARRAY_REVERSED} from "./utils/VolumeLineTool.js";
 
 export {HierarchicalSlider} from "./viewer/HierarchicalSlider.js";
 // export {PScene} from "./viewer/Scene.js";

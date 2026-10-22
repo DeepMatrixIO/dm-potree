@@ -165,69 +165,157 @@ export class SelectionLineTool {
 
 	constructor(viewer, options = {}) {
 		this.viewer = viewer;
-		this.options = options;
-		this.scene = viewer.scene;
+		this.options = typeof options === 'number'
+			? { distance: options, radius: options, endDistance: options }
+			: { ...options };
+		this.scene = viewer ? viewer.scene : null;
 		this.boxVolumes = [];
+		this.measureBindings = new Map();
 	}
 
-	//defines a distance to render around and a distance test setting
-	selectionLineFactory() {
-		let params =
-		{
-			width: 5,
-			height: 5,
-			distanceFunction: "alignedBox",//cylinder, ortho distance
+	get distance() {
+		return this.options.distance ?? this.options.radius ?? this.options.endDistance ?? 5;
+	}
+
+	set distance(val) {
+		const num = typeof val === 'number' ? val : parseFloat(val);
+		this.options.distance = num;
+		this.options.radius = num;
+		this.options.endDistance = num;
+
+		// Dynamically update any bound measurements with the new distance
+		if (this.measureBindings) {
+			for (const [measure, binding] of this.measureBindings.entries()) {
+				binding.options.distance = num;
+				binding.options.radius = num;
+				binding.options.endDistance = num;
+				binding.options.width = num * 2;
+				binding.options.height = num * 2;
+				this.updateFromMeasure(measure);
+			}
+		}
+	}
+
+	get radius() {
+		return this.distance;
+	}
+
+	set radius(val) {
+		this.distance = val;
+	}
+
+	get endDistance() {
+		return this.options.endDistance ?? this.distance;
+	}
+
+	set endDistance(val) {
+		this.options.endDistance = typeof val === 'number' ? val : parseFloat(val);
+	}
+
+	// Defines parameters for box dimensions and distance gradient rendering
+	selectionLineFactory(customOptions = {}) {
+		const options = typeof customOptions === 'number'
+			? { distance: customOptions, radius: customOptions, endDistance: customOptions }
+			: (customOptions || {});
+
+		// Resolve distance / radius parameter (precedence: customOptions > instance options > default 5)
+		const dist = options.distance ?? options.radius ?? options.endDistance ??
+			this.options.distance ?? this.options.radius ?? this.options.endDistance ?? 5;
+
+		const thickness = dist * 2;
+		const width = options.width ?? this.options.width ?? thickness;
+		const height = options.height ?? this.options.height ?? thickness;
+		const startDist = options.startDistance ?? this.options.startDistance ?? 0;
+		const endDist = options.endDistance ?? options.distance ?? options.radius ??
+			this.options.endDistance ?? this.options.distance ?? this.options.radius ?? dist;
+
+		let params = {
+			distance: dist,
+			radius: dist,
+			width: width,
+			height: height,
+			startDistance: startDist,
+			endDistance: endDist,
+			distanceFunction: "alignedBox",
 			colorScheme: {
 				scheme: "discreteColorMap",
 				size: 4,
-				"map": TURBO_4_REVERSED,
+				map: TURBO_4_REVERSED,
 			},
+			gradient: options.gradient ?? this.options.gradient ?? TURBO_4_ARRAY_REVERSED,
+			...options
+		};
 
-		}
+		params.distance = dist;
+		params.radius = dist;
+		if (params.width === undefined) params.width = width;
+		if (params.height === undefined) params.height = height;
+		if (params.endDistance === undefined) params.endDistance = endDist;
+
 		return params;
 	}
 
+	testTool(lineArrayOrMeasure, optionsOrDistance = {}) {
+		const customOptions = typeof optionsOrDistance === 'number'
+			? { distance: optionsOrDistance, radius: optionsOrDistance, endDistance: optionsOrDistance }
+			: (optionsOrDistance || {});
+		const params = this.selectionLineFactory(customOptions);
 
-	testTool(lineArray) {
-		let params = this.selectionLineFactory();
-		let boxes = this.fromArray(lineArray, params);
+		// Support passing a Measure instance directly
+		if (lineArrayOrMeasure && (Array.isArray(lineArrayOrMeasure.points) || (typeof lineArrayOrMeasure.toXYZArray === 'function' && typeof lineArrayOrMeasure.addEventListener === 'function'))) {
+			const boxes = this.fromMeasure(lineArrayOrMeasure, params);
+			console.log("added line boxes from live measure:", boxes.length, "with distance/radius:", params.distance, "endDistance:", params.endDistance);
+			return boxes.length;
+		}
 
-		boxes.forEach(box => {
-			if (this.viewer && this.viewer.scene && !this.viewer.scene.volumes.includes(box)) {
-				// box.clip = true;//redundant
-				this.viewer.scene.addVolume(box);//
-				// this.viewer.scene.addStaticFilterColor(0.7, 0.1, 0.1, 4);//adding a color to the volume, however is not adding stuff
-				//this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[0].r / 255, DEFAULT_LINE_COLOR_RGB[0].g / 255, DEFAULT_LINE_COLOR_RGB[0].b / 255, DEFAULT_LINE_COLOR_RGB[0].a, 4);//adding a color to the volume, however is not adding stuff
-				let gradient = TURBO_4_ARRAY_REVERSED;
-				// this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
-				this.viewer.scene.addStaticDistanceGradient(1, 50, gradient.length / 3, gradient);
-				this.viewer.scene.addStaticStopFilter();//this should stop but it is not
-			}
-		});
-		console.log("added line boxes:", boxes.length);
+		const boxes = this.fromArray(lineArrayOrMeasure, params);
+		const startDist = params.startDistance ?? 0;
+		const endDist = params.endDistance ?? params.distance ?? params.radius ?? 5;
+		const gradient = params.gradient ?? TURBO_4_ARRAY_REVERSED;
+
+		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
+		if (scene) {
+			boxes.forEach(box => {
+				if (!scene.volumes.includes(box)) {
+					scene.addVolume(box);
+					scene.addStaticDistanceGradient(startDist, endDist, gradient.length / 3, gradient);
+					scene.addStaticStopFilter();
+				}
+			});
+		}
+		console.log("added line boxes:", boxes.length, "with distance/radius:", params.distance, "endDistance:", endDist);
 		return boxes.length;
 	}
 
-
-
-	//takes a geojson and only reads polyline definitions or line segments.
-	//options include rendering options
-
-
-	createBox(p1, p2, options = {}) {
-		const v1 = Array.isArray(p1) ? new Vector3(p1[0], p1[1], p1[2] || 0) : p1;
-		const v2 = Array.isArray(p2) ? new Vector3(p2[0], p2[1], p2[2] || 0) : p2;
+	/**
+	 * Updates the position, orientation (quaternion), and length/cross-section of an existing box
+	 * to align with the segment defined by p1 and p2 in world space.
+	 *
+	 * @param {LineBoxVolume} box - The box volume to update
+	 * @param {Vector3|Array<number>|Object} p1 - First point of the segment
+	 * @param {Vector3|Array<number>|Object} p2 - Second point of the segment
+	 * @param {Object} [options={}] - Options (distance, radius, width, height, etc.)
+	 * @returns {LineBoxVolume|null}
+	 */
+	updateBoxGeometry(box, p1, p2, options = {}) {
+		if (!box) return null;
+		const v1 = extractPointVec3(p1);
+		const v2 = extractPointVec3(p2);
 		const dir = new Vector3().subVectors(v2, v1);
 		const length = dir.length();
-		if (length < 1e-6) return null;
+		if (length < 1e-6) {
+			box.visible = false;
+			return box;
+		}
+		box.visible = true;
 		dir.normalize();
 
-		const thickness = options.distance !== undefined ? options.distance * 2 : 10;
-		const width = options.width ?? thickness;
-		const height = options.height ?? thickness;
-
-		// const box = new BoxVolume(options);
-		const box = new LineBoxVolume(options);//exaatly the same but with
+		// distance or radius controls both box cross-section dimensions (thickness = 2 * dist) and rendering distance
+		const dist = options.distance ?? options.radius ?? options.endDistance ??
+			this.options.distance ?? this.options.radius ?? this.options.endDistance ?? 5;
+		const thickness = dist * 2;
+		const width = options.width ?? this.options.width ?? thickness;
+		const height = options.height ?? this.options.height ?? thickness;
 
 		box.position.set((v1.x + v2.x) * 0.5, (v1.y + v2.y) * 0.5, (v1.z + v2.z) * 0.5);
 
@@ -243,33 +331,51 @@ export class SelectionLineTool {
 		box.quaternion.setFromRotationMatrix(rotMat);
 
 		box.scale.set(length, width, height);
-		box.visible = true;
+		box.update();
+		box.updateMatrixWorld(true);
+		return box;
+	}
+
+	// Takes two points and creates an aligned LineBoxVolume
+	createBox(p1, p2, options = {}) {
+		const opts = typeof options === 'number'
+			? { distance: options, radius: options, endDistance: options }
+			: (options || {});
+
+		const box = new LineBoxVolume(opts);
 		box.initialized = true;
 		box.clip = true;
 
-		//somethign is missing
+		const updated = this.updateBoxGeometry(box, p1, p2, opts);
+		if (!updated || updated.visible === false) {
+			return null;
+		}
 
-		box.update();
 		return box;
 	}
+
 	fromGeoJSON(geoJSON, options = {}) {
-		const mergedOptions = {...this.selectionLineFactory(), ...this.options, ...options};
+		const customOptions = typeof options === 'number'
+			? { distance: options, radius: options, endDistance: options }
+			: (options || {});
+		const params = this.selectionLineFactory(customOptions);
+		const mergedOptions = {...this.options, ...params, ...customOptions};
 		this.boxVolumes = [];
 		const lineCoordsList = extractLineCoordinates(geoJSON);
+		const startDist = mergedOptions.startDistance ?? 0;
+		const endDist = mergedOptions.endDistance ?? mergedOptions.distance ?? mergedOptions.radius ?? 5;
+		const gradient = mergedOptions.gradient ?? TURBO_4_ARRAY_REVERSED;
+		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
+
 		for (const coords of lineCoordsList) {
-			for (let i = 0;i < coords.length - 1;i++) {
+			for (let i = 0; i < coords.length - 1; i++) {
 				const box = this.createBox(coords[i], coords[i + 1], mergedOptions);
 				if (box) {
 					this.boxVolumes.push(box);
-					if (this.scene) {
-						this.scene.addVolume(box);
-						//may add color here
-						//this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
-						let gradient = TURBO_4_ARRAY_REVERSED;
-						// this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
-						this.viewer.scene.addStaticDistanceGradient(0, 5, gradient.length / 3, gradient);
-						this.viewer.scene.addStaticStopFilter();//this should stop but it is not
-
+					if (scene) {
+						scene.addVolume(box);
+						scene.addStaticDistanceGradient(startDist, endDist, gradient.length / 3, gradient);
+						scene.addStaticStopFilter();
 					}
 				}
 			}
@@ -278,57 +384,230 @@ export class SelectionLineTool {
 	}
 
 	/**
+	 * Binds event listeners to a Measure instance so that when its nodes (markers) are moved, added, or removed,
+	 * the corresponding BoxVolume instances have their position, rotation, and dimensions automatically updated in real-time.
+	 *
+	 * @param {Measure|Object} measure - Measure instance with event dispatching and points
+	 * @param {Object} [options={}] - Options (distance, radius, etc.)
+	 * @param {Array<LineBoxVolume>} [existingBoxes=null] - Pre-created boxes to associate with this measure
+	 */
+	bindMeasure(measure, options = {}, existingBoxes = null) {
+		if (!measure || typeof measure.addEventListener !== 'function') return;
+
+		this.measureBindings = this.measureBindings || new Map();
+		this.unbindMeasure(measure);
+
+		const boxes = existingBoxes || [];
+		const customOptions = typeof options === 'number'
+			? { distance: options, radius: options, endDistance: options }
+			: (options || {});
+		const params = this.selectionLineFactory(customOptions);
+		const mergedOptions = {...this.options, ...params, ...customOptions};
+
+		const updateBoxes = () => {
+			this.updateFromMeasure(measure);
+		};
+
+		measure.addEventListener('marker_moved', updateBoxes);
+		measure.addEventListener('marker_added', updateBoxes);
+		measure.addEventListener('marker_removed', updateBoxes);
+		measure.addEventListener('marker_dropped', updateBoxes);
+
+		this.measureBindings.set(measure, {
+			boxes,
+			options: mergedOptions,
+			updateBoxes
+		});
+
+		// Auto-unbind if measurement is removed from scene
+		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
+		if (scene && typeof scene.addEventListener === 'function') {
+			const onSceneMeasurementRemoved = (e) => {
+				if (e.measurement === measure) {
+					this.unbindMeasure(measure);
+					if (scene.removeEventListener) {
+						scene.removeEventListener('measurement_removed', onSceneMeasurementRemoved);
+					}
+				}
+			};
+			scene.addEventListener('measurement_removed', onSceneMeasurementRemoved);
+		}
+	}
+
+	/**
+	 * Unbinds live listeners from a Measure instance.
+	 *
+	 * @param {Measure|Object} measure
+	 */
+	unbindMeasure(measure) {
+		if (!measure || !this.measureBindings) return;
+		const binding = this.measureBindings.get(measure);
+		if (binding) {
+			if (typeof measure.removeEventListener === 'function' && binding.updateBoxes) {
+				measure.removeEventListener('marker_moved', binding.updateBoxes);
+				measure.removeEventListener('marker_added', binding.updateBoxes);
+				measure.removeEventListener('marker_removed', binding.updateBoxes);
+				measure.removeEventListener('marker_dropped', binding.updateBoxes);
+			}
+			this.measureBindings.delete(measure);
+		}
+	}
+
+	/**
+	 * Synchronizes the position, rotation, and dimensions of all boxes associated with a bound Measure instance.
+	 * Called automatically when a marker/node is moved, but can also be invoked manually.
+	 *
+	 * @param {Measure|Object} measure
+	 * @returns {Array<LineBoxVolume>}
+	 */
+	updateFromMeasure(measure) {
+		if (!measure || !this.measureBindings) return [];
+		const binding = this.measureBindings.get(measure);
+		if (!binding) return [];
+
+		const { boxes, options } = binding;
+		const points = measure.points || [];
+		const numSegments = Math.max(0, points.length - 1);
+
+		// Update existing boxes for each segment
+		for (let i = 0; i < Math.min(boxes.length, numSegments); i++) {
+			this.updateBoxGeometry(boxes[i], points[i], points[i + 1], options);
+		}
+
+		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
+		const startDist = options.startDistance ?? 0;
+		const endDist = options.endDistance ?? options.distance ?? options.radius ?? 5;
+		const gradient = options.gradient ?? TURBO_4_ARRAY_REVERSED;
+
+		// If new segments were added (e.g. marker_added)
+		while (boxes.length < numSegments) {
+			const i = boxes.length;
+			const box = this.createBox(points[i], points[i + 1], options);
+			if (box) {
+				boxes.push(box);
+				this.boxVolumes.push(box);
+				if (scene) {
+					scene.addVolume(box);
+					scene.addStaticDistanceGradient(startDist, endDist, gradient.length / 3, gradient);
+					scene.addStaticStopFilter();
+				}
+			} else {
+				break;
+			}
+		}
+
+		// If segments were removed (e.g. marker_removed)
+		while (boxes.length > numSegments) {
+			const box = boxes.pop();
+			if (box) {
+				box.visible = false;
+				if (scene) {
+					scene.removeVolume(box);
+				}
+				const idx = this.boxVolumes.indexOf(box);
+				if (idx !== -1) this.boxVolumes.splice(idx, 1);
+			}
+		}
+
+		if (this.viewer && typeof this.viewer.requestRender === 'function') {
+			this.viewer.requestRender();
+		}
+
+		return boxes;
+	}
+
+	/**
 	 * Takes a Measure instance (or measurement object) and creates BoxVolumes along its linestring.
+	 * Automatically binds live update listeners so when measurement nodes are moved, the boxes update.
 	 *
 	 * @param {Object} measure - Measure instance with toXYZArray / toGeoJSON methods or points
-	 * @param {Object} [options={}] - Options overriding defaults
+	 * @param {Object|number} [options={}] - Options overriding defaults (or distance/radius number)
 	 * @returns {Array<LineBoxVolume>}
 	 */
 	fromMeasure(measure, options = {}) {
 		if (!measure) return [];
-		if (typeof measure.toXYZArray === 'function') {
-			return this.fromArray(measure.toXYZArray(options), options);
-		} else if (typeof measure.toGeoJSON === 'function') {
-			return this.fromGeoJSON(measure.toGeoJSON(options), options);
-		} else if (Array.isArray(measure.points)) {
-			const coords = measure.points.map(p => (p && p.position) ? [p.position.x, p.position.y, p.position.z] : p);
-			return this.fromArray(coords, options);
+
+		const customOptions = typeof options === 'number'
+			? { distance: options, radius: options, endDistance: options }
+			: (options || {});
+		const params = this.selectionLineFactory(customOptions);
+		const mergedOptions = {...this.options, ...params, ...customOptions};
+
+		// Clean up any prior binding on this measure
+		this.unbindMeasure(measure);
+
+		const points = measure.points || [];
+		if (points.length < 2 && typeof measure.toXYZArray === 'function') {
+			return this.fromArray(measure.toXYZArray(mergedOptions), mergedOptions);
 		}
-		return [];
+
+		const boxes = [];
+		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
+		const startDist = mergedOptions.startDistance ?? 0;
+		const endDist = mergedOptions.endDistance ?? mergedOptions.distance ?? mergedOptions.radius ?? 5;
+		const gradient = mergedOptions.gradient ?? TURBO_4_ARRAY_REVERSED;
+
+		for (let i = 0; i < points.length - 1; i++) {
+			const box = this.createBox(points[i], points[i + 1], mergedOptions);
+			if (box) {
+				boxes.push(box);
+				this.boxVolumes.push(box);
+				if (scene) {
+					scene.addVolume(box);
+					scene.addStaticDistanceGradient(startDist, endDist, gradient.length / 3, gradient);
+					scene.addStaticStopFilter();
+				}
+			}
+		}
+
+		// Automatically bind live updates when measurement nodes are moved, added, or removed
+		if (typeof measure.addEventListener === 'function' && customOptions.track !== false) {
+			this.bindMeasure(measure, mergedOptions, boxes);
+		}
+
+		return boxes;
 	}
 
-
-
 	/**
- * Takes a flat array representing a linestring: [x0, y0, z0, x1, y1, z1, ...]
- * and creates BoxVolumes for each segment.
- *
- * @param {Array<number>|Array<Array<number>>} array - Flat array of coords or array of points
- * @param {Object} [options={}] - Options overriding defaults (stride, distance, width, height, etc.)
- * @returns {Array<LineBoxVolume>}
- */
+	 * Takes a flat array representing a linestring: [x0, y0, z0, x1, y1, z1, ...]
+	 * or array of point tuples [[x, y, z], ...] and creates BoxVolumes for each segment.
+	 *
+	 * @param {Array<number>|Array<Array<number>>} array - Flat array of coords or array of points
+	 * @param {Object|number} [options={}] - Options overriding defaults (stride, distance, radius, etc.)
+	 * @returns {Array<LineBoxVolume>}
+	 */
 	fromArray(array, options = {}) {
-		const mergedOptions = {...this.selectionLineFactory(), ...this.options, ...options};
+		const customOptions = typeof options === 'number'
+			? { distance: options, radius: options, endDistance: options }
+			: (options || {});
+		const params = this.selectionLineFactory(customOptions);
+		const mergedOptions = {...this.options, ...params, ...customOptions};
 		this.boxVolumes = [];
 
 		if (!array || array.length === 0) {
 			return this.boxVolumes;
 		}
 
+		const startDist = mergedOptions.startDistance ?? 0;
+		const endDist = mergedOptions.endDistance ?? mergedOptions.distance ?? mergedOptions.radius ?? 5;
+		const gradient = mergedOptions.gradient ?? TURBO_4_ARRAY_REVERSED;
+		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
+
+		const registerBox = (box) => {
+			if (!box) return;
+			this.boxVolumes.push(box);
+			if (scene) {
+				scene.addVolume(box);
+				scene.addStaticDistanceGradient(startDist, endDist, gradient.length / 3, gradient);
+				scene.addStaticStopFilter();
+			}
+		};
+
 		// Gracefully handle array of point tuples: [[x, y, z], [x, y, z], ...]
 		if (Array.isArray(array[0])) {
-			for (let i = 0;i < array.length - 1;i++) {
+			for (let i = 0; i < array.length - 1; i++) {
 				const box = this.createBox(array[i], array[i + 1], mergedOptions);
-				if (box) {
-					this.boxVolumes.push(box);
-					if (this.scene) {
-						this.scene.addVolume(box);
-						//this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
-						let gradient = TURBO_4_ARRAY_REVERSED;
-						this.viewer.scene.addStaticDistanceGradient(0, 5, gradient.length / 3, gradient);
-						this.viewer.scene.addStaticStopFilter();//this should stop but it is not
-					}
-				}
+				registerBox(box);
 			}
 			return this.boxVolumes;
 		}
@@ -339,22 +618,12 @@ export class SelectionLineTool {
 			return this.boxVolumes;
 		}
 
-		for (let i = 0;i <= array.length - stride * 2;i += stride) {
+		for (let i = 0; i <= array.length - stride * 2; i += stride) {
 			const p1 = [array[i], array[i + 1], stride >= 3 ? array[i + 2] : 0];
 			const p2 = [array[i + stride], array[i + stride + 1], stride >= 3 ? array[i + stride + 2] : 0];
 
 			const box = this.createBox(p1, p2, mergedOptions);
-			if (box) {
-				this.boxVolumes.push(box);
-				if (this.scene) {
-					this.scene.addVolume(box);
-					// this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
-					let gradient = TURBO_4_ARRAY_REVERSED;
-					// this.viewer.scene.addStaticFilterColor(DEFAULT_LINE_COLOR_RGB[15].r / 255, DEFAULT_LINE_COLOR_RGB[15].g / 255, DEFAULT_LINE_COLOR_RGB[15].b / 255, DEFAULT_LINE_COLOR_RGB[15].a, 4);//adding a color to the volume, however is not adding stuff
-					this.viewer.scene.addStaticDistanceGradient(0, 5, gradient.length / 3, gradient);
-					this.viewer.scene.addStaticStopFilter();//this should stop but it is not
-				}
-			}
+			registerBox(box);
 		}
 
 		return this.boxVolumes;
@@ -371,6 +640,20 @@ export class SelectionLineTool {
 		return extractBoxLineCoords(boxOrMatrix, isInverse);
 	}
 
+}
+
+function extractPointVec3(pt) {
+	if (!pt) return new Vector3(0, 0, 0);
+	if (pt.position && typeof pt.position.x === 'number') {
+		return pt.position;
+	}
+	if (typeof pt.x === 'number') {
+		return pt;
+	}
+	if (Array.isArray(pt) && pt.length >= 3) {
+		return new Vector3(pt[0], pt[1], pt[2]);
+	}
+	return new Vector3(0, 0, 0);
 }
 
 function extractLineCoordinates(geometry) {

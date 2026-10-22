@@ -375,8 +375,23 @@ document.body.onload = function () {
 						return;
 					}
 
+					const distInput = document.getElementById('input-volume-line-dist');
+					const distVal = distInput ? parseFloat(distInput.value) : 5;
+					const distanceParam = (isNaN(distVal) || distVal <= 0) ? 5 : distVal;
+					const options = { distance: distanceParam, radius: distanceParam, endDistance: distanceParam };
+
 					if (!viewer.volumeLineTool) {
-						viewer.volumeLineTool = new VolumeLineTool(viewer);
+						viewer.volumeLineTool = new VolumeLineTool(viewer, options);
+					} else {
+						viewer.volumeLineTool.distance = distanceParam;
+					}
+
+					// Check if a live Measurement was selected
+					if (activeMeasureForLineTool && activeMeasureForLineTool.points && activeMeasureForLineTool.points.length >= 2) {
+						const boxes = viewer.volumeLineTool.fromMeasure(activeMeasureForLineTool, options);
+						log(`SUCCESS: VolumeLineTool.fromMeasure created ${boxes.length} aligned BoxVolume(s) live-bound to measurement nodes (distance = ${distanceParam}). Drag measurement nodes in 3D to see box position, rotation, and dimensions update in real-time.`, "success");
+						setPassState('volume-line', true);
+						return;
 					}
 
 					let parsed = null;
@@ -388,8 +403,8 @@ document.body.onload = function () {
 
 					// Check if GeoJSON
 					if (parsed && typeof parsed === 'object' && (parsed.type === 'Feature' || parsed.type === 'FeatureCollection' || parsed.type === 'LineString')) {
-						const boxes = viewer.volumeLineTool.fromGeoJSON(parsed);
-						log(`SUCCESS: VolumeLineTool.fromGeoJSON created ${boxes.length} aligned BoxVolume(s) in scene from GeoJSON.`, "success");
+						const boxes = viewer.volumeLineTool.fromGeoJSON(parsed, options);
+						log(`SUCCESS: VolumeLineTool.fromGeoJSON created ${boxes.length} aligned BoxVolume(s) with distance/radius = ${distanceParam} (box: ${distanceParam * 2}x${distanceParam * 2}, endDist: ${distanceParam}).`, "success");
 						setPassState('volume-line', true);
 						return;
 					}
@@ -405,8 +420,8 @@ document.body.onload = function () {
 						return;
 					}
 
-					const count = viewer.volumeLineTool.testTool(lineArray);
-					log(`SUCCESS: VolumeLineTool.testTool created ${count} aligned BoxVolume(s) in scene.`, "success");
+					const count = viewer.volumeLineTool.testTool(lineArray, options);
+					log(`SUCCESS: VolumeLineTool.testTool created ${count} aligned BoxVolume(s) with distance/radius = ${distanceParam} (box: ${distanceParam * 2}x${distanceParam * 2}, endDist: ${distanceParam}).`, "success");
 					setPassState('volume-line', true);
 				} catch (err) {
 					log("ERROR running VolumeLineTool: " + err.message, "error");
@@ -540,10 +555,20 @@ document.body.onload = function () {
 		}
 	}
 
+	let activeMeasureForLineTool = null;
+
+	const lineInputEl = document.getElementById('input-volume-line');
+	if (lineInputEl) {
+		lineInputEl.addEventListener('input', () => {
+			activeMeasureForLineTool = null;
+		});
+	}
+
 	const btnBBox = document.getElementById('btn-volume-line-bbox');
 	if (btnBBox) {
 		btnBBox.addEventListener('click', (e) => {
 			e.stopPropagation();
+			activeMeasureForLineTool = null;
 			fillBBoxExtremes(true);
 		});
 	}
@@ -555,10 +580,11 @@ document.body.onload = function () {
 			const measurements = sceneSG.measurements || [];
 			const lineMeasure = measurements.find(m => m.points && m.points.length >= 2);
 			if (lineMeasure) {
+				activeMeasureForLineTool = lineMeasure;
 				const xyz = lineMeasure.toXYZArray();
 				const input = document.getElementById('input-volume-line');
 				if (input) input.value = JSON.stringify(xyz);
-				log(`SUCCESS: Loaded ${lineMeasure.points.length}-point line measurement into XYZ array: [${xyz.map(n => n.toFixed(2)).join(', ')}]`, 'success');
+				log(`SUCCESS: Loaded live ${lineMeasure.points.length}-point line measurement. When tested, boxes will be live-bound to this measurement so moving its nodes updates box position and rotation in real-time.`, 'success');
 			} else {
 				log("No line measurement with >= 2 points found in scene. Draw a line with Linear Distance Tool first.", "error");
 			}

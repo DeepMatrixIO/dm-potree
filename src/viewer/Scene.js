@@ -7,6 +7,7 @@ import {PointCloudFilter} from "../utils/Filter.js";
 import {FilterIntType, FilterOperationType} from "../utils/FilterConsts.js";
 import {PolygonClipVolume} from "../utils/PolygonClipVolume.js";
 import {BoxVolume} from "../utils/Volume.js";
+import {LineBoxVolume} from "../utils/LineVolume.js";
 import {View} from "./View.js";
 
 export class PScene extends EventDispatcher {
@@ -645,7 +646,7 @@ export class PScene extends EventDispatcher {
 	};
 
 	removeCameraAnimation(animation) {
-		let index = this.cameraAnimations.indexOf(volume);
+		let index = this.cameraAnimations.indexOf(animation);
 		if (index > -1) {
 			this.cameraAnimations.splice(index, 1);
 

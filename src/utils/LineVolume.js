@@ -297,7 +297,7 @@ export class LineBoxVolume extends Volume {
 	}
 
 	static fromJSON(data) {
-		let volume = new BoxVolume({
+		let volume = new LineBoxVolume({
 			clip: data._clip,
 			modifiable: data._modifiable
 		});
