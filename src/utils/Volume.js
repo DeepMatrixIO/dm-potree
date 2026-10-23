@@ -1,5 +1,6 @@
 
-import {BoxGeometry, BufferAttribute, BufferGeometry, Color, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, Object3D, Sphere, SphereGeometry, Vector3} from 'three';
+import {BoxGeometry, BufferAttribute, BufferGeometry, Color, Float32BufferAttribute, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, Object3D, Sphere, SphereGeometry, Vector3} from 'three';
+
 
 import {TextSprite} from "../TextSprite.js";
 import {FilterIntType} from "./FilterConsts.js";
@@ -369,6 +370,10 @@ export class SphereVolume extends Volume {
 			let vSegments = 5;
 			let r = 1;
 
+			// BufferGeometry uses a flat Float32Array instead of a vertices array.
+			// Collect all positions here, then set as a buffer attribute below.
+			const positions = [];
+
 			for (let uSegment = 0;uSegment < uSegments;uSegment++) {
 
 				let alpha = (uSegment / uSegments) * Math.PI * 2;
@@ -385,11 +390,8 @@ export class SphereVolume extends Volume {
 					let heightNext = Math.sin(vNext);
 					let xyAmountNext = Math.cos(vNext);
 
-					let vertex = new Vector3(dirx * xyAmount, diry * xyAmount, height);
-					frameGeometry.vertices.push(vertex);
-
-					let vertexNext = new Vector3(dirx * xyAmountNext, diry * xyAmountNext, heightNext);
-					frameGeometry.vertices.push(vertexNext);
+					positions.push(dirx * xyAmount, diry * xyAmount, height);
+					positions.push(dirx * xyAmountNext, diry * xyAmountNext, heightNext);
 				}
 			}
 
@@ -415,13 +417,13 @@ export class SphereVolume extends Volume {
 
 					let xyAmount = Math.sqrt(1 - height * height);
 
-					let vertex = new Vector3(dirx * xyAmount, diry * xyAmount, height);
-					frameGeometry.vertices.push(vertex);
-
-					let vertexNext = new Vector3(dirxNext * xyAmount, diryNext * xyAmount, height);
-					frameGeometry.vertices.push(vertexNext);
+					positions.push(dirx * xyAmount, diry * xyAmount, height);
+					positions.push(dirxNext * xyAmount, diryNext * xyAmount, height);
 				}
 			}
+
+			// Set the flat positions array as the 'position' buffer attribute
+			frameGeometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
 		}
 
 		this.frame = new LineSegments(frameGeometry, new LineBasicMaterial({color: 0x000000}));

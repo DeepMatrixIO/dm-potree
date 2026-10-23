@@ -1,5 +1,6 @@
 import {Potree, PScene, Viewer} from '../dist/potree_module.js';
 import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
+import {SphereVolume} from '../src/utils/Volume.js';
 
 document.body.onload = function () {
 	// Add stylesheets dynamically
@@ -209,6 +210,32 @@ document.body.onload = function () {
 				}
 			}
 		},
+		'point-measure': {
+			id: 'point-measure',
+			name: 'Start Point Tool',
+			status: 'status-point-measure',
+			checkbox: 'check-point-measure',
+			passed: false,
+			run: async () => {
+				log("POINT MEASUREMENT: Click on loaded cloud to place a point.");
+				showOnScreenInstructions("Point Measurement  Tool", "Click point cloud to extract coordinates. ");
+				try {
+					const measurement = viewer.measuringTool.startInsertion({
+						showDistances: false,
+						showArea: false,
+						closed: false,
+						name: 'Point',
+						maxMarkers: 1
+					});
+					log("Point measuring tool active. Deposit vertices on the map.", "info");
+					setPassState('point-measure', true);
+				} catch (err) {
+					log("ERROR starting Point tool: " + err.message, "error");
+					setPassState('point-measure', false);
+				}
+			}
+		}
+		,
 		'height-measure': {
 			id: 'height-measure',
 			name: 'Start Height Tool',
@@ -379,7 +406,7 @@ document.body.onload = function () {
 					const distInput = document.getElementById('input-volume-line-dist');
 					const distVal = distInput ? parseFloat(distInput.value) : 5;
 					const distanceParam = (isNaN(distVal) || distVal <= 0) ? 5 : distVal;
-					const options = { distance: distanceParam, radius: distanceParam, endDistance: distanceParam };
+					const options = {distance: distanceParam, radius: distanceParam, endDistance: distanceParam};
 
 					if (!viewer.volumeLineTool) {
 						viewer.volumeLineTool = new VolumeLineTool(viewer, options);
@@ -428,6 +455,93 @@ document.body.onload = function () {
 					log("ERROR running VolumeLineTool: " + err.message, "error");
 					console.log("ERROR running VolumeLineTool: " + err.message, "error");
 					setPassState('volume-line', false);
+				}
+			}
+		},
+		'sphere-volume': {
+			id: 'sphere-volume',
+			name: 'Sphere Volume Tool',
+			status: 'status-sphere-volume',
+			checkbox: 'check-sphere-volume',
+			passed: false,
+			run: async () => {
+				log("SPHERE VOLUME TOOL: Executing sphere volume test...");
+				try {
+					const r = getSphereRadius();
+					const measurements = sceneSG.measurements || [];
+
+					// 1. If line measurement exists, create spheres per line vertex
+					const lineMeasures = measurements.filter(m => m.points && m.points.length >= 2);
+					if (lineMeasures.length > 0) {
+						const line = lineMeasures[lineMeasures.length - 1];
+						line.points.forEach((p, idx) => {
+							const sphere = new SphereVolume();
+							sphere.name = `Sphere_LineVertex_${idx + 1}`;
+							sphere.position.copy(p.position);
+							sphere.scale.set(r, r, r);
+							sphere.clip = true;
+							sphere.initialized = true;
+							sceneSG.addVolume(sphere);
+						});
+						viewer.requestRender();
+						log(`SUCCESS: Created ${line.points.length} SphereVolume(s) along line vertices with radius = ${r}.`, "success");
+						setPassState('sphere-volume', true);
+						return;
+					}
+
+					// 2. If point measurement exists, create sphere at point
+					const pointMeasure = measurements.find(m => m.points && m.points.length === 1);
+					if (pointMeasure && pointMeasure.points.length > 0) {
+						const pos = pointMeasure.points[0].position;
+						const sphere = new SphereVolume();
+						sphere.name = `Sphere_Point`;
+						sphere.position.copy(pos);
+						sphere.scale.set(r, r, r);
+						sphere.clip = true;
+						sphere.initialized = true;
+						sceneSG.addVolume(sphere);
+						viewer.requestRender();
+						log(`SUCCESS: Created SphereVolume at point measurement [${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}] with radius = ${r}.`, "success");
+						setPassState('sphere-volume', true);
+						return;
+					}
+
+					// 3. If pointcloud loaded, place sphere at pointcloud center
+					const extremes = getPointCloudBBoxExtremes();
+					if (extremes) {
+						const cx = (extremes[0] + extremes[3]) / 2;
+						const cy = (extremes[1] + extremes[4]) / 2;
+						const cz = (extremes[2] + extremes[5]) / 2;
+						const sphere = new SphereVolume();
+						sphere.name = `Sphere_Center`;
+						sphere.position.set(cx, cy, cz);
+						sphere.scale.set(r, r, r);
+						sphere.clip = true;
+						sphere.initialized = true;
+						sceneSG.addVolume(sphere);
+						viewer.requestRender();
+						log(`SUCCESS: Created SphereVolume at pointcloud center [${cx.toFixed(2)}, ${cy.toFixed(2)}, ${cz.toFixed(2)}] with radius = ${r}.`, "success");
+						setPassState('sphere-volume', true);
+						return;
+					}
+
+					// 4. Fallback: interactive hand placement
+					log("No pointcloud or measurements found. Starting interactive placement: click and drag on map.", "info");
+					showOnScreenInstructions("Sphere Volume Placement", "Click and drag across point cloud to place sphere volume.");
+					const volume = viewer.volumeTool.startInsertion({type: SphereVolume, clip: true, name: 'Sphere_Hand'});
+					if (volume) {
+						volume.scale.set(r, r, r);
+						volume.addEventListener('drop', () => {
+							volume.scale.set(r, r, r);
+							log(`SUCCESS: Sphere volume placed by hand with radius = ${r}.`, "success");
+							setPassState('sphere-volume', true);
+							hideOnScreenInstructions();
+						}, {once: true});
+					}
+					setPassState('sphere-volume', true);
+				} catch (err) {
+					log("ERROR running Sphere Volume tool: " + err.message, "error");
+					setPassState('sphere-volume', false);
 				}
 			}
 		}
@@ -592,6 +706,164 @@ document.body.onload = function () {
 				log(`SUCCESS: Loaded latest live ${lineMeasure.points.length}-point line measurement. When tested, boxes will be live-bound to this measurement so moving its nodes updates box position and rotation in real-time.`, 'success');
 			} else {
 				log("No line measurement with >= 2 points found in scene. Draw a line with Linear Distance Tool first.", "error");
+			}
+		});
+	}
+
+	// -------------------------------------------------------------
+	// SPHERE VOLUME BUTTON HANDLERS
+	// -------------------------------------------------------------
+
+	/** Read the radius input, fall back to 5 */
+	function getSphereRadius() {
+		const el = document.getElementById('input-sphere-radius');
+		if (!el) return 5;
+		const v = parseFloat(el.value);
+		return (isNaN(v) || v <= 0) ? 5 : v;
+	}
+
+	/** Preset radius cycle values */
+	const SPHERE_RADIUS_PRESETS = [1, 2, 5, 10, 20, 50];
+
+	// 📋 Extract Array — populate coord text from latest measurement
+	const btnSphereExtract = document.getElementById('btn-sphere-extract-measure');
+	if (btnSphereExtract) {
+		btnSphereExtract.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const measurements = sceneSG.measurements || [];
+			if (measurements.length === 0) {
+				log("No measurements in scene. Draw a point or line measurement first.", "error");
+				return;
+			}
+			// Prefer the latest measurement regardless of type
+			const m = measurements[measurements.length - 1];
+			const arr = m.points.map(p => [
+				parseFloat(p.position.x.toFixed(4)),
+				parseFloat(p.position.y.toFixed(4)),
+				parseFloat(p.position.z.toFixed(4))
+			]);
+			const input = document.getElementById('input-sphere-coords');
+			if (input) input.value = JSON.stringify(arr.length === 1 ? arr[0] : arr);
+			log(`Extracted ${m.points.length} point(s) from measurement into sphere coords field.`, 'info');
+		});
+	}
+
+	// 🔘 Radius cycle button
+	const btnSphereRadius = document.getElementById('btn-sphere-radius');
+	if (btnSphereRadius) {
+		btnSphereRadius.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const radiusInput = document.getElementById('input-sphere-radius');
+			const label = document.getElementById('label-sphere-radius');
+			if (!radiusInput) return;
+
+			const cur = parseFloat(radiusInput.value) || 5;
+			// Find next preset above current, or wrap around
+			let next = SPHERE_RADIUS_PRESETS.find(v => v > cur);
+			if (next === undefined) next = SPHERE_RADIUS_PRESETS[0];
+			radiusInput.value = next;
+			if (label) label.textContent = next;
+
+			// Apply new radius to all existing sphere volumes in scene
+			const vols = sceneSG.volumes || [];
+			let updated = 0;
+			vols.forEach(v => {
+				if (v && v.constructor && v.constructor.name === 'SphereVolume') {
+					v.scale.set(next, next, next);
+					updated++;
+				}
+			});
+			viewer.requestRender();
+			log(`Sphere radius set to ${next}. Updated ${updated} existing sphere volume(s) in scene.`, 'info');
+		});
+	}
+
+	// 🖐️ By Hand — interactive placement via volumeTool
+	const btnSphereByHand = document.getElementById('btn-sphere-by-hand');
+	if (btnSphereByHand) {
+		btnSphereByHand.addEventListener('click', (e) => {
+			e.stopPropagation();
+			try {
+				const r = getSphereRadius();
+				showOnScreenInstructions("Sphere Volume Placement", "Click and drag on the point cloud to place a sphere volume by hand.");
+				const volume = viewer.volumeTool.startInsertion({type: SphereVolume, clip: true, name: 'Sphere_Hand'});
+				if (volume) {
+					volume.scale.set(r, r, r);
+					volume.addEventListener('drop', () => {
+						volume.scale.set(r, r, r);
+						log(`SUCCESS: Sphere placed by hand at [${volume.position.x.toFixed(2)}, ${volume.position.y.toFixed(2)}, ${volume.position.z.toFixed(2)}] with radius = ${r}.`, "success");
+						setPassState('sphere-volume', true);
+						hideOnScreenInstructions();
+					}, {once: true});
+				}
+				log("Interactive sphere placement started — click and drag on the point cloud.", 'info');
+			} catch (err) {
+				log("ERROR starting interactive sphere placement: " + err.message, "error");
+			}
+		});
+	}
+
+	// 📍 From Point Measure — sphere centered on the latest single-point measurement
+	const btnSphereFromPoint = document.getElementById('btn-sphere-from-point');
+	if (btnSphereFromPoint) {
+		btnSphereFromPoint.addEventListener('click', (e) => {
+			e.stopPropagation();
+			try {
+				const measurements = sceneSG.measurements || [];
+				// Prefer single-point measurements, but accept any measurement's first point
+				const pointMeasure = measurements.find(m => m.points && m.points.length === 1)
+					|| measurements.find(m => m.points && m.points.length >= 1);
+				if (!pointMeasure || pointMeasure.points.length === 0) {
+					log("No point measurement found. Use the Point Picker tool first.", "error");
+					return;
+				}
+				const r = getSphereRadius();
+				const pos = pointMeasure.points[0].position;
+				const sphere = new SphereVolume();
+				sphere.name = 'Sphere_Point';
+				sphere.position.copy(pos);
+				sphere.scale.set(r, r, r);
+				sphere.clip = true;
+				sphere.initialized = true;
+				sceneSG.addVolume(sphere);
+				viewer.requestRender();
+				log(`SUCCESS: Created SphereVolume at point [${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}] with radius = ${r}.`, "success");
+				setPassState('sphere-volume', true);
+			} catch (err) {
+				log("ERROR creating sphere from point: " + err.message, "error");
+				console.log("ERROR creating sphere from point: " + err.message, "error");
+			}
+		});
+	}
+
+	// 📏 From Line Vertices — one sphere per vertex of the latest line measurement
+	const btnSphereFromLine = document.getElementById('btn-sphere-from-line');
+	if (btnSphereFromLine) {
+		btnSphereFromLine.addEventListener('click', (e) => {
+			e.stopPropagation();
+			try {
+				const measurements = sceneSG.measurements || [];
+				const lineMeasures = measurements.filter(m => m.points && m.points.length >= 2);
+				if (lineMeasures.length === 0) {
+					log("No line measurement (>= 2 points) found. Draw a line with the Linear Distance tool first.", "error");
+					return;
+				}
+				const r = getSphereRadius();
+				const line = lineMeasures[lineMeasures.length - 1];
+				line.points.forEach((p, idx) => {
+					const sphere = new SphereVolume();
+					sphere.name = `Sphere_LineVertex_${idx + 1}`;
+					sphere.position.copy(p.position);
+					sphere.scale.set(r, r, r);
+					sphere.clip = true;
+					sphere.initialized = true;
+					sceneSG.addVolume(sphere);
+				});
+				viewer.requestRender();
+				log(`SUCCESS: Created ${line.points.length} SphereVolume(s) along line vertices with radius = ${r}.`, "success");
+				setPassState('sphere-volume', true);
+			} catch (err) {
+				log("ERROR creating spheres from line: " + err.message, "error");
 			}
 		});
 	}

@@ -18,7 +18,8 @@
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 	<style>
-		body, html {
+		body,
+		html {
 			margin: 0;
 			padding: 0;
 			width: 100%;
@@ -449,12 +450,12 @@
 			background: rgba(18, 22, 33, 0.8);
 			border-radius: 8px;
 			padding: 10px 14px;
-			border: 1px solid rgba(255,255,255,0.1);
+			border: 1px solid rgba(255, 255, 255, 0.1);
 			color: #fff;
 			max-width: 320px;
 			pointer-events: none;
 			display: none;
-			box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 		}
 
 		#on-screen-overlay h4 {
@@ -504,7 +505,10 @@
 			</div>
 			<div class="header-actions">
 				<button class="toggle-btn" id="min-toggle-btn" title="Minimize / Restore">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+						viewBox="0 0 24 24">
+						<path d="M5 11h14v2H5z" />
+					</svg>
 				</button>
 			</div>
 		</div>
@@ -534,7 +538,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">1. Load 'Lion Takanawa' (JS)</span>
-								<span class="test-desc">Load the classic Lion Takanawa WebGL point cloud onto the viewer scene.</span>
+								<span class="test-desc">Load the classic Lion Takanawa WebGL point cloud onto the viewer
+									scene.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-load-lion">Untested</span>
@@ -572,7 +577,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">3. Unload / Clear Scene</span>
-								<span class="test-desc">Removes all loaded point clouds from the current scene container.</span>
+								<span class="test-desc">Removes all loaded point clouds from the current scene
+									container.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-unload-pc">Untested</span>
@@ -600,7 +606,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">4. Zoom to scene bounds</span>
-								<span class="test-desc">Align camera focus and zoom to the point cloud geometries in view.</span>
+								<span class="test-desc">Align camera focus and zoom to the point cloud geometries in
+									view.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-camera-flyto">Untested</span>
@@ -619,7 +626,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">5. Camera Projection Modes</span>
-								<span class="test-desc">Switch camera projection dynamically between Perspective and Orthographic.</span>
+								<span class="test-desc">Switch camera projection dynamically between Perspective and
+									Orthographic.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-toggle-projection">Untested</span>
@@ -638,7 +646,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">6. Field of View (FOV) Settings</span>
-								<span class="test-desc">Cycle field of view angles in real time (30°, 60°, 90°) to check projection scale.</span>
+								<span class="test-desc">Cycle field of view angles in real time (30°, 60°, 90°) to check
+									projection scale.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-cycle-fov">Untested</span>
@@ -661,12 +670,34 @@
 					<span class="category-badge">Tools</span>
 				</div>
 				<div class="category-items">
+					<!-- Point Tool -->
+					<div class="test-item" id="item-point-measure">
+						<div class="test-meta">
+							<div class="test-title-area">
+								<span class="test-title">7. Point Measurement Distance Tool</span>
+								<span class="test-desc">Extract point coords. Click on cloud to deposit
+									point.</span>
+							</div>
+							<div class="status-container">
+								<span class="status-badge status-idle" id="status-point-measure">Untested</span>
+							</div>
+						</div>
+						<div class="test-actions-row">
+							<label class="manual-check">
+								<input type="checkbox" id="check-distance-measure"> Checked Passed
+							</label>
+							<button class="action-btn" id="btn-point-measure">▶ Start Tool</button>
+						</div>
+					</div>
+
+
 					<!-- Distance Tool -->
 					<div class="test-item" id="item-distance-measure">
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">7. Linear Distance Tool</span>
-								<span class="test-desc">Measure length between point markers. Click on cloud to deposit points.</span>
+								<span class="test-desc">Measure length between point markers. Click on cloud to deposit
+									points.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-distance-measure">Untested</span>
@@ -685,7 +716,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">8. Height/Vertical Calculator</span>
-								<span class="test-desc">Select two points on a cloud to check vertical difference.</span>
+								<span class="test-desc">Select two points on a cloud to check vertical
+									difference.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-height-measure">Untested</span>
@@ -704,7 +736,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">9. Clear Calculations & Helpers</span>
-								<span class="test-desc">Wipe all lines, profiles, and measurements from the viewer canvas.</span>
+								<span class="test-desc">Wipe all lines, profiles, and measurements from the viewer
+									canvas.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-clear-measures">Untested</span>
@@ -732,7 +765,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">10. Spatial Coordinate Raycast Pick</span>
-								<span class="test-desc">Select single point on the viewer. Displays coordinates in details log when registered.</span>
+								<span class="test-desc">Select single point on the viewer. Displays coordinates in
+									details log when registered.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-point-pick">Untested</span>
@@ -760,7 +794,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">11. 3D Clip Box / Clipping Volume</span>
-								<span class="test-desc">Place a box volumetric clip in 3D. Control with position and scales values.</span>
+								<span class="test-desc">Place a box volumetric clip in 3D. Control with position and
+									scales values.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-box-clip">Untested</span>
@@ -779,7 +814,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">12. Polygon Segment Clipping Tool</span>
-								<span class="test-desc">Draw a multi-vertex boundary to clip. Right-click to finish drawing shapes.</span>
+								<span class="test-desc">Draw a multi-vertex boundary to clip. Right-click to finish
+									drawing shapes.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-polygon-clip">Untested</span>
@@ -798,7 +834,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">13. Edit Clip Filters & Settings</span>
-								<span class="test-desc">Toggle the clipping tasks modes (Highlight regions, Inside boundary, Outside boundary).</span>
+								<span class="test-desc">Toggle the clipping tasks modes (Highlight regions, Inside
+									boundary, Outside boundary).</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-change-cliptask">Untested</span>
@@ -817,22 +854,30 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">14. Volume Line Tool (testTool)</span>
-								<span class="test-desc">Create BoxVolumes along a linestring array. Auto-filled with pointcloud bbox extremes.</span>
+								<span class="test-desc">Create BoxVolumes along a linestring array. Auto-filled with
+									pointcloud bbox extremes.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-volume-line">Untested</span>
 							</div>
 						</div>
 						<div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
-							<input type="text" id="input-volume-line" placeholder="[x0, y0, z0, x1, y1, z1, ...] or GeoJSON"
+							<input type="text" id="input-volume-line"
+								placeholder="[x0, y0, z0, x1, y1, z1, ...] or GeoJSON"
 								style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #e5e7eb; border-radius: 4px;">
-							<button class="action-btn" id="btn-volume-line-bbox" title="Fill with Pointcloud BBox Extremes" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📦 BBox</button>
-							<button class="action-btn" id="btn-volume-line-measure" title="Fill with active Measure coordinates" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📏 Measure</button>
+							<button class="action-btn" id="btn-volume-line-bbox"
+								title="Fill with Pointcloud BBox Extremes"
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📦 BBox</button>
+							<button class="action-btn" id="btn-volume-line-measure"
+								title="Fill with active Measure coordinates"
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📏 Measure</button>
 						</div>
 						<div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
-							<label for="input-volume-line-dist" style="font-size: 11px; color: #9ca3af; white-space: nowrap;">Distance / Radius:</label>
+							<label for="input-volume-line-dist"
+								style="font-size: 11px; color: #9ca3af; white-space: nowrap;">Distance / Radius:</label>
 							<input type="number" id="input-volume-line-dist" value="5" min="0.1" step="0.5"
-								style="width: 70px; padding: 4px 6px; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #e5e7eb; border-radius: 4px;" title="Box width/height = 2 * dist, rendering endDistance = dist">
+								style="width: 70px; padding: 4px 6px; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #e5e7eb; border-radius: 4px;"
+								title="Box width/height = 2 * dist, rendering endDistance = dist">
 							<span style="font-size: 10px; color: #6b7280;">(Box: 2×R, Shader endDist: R)</span>
 						</div>
 						<div class="test-actions-row">
@@ -840,6 +885,56 @@
 								<input type="checkbox" id="check-volume-line"> Checked Passed
 							</label>
 							<button class="action-btn" id="btn-volume-line">▶ Test VolumeLine</button>
+						</div>
+					</div>
+
+					<!-- Sphere Volume Tool -->
+					<div class="test-item" id="item-sphere-volume">
+						<div class="test-meta">
+							<div class="test-title-area">
+								<span class="test-title">15. Sphere Volume Tool</span>
+								<span class="test-desc">Insert SphereVolume by hand, centered on point measurement, or
+									along line vertices (one per vertex).</span>
+							</div>
+							<div class="status-container">
+								<span class="status-badge status-idle" id="status-sphere-volume">Untested</span>
+							</div>
+						</div>
+						<div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+							<input type="text" id="input-sphere-coords"
+								placeholder="[x, y, z] or [[x,y,z], ...] or flat [x0, y0, z0, ...]"
+								style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #e5e7eb; border-radius: 4px;">
+							<button class="action-btn" id="btn-sphere-extract-measure"
+								title="Extract active/latest measurement points as an array"
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📋 Extract
+								Array</button>
+						</div>
+						<div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+							<label for="input-sphere-radius"
+								style="font-size: 11px; color: #9ca3af; white-space: nowrap;">Radius:</label>
+							<input type="number" id="input-sphere-radius" value="5" min="0.1" step="0.5"
+								style="width: 65px; padding: 4px 6px; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #e5e7eb; border-radius: 4px;">
+							<button class="action-btn" id="btn-sphere-radius"
+								title="Cycle preset radius (1, 2, 5, 10, 20) or apply to existing spheres"
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">🔘 Radius: <span
+									id="label-sphere-radius">5</span></button>
+							<button class="action-btn" id="btn-sphere-by-hand"
+								title="Place a sphere volume interactively on point cloud with mouse"
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">🖐️ By Hand</button>
+						</div>
+						<div class="test-actions-row" style="margin-top: 6px; flex-wrap: wrap; gap: 6px;">
+							<label class="manual-check">
+								<input type="checkbox" id="check-sphere-volume"> Checked Passed
+							</label>
+							<button class="action-btn" id="btn-sphere-from-point"
+								title="Create sphere volume centered on latest point measurement"
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📍 Point
+								Measure</button>
+							<button class="action-btn" id="btn-sphere-from-line"
+								title="Create sphere volumes for each vertex of the line measurement"
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📏 Line
+								Vertices</button>
+							<button class="action-btn" id="btn-sphere-volume">▶ Test Sphere</button>
 						</div>
 					</div>
 				</div>
@@ -854,7 +949,8 @@
 				<div class="log-messages" id="log-messages">
 					<div class="log-entry info">
 						<span class="timestamp" id="log-init-time">00:00:00</span>
-						<span class="message">Dashboard initialised. Choose a test case on the panel to begin testing.</span>
+						<span class="message">Dashboard initialised. Choose a test case on the panel to begin
+							testing.</span>
 					</div>
 				</div>
 			</div>
