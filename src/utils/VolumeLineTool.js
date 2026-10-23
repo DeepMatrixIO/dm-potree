@@ -315,7 +315,7 @@ export class SelectionLineTool {
 		const customOptions = typeof optionsOrDistance === 'number'
 			? {distance: optionsOrDistance, radius: optionsOrDistance, endDistance: optionsOrDistance}
 			: (optionsOrDistance || {});
-		customOptions.gradient = REDS_4;
+		customOptions.gradient = customOptions.gradient ?? REDS_4_ARRAY_REVERSED;
 		const params = this.selectionLineFactory(customOptions);
 
 		// Support passing a Measure instance directly
@@ -328,15 +328,17 @@ export class SelectionLineTool {
 		const boxes = this.fromArray(lineArrayOrMeasure, params);
 		const startDist = params.startDistance ?? 0;
 		const endDist = params.endDistance ?? params.distance ?? params.radius ?? 5;
-		const gradient = params.gradient ?? REDS_4;
+		const gradient = normalizeGradientToFloatArray(params.gradient ?? REDS_4_ARRAY_REVERSED);
 
 		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
 		if (scene) {
 			boxes.forEach(box => {
 				if (!scene.volumes.includes(box)) {
 					scene.addVolume(box);
-					scene.addStaticDistanceGradient(startDist, endDist, gradient.length / 3, gradient);
-					scene.addStaticStopFilter();
+					const distFilter = scene.addStaticDistanceGradient(startDist, endDist, gradient.length / 3, gradient);
+					const stopFilter = scene.addStaticStopFilter();
+					box._distanceFilter = distFilter;
+					box._stopFilter = stopFilter;
 				}
 			});
 		}
