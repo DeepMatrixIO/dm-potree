@@ -87,6 +87,16 @@ export const TURBO_8 = [
 ];
 export const TURBO_8_REVERSED = [...TURBO_8].reverse();
 
+export const REDS_4 = [
+	"#7a0403",
+	"#d63506",
+	"#f05b12",
+	"#fd8d27"
+];
+export const REDS_4_REVERSED = [...REDS_4].reverse();
+
+
+
 // turbo_8 float array [r, g, b, r, g, b, ...] normalized to [0.0, 1.0]
 export const turbo_8_array = [
 	48 / 255, 18 / 255, 59 / 255,   // #30123b
@@ -166,8 +176,8 @@ export class SelectionLineTool {
 	constructor(viewer, options = {}) {
 		this.viewer = viewer;
 		this.options = typeof options === 'number'
-			? { distance: options, radius: options, endDistance: options }
-			: { ...options };
+			? {distance: options, radius: options, endDistance: options}
+			: {...options};
 		this.scene = viewer ? viewer.scene : null;
 		this.boxVolumes = [];
 		this.measureBindings = new Map();
@@ -215,7 +225,7 @@ export class SelectionLineTool {
 	// Defines parameters for box dimensions and distance gradient rendering
 	selectionLineFactory(customOptions = {}) {
 		const options = typeof customOptions === 'number'
-			? { distance: customOptions, radius: customOptions, endDistance: customOptions }
+			? {distance: customOptions, radius: customOptions, endDistance: customOptions}
 			: (customOptions || {});
 
 		// Resolve distance / radius parameter (precedence: customOptions > instance options > default 5)
@@ -257,8 +267,9 @@ export class SelectionLineTool {
 
 	testTool(lineArrayOrMeasure, optionsOrDistance = {}) {
 		const customOptions = typeof optionsOrDistance === 'number'
-			? { distance: optionsOrDistance, radius: optionsOrDistance, endDistance: optionsOrDistance }
+			? {distance: optionsOrDistance, radius: optionsOrDistance, endDistance: optionsOrDistance}
 			: (optionsOrDistance || {});
+		customOptions.gradient = REDS_4;
 		const params = this.selectionLineFactory(customOptions);
 
 		// Support passing a Measure instance directly
@@ -271,7 +282,7 @@ export class SelectionLineTool {
 		const boxes = this.fromArray(lineArrayOrMeasure, params);
 		const startDist = params.startDistance ?? 0;
 		const endDist = params.endDistance ?? params.distance ?? params.radius ?? 5;
-		const gradient = params.gradient ?? TURBO_4_ARRAY_REVERSED;
+		const gradient = params.gradient ?? REDS_4;
 
 		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
 		if (scene) {
@@ -339,7 +350,7 @@ export class SelectionLineTool {
 	// Takes two points and creates an aligned LineBoxVolume
 	createBox(p1, p2, options = {}) {
 		const opts = typeof options === 'number'
-			? { distance: options, radius: options, endDistance: options }
+			? {distance: options, radius: options, endDistance: options}
 			: (options || {});
 
 		const box = new LineBoxVolume(opts);
@@ -356,7 +367,7 @@ export class SelectionLineTool {
 
 	fromGeoJSON(geoJSON, options = {}) {
 		const customOptions = typeof options === 'number'
-			? { distance: options, radius: options, endDistance: options }
+			? {distance: options, radius: options, endDistance: options}
 			: (options || {});
 		const params = this.selectionLineFactory(customOptions);
 		const mergedOptions = {...this.options, ...params, ...customOptions};
@@ -368,7 +379,7 @@ export class SelectionLineTool {
 		const scene = this.scene || (this.viewer ? this.viewer.scene : null);
 
 		for (const coords of lineCoordsList) {
-			for (let i = 0; i < coords.length - 1; i++) {
+			for (let i = 0;i < coords.length - 1;i++) {
 				const box = this.createBox(coords[i], coords[i + 1], mergedOptions);
 				if (box) {
 					this.boxVolumes.push(box);
@@ -399,7 +410,7 @@ export class SelectionLineTool {
 
 		const boxes = existingBoxes || [];
 		const customOptions = typeof options === 'number'
-			? { distance: options, radius: options, endDistance: options }
+			? {distance: options, radius: options, endDistance: options}
 			: (options || {});
 		const params = this.selectionLineFactory(customOptions);
 		const mergedOptions = {...this.options, ...params, ...customOptions};
@@ -465,12 +476,12 @@ export class SelectionLineTool {
 		const binding = this.measureBindings.get(measure);
 		if (!binding) return [];
 
-		const { boxes, options } = binding;
+		const {boxes, options} = binding;
 		const points = measure.points || [];
 		const numSegments = Math.max(0, points.length - 1);
 
 		// Update existing boxes for each segment
-		for (let i = 0; i < Math.min(boxes.length, numSegments); i++) {
+		for (let i = 0;i < Math.min(boxes.length, numSegments);i++) {
 			this.updateBoxGeometry(boxes[i], points[i], points[i + 1], options);
 		}
 
@@ -528,7 +539,7 @@ export class SelectionLineTool {
 		if (!measure) return [];
 
 		const customOptions = typeof options === 'number'
-			? { distance: options, radius: options, endDistance: options }
+			? {distance: options, radius: options, endDistance: options}
 			: (options || {});
 		const params = this.selectionLineFactory(customOptions);
 		const mergedOptions = {...this.options, ...params, ...customOptions};
@@ -547,7 +558,7 @@ export class SelectionLineTool {
 		const endDist = mergedOptions.endDistance ?? mergedOptions.distance ?? mergedOptions.radius ?? 5;
 		const gradient = mergedOptions.gradient ?? TURBO_4_ARRAY_REVERSED;
 
-		for (let i = 0; i < points.length - 1; i++) {
+		for (let i = 0;i < points.length - 1;i++) {
 			const box = this.createBox(points[i], points[i + 1], mergedOptions);
 			if (box) {
 				boxes.push(box);
@@ -578,7 +589,7 @@ export class SelectionLineTool {
 	 */
 	fromArray(array, options = {}) {
 		const customOptions = typeof options === 'number'
-			? { distance: options, radius: options, endDistance: options }
+			? {distance: options, radius: options, endDistance: options}
 			: (options || {});
 		const params = this.selectionLineFactory(customOptions);
 		const mergedOptions = {...this.options, ...params, ...customOptions};
@@ -605,7 +616,7 @@ export class SelectionLineTool {
 
 		// Gracefully handle array of point tuples: [[x, y, z], [x, y, z], ...]
 		if (Array.isArray(array[0])) {
-			for (let i = 0; i < array.length - 1; i++) {
+			for (let i = 0;i < array.length - 1;i++) {
 				const box = this.createBox(array[i], array[i + 1], mergedOptions);
 				registerBox(box);
 			}
@@ -618,7 +629,7 @@ export class SelectionLineTool {
 			return this.boxVolumes;
 		}
 
-		for (let i = 0; i <= array.length - stride * 2; i += stride) {
+		for (let i = 0;i <= array.length - stride * 2;i += stride) {
 			const p1 = [array[i], array[i + 1], stride >= 3 ? array[i + 2] : 0];
 			const p2 = [array[i + stride], array[i + stride + 1], stride >= 3 ? array[i + stride + 2] : 0];
 
