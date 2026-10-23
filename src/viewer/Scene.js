@@ -620,7 +620,15 @@ export class PScene extends EventDispatcher {
 					// this.addFilter(filter);
 
 
-				} else if (filterData.intType === FilterIntType.POLYGON) {
+				}
+
+				else if (filterData.intType === FilterIntType.SPHEREVOLUME) {//may not be defined
+					let filter = SphereVolume.fromJSON(filterData);
+					this.addVolume(filter);
+					// this.addFilter(filter);
+
+				}
+				else if (filterData.intType === FilterIntType.POLYGON) {
 					let filter = PolygonClipVolume.fromJSON(filterData);
 					this.addPolygonClipVolume(filter);
 					// this.addFilter(filter);

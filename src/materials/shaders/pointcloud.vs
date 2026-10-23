@@ -1880,6 +1880,7 @@ bool checkInsideCluster() {
 
 #define FILTER_STOP 0
 #define FILTER_BOXVOLUME 1
+#define FILTER_SPHEREVOLUME 2
 #define FILTER_POLYGON 4
 #define FILTER_POLYGONVOLUME 5
 #define FILTER_LINEBOXVOLUME 6//newer method on boxes but different rendering options and added distance function test. Requires info encoded
@@ -1932,6 +1933,7 @@ bool doFiltering(bool isInside) {
 
 	int polygonFilterIndex = 0;
 	int boxFilterIndex = 0;
+	int sphereFilterIndex = 0;
 
 	int logicFilterIndex = 0;
 
@@ -1951,6 +1953,48 @@ bool doFiltering(bool isInside) {
 
 				// each entry in the filter list points to a filter type or an stop value
 				int filterType = uMixedFilters[i];
+
+				///////////////////////////////////////////////////////////////
+				//point in clip sphere
+				#if defined(num_clipspheres) && num_clipspheres > 0
+					if(filterType == FILTER_SPHEREVOLUME) {
+								// check if point ins inside box
+
+
+
+							vec4 sphereLocal = uClipSpheres[sphereFilterIndex] * mvPosition;
+
+							float distance = length(sphereLocal.xyz);
+
+							if(distance < 1.0f) {
+								float w = distance;
+								// vec3 cGradient = texture(gradient, vec2(w, 1.0f - w)).rgb;
+
+								// vColor = cGradient;
+								// vColor = cGradient * 0.7 + vColor * 0.3;//fot test
+								stopped = false;
+								colorize = true;
+								assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z)	;
+								sphereFilterIndex++;
+
+								// continue;
+
+								isIn=true;
+						currentFilterChainValue = currentFilterChainValue && isIn;
+							stopped = false;
+							colorize = true;
+							// assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
+							assignedColor = vec3(1.0,0.0,0.0);
+						}
+						boxFilterIndex++;
+
+								continue;
+							}
+
+				#endif
+
+
+
 
 				///////////////////////////////////////////////////////////////
 				//point in clip box

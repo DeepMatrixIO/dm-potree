@@ -1,6 +1,6 @@
 
 // import {max, mix} from "three/tsl";
-import {Matrix4,Texture, LinearFilter, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipMapNearestFilter, NearestMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipMapLinearFilter, UnsignedByteType, UnsignedShort4444Type, UnsignedShort5551Type, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, AddEquation, SubtractEquation, ReverseSubtractEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, MinEquation, MaxEquation, UnsignedInt248Type, DataTexture, CanvasTexture, OrthographicCamera, RedFormat, RGFormat} from 'three'
+import {Matrix4, Texture, LinearFilter, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipMapNearestFilter, NearestMipMapLinearFilter, LinearMipMapNearestFilter, LinearMipMapLinearFilter, UnsignedByteType, UnsignedShort4444Type, UnsignedShort5551Type, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, AddEquation, SubtractEquation, ReverseSubtractEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, MinEquation, MaxEquation, UnsignedInt248Type, DataTexture, CanvasTexture, OrthographicCamera, RedFormat, RGFormat} from 'three'
 // import * as THREE from 'three';
 import {PointCloudTree} from "./PointCloudTree.js";
 import {ClipTask, ElevationGradientRepeat, PointSizeType} from "./defines.js";
@@ -1719,6 +1719,36 @@ export class Renderer {
 
 			}
 
+			/////////////////////////////////////////////////////////////////
+			// TODO CLIPSPHERES
+			if (params.clipSpheres && params.clipSpheres.length > 0) {
+
+				let clipSpheres = params.clipSpheres;
+
+				let matrices = [];
+				for (let clipSphere of clipSpheres) {
+					//let mScale = new Matrix4().makeScale(...clipSphere.scale.toArray());
+					//let mTranslate = new Matrix4().makeTranslation(...clipSphere.position.toArray());
+
+					//let clipToWorld = new Matrix4().multiplyMatrices(mTranslate, mScale);
+					let clipToWorld = clipSphere.matrixWorld;
+					let viewToWorld = camera.matrixWorld
+					let worldToClip = clipToWorld.clone().invert();
+
+					let viewToClip = new Matrix4().multiplyMatrices(worldToClip, viewToWorld);
+
+					matrices.push(viewToClip);
+				}
+
+				let flattenedMatrices = [].concat(...matrices.map(matrix => matrix.elements));
+
+				const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
+				gl.uniformMatrix4fv(lClipSpheres, false, flattenedMatrices);
+
+				//const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
+				//gl.uniformMatrix4fv(lClipSpheres, false, material.uniforms.clipSpheres.value);
+			}
+
 
 			/////////////////////////////////////////////////////////////////
 			//code for clip profile boxes
@@ -1812,35 +1842,7 @@ export class Renderer {
 				gl.uniform1iv(lVisible, visibleStates);
 			}
 
-			/////////////////////////////////////////////////////////////////
-			// TODO CLIPSPHERES
-			if (params.clipSpheres && params.clipSpheres.length > 0) {
 
-				let clipSpheres = params.clipSpheres;
-
-				let matrices = [];
-				for (let clipSphere of clipSpheres) {
-					//let mScale = new Matrix4().makeScale(...clipSphere.scale.toArray());
-					//let mTranslate = new Matrix4().makeTranslation(...clipSphere.position.toArray());
-
-					//let clipToWorld = new Matrix4().multiplyMatrices(mTranslate, mScale);
-					let clipToWorld = clipSphere.matrixWorld;
-					let viewToWorld = camera.matrixWorld
-					let worldToClip = clipToWorld.clone().invert();
-
-					let viewToClip = new Matrix4().multiplyMatrices(worldToClip, viewToWorld);
-
-					matrices.push(viewToClip);
-				}
-
-				let flattenedMatrices = [].concat(...matrices.map(matrix => matrix.elements));
-
-				const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
-				gl.uniformMatrix4fv(lClipSpheres, false, flattenedMatrices);
-
-				//const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
-				//gl.uniformMatrix4fv(lClipSpheres, false, material.uniforms.clipSpheres.value);
-			}
 
 			/////////////////////////////////////////////////////////////////
 
@@ -1956,7 +1958,7 @@ export class Renderer {
 					}
 
 					const lVisibleClasses = shader.uniformLocations["uVisibleClasses[0]"];//packed attributes per point, indexed
-					Object.keys(viewer.classifications).forEach(k => k !== 'DEFAULT' && (visibleClasses[k] = viewer.classifications[k].visible ? 1:0));//avoid updating on each frame
+					Object.keys(viewer.classifications).forEach(k => k !== 'DEFAULT' && (visibleClasses[k] = viewer.classifications[k].visible ? 1 : 0));//avoid updating on each frame
 
 					gl.uniform1iv(lVisibleClasses, visibleClasses);//setting the visible classes
 

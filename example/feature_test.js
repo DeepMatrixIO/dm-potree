@@ -823,7 +823,7 @@ document.body.onload = function () {
 				sphere.name = 'Sphere_Point';
 				sphere.position.copy(pos);
 				sphere.scale.set(r, r, r);
-				sphere.clip = true;
+				sphere.clip = true;//so it can interact with pointcloud
 				sphere.initialized = true;
 				sceneSG.addVolume(sphere);
 				viewer.requestRender();

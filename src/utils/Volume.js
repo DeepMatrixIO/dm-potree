@@ -338,6 +338,8 @@ export class SphereVolume extends Volume {
 
 	constructor(args = {}) {
 		super(args);
+		this._intType = FilterIntType.SPHEREVOLUME; //so the shader can interact with it for selection
+
 
 		this.constructor.counter = (this.constructor.counter === undefined) ? 0 : this.constructor.counter + 1;
 		this.name = 'sphere_' + this.constructor.counter;

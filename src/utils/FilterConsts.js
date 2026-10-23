@@ -1,7 +1,7 @@
 export class FilterIntType {
 	// static STOP = 0; //no filter
 	static BOXVOLUME = 1; //volume filter
-	// static SphereVolume = 2; //sphere filter
+	static SPHEREVOLUME = 2; //sphere filter
 	// static CylinderVolume = 3; //cylinder filter
 	static POLYGONVOLUME = 4; //polygon filter
 	static POLYGON = 5; //polygon filter
