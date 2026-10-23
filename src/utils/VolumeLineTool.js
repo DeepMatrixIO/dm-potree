@@ -95,9 +95,55 @@ export const REDS_4 = [
 ];
 export const REDS_4_REVERSED = [...REDS_4].reverse();
 
+// reds_4 float array [r, g, b, r, g, b, ...] normalized to [0.0, 1.0]
+export const reds_4_array = [
+	122 / 255, 4 / 255, 3 / 255,    // #7a0403
+	214 / 255, 53 / 255, 6 / 255,   // #d63506
+	240 / 255, 91 / 255, 18 / 255,  // #f05b12
+	253 / 255, 141 / 255, 39 / 255  // #fd8d27
+];
+export const REDS_4_ARRAY = reds_4_array;
 
+export const reds_4_array_reversed = [
+	253 / 255, 141 / 255, 39 / 255, // #fd8d27
+	240 / 255, 91 / 255, 18 / 255,  // #f05b12
+	214 / 255, 53 / 255, 6 / 255,   // #d63506
+	122 / 255, 4 / 255, 3 / 255     // #7a0403
+];
+export const REDS_4_ARRAY_REVERSED = reds_4_array_reversed;
 
-// turbo_8 float array [r, g, b, r, g, b, ...] normalized to [0.0, 1.0]
+/**
+ * Normalizes a gradient representation (array of hex strings or flat float RGB array)
+ * into a flat float RGB array [r0, g0, b0, r1, g1, b1, ...] normalized to [0.0, 1.0].
+ *
+ * @param {Array<string>|Array<number>} gradient
+ * @returns {Array<number>}
+ */
+export function normalizeGradientToFloatArray(gradient) {
+	if (!gradient) return TURBO_4_ARRAY_REVERSED;
+	if (Array.isArray(gradient) && gradient.length > 0) {
+		if (typeof gradient[0] === 'number') {
+			return gradient;
+		}
+		if (typeof gradient[0] === 'string') {
+			const floats = [];
+			for (const hex of gradient) {
+				const clean = hex.replace('#', '');
+				const num = parseInt(clean, 16);
+				if (clean.length === 6) {
+					floats.push(((num >> 16) & 255) / 255, ((num >> 8) & 255) / 255, (num & 255) / 255);
+				} else if (clean.length === 3) {
+					const r = (num >> 8) & 15;
+					const g = (num >> 4) & 15;
+					const b = num & 15;
+					floats.push((r * 17) / 255, (g * 17) / 255, (b * 17) / 255);
+				}
+			}
+			return floats;
+		}
+	}
+	return TURBO_4_ARRAY_REVERSED;
+}
 export const turbo_8_array = [
 	48 / 255, 18 / 255, 59 / 255,   // #30123b
 	71 / 255, 113 / 255, 233 / 255, // #4771e9
