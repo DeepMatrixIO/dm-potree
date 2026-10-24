@@ -1246,37 +1246,45 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point) {
 	return inside;
 }
 
+// Returns true when 'point' (object-space) lies inside the sphere volume defined
+// by clipSphereInvMat (world→local).
+// Three.js SphereGeometry(1) has radius = 1 (spans -1..+1 on each axis),
+// so after applying the inverse matrix the surface is at length(localPos) == 1.0.
+// (BoxGeometry(1,1,1) spans -0.5..+0.5, which is why clip boxes use 0.5 — spheres differ.)
 bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point) {
-	// every clipSphere is defined as an inverse matrix taking from world to local space
-	// so checking in within -0.5 and 0.5 in all axes.
-	// point in local coords, not worls
+	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
+	// Surface at length == 1.0 (radius = 1 in local space)
+	return length(localPos.xyz) <= 1.0f;
+}
 
-	vec4 clipPosition = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
-	bool inside = -0.5f <= clipPosition.x && clipPosition.x <= 0.5f;
-	inside = inside && -0.5f <= clipPosition.y && clipPosition.y <= 0.5f;
-	inside = inside && -0.5f <= clipPosition.z && clipPosition.z <= 0.5f;
-	return inside;
+// Overload: also returns localDist (0 = centre, 1 = surface) for gradient colouring.
+// localDist is simply length(localPos) since the radius is already 1.0.
+bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point, out float localDist) {
+	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
+	localDist = length(localPos.xyz); // 0.0 = centre, 1.0 = surface
+	return localDist <= 1.0f;
 }
 
 // ---------------------------------------------------------------
 // Sphere world-space info extracted from its inverse matrix.
 //   center : world-space centre of the sphere volume
-//   axisX  : world-space direction + half-extent of the local X axis
-//   axisY  : world-space direction + half-extent of the local Y axis
-//   axisZ  : world-space direction + half-extent of the local Z axis
+//   axisX  : world-space X axis, length == radius along X
+//   axisY  : world-space Y axis, length == radius along Y
+//   axisZ  : world-space Z axis, length == radius along Z
 //
-// The clipSphereInvMat maps world → local (unit cube [-0.5, 0.5]).
+// Three.js SphereGeometry(1) → local space spans [-1, +1], radius = 1.
+// The clipSphereInvMat maps world → local.
 // Inverting it gives world ← local, so:
 //   column 3 (translation) → world centre
-//   column 0 → world X axis scaled by half-extent (radius along X)
-//   column 1 → world Y axis scaled by half-extent (radius along Y)
-//   column 2 → world Z axis scaled by half-extent (radius along Z)
+//   column 0 → world X axis scaled by radius (NOT half-extent — sphere radius is 1, not 0.5)
+//   column 1 → world Y axis scaled by radius
+//   column 2 → world Z axis scaled by radius
 // ---------------------------------------------------------------
 struct SphereCoords {
 	vec3 center; // world-space centre of the sphere volume
-	vec3 axisX;  // world-space X axis, length == half-extent along X
-	vec3 axisY;  // world-space Y axis, length == half-extent along Y
-	vec3 axisZ;  // world-space Z axis, length == half-extent along Z
+	vec3 axisX;  // world-space X axis, length == radius along X
+	vec3 axisY;  // world-space Y axis, length == radius along Y
+	vec3 axisZ;  // world-space Z axis, length == radius along Z
 };
 
 // Returns the world-space centre and the three scaled axes of a sphere volume.
@@ -1289,9 +1297,9 @@ SphereCoords extractSphereCoords(mat4 clipSphereInvMat) {
 	vec3 center = c.xyz / c.w;
 
 	// Columns 0-2 carry the scaled axis vectors.
-	// Each column already encodes direction × half-extent because the
-	// local space spans [-0.5, 0.5], so a local point of (0.5,0,0)
-	// maps to center + axisX in world space.
+	// Each column encodes direction × radius because the
+	// local space spans [-1, +1] (SphereGeometry(1) radius = 1),
+	// so a local point of (1,0,0) maps to center + axisX in world space.
 	vec3 axisX = sphereWorldMat[0].xyz;
 	vec3 axisY = sphereWorldMat[1].xyz;
 	vec3 axisZ = sphereWorldMat[2].xyz;
@@ -2031,28 +2039,22 @@ bool doFiltering(bool isInside) {
 				//point in clip sphere
 				#if defined(num_clipspheres) && num_clipspheres > 0
 					if(filterType == FILTER_SPHEREVOLUME) {
-								// check if point ins inside box
+								// check if point is inside sphere volume
 
-						isIn = pointInClipSphere(uClipSpheres[sphereFilterIndex], position);
+						// localDist: 0.0 = centre of sphere, 1.0 = surface
+						float localDist = 0.0f;
+						isIn = pointInClipSphere(uClipSpheres[sphereFilterIndex], position, localDist);
 
 
 
 						if(isIn) {
 
-							// Extract world-space centre from the sphere's inverse matrix
-							SphereCoords scoords = extractSphereCoords(uClipSpheres[sphereFilterIndex]);
-							vec3 center  = scoords.center;
-							vec3 radiusX = scoords.axisX; // length(radiusX) == half-extent along X
-
-							// Euclidean distance from sphere centre to this point (world space)
-							float distToCenter = length(worldPosition.xyz - center);
-							// Normalised: 0 = centre, 1 = surface along X axis
-							// float distNorm = distToCenter / length(radiusX);
-
 							currentFilterChainValue = currentFilterChainValue && isIn;
-							stopped   = false;
-							colorize  = true;
+							stopped  = false;
+							colorize = true;
 							assignedColor = vec3(1.0, 0.0, 0.0);
+							// Use localDist for gradient colouring (0=centre, 1=surface):
+							// assignedColor = mix(vec3(1,0,0), vec3(0,0,1), localDist);
 							// assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
 
 						}
