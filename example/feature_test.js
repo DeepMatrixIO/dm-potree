@@ -483,7 +483,7 @@ document.body.onload = function () {
 							sphere.initialized = true;
 							sceneSG.addVolume(sphere);
 						});
-						viewer.requestRender();
+						// viewer.requestRender();
 						log(`SUCCESS: Created ${line.points.length} SphereVolume(s) along line vertices with radius = ${r}.`, "success");
 						setPassState('sphere-volume', true);
 						return;
@@ -519,7 +519,7 @@ document.body.onload = function () {
 						sphere.clip = true;
 						sphere.initialized = true;
 						sceneSG.addVolume(sphere);
-						viewer.requestRender();
+						// viewer.requestRender();
 						log(`SUCCESS: Created SphereVolume at pointcloud center [${cx.toFixed(2)}, ${cy.toFixed(2)}, ${cz.toFixed(2)}] with radius = ${r}.`, "success");
 						setPassState('sphere-volume', true);
 						return;
@@ -773,7 +773,7 @@ document.body.onload = function () {
 					updated++;
 				}
 			});
-			viewer.requestRender();
+			// viewer.requestRender();
 			log(`Sphere radius set to ${next}. Updated ${updated} existing sphere volume(s) in scene.`, 'info');
 		});
 	}
@@ -826,7 +826,7 @@ document.body.onload = function () {
 				sphere.clip = true;//so it can interact with pointcloud
 				sphere.initialized = true;
 				sceneSG.addVolume(sphere);
-				viewer.requestRender();
+				// viewer.requestRender();
 				log(`SUCCESS: Created SphereVolume at point [${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}] with radius = ${r}.`, "success");
 				setPassState('sphere-volume', true);
 			} catch (err) {
@@ -859,7 +859,7 @@ document.body.onload = function () {
 					sphere.initialized = true;
 					sceneSG.addVolume(sphere);
 				});
-				viewer.requestRender();
+				// viewer.requestRender();
 				log(`SUCCESS: Created ${line.points.length} SphereVolume(s) along line vertices with radius = ${r}.`, "success");
 				setPassState('sphere-volume', true);
 			} catch (err) {

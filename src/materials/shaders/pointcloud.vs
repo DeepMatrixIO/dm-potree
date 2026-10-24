@@ -1246,6 +1246,78 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point) {
 	return inside;
 }
 
+bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point) {
+	// every clipSphere is defined as an inverse matrix taking from world to local space
+	// so checking in within -0.5 and 0.5 in all axes.
+	// point in local coords, not worls
+
+	vec4 clipPosition = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
+	bool inside = -0.5f <= clipPosition.x && clipPosition.x <= 0.5f;
+	inside = inside && -0.5f <= clipPosition.y && clipPosition.y <= 0.5f;
+	inside = inside && -0.5f <= clipPosition.z && clipPosition.z <= 0.5f;
+	return inside;
+}
+
+// ---------------------------------------------------------------
+// Sphere world-space info extracted from its inverse matrix.
+//   center : world-space centre of the sphere volume
+//   axisX  : world-space direction + half-extent of the local X axis
+//   axisY  : world-space direction + half-extent of the local Y axis
+//   axisZ  : world-space direction + half-extent of the local Z axis
+//
+// The clipSphereInvMat maps world → local (unit cube [-0.5, 0.5]).
+// Inverting it gives world ← local, so:
+//   column 3 (translation) → world centre
+//   column 0 → world X axis scaled by half-extent (radius along X)
+//   column 1 → world Y axis scaled by half-extent (radius along Y)
+//   column 2 → world Z axis scaled by half-extent (radius along Z)
+// ---------------------------------------------------------------
+struct SphereCoords {
+	vec3 center; // world-space centre of the sphere volume
+	vec3 axisX;  // world-space X axis, length == half-extent along X
+	vec3 axisY;  // world-space Y axis, length == half-extent along Y
+	vec3 axisZ;  // world-space Z axis, length == half-extent along Z
+};
+
+// Returns the world-space centre and the three scaled axes of a sphere volume.
+SphereCoords extractSphereCoords(mat4 clipSphereInvMat) {
+	// Recover the world-space transform: world ← local
+	mat4 sphereWorldMat = inverse(clipSphereInvMat);
+
+	// Column 3 is the homogeneous translation (world-space centre)
+	vec4 c = sphereWorldMat[3];
+	vec3 center = c.xyz / c.w;
+
+	// Columns 0-2 carry the scaled axis vectors.
+	// Each column already encodes direction × half-extent because the
+	// local space spans [-0.5, 0.5], so a local point of (0.5,0,0)
+	// maps to center + axisX in world space.
+	vec3 axisX = sphereWorldMat[0].xyz;
+	vec3 axisY = sphereWorldMat[1].xyz;
+	vec3 axisZ = sphereWorldMat[2].xyz;
+
+	SphereCoords coords;
+	coords.center = center;
+	coords.axisX  = axisX;
+	coords.axisY  = axisY;
+	coords.axisZ  = axisZ;
+	return coords;
+}
+
+// Overload — returns centre and axes via out parameters for convenience.
+void extractSphereCoords(mat4 clipSphereInvMat,
+                         out vec3 center,
+                         out vec3 axisX,
+                         out vec3 axisY,
+                         out vec3 axisZ) {
+	mat4 sphereWorldMat = inverse(clipSphereInvMat);
+	vec4 c = sphereWorldMat[3];
+	center = c.xyz / c.w;
+	axisX  = sphereWorldMat[0].xyz;
+	axisY  = sphereWorldMat[1].xyz;
+	axisZ  = sphereWorldMat[2].xyz;
+}
+
 // Structure containing the line endpoints in world coordinates
 struct BoxLineCoords {
 	vec3 start;
@@ -1921,6 +1993,7 @@ bool doFiltering(bool isInside) {
 	bool currentFilterChainValue = true; // Each filter list until STOP is evaluated by AND by default but some steps can be OR or XOR evaluated
 	// vec3 current_xyz = position;	// if some other positional filters applied
 	vec4 worldPosition = modelMatrix * vec4(position, 1.0f);
+	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0f); // needed for sphere filter
 
 	//vec3 ppos = worldPosition.xyz;
 
@@ -1960,33 +2033,30 @@ bool doFiltering(bool isInside) {
 					if(filterType == FILTER_SPHEREVOLUME) {
 								// check if point ins inside box
 
+						isIn = pointInClipSphere(uClipSpheres[sphereFilterIndex], position);
 
 
-							vec4 sphereLocal = uClipSpheres[sphereFilterIndex] * mvPosition;
 
-							float distance = length(sphereLocal.xyz);
+						if(isIn) {
 
-							if(distance < 1.0f) {
-								float w = distance;
-								// vec3 cGradient = texture(gradient, vec2(w, 1.0f - w)).rgb;
+							// Extract world-space centre from the sphere's inverse matrix
+							SphereCoords scoords = extractSphereCoords(uClipSpheres[sphereFilterIndex]);
+							vec3 center  = scoords.center;
+							vec3 radiusX = scoords.axisX; // length(radiusX) == half-extent along X
 
-								// vColor = cGradient;
-								// vColor = cGradient * 0.7 + vColor * 0.3;//fot test
-								stopped = false;
-								colorize = true;
-								assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z)	;
-								sphereFilterIndex++;
+							// Euclidean distance from sphere centre to this point (world space)
+							float distToCenter = length(worldPosition.xyz - center);
+							// Normalised: 0 = centre, 1 = surface along X axis
+							// float distNorm = distToCenter / length(radiusX);
 
-								// continue;
-
-								isIn=true;
-						currentFilterChainValue = currentFilterChainValue && isIn;
-							stopped = false;
-							colorize = true;
+							currentFilterChainValue = currentFilterChainValue && isIn;
+							stopped   = false;
+							colorize  = true;
+							assignedColor = vec3(1.0, 0.0, 0.0);
 							// assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
-							assignedColor = vec3(1.0,0.0,0.0);
+
 						}
-						boxFilterIndex++;
+						sphereFilterIndex++;
 
 								continue;
 							}

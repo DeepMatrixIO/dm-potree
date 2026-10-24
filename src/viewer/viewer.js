@@ -2605,13 +2605,18 @@ export class Viewer extends EventDispatcher {
 			});
 
 			let boxes = [];
-
+			let spheres = []
 			// Maintain exact order of box volumes matching mixedFilters sequence,
 			// so shader's boxFilterIndex aligns precisely with clipBoxes
 			for (let filt of mixedFilters) {
 				if (filt && (filt.intType === FilterIntType.BOXVOLUME || filt.intType === FilterIntType.LINEBOXVOLUME)) {
 					if (!boxes.includes(filt)) {
 						boxes.push(filt);
+					}
+				}
+				if (filt && (filt.intType === FilterIntType.SPHEREVOLUME)) {
+					if (!spheres.includes(filt)) {
+						spheres.push(filt);
 					}
 				}
 			}
@@ -2623,14 +2628,13 @@ export class Viewer extends EventDispatcher {
 				}
 			}
 
-			// profile segments
-			let profileBoxes = [];
-			for (let profile of this.scene.profiles) {
-				profileBoxes.push(...profile.boxes);
-			}
+
 
 			// Needed for .getInverse(), pre-empt a determinant of 0, see #815 / #816
 			let degenerate = (box) => box.matrixWorld.determinant() !== 0;
+
+			///////////////////////////////////////////////////////////////////////
+			// CLIPBOXES
 
 			let clipBoxes = boxes.filter(degenerate).map(box => {
 				box.updateMatrixWorld();
@@ -2640,8 +2644,24 @@ export class Viewer extends EventDispatcher {
 
 				return {box: box, inverse: boxInverse, position: boxPosition};
 			});
+			///////////////////////////////////////////////////////////////////////
+			// CLIPSPHERES
+			let clipSpheres = spheres.filter(degenerate).map(sphere => {
+				sphere.updateMatrixWorld();
 
+				let inverse = sphere.matrixWorld.clone().invert();//added for clipProfileBoxes
+				let position = sphere.getWorldPosition(new Vector3());
 
+				return {sphere: sphere, inverse: inverse, position: position};
+			});
+
+			///////////////////////////////////////////////////////////////////////
+			// CLIPPROFILEBOXES
+			// profile segments
+			let profileBoxes = [];
+			for (let profile of this.scene.profiles) {
+				profileBoxes.push(...profile.boxes);
+			}
 
 			let clipProfileBoxes = profileBoxes.filter(degenerate).map(box => {
 				box.updateMatrixWorld();
@@ -2691,6 +2711,9 @@ export class Viewer extends EventDispatcher {
 				pointcloud.material.setClipBoxes(clipBoxes);//selection std volumes only
 				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//selection polygons only
 				//additional clipping must be added here
+				pointcloud.material.setClipSpheres(clipSpheres);
+
+
 
 				pointcloud.material.setClipProfileBoxes(clipProfileBoxes);//profiles only, taken out from clipBoxes
 

@@ -51,6 +51,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.clipBoxes = [];
 		this.clipPolygons = [];
 		this.pointClusters = [];
+		this.clipSpheres = [];
 
 		// adding all extra arrays for filtering and custom  rendering order for clips
 		this.mixedFilters = [];//arbitrary array to store either box clips, polygon clips or even filters to be applied in order, each returns true false
@@ -158,6 +159,9 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			clipBoxCount: {type: 'f', value: 0},
 			clipBoxes: {type: 'Matrix4fv', value: []},
 
+			clipSphereCount: {type: "f", value: 0},
+			clipSpheres: {type: 'Matrix4fv', value: []},
+
 			clipProfileBoxCount: {type: 'f', value: 0},
 			clipProfileBoxes: {type: 'Matrix4fv', value: []},
 
@@ -167,9 +171,6 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 			clipPolygonVCount: {type: 'iv', value: []},
 			clipPolygonVP: {type: 'Matrix4fv', value: []},
-
-			//clipSphereCount:	{ type: "f", value: 0 },
-			//clipSpheres:		{ type: "Matrix4fv", value: [] },
 
 
 
@@ -266,7 +267,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 
 		}
 
-	//copy them
+		//copy them
 		// for (let key in this.customUniforms) {
 		// 	let uniform = this.customUniforms[key];
 		// 	// this.shader.setUniform(key, uniform.type, uniform.value);
@@ -581,6 +582,43 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			}
 		}
 	}
+
+	setClipSpheres(clipSpheres) {
+		if (!clipSpheres) {
+			return;
+		}
+		// check for different size
+		let doUpdate =
+			this.clipSpheres.length !== clipSpheres.length &&
+			(clipSpheres.length === 0 || this.clipSpheres.length === 0);
+
+		this.uniforms.clipSphereCount.value = this.clipSpheres.length;//take older value and wait for the next one???
+		this.clipSpheres = clipSpheres;
+
+		if (doUpdate) {
+			this.updateShaderSource();//only if it has changed size
+		}
+
+		//why 16? MAtrix size, as matrix is flattened, per sphere 16 entries are created
+		this.uniforms.clipSpheres.value = new Float32Array(
+			this.clipSpheres.length * 16
+		);
+
+
+
+		for (let i = 0;i < this.clipSpheres.length;i++) {
+			let sphere = clipSpheres[i];
+
+			this.uniforms.clipSpheres.value.set(sphere.inverse.elements, 16 * i);
+		}
+
+		for (let i = 0;i < this.uniforms.clipSpheres.value.length;i++) {
+			if (Number.isNaN(this.uniforms.clipSpheres.value[i])) {
+				this.uniforms.clipSpheres.value[i] = Infinity;
+			}
+		}
+	}
+
 
 	setPointClusters(pointClusters) {
 		this.pointClusters = pointClusters;

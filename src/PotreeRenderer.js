@@ -1441,7 +1441,7 @@ export class Renderer {
 
 			let numSnapshots = material.snapEnabled ? material.numSnapshots : 0;
 			let numClipBoxes = (material.clipBoxes && material.clipBoxes.length) ? material.clipBoxes.length : 0;
-			let numClipSpheres = (params.clipSpheres && params.clipSpheres.length) ? params.clipSpheres.length : 0;
+			let numClipSpheres = (material.clipSpheres && material.clipSpheres.length) ? material.clipSpheres.length : 0;
 			let numClipPolygons = (material.clipPolygons && material.clipPolygons.length) ? material.clipPolygons.length : 0;
 
 			let numClipProfileBoxes = (material.clipProfileBoxes && material.clipProfileBoxes.length) ? material.clipProfileBoxes.length : 0;
@@ -1662,12 +1662,12 @@ export class Renderer {
 
 
 
-
-
+						//////////////////////////////////////////
+						//clipbox colors
 						const boxColors = material.clipBoxes
 							.map((clipbox) => {
 
-								if (clipbox.box.color !== undefined) {
+								if (clipbox.box.color !== undefined) {//this is the code added
 									return [clipbox.box.color.r, clipbox.box.color.g, clipbox.box.color.b]//check why they store materials in such way when using cluster tool
 								} else {
 									return [clipbox.box.material.color.r, clipbox.box.material.color.g, clipbox.box.material.color.b]
@@ -1678,7 +1678,7 @@ export class Renderer {
 
 						const lBoxColors = shader.uniformLocations['boxColors[0]'];
 						gl.uniform3fv(lBoxColors, boxColors);
-
+						//////////////////////////////////////////////////////
 
 					} catch (error) {
 						console.log("PotreeRenderer.js Error in in ClusterTool clipBoxes added code");
@@ -1721,32 +1721,32 @@ export class Renderer {
 
 			/////////////////////////////////////////////////////////////////
 			// TODO CLIPSPHERES
-			if (params.clipSpheres && params.clipSpheres.length > 0) {
+			if (material.clipSpheres && material.clipSpheres.length > 0) {
 
-				let clipSpheres = params.clipSpheres;
+				let clipSpheres = material.clipSpheres;
 
-				let matrices = [];
-				for (let clipSphere of clipSpheres) {
-					//let mScale = new Matrix4().makeScale(...clipSphere.scale.toArray());
-					//let mTranslate = new Matrix4().makeTranslation(...clipSphere.position.toArray());
+				// let matrices = [];
+				// for (let clipSphere of clipSpheres) {
+				// 	//let mScale = new Matrix4().makeScale(...clipSphere.scale.toArray());
+				// 	//let mTranslate = new Matrix4().makeTranslation(...clipSphere.position.toArray());
 
-					//let clipToWorld = new Matrix4().multiplyMatrices(mTranslate, mScale);
-					let clipToWorld = clipSphere.matrixWorld;
-					let viewToWorld = camera.matrixWorld
-					let worldToClip = clipToWorld.clone().invert();
+				// 	//let clipToWorld = new Matrix4().multiplyMatrices(mTranslate, mScale);
+				// 	let clipToWorld = clipSphere.matrixWorld;
+				// 	let viewToWorld = camera.matrixWorld
+				// 	let worldToClip = clipToWorld.clone().invert();
 
-					let viewToClip = new Matrix4().multiplyMatrices(worldToClip, viewToWorld);
+				// 	let viewToClip = new Matrix4().multiplyMatrices(worldToClip, viewToWorld);
 
-					matrices.push(viewToClip);
-				}
+				// 	matrices.push(viewToClip);
+				// }
 
-				let flattenedMatrices = [].concat(...matrices.map(matrix => matrix.elements));
+				// let flattenedMatrices = [].concat(...matrices.map(matrix => matrix.elements));
+
+				// const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
+				// gl.uniformMatrix4fv(lClipSpheres, false, flattenedMatrices);
 
 				const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
-				gl.uniformMatrix4fv(lClipSpheres, false, flattenedMatrices);
-
-				//const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
-				//gl.uniformMatrix4fv(lClipSpheres, false, material.uniforms.clipSpheres.value);
+				gl.uniformMatrix4fv(lClipSpheres, false, material.uniforms.clipSpheres.value);
 			}
 
 
