@@ -1409,45 +1409,7 @@ bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float c
 	bool result = false;
 #if defined(num_float_values) && num_float_values > 0
 
-	if(operator == OP_DISTANCE_MAP) {//takes a list of predefined colors to render based on distance. Does not have anything to do with classification
-
-		result = true;
-		//have to check if i am inside
-		// olderColor = assignedColor;
-
-
-		//have to scale the colors between the min and max distance, i.e. first color
-
-
-		float minDistance = uFloatFilterValues[startIndex];
-		float maxDistance = uFloatFilterValues[startIndex + 1];
-		if(minDistance <= minLineDistance && minLineDistance <= maxDistance) {
-			float numSlots = float(attributeIdx); // attributeIdx is the number of slots in color range
-			float slotWidth = (maxDistance - minDistance) / numSlots;
-			int slotIdx = clamp(int((minLineDistance - minDistance) / slotWidth), 0, int(numSlots) - 1);
-
-			// get the color for this slot from the predefined array
-			assignedColor = vec3(
-				uFloatFilterValues[startIndex + 2 + slotIdx * 3],
-				uFloatFilterValues[startIndex + 2 + slotIdx * 3 + 1],
-				uFloatFilterValues[startIndex + 2 + slotIdx * 3 + 2]
-			);
-			colorize = true;
-			highlight = false;
-		} else {
-			result = false;
-			colorize = false;
-			highlight = false;
-		}
-
-
-		//as this is not assigned to classification, skip it so it stays at -1
-
-
-
-		//clipTask= CLIPTASK_COLORIZE;
-
-	} else if(operator == OP_COLORIZE) {
+ if(operator == OP_COLORIZE) {
 
 		//have to check if i am inside
 		// olderColor = assignedColor;
@@ -1469,9 +1431,47 @@ bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float c
 		#endif
 		//clipTask= CLIPTASK_COLORIZE;
 
+	} else
+
+	if(operator == OP_DISTANCE_MAP) {//takes a list of predefined colors to render based on distance. Does not have anything to do with classification
+
+		//have to check if i am inside
+		// olderColor = assignedColor;
+
+
+		//have to scale the colors between the min and max distance, i.e. first color
+
+
+		float minDistance = uFloatFilterValues[startIndex];
+		float maxDistance = uFloatFilterValues[startIndex + 1];
+		if(minDistance <= minLineDistance && minLineDistance <= maxDistance) {
+			float numSlots = float(attributeIdx); // attributeIdx is the number of slots in color range
+			float slotWidth = (maxDistance - minDistance) / numSlots;
+			int slotIdx = clamp(int((minLineDistance - minDistance) / slotWidth), 0, int(numSlots) - 1);
+
+			// get the color for this slot from the predefined array
+			assignedColor = vec3(
+				uFloatFilterValues[startIndex + 2 + slotIdx * 3],
+				uFloatFilterValues[startIndex + 2 + slotIdx * 3 + 1],
+				uFloatFilterValues[startIndex + 2 + slotIdx * 3 + 2]
+			);
+			result = true;
+			colorize = true;
+			highlight = false;
+		} else {
+			result = false;
+			colorize = true;
+			highlight = false;
+		}
+
+
+		//as this is not assigned to classification, skip it so it stays at -1
+
+
+
+		//clipTask= CLIPTASK_COLORIZE;
+
 	}
-
-
 
 	else if(operator == OP_EQUALS_CONST) {
 		result = attributeValue == uFloatFilterValues[startIndex];

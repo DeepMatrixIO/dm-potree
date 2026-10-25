@@ -499,7 +499,11 @@ document.body.onload = function () {
 						sphere.scale.set(r, r, r);
 						sphere.clip = true;
 						sphere.initialized = true;
+
+						//TODO make a proper tool for this and add proper mixed
 						sceneSG.addVolume(sphere);
+						sceneSG.addStaticStopFilter();//required to stop further testing
+
 						viewer.requestRender();
 						log(`SUCCESS: Created SphereVolume at point measurement [${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}] with radius = ${r}.`, "success");
 						setPassState('sphere-volume', true);
@@ -519,6 +523,8 @@ document.body.onload = function () {
 						sphere.clip = true;
 						sphere.initialized = true;
 						sceneSG.addVolume(sphere);
+												sceneSG.addStaticStopFilter();//required to stop further testing
+
 						// viewer.requestRender();
 						log(`SUCCESS: Created SphereVolume at pointcloud center [${cx.toFixed(2)}, ${cy.toFixed(2)}, ${cz.toFixed(2)}] with radius = ${r}.`, "success");
 						setPassState('sphere-volume', true);
@@ -826,6 +832,8 @@ document.body.onload = function () {
 				sphere.clip = true;//so it can interact with pointcloud
 				sphere.initialized = true;
 				sceneSG.addVolume(sphere);
+				sceneSG.addStaticStopFilter();//required to stop further testing
+
 				// viewer.requestRender();
 				log(`SUCCESS: Created SphereVolume at point [${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}] with radius = ${r}.`, "success");
 				setPassState('sphere-volume', true);
