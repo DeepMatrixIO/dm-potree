@@ -270,9 +270,11 @@ export class Utils {
 			let tween = new TWEEN.Tween(view.position).to(endPosition, animationDuration);
 			tween.easing(easing);
 			tween.onComplete(() => {
-				this.viewer.TWEENGROUP.remove(tween);
+				viewer.TWEENGROUP.remove(tween);
+				// this.viewer.TWEENGROUP.remove(tween);
 			});
-			this.viewer.TWEENGROUP.add(tween);//handled by viewer.update
+			//this.viewer.TWEENGROUP.add(tween);//handled by viewer.update
+			viewer.TWEENGROUP.add(tween);//handled by viewer.update
 			tween.start();
 
 			// const animate = (time = 0) => {
@@ -296,10 +298,12 @@ export class Utils {
 			});
 			tween.onComplete(() => {
 				view.lookAt(target);
-				this.viewer.TWEENGROUP.remove(tween);
+				// this.viewer.TWEENGROUP.remove(tween);
+				viewer.TWEENGROUP.remove(tween);
 			});
 
-			this.viewer.TWEENGROUP.add(tween);//handled by viewer.update
+			// this.viewer.TWEENGROUP.add(tween);//handled by viewer.update
+			viewer.TWEENGROUP.add(tween);//handled by viewer.update
 			tween.start();
 
 // const animate = (time = 0) => {

@@ -19,11 +19,11 @@ vec3 olderColor = vec3(0.0f, 0.0f, 1.0f); //
 vec3 activeColor = vec3(0.0f, 1.0f, 0.15f); // green
 
 // line distance coloring variables
-float lineDistance = -1.0; //computed if points are within the box, should be set to inf or a large value
+float minLineDistance = 100000.0f; //computed if points are within the box, should be set to inf or a large value
+float currentLineDistance = -1.0f;
 
 
-// float maxLineDistance = 0.0;
-// float minLineDistance = 0.0;
+
 
 int lastClassification = -1;//assigned based on the last valid filter operation with points inside. Colorize extracts the attribute index or first index as assigned classification. If the uniform contains it, visible, otherwise not.
 int currentClassification = -1;
@@ -1419,15 +1419,12 @@ bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float c
 		//have to scale the colors between the min and max distance, i.e. first color
 
 
-		// lineDistance = 0.0f;
-
-
 		float minDistance = uFloatFilterValues[startIndex];
 		float maxDistance = uFloatFilterValues[startIndex + 1];
-		if(minDistance <= lineDistance && lineDistance <= maxDistance) {
+		if(minDistance <= minLineDistance && minLineDistance <= maxDistance) {
 			float numSlots = float(attributeIdx); // attributeIdx is the number of slots in color range
 			float slotWidth = (maxDistance - minDistance) / numSlots;
-			int slotIdx = clamp(int((lineDistance - minDistance) / slotWidth), 0, int(numSlots) - 1);
+			int slotIdx = clamp(int((minLineDistance - minDistance) / slotWidth), 0, int(numSlots) - 1);
 
 			// get the color for this slot from the predefined array
 			assignedColor = vec3(
@@ -2029,6 +2026,27 @@ bool doFiltering(bool isInside) {
 			// dont check other variables as they were required to reach this state, but are still commited
 
 			// float current_value = aExtra; // move this attribute
+
+			#if defined(num_clipboxes) && num_clipboxes > 0
+			{
+				// pre-pass: global min distance to every line box containing the point
+				int preBoxIdx = 0;
+				minLineDistance = 1e20;
+				for(int j = 0; j < mixed_filters; j++) {
+					int ft = uMixedFilters[j];
+					if(ft == FILTER_BOXVOLUME) {
+						preBoxIdx++;
+					} else if(ft == FILTER_LINEBOXVOLUME) {
+						if(pointInClipBox(clipBoxes[preBoxIdx], position)) {
+							BoxLineCoords c = extractBoxLineCoords(clipBoxes[preBoxIdx]);
+							minLineDistance = min(minLineDistance, lineSegmentDistance(worldPosition.xyz, c.lineStart, c.lineEnd));
+						}
+						preBoxIdx++;
+					}
+				}
+			}
+			#endif
+
 			for(int i = 0; i < mixed_filters; i++) {
 				bool isIn = true;
 
@@ -2102,12 +2120,7 @@ bool doFiltering(bool isInside) {
 							colorize = true;//was true
 
 							//line distnace should be computed
-							BoxLineCoords coords = extractBoxLineCoords(clipBoxes[boxFilterIndex] );
-							lineDistance = lineSegmentDistance(worldPosition.xyz, coords.lineStart, coords.lineEnd);
-
-
-
-							//lineDistance = 5.0f;
+							// minLineDistance was computed globally in the pre-pass
 
 							//distanceToLine
 							//the lines are encoded as deterministic line segments, i.e. explicit p1,p2 per segment, so a n segment line takes 2n values
