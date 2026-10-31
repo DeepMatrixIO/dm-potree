@@ -2,9 +2,8 @@ export class FilterIntType {
 	// static STOP = 0; //no filter
 	static BOXVOLUME = 1; //volume filter
 	static SPHEREVOLUME = 2; //sphere filter
-	// static CylinderVolume = 3; //cylinder filter
-	static POLYGONVOLUME = 4; //polygon filter
-	static POLYGON = 5; //polygon filter
+	static TETVOLUME = 3; //thedetrnder filter
+	static POLYGONVOLUME = 4; //polygofililter
 
 	static LINEBOXVOLUME = 6; //line distance filter. Box drawn around a line, horizontally aligned. Simillar to profile definition.
 	static LINECYLINDERVOLUME = 7; //cylinder filter, mayu use 3

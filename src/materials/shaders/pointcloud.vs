@@ -8,6 +8,10 @@ precision highp int;
 // #define max_clip_vertices 16
 // #define max_clip_polygons 64
 #define max_clip_vertices 64
+#ifndef max_clip_tetrahedrons
+#define max_clip_tetrahedrons 64
+#endif
+#define max_clip_tetrahedron_vertices (max_clip_tetrahedrons * 4)
 
 #define PI 3.141592653589793
 
@@ -1251,6 +1255,7 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point) {
 // Three.js SphereGeometry(1) has radius = 1 (spans -1..+1 on each axis),
 // so after applying the inverse matrix the surface is at length(localPos) == 1.0.
 // (BoxGeometry(1,1,1) spans -0.5..+0.5, which is why clip boxes use 0.5 — spheres differ.)
+
 bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point) {
 	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
 	// Surface at length == 1.0 (radius = 1 in local space)
@@ -1259,10 +1264,95 @@ bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point) {
 
 // Overload: also returns localDist (0 = centre, 1 = surface) for gradient colouring.
 // localDist is simply length(localPos) since the radius is already 1.0.
-bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point, out float localDist) {
-	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
-	localDist = length(localPos.xyz); // 0.0 = centre, 1.0 = surface
-	return localDist <= 1.0f;
+// bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point, out float localDist) {
+// 	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
+// 	localDist = length(localPos.xyz); // 0.0 = centre, 1.0 = surface
+// 	return localDist <= 1.0f;
+// }
+
+// ---------------------------------------------------------------
+// Tests whether a 3D point (world coords) lies inside a single tetrahedron
+// defined by 4 vertices (a, b, c, d in world coords) using barycentric
+// coordinates (scalar triple products / Cramer's rule).
+// Handles arbitrary vertex winding/orientation and boundary cases.
+// ---------------------------------------------------------------
+bool pointInTetrahedron(vec3 p, vec3 a, vec3 b, vec3 c, vec3 d) {
+	vec3 v0 = b - a;
+	vec3 v1 = c - a;
+	vec3 v2 = d - a;
+	vec3 c12 = cross(v1, v2);
+	float det = dot(v0, c12);
+
+	if(abs(det) < 1e-7f) {
+		return false; // Degenerate tetrahedron (coplanar vertices)
+	}
+
+	vec3 vp = p - a;
+	float invDet = 1.0f / det;
+
+	float u = dot(vp, c12) * invDet;
+	if(u < -1e-5f || u > 1.00001f) {
+		return false;
+	}
+
+	float v = dot(v0, cross(vp, v2)) * invDet;
+	if(v < -1e-5f || (u + v) > 1.00001f) {
+		return false;
+	}
+
+	float w = dot(v0, cross(v1, vp)) * invDet;
+	if(w < -1e-5f || (u + v + w) > 1.00001f) {
+		return false;
+	}
+
+	return true;
+}
+
+// Single tetrahedron overload for pointInClipTetrahedron
+bool pointInClipTetrahedron(vec3 a, vec3 b, vec3 c, vec3 d, vec3 point) {
+	return pointInTetrahedron(point, a, b, c, d);
+}
+
+// ---------------------------------------------------------------
+// Tests whether a point in world coords lies inside any tetrahedron in an array.
+// The array is expressed as [t1a, t1b, t1c, t1d, t2a, t2b, t2c, t2d, ...],
+// where every four consecutive vec3 points define one tetrahedron.
+// ---------------------------------------------------------------
+bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], int count, vec3 point) {
+	for(int i = 0; i < max_clip_tetrahedrons; i++) {
+		if(i >= count) {
+			break;
+		}
+		vec3 a = tetrahedrons[i * 4 + 0];
+		vec3 b = tetrahedrons[i * 4 + 1];
+		vec3 c = tetrahedrons[i * 4 + 2];
+		vec3 d = tetrahedrons[i * 4 + 3];
+
+		if(pointInTetrahedron(point, a, b, c, d)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Overload: tests against all tetrahedrons in the array (up to max_clip_tetrahedrons)
+bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], vec3 point) {
+	int count = tetrahedrons.length() / 4;
+	return pointInClipTetrahedron(tetrahedrons, count, point);
+}
+
+// Overload: accepts vec3 point with count trailing
+bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], vec3 point, int count) {
+	return pointInClipTetrahedron(tetrahedrons, count, point);
+}
+
+// Overloads for vec4 point (using .xyz)
+bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], vec4 point) {
+	return pointInClipTetrahedron(tetrahedrons, point.xyz);
+}
+
+bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], int count, vec4 point) {
+	return pointInClipTetrahedron(tetrahedrons, count, point.xyz);
 }
 
 // ---------------------------------------------------------------
