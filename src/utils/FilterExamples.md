@@ -1,8 +1,8 @@
 # Setting a chain of filters or MixedFilters is a complex process requiring definitions from FilterConsts and combination of Geometric Filters and Logical Filters.
 
-Geometric Filters allow to select pointw within a given geometric contraint.
+Geometric Filters allow to select points within a given geometric constraint.
 
-Logical filter allow to filter poinhts by specific values, mostly tied to data attributes and or coordinates.
+Logical filter allow to filter points by specific values, mostly tied to data attributes and or coordinates.
 
 
 Things like distances are more complex as they require to compute a distance function using point coordinates and a reference value.
@@ -25,11 +25,45 @@ To unify an expandable system, filters are identified by a filter type from 1 to
 Currently Geometrical filters are defined below 10 but can use any number
 
 
+Filter include
+- BoxVolume
+- PolygonVolume
+- LineBoxVolume
+- TetBoxVolume
+
+- Those elements have some specific requirements to be added into the geometrical filtering system.The  in which they are added is important as consecutive elements are chained logically with an AND.
+
+In any case, the requested volume have specific attributes:
+intType = FilterIntType.SomeVolumeCode
+visible = true/false enables the visiblity and toggling form an ui
+modifiable
+clip=true, sets this as a mixedFilter
+an internal Geometric Element used to render in screen and its internal characteristics
+Internal Material.
+raycaster() to pick this object from the mouse
+
+getVolume, to compute the object volume
+toJSON
+fromJSON
+A boundingBox
+
+
+In addition to each Volume, a Tool is also used to insert the object in screen from some source  and provide some helper functions and graphic handlers
+
+Such objects are updated in the viewer.update and also
+within potreeRenderer their attributes are passed down for the pointcoud renderer to apply visualization
+
+As each object has different characteristics, a  typical function checkInObject function is created per volume and custom code is aded per each geomtryc type to determine id a point is inside.
+
+
+
+
+
 The logical filters are defined by number 10 and use three arrays:
 
-1- Filter
-2- intValues
-3- floatValues
+- 1 Filter
+- 2 intValues
+- 3 floatValues
 
 Any logical filter is made of 5 elements
 

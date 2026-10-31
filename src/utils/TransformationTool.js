@@ -952,6 +952,10 @@ export class TransformationTool {
 		if (this.selection.length === 1
 			&& this.selection.at(0).modifiable !== undefined
 			&& this.selection.at(0).modifiable
+			&& !this.selection.at(0).isTetrahedralBoxVolume
+			&& !this.selection.at(0).isTetrahedralVolume
+			&& this.selection.at(0).constructor.name !== 'TetrahedralBoxVolume'
+			&& this.selection.at(0).constructor.name !== 'TetrahedralVolume'
 		) {
 
 			this.scene.visible = true;

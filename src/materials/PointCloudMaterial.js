@@ -162,6 +162,10 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			clipSphereCount: {type: "f", value: 0},
 			clipSpheres: {type: 'Matrix4fv', value: []},
 
+			clipTetrahedralBoxCount: {type: 'f', value: 0},
+			clipTetrahedralBoxes: {type: '3fv', value: []}, //packing as v3c x y z
+
+
 			clipProfileBoxCount: {type: 'f', value: 0},
 			clipProfileBoxes: {type: 'Matrix4fv', value: []},
 
@@ -618,6 +622,62 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			}
 		}
 	}
+
+	//tetrahedrals are explicitly  expressed per coordinates in the example so they are float array a tetrahedron requires 12 floats
+	//webgl has limitations
+
+	//we are receiving an array ot tet objects as tet, and for each 6 set of coordinates or an explicit version
+
+	//is so hardcoded on the tetVolume, but is a TexBox
+	setClipTetrahedralBox(clipTetrahedralBoxes) {
+		if (!clipTetrahedralBoxes) {
+			return;
+		}
+		// check for different size between iterations
+		let doUpdate =
+			this.clipTetrahedralBoxes.length !== clipTetrahedralBoxes.length &&
+			(clipTetrahedralBoxes.length === 0 || this.clipTetrahedralBoxes.length === 0);
+
+		//setting uniform count value
+		this.uniforms.clipTetrahedralBoxCount.value = this.clipTetrahedralBoxes.length * 6;//
+		this.clipTetrahedralBoxes = clipTetrahedralBoxes;
+
+		if (doUpdate) {
+			this.updateShaderSource();//only if it has changed size
+		}
+
+		//for the time being, each box is made from 8 coordinates, 6 tetrahedrals, each made of 4 vertices so in explicit way
+		// total floats = 8 * 3 = 24.   Internally made of 6 tetrahedrons with a specific index for each vertex index
+		// so a tetrahedral is made of 6 * 4 indices= 24 indices, but if convention is set, no need for indices, just hardcoding
+		// but static sizes
+		//if so, use
+		// T_1 :[0, 1, 2, 6]
+		// T_2 :[0, 1, 5, 6]
+		// T_3 : [0, 3, 2, 6]
+		// T_4 : [0, 3, 7, 6]
+		// T_5  [0, 4, 5, 6]
+		// T_6 [0, 4, 7, 6]
+		//
+		this.uniforms.clipTetrahedralBoxes.value = new Float32Array(this.clipTetrahedralBoxes.length);//same length for the moment unless using indices, which may reduce them from 72 per box to 24 per box
+
+
+
+		//setting uniform values per tetrahedron but can be directly added, but as
+		for (let i = 0;i < this.clipTetrahedralBoxes.length;i++) {
+			let tet = clipTetrahedralBoxes[i];
+
+			//writes the array at a given positio
+			this.uniforms.clipTetrahedralBoxes.value.set(tet.getCoordinatesArray(), 72 * i);//6 tets per box, 12 floats per tet, 72 floats per box
+		}
+
+		//doing some cleanup if one is null
+		for (let i = 0;i < this.uniforms.clipSpheres.value.length;i++) {
+			if (Number.isNaN(this.uniforms.clipSpheres.value[i])) {
+				this.uniforms.clipSpheres.value[i] = Infinity;
+			}
+		}
+	}
+
 
 
 	setPointClusters(pointClusters) {

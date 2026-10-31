@@ -1,6 +1,8 @@
 import {Potree, PScene, Viewer} from '../dist/potree_module.js';
 import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
 import {SphereVolume} from '../src/utils/Volume.js';
+import {TetrahedralBoxTool, TetTool} from '../src/utils/TetrahedralBoxTool.js';
+import {TetrahedralBoxVolume, TetrahedralVolume} from '../src/utils/TetrahedralBoxVolume.js';
 
 document.body.onload = function () {
 	// Add stylesheets dynamically
@@ -550,6 +552,85 @@ document.body.onload = function () {
 					setPassState('sphere-volume', false);
 				}
 			}
+		},
+		'tet-volume': {
+			id: 'tet-volume',
+			name: 'Tetrahedral Box Volume Tool (TetrahedralBoxTool)',
+			status: 'status-tet-volume',
+			checkbox: 'check-tet-volume',
+			passed: false,
+			run: async () => {
+				log("TETRAHEDRAL BOX VOLUME TOOL: Executing TetrahedralBoxTool test...");
+				try {
+					if (!viewer.tetrahedralBoxTool && !viewer.tetTool) {
+						viewer.tetrahedralBoxTool = new TetrahedralBoxTool(viewer); viewer.tetTool = viewer.tetrahedralBoxTool;
+					}
+					const scaleInput = document.getElementById('input-tet-scale');
+					const s = scaleInput ? parseFloat(scaleInput.value) || 5 : 5;
+					const coordInput = document.getElementById('input-tet-coords');
+					const rawCoord = coordInput ? coordInput.value.trim() : '';
+					const showTet = currentTetShowTet;
+
+					// 1. If coordinate input provided, use it
+					if (rawCoord) {
+						if (rawCoord.startsWith('{')) {
+							const vol = (viewer.tetrahedralBoxTool || viewer.tetTool).insertFromGeoJSON(rawCoord, {scale: s, showTet});
+							log(`SUCCESS: TetTool.insertFromGeoJSON created volume at [${vol.position.x.toFixed(2)}, ${vol.position.y.toFixed(2)}, ${vol.position.z.toFixed(2)}].`, "success");
+							setPassState('tet-volume', true);
+							return;
+						}
+						let coords = null;
+						try { coords = JSON.parse(rawCoord); } catch (e) {
+							coords = rawCoord.replace(/[\[\]]/g, '').split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
+						}
+						if (coords && coords.length >= 3) {
+							const vol = (viewer.tetrahedralBoxTool || viewer.tetTool).insertFromXYZ(coords, {scale: s, showTet});
+							log(`SUCCESS: TetTool.insertFromXYZ created volume at [${vol.position.x.toFixed(2)}, ${vol.position.y.toFixed(2)}, ${vol.position.z.toFixed(2)}].`, "success");
+							setPassState('tet-volume', true);
+							return;
+						}
+					}
+
+					// 2. If point measurement exists, pick its coordinate
+					const measurements = sceneSG.measurements || [];
+					const pointMeasure = measurements.find(m => m.points && m.points.length === 1)
+						|| measurements.find(m => m.points && m.points.length >= 1);
+					if (pointMeasure && pointMeasure.points.length > 0) {
+						const pos = pointMeasure.points[0].position;
+						const vol = (viewer.tetrahedralBoxTool || viewer.tetTool).insertFromXYZ([pos.x, pos.y, pos.z], {scale: s, showTet, name: 'Tet_PointMeasure'});
+						log(`SUCCESS: Created TetrahedralVolume from point measurement [${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}] with scale = ${s}.`, "success");
+						setPassState('tet-volume', true);
+						return;
+					}
+
+					// 3. If pointcloud loaded, place at center
+					const extremes = getPointCloudBBoxExtremes();
+					if (extremes) {
+						const cx = (extremes[0] + extremes[3]) / 2;
+						const cy = (extremes[1] + extremes[4]) / 2;
+						const cz = (extremes[2] + extremes[5]) / 2;
+						const vol = (viewer.tetrahedralBoxTool || viewer.tetTool).insertFromXYZ([cx, cy, cz], {scale: s, showTet, name: 'Tet_Center'});
+						log(`SUCCESS: Created TetrahedralVolume at pointcloud center [${cx.toFixed(2)}, ${cy.toFixed(2)}, ${cz.toFixed(2)}] with scale = ${s}.`, "success");
+						setPassState('tet-volume', true);
+						return;
+					}
+
+					// 4. Fallback: interactive placement
+					showOnScreenInstructions("Tetrahedron Volume Placement", "Click and drag across point cloud to place a 6-tetrahedra volume.");
+					const vol = (viewer.tetrahedralBoxTool || viewer.tetTool).startInsertion({scale: s, showTet, name: 'Tet_Hand'});
+					if (vol) {
+						vol.addEventListener('drop', () => {
+							log(`SUCCESS: TetrahedralVolume placed interactively at [${vol.position.x.toFixed(2)}, ${vol.position.y.toFixed(2)}, ${vol.position.z.toFixed(2)}].`, "success");
+							setPassState('tet-volume', true);
+							hideOnScreenInstructions();
+						}, {once: true});
+					}
+					setPassState('tet-volume', true);
+				} catch (err) {
+					log("ERROR running Tetrahedron Volume tool: " + err.message, "error");
+					setPassState('tet-volume', false);
+				}
+			}
 		}
 	};
 
@@ -873,6 +954,191 @@ document.body.onload = function () {
 			} catch (err) {
 				log("ERROR creating spheres from line: " + err.message, "error");
 			}
+		});
+	}
+
+	// -------------------------------------------------------------
+	// TETRAHEDRON VOLUME TOOL (TETTOOL) BUTTON HANDLERS
+	// -------------------------------------------------------------
+	let currentTetShowTet = true;
+
+	const btnTetExtract = document.getElementById('btn-tet-extract-measure');
+	if (btnTetExtract) {
+		btnTetExtract.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const measurements = sceneSG.measurements || [];
+			if (measurements.length === 0) {
+				log("No measurements in scene. Draw a point or line measurement first.", "error");
+				return;
+			}
+			const m = measurements[measurements.length - 1];
+			if (m.points && m.points.length > 0) {
+				const p = m.points[0].position;
+				const coordStr = `[${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}]`;
+				const input = document.getElementById('input-tet-coords');
+				if (input) input.value = coordStr;
+				log(`SUCCESS: Extracted measurement coordinate ${coordStr} into TetTool input.`, "success");
+			}
+		});
+	}
+
+	const btnTetToggleShowTet = document.getElementById('btn-tet-toggle-showtet');
+	if (btnTetToggleShowTet) {
+		btnTetToggleShowTet.addEventListener('click', (e) => {
+			e.stopPropagation();
+			currentTetShowTet = !currentTetShowTet;
+			btnTetToggleShowTet.textContent = currentTetShowTet ? '🔺 showTet: ON' : '⬜ showTet: OFF';
+			// Apply to any existing TetrahedralVolumes
+			if (sceneSG && sceneSG.volumes) {
+				sceneSG.volumes.forEach(v => {
+					if (v instanceof TetrahedralBoxVolume) {
+						v.showTet = currentTetShowTet;
+					}
+				});
+			}
+			log(`TetTool showTet internal lines set to: ${currentTetShowTet ? 'ON' : 'OFF'}`, 'info');
+		});
+	}
+
+	function clearExistingTetVolumes() {
+		if (sceneSG && sceneSG.volumes) {
+			const toRemove = sceneSG.volumes.filter(v => v instanceof TetrahedralBoxVolume || v.isTetrahedralVolume);
+			for (const v of toRemove) {
+				sceneSG.removeVolume(v);
+			}
+		}
+	}
+
+	const btnTetByHand = document.getElementById('btn-tet-by-hand');
+	if (btnTetByHand) {
+		btnTetByHand.addEventListener('click', (e) => {
+			e.stopPropagation();
+			try {
+				if (!viewer.tetrahedralBoxTool && !viewer.tetTool) {
+					viewer.tetrahedralBoxTool = new TetrahedralBoxTool(viewer); viewer.tetTool = viewer.tetrahedralBoxTool;
+				}
+				const scaleInput = document.getElementById('input-tet-scale');
+				const s = scaleInput ? parseFloat(scaleInput.value) || 5 : 5;
+				showOnScreenInstructions("Tetrahedron Volume Placement", "Click and drag on the point cloud to insert a 6-tetrahedra volume.");
+				const volume = (viewer.tetrahedralBoxTool || viewer.tetTool).startInsertion({scale: s, showTet: currentTetShowTet, name: 'Tet_Screen'});
+				if (volume) {
+					volume.addEventListener('drop', () => {
+						log(`SUCCESS: Tetrahedron placed interactively at [${volume.position.x.toFixed(2)}, ${volume.position.y.toFixed(2)}, ${volume.position.z.toFixed(2)}] with scale = ${s}.`, "success");
+						setPassState('tet-volume', true);
+						hideOnScreenInstructions();
+					}, {once: true});
+				}
+				log("Interactive tetrahedron placement started - click and drag on the point cloud.", 'info');
+			} catch (err) {
+				log("ERROR starting interactive tetrahedron placement: " + err.message, "error");
+			}
+		});
+	}
+
+	const btnTetFromPoint = document.getElementById('btn-tet-from-point');
+	if (btnTetFromPoint) {
+		btnTetFromPoint.addEventListener('click', (e) => {
+			e.stopPropagation();
+			try {
+				if (!viewer.tetrahedralBoxTool && !viewer.tetTool) {
+					viewer.tetrahedralBoxTool = new TetrahedralBoxTool(viewer); viewer.tetTool = viewer.tetrahedralBoxTool;
+				}
+				const measurements = sceneSG.measurements || [];
+				const pointMeasure = measurements.find(m => m.points && m.points.length === 1)
+					|| measurements.find(m => m.points && m.points.length >= 1);
+				if (!pointMeasure || pointMeasure.points.length === 0) {
+					log("No point measurement found. Use the Point Measurement Tool (Item 7) or Point Picker (Item 10) first.", "error");
+					return;
+				}
+				const scaleInput = document.getElementById('input-tet-scale');
+				const s = scaleInput ? parseFloat(scaleInput.value) || 5 : 5;
+				const pos = pointMeasure.points[0].position;
+				const volume = (viewer.tetrahedralBoxTool || viewer.tetTool).insertFromXYZ([pos.x, pos.y, pos.z], {
+					scale: s,
+					showTet: currentTetShowTet,
+					name: 'Tet_From_Point'
+				});
+				log(`SUCCESS: Created TetrahedralVolume at point measurement [${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}] with scale = ${s}.`, "success");
+				setPassState('tet-volume', true);
+			} catch (err) {
+				log("ERROR creating tetrahedron from point: " + err.message, "error");
+			}
+		});
+	}
+
+	const btnTetVolume = document.getElementById('btn-tet-volume');
+	if (btnTetVolume) {
+		btnTetVolume.addEventListener('click', () => {
+			setProcessingState('tet-volume');
+			tests['tet-volume'].run();
+		});
+	}
+
+	// -------------------------------------------------------------
+	// CLEAR ALL MIXED FILTERS HANDLERS
+	// -------------------------------------------------------------
+	function clearAllMixedFilters() {
+		try {
+			const count = (sceneSG.mixedFilters ? sceneSG.mixedFilters.length : 0)
+				+ (sceneSG.volumes ? sceneSG.volumes.length : 0);
+
+			if (typeof sceneSG.removeAllMixedFilters === 'function') {
+				sceneSG.removeAllMixedFilters();
+			} else {
+				sceneSG.mixedFilters = [];
+			}
+
+			if (typeof sceneSG.removeAllVolumes === 'function') {
+				sceneSG.removeAllVolumes();
+			} else if (sceneSG.volumes) {
+				while (sceneSG.volumes.length > 0) {
+					sceneSG.removeVolume(sceneSG.volumes[0]);
+				}
+			}
+
+			if (viewer.volumeTool && viewer.volumeTool.scene) {
+				while (viewer.volumeTool.scene.children.length > 0) {
+					viewer.volumeTool.scene.remove(viewer.volumeTool.scene.children[0]);
+				}
+			}
+			if (viewer.tetTool && (viewer.tetrahedralBoxTool || viewer.tetTool).scene) {
+				while ((viewer.tetrahedralBoxTool || viewer.tetTool).scene.children.length > 0) {
+					(viewer.tetrahedralBoxTool || viewer.tetTool).scene.remove((viewer.tetrahedralBoxTool || viewer.tetTool).scene.children[0]);
+				}
+			}
+
+			if (sceneSG.pointclouds) {
+				for (const pc of sceneSG.pointclouds) {
+					if (pc.material && typeof pc.material.setMixedFilters === 'function') {
+						pc.material.setMixedFilters([]);
+					}
+				}
+			}
+
+			hideOnScreenInstructions();
+			if (typeof viewer.requestRender === 'function') {
+				viewer.requestRender();
+			}
+
+			log(`SUCCESS: Cleared all mixed filters, volumes and clips (${count} item(s) removed).`, 'success');
+		} catch (err) {
+			log('ERROR clearing mixed filters: ' + err.message, 'error');
+		}
+	}
+
+	const btnClearMixedFilters = document.getElementById('btn-clear-mixed-filters');
+	if (btnClearMixedFilters) {
+		btnClearMixedFilters.addEventListener('click', (e) => {
+			e.stopPropagation();
+			clearAllMixedFilters();
+		});
+	}
+
+	const btnClearMixedFiltersTet = document.getElementById('btn-clear-mixed-filters-tet');
+	if (btnClearMixedFiltersTet) {
+		btnClearMixedFiltersTet.addEventListener('click', (e) => {
+			e.stopPropagation();
+			clearAllMixedFilters();
 		});
 	}
 

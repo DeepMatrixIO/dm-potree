@@ -40,6 +40,7 @@ import {AnnotationTool} from "../utils/AnnotationTool.js";
 import {MeasuringTool} from "../utils/MeasuringTool.js";
 import {ProfileTool} from "../utils/ProfileTool.js";
 import {VolumeTool} from "../utils/VolumeTool.js";
+import {TetrahedralBoxTool, TetTool} from "../utils/TetrahedralBoxTool.js";
 
 // import {VRButton} from '../../libs/js/extra/VRButton.js';
 
@@ -398,6 +399,8 @@ export class Viewer extends EventDispatcher {
 				this.measuringTool = new MeasuringTool(this);//line, point, height, etc, they create measures
 				this.profileTool = new ProfileTool(this);//Creates profile.js profiles
 				this.volumeTool = new VolumeTool(this);//has its own update and render methods . Creates Box or SPhere volumes
+				this.tetrahedralBoxTool = new TetrahedralBoxTool(this); // tool for creating and inserting TetrahedralBoxVolumes
+		this.tetTool = this.tetrahedralBoxTool; // backwards compatibility alias
 				this.clippingTool = new ClippingTool(this);//for polygon clips and polygonClipVolume
 				this.transformationTool = new TransformationTool(this);//persistent handler attached per object to rotate and translate 3d object s
 				this.navigationCube = new NavigationCube(this);//currently not attached nor used
@@ -2605,7 +2608,9 @@ export class Viewer extends EventDispatcher {
 			});
 
 			let boxes = [];
-			let spheres = []
+			let spheres = [];
+			let tetBoxes = [];
+
 			// Maintain exact order of box volumes matching mixedFilters sequence,
 			// so shader's boxFilterIndex aligns precisely with clipBoxes
 			for (let filt of mixedFilters) {
@@ -2618,7 +2623,13 @@ export class Viewer extends EventDispatcher {
 					if (!spheres.includes(filt)) {
 						spheres.push(filt);
 					}
+				} if (filt && (filt.intType === FilterIntType.TETBOXVOLUME)) {//addingtetboxvolume filters to the processing queue
+					if (!tetBoxes.includes(filt)) {
+						tetBoxes.push(filt);
+					}
 				}
+
+
 			}
 
 			// Include any remaining clipping volumes in this.scene.volumes that were not in mixedFilters
@@ -2654,6 +2665,20 @@ export class Viewer extends EventDispatcher {
 
 				return {sphere: sphere, inverse: inverse, position: position};
 			});
+
+
+			///////////////////////////////////////////////////////////////////////
+			// CLIPTETRAHEDRONS
+			//is not sphere, so its a set of coordinates and maybe indices
+			let clipTetrahedrals = tetBoxes.filter(degenerate).map(tet => {
+				tet.updateMatrixWorld();//as an object
+
+				let inverse = tet.matrixWorld.clone().invert();//
+				let position = tet.getWorldPosition(new Vector3());
+				//tet itself is the volumeObject, and it has multiple stuff
+				return {tet: tet, inverse: inverse, position: position};
+			});
+
 
 			///////////////////////////////////////////////////////////////////////
 			// CLIPPROFILEBOXES
@@ -2706,12 +2731,17 @@ export class Viewer extends EventDispatcher {
 
 
 
-			// set clip volumes in material
+			// set clip volumes in material, all of them
+			//this is hardcoded
 			for (let pointcloud of visiblePointClouds) {
 				pointcloud.material.setClipBoxes(clipBoxes);//selection std volumes only
 				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//selection polygons only
 				//additional clipping must be added here
 				pointcloud.material.setClipSpheres(clipSpheres);
+				pointcloud.material.setClipTetrahedralBox(clipTetrahedrals);
+
+
+
 
 
 
@@ -3455,6 +3485,7 @@ export class Viewer extends EventDispatcher {
 			this.disposeTool(this.measuringTool);
 			this.disposeTool(this.profileTool);
 			this.disposeTool(this.volumeTool);
+			this.disposeTool(this.tetrahedralBoxTool);
 			this.disposeTool(this.clippingTool);
 			this.disposeTool(this.transformationTool);
 			this.disposeTool(this.clusterTool);

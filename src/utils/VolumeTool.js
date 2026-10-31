@@ -30,6 +30,7 @@ export class VolumeTool extends EventDispatcher{
 		};
 
 		this.onAdd = e => {
+			if (e.volume && (e.volume.isTetrahedralBoxVolume || e.volume.isTetrahedralVolume || e.volume.constructor.name === 'TetrahedralBoxVolume' || e.volume.constructor.name === 'TetrahedralVolume')) return;
 			this.scene.add(e.volume);
 		};
 

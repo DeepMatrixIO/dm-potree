@@ -6,8 +6,9 @@ import {Utils} from "../utils.js";
 import {PointCloudFilter} from "../utils/Filter.js";
 import {FilterIntType, FilterOperationType} from "../utils/FilterConsts.js";
 import {PolygonClipVolume} from "../utils/PolygonClipVolume.js";
-import {BoxVolume} from "../utils/Volume.js";
+import {BoxVolume, SphereVolume} from "../utils/Volume.js";
 import {LineBoxVolume} from "../utils/LineVolume.js";
+import {TetrahedralBoxVolume, TetrahedralVolume} from "../utils/TetrahedralBoxVolume.js";
 import {View} from "./View.js";
 
 export class PScene extends EventDispatcher {
@@ -219,6 +220,12 @@ export class PScene extends EventDispatcher {
 		//add LineBoxVolume support
 		if (jsonFilter.intType === FilterIntType.LINEBOXVOLUME) {
 			filter = LineBoxVolume.fromJSON(jsonFilter);
+			this.addVolume(filter);
+			this.addFilter(filter);
+		}
+
+		if (jsonFilter.intType === FilterIntType.TETBOXVOLUME) {
+			filter = TetrahedralBoxVolume.fromJSON(jsonFilter);
 			this.addVolume(filter);
 			this.addFilter(filter);
 		}
@@ -585,7 +592,7 @@ export class PScene extends EventDispatcher {
 			// do not use instance as custom classes cannot be found
 			for (let filter of this.mixedFilters) {
 				// if (filter instanceof BoxVolume || filter instanceof PolygonClipVolume) {
-				if (filter.intType === FilterIntType.BOXVOLUME || filter.intType === FilterIntType.POLYGON || filter.intType === FilterIntType.LINEBOXVOLUME) {
+				if (filter.intType === FilterIntType.BOXVOLUME || filter.intType === FilterIntType.POLYGON || filter.intType === FilterIntType.LINEBOXVOLUME || filter.intType === FilterIntType.TETBOXVOLUME || filter.intType === FilterIntType.TETVOLUME) {
 					json.mixedFilters.push(filter.toJSON());
 				} else if (filter.intType === FilterIntType.LOGICAL) {
 					json.mixedFilters.push(filter.toJSON());
@@ -622,6 +629,10 @@ export class PScene extends EventDispatcher {
 
 				}
 
+				else if (filterData.intType === FilterIntType.TETBOXVOLUME) {
+					let filter = TetrahedralBoxVolume.fromJSON(filterData);
+					this.addVolume(filter);
+				}
 				else if (filterData.intType === FilterIntType.SPHEREVOLUME) {//may not be defined
 					let filter = SphereVolume.fromJSON(filterData);
 					this.addVolume(filter);
@@ -784,22 +795,16 @@ export class PScene extends EventDispatcher {
 	}
 
 	removeAllMixedFilters() {
-
-
-		while (this.mixedFilters.length > 0) {
-			let filter = this.mixedFilters.pop();
+		const filters = [...this.mixedFilters];
+		for (let filter of filters) {
 			this.removeMixedFilter(filter);
-			// 	this.dispatchEvent({
-			// 	'type': 'filter_removed',
-			// 	'scene': this,
-			// 	'filter': filter
-			// });
 		}
+		this.mixedFilters = [];
 
-
-
-
-
+		this.dispatchEvent({
+			type: "mixed_filters_cleared",
+			scene: this
+		});
 	}
 
 	getActiveCamera() {
