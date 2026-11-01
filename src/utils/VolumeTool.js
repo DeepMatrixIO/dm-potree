@@ -7,8 +7,8 @@ import {BoxVolume, Volume} from "./Volume.js";
 
 // Takes mouse raycast to intersect point cloud and set volume position based on that intersection.
 // different from ScreenBoxSelectTool in the startInsertion, drag and drop methods.
-export class VolumeTool extends EventDispatcher{
-	constructor (viewer) {
+export class VolumeTool extends EventDispatcher {
+	constructor(viewer) {
 		super();
 
 		this.viewer = viewer;
@@ -34,7 +34,7 @@ export class VolumeTool extends EventDispatcher{
 			this.scene.add(e.volume);
 		};
 
-		for(let volume of viewer.scene.volumes){
+		for (let volume of viewer.scene.volumes) {
 			this.onAdd({volume: volume});
 		}
 
@@ -51,8 +51,8 @@ export class VolumeTool extends EventDispatcher{
 		viewer.scene.addEventListener('volume_removed', this.onRemove);
 	}
 
-	onSceneChange(e){
-		if(e.oldScene){
+	onSceneChange(e) {
+		if (e.oldScene) {
 			e.oldScene.removeEventListeners('volume_added', this.onAdd);
 			e.oldScene.removeEventListeners('volume_removed', this.onRemove);
 		}
@@ -61,17 +61,17 @@ export class VolumeTool extends EventDispatcher{
 		e.scene.addEventListener('volume_removed', this.onRemove);
 	}
 
-	startInsertion (args = {}) {
+	startInsertion(args = {}) {
 		let volume;
-		if(args.type){
+		if (args.type) {
 			volume = new args.type();
-		}else{
+		} else {
 			volume = new BoxVolume();
 		}
 
 		volume.clip = args.clip || false;
 		volume.name = args.name || 'Volume';
-		volume.initialized=true;
+		volume.initialized = true;
 
 		this.dispatchEvent({
 			type: 'start_inserting_volume',
@@ -79,6 +79,7 @@ export class VolumeTool extends EventDispatcher{
 		});
 
 		this.viewer.scene.addVolume(volume);
+		//shoould add the filter here stop
 		this.scene.add(volume);
 
 		let cancel = {
@@ -129,7 +130,7 @@ export class VolumeTool extends EventDispatcher{
 		return volume;
 	}
 
-	update(){
+	update() {
 		if (!this.viewer.scene) {
 			return;
 		}
@@ -159,12 +160,12 @@ export class VolumeTool extends EventDispatcher{
 		}
 	}
 
-	render(params){
+	render(params) {
 		const renderer = this.viewer.renderer;
 
 		const oldTarget = renderer.getRenderTarget();
 
-		if(params.renderTarget){
+		if (params.renderTarget) {
 			renderer.setRenderTarget(params.renderTarget);
 		}
 		renderer.render(this.scene, this.viewer.scene.getActiveCamera());

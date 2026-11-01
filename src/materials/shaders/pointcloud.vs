@@ -1275,19 +1275,19 @@ bool pointInClipBox(mat4 clipBoxInvMat, vec3 point) {
 // so after applying the inverse matrix the surface is at length(localPos) == 1.0.
 // (BoxGeometry(1,1,1) spans -0.5..+0.5, which is why clip boxes use 0.5 — spheres differ.)
 
-bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point) {
-	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
-	// Surface at length == 1.0 (radius = 1 in local space)
-	return length(localPos.xyz) <= 1.0f;
-}
+ bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point) {
+ 	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
+ 	// Surface at length == 1.0 (radius = 1 in local space)
+ 	return length(localPos.xyz) <= 1.0f;
+ }
 
 // Overload: also returns localDist (0 = centre, 1 = surface) for gradient colouring.
 // localDist is simply length(localPos) since the radius is already 1.0.
-// bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point, out float localDist) {
-// 	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
-// 	localDist = length(localPos.xyz); // 0.0 = centre, 1.0 = surface
-// 	return localDist <= 1.0f;
-// }
+bool pointInClipSphere(mat4 clipSphereInvMat, vec3 point, out float localDist) {
+	vec4 localPos = clipSphereInvMat * modelMatrix * vec4(point, 1.0f);
+	localDist = length(localPos.xyz); // 0.0 = centre, 1.0 = surface
+	return localDist <= 1.0f;
+}
 
 // ---------------------------------------------------------------
 // Tests whether a 3D point (world coords) lies inside a single tetrahedron
@@ -2097,6 +2097,8 @@ bool doFiltering(bool isInside) {
 
 	bool globalValue = false;		// global value for all applied filters . all stacked filters are evaluated by OR
 	bool currentFilterChainValue = true; // Each filter list until STOP is evaluated by AND by default but some steps can be OR or XOR evaluated
+	stopped = true;
+	colorize = false;
 	// vec3 current_xyz = position;	// if some other positional filters applied
 	vec4 worldPosition = modelMatrix * vec4(position, 1.0f);
 	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0f); // needed for sphere filter
@@ -2159,41 +2161,32 @@ bool doFiltering(bool isInside) {
 				//point in clip sphere
 				#if defined(num_clipspheres) && num_clipspheres > 0
 					if(filterType == FILTER_SPHEREVOLUME) {
-								// check if point is inside sphere volume
-
-						// localDist: 0.0 = centre of sphere, 1.0 = surface
+						// check if point is inside sphere volume
 						float localDist = 0.0f;
 						isIn = pointInClipSphere(uClipSpheres[sphereFilterIndex], position, localDist);
-
-
+						currentFilterChainValue = currentFilterChainValue && isIn;
+						stopped = false;
 
 						if(isIn) {
-
-							currentFilterChainValue = currentFilterChainValue && isIn;
-							stopped  = false;
-							colorize = true;
 							assignedColor = vec3(1.0, 0.0, 0.0);
 							// Use localDist for gradient colouring (0=centre, 1=surface):
 							// assignedColor = mix(vec3(1,0,0), vec3(0,0,1), localDist);
 							// assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
-
 						}
 						sphereFilterIndex++;
 
-								continue;
-							}
-
+						continue;
+					}
 				#endif
 
 			    #if defined(num_clipTetrahedralBoxes) && num_clipTetrahedralBoxes > 0
 					if(filterType == FILTER_TETRAHEDRALBOXVOLUME) {
 						// check if point is inside tetbox using world-space coordinates
 						isIn = pointInClipTetrahedralBox(tetboxFilterIndex, worldPosition.xyz);
-						//isIn=true;
+						currentFilterChainValue = currentFilterChainValue && isIn;
+						stopped = false;
+
 						if(isIn) {
-							currentFilterChainValue = currentFilterChainValue && isIn;
-							stopped  = false;
-							colorize = true;
 							assignedColor = vec3(1.0, 0.0, 0.0);
 						}
 						tetboxFilterIndex++;
@@ -2206,14 +2199,12 @@ bool doFiltering(bool isInside) {
 				//point in clip box
 				#if defined(num_clipboxes) && num_clipboxes > 0
 					if(filterType == FILTER_BOXVOLUME) {
-								// check if point ins inside box
-
+						// check if point ins inside box
 						isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);
 						currentFilterChainValue = currentFilterChainValue && isIn;
+						stopped = false;
 
 						if(isIn) {
-							stopped = false;
-							colorize = true;
 							assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);
 						}
 						boxFilterIndex++;
@@ -2227,24 +2218,13 @@ bool doFiltering(bool isInside) {
 				////////////////////////////////////////////////////////////////
 				#if defined(num_clipboxes) && num_clipboxes > 0
 					if(filterType == FILTER_LINEBOXVOLUME) {
-								// check if point ins inside box
+						// check if point ins inside box
 						isIn = pointInClipBox(clipBoxes[boxFilterIndex], position);//same check
 						currentFilterChainValue = currentFilterChainValue && isIn;
+						stopped = false;
 
 						if(isIn) {
-							stopped = false;
-							colorize = true;//was true
-
-							//line distnace should be computed
-							// minLineDistance was computed globally in the pre-pass
-
-							//distanceToLine
-							//the lines are encoded as deterministic line segments, i.e. explicit p1,p2 per segment, so a n segment line takes 2n values
-							//need an additional color funcion and distance function
-
-							//assignedColor = vec3(boxColors[boxFilterIndex].x, boxColors[boxFilterIndex].y, boxColors[boxFilterIndex].z);//box color
 							assignedColor = vec3(1.0,1.0,1.0);//box color
-
 						}
 						boxFilterIndex++;
 
@@ -2254,18 +2234,16 @@ bool doFiltering(bool isInside) {
 				////////////////////////////////////////////////////////////////
 				//clip polygon volume
 				////////////////////////////////////////////////////////////////
-								#if defined(num_clippolygons) && num_clippolygons > 0
-					if(filterType == FILTER_POLYGONVOLUME) {
+				#if defined(num_clippolygons) && num_clippolygons > 0
+					if(filterType == FILTER_POLYGONVOLUME || filterType == FILTER_POLYGON) {
 						isIn = pointInClipPolygon(position, polygonFilterIndex);
 						currentFilterChainValue = currentFilterChainValue && isIn;
+						stopped = false;
 
 						//colorize version
 						if(isIn) {//change color based on object color
-							stopped = false;
-							colorize = true;//colorize has higher precedence over highlight
 							highlight = false;
 							assignedColor = vec3(uClipPolygonColor[polygonFilterIndex].x, uClipPolygonColor[polygonFilterIndex].y, uClipPolygonColor[polygonFilterIndex].z);
-
 						}
 
 						polygonFilterIndex++;
@@ -2306,22 +2284,16 @@ bool doFiltering(bool isInside) {
 							currentFilterChainValue = false; // return true or false, depending on the filters applied
 						}
 
-						if(currentFilterChainValue) {//if point is here, assignedColor is the current Color
+						if(currentFilterChainValue && !stopped) {//if point passed current chain
 							olderColor = assignedColor;
 							lastClassification = currentClassification;
+							globalValue = globalValue || true;
 						} else {
 							assignedColor = olderColor;//current block failed and must return to older color if any, but better
 							currentClassification = lastClassification;
 						}
 
-						if(stopped) {//if i just came from a stop
-							currentFilterChainValue = false;
-						}
-
-						globalValue = globalValue || currentFilterChainValue; // OR operation
 						currentFilterChainValue = true;						 // reset for next filter
-
-						// skip = false;									 // reset skip for next filter
 						stopped = true;
 						continue; // continue to next
 
@@ -2331,14 +2303,12 @@ bool doFiltering(bool isInside) {
 						isIn = doLogicalEval(currentOperator, attribIdx, currAttVal, uFloatFilterValues[index1], index1, index2); // do not increase the float index
 
 						currentFilterChainValue = currentFilterChainValue && isIn;
+						stopped = false;
 
 						#endif
 
 						if(isIn) {//change color based on object color
-							stopped = false;
-							colorize = true;//colorize has higher precedence over highlight
 							highlight = false;
-
 						}
 
 						continue;
@@ -2355,13 +2325,20 @@ bool doFiltering(bool isInside) {
 
 	////////////////////////////////////////////////////////
 	if(!stopped) {
-		globalValue = globalValue || currentFilterChainValue; // OR operation for the last filter
-		if(!currentFilterChainValue) {
-			colorize = true;
+		if(currentFilterChainValue) {
+			globalValue = globalValue || true;
+			olderColor = assignedColor;
+			lastClassification = currentClassification;
+		} else {
 			assignedColor = olderColor;
-
+			currentClassification = lastClassification;
 		}
-														 // return false; // return false, point is not visible
+	}
+
+	if(globalValue) {
+		colorize = true;
+	} else {
+		colorize = false;
 	}
 
 	return globalValue; // return the global value, true or false, depending on the filters applied

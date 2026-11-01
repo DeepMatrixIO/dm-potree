@@ -94,7 +94,7 @@ export class TetrahedralBoxTool extends EventDispatcher {
 			maxDistance: args.maxDistance !== undefined ? args.maxDistance : Infinity,
 			minDistance: args.minDistance !== undefined ? args.minDistance : 0,
 			color: args.color !== undefined ? args.color : 0x00ffff,
-			clip: args.clip || false,
+			clip: args.clip || true,
 			...args
 		});
 
@@ -250,12 +250,13 @@ export class TetrahedralBoxTool extends EventDispatcher {
 			maxDistance: args.maxDistance !== undefined ? args.maxDistance : Infinity,
 			minDistance: args.minDistance !== undefined ? args.minDistance : 0,
 			color: args.color !== undefined ? args.color : 0x00ffff,
-			clip: args.clip || false,
+			clip: args.clip || true,
 			vertices: explicitVertices || args.vertices,
 			...args
 		});
 
 		volume.position.copy(position);
+		//volume.clip = true;	//enabling mixed filter logic
 
 		if (args.scale !== undefined) {
 			if (typeof args.scale === 'number') {
@@ -272,7 +273,7 @@ export class TetrahedralBoxTool extends EventDispatcher {
 
 		this.viewer.scene.addVolume(volume);
 		this.scene.add(volume);
-
+		this.viewer.scene.addStaticStopFilter();
 		volume.updateMatrix();
 		volume.updateMatrixWorld(true);
 		volume.updateGeometry();
@@ -478,7 +479,7 @@ export class TetrahedralBoxTool extends EventDispatcher {
 		let offset = 0;
 		for (const vol of targetVolumes) {
 			const coords = vol.getCoordinatesArray({world, asFloat32});
-			for (let i = 0; i < coords.length; i++) {
+			for (let i = 0;i < coords.length;i++) {
 				result[offset++] = coords[i];
 			}
 		}
@@ -489,4 +490,4 @@ export class TetrahedralBoxTool extends EventDispatcher {
 }
 
 // Backwards compatibility alias
-export { TetrahedralBoxTool as TetTool };
+export {TetrahedralBoxTool as TetTool};
