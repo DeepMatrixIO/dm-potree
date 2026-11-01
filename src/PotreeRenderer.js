@@ -1444,6 +1444,9 @@ export class Renderer {
 			let numClipSpheres = (material.clipSpheres && material.clipSpheres.length) ? material.clipSpheres.length : 0;
 			let numClipPolygons = (material.clipPolygons && material.clipPolygons.length) ? material.clipPolygons.length : 0;
 
+			let numClipTetrahedralBoxes = (material.clipTetrahedralBoxes && material.clipTetrahedralBoxes.length) ? material.clipTetrahedralBoxes.length : 0;
+
+
 			let numClipProfileBoxes = (material.clipProfileBoxes && material.clipProfileBoxes.length) ? material.clipProfileBoxes.length : 0;
 
 
@@ -1454,6 +1457,7 @@ export class Renderer {
 				`#define num_clipboxes ${numClipBoxes}`,
 				`#define num_clipspheres ${numClipSpheres}`,
 				`#define num_clippolygons ${numClipPolygons}`,
+				`#define num_clipTetrahedralBoxes ${numClipTetrahedralBoxes}`,
 
 				`#define num_clipprofileboxes ${numClipProfileBoxes}`,//profiles being taken out
 
@@ -1747,7 +1751,21 @@ export class Renderer {
 
 				const lClipSpheres = shader.uniformLocations["uClipSpheres[0]"];
 				gl.uniformMatrix4fv(lClipSpheres, false, material.uniforms.clipSpheres.value);
+			}			/////////////////////////////////////////////////////////////////
+
+
+
+			//code for tetrahedral clip boxes
+			if (material.clipTetrahedralBoxes && material.clipTetrahedralBoxes.length > 0) {
+
+				const lClipTetrahedralBoxes = shader.uniformLocations["uClipTetrahedralBoxes[0]"] || shader.uniformLocations["clipTetrahedralBoxes[0]"];
+				if (lClipTetrahedralBoxes !== undefined) {
+					gl.uniform3fv(lClipTetrahedralBoxes, material.uniforms.clipTetrahedralBoxes.value);
+				}
 			}
+
+
+
 
 
 			/////////////////////////////////////////////////////////////////

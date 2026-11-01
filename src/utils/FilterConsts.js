@@ -3,7 +3,6 @@ export class FilterIntType {
 	static BOXVOLUME = 1; //volume filter
 	static SPHEREVOLUME = 2; //sphere filter
 	static TETBOXVOLUME = 3; //thedetrnder filter
-	static TETVOLUME = 3; // alias for TETBOXVOLUME
 	static POLYGONVOLUME = 4; //polygofililter
 
 	static LINEBOXVOLUME = 6; //line distance filter. Box drawn around a line, horizontally aligned. Simillar to profile definition.

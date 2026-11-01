@@ -8,10 +8,12 @@ precision highp int;
 // #define max_clip_vertices 16
 // #define max_clip_polygons 64
 #define max_clip_vertices 64
-#ifndef max_clip_tetrahedrons
-#define max_clip_tetrahedrons 64
-#endif
-#define max_clip_tetrahedron_vertices (max_clip_tetrahedrons * 4)
+
+// #ifndef max_clip_tetrahedrons
+// #define max_clip_tetrahedrons 64
+// #endif
+
+
 
 #define PI 3.141592653589793
 
@@ -79,6 +81,16 @@ uniform bool uDebug;
 uniform bool uUseOrthographicCamera;
 uniform float uOrthoWidth;
 uniform float uOrthoHeight;
+
+#define FILTER_STOP 0
+#define FILTER_BOXVOLUME 1
+#define FILTER_SPHEREVOLUME 2
+#define FILTER_TETRAHEDRALBOXVOLUME 3
+#define FILTER_POLYGON 4
+#define FILTER_POLYGONVOLUME 5
+#define FILTER_LINEBOXVOLUME 6//newer method on boxes but different rendering options and added distance function test. Requires info encoded
+#define FILTER_LOGIC 10
+#define FILTER_NONE 255
 
 #define CLIPTASK_NONE 0
 #define CLIPTASK_HIGHLIGHT 1
@@ -186,6 +198,13 @@ uniform bool visibleStates[num_clusteredpointsegments];
 #if defined(num_clipspheres) && num_clipspheres > 0
 uniform mat4 uClipSpheres[num_clipspheres];
 #endif
+
+
+#if defined(num_clipTetrahedralBoxes) && num_clipTetrahedralBoxes > 0
+uniform vec3 uClipTetrahedralBoxes[num_clipTetrahedralBoxes * 24];
+#endif
+
+
 
 #if defined(num_clippolygons) && num_clippolygons > 0
 uniform int uClipPolygonVCount[num_clippolygons]; // number of vertices for a given polygon
@@ -1318,16 +1337,16 @@ bool pointInClipTetrahedron(vec3 a, vec3 b, vec3 c, vec3 d, vec3 point) {
 // The array is expressed as [t1a, t1b, t1c, t1d, t2a, t2b, t2c, t2d, ...],
 // where every four consecutive vec3 points define one tetrahedron.
 // ---------------------------------------------------------------
-bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], int count, vec3 point) {
-	for(int i = 0; i < max_clip_tetrahedrons; i++) {
-		if(i >= count) {
-			break;
-		}
-		vec3 a = tetrahedrons[i * 4 + 0];
-		vec3 b = tetrahedrons[i * 4 + 1];
-		vec3 c = tetrahedrons[i * 4 + 2];
-		vec3 d = tetrahedrons[i * 4 + 3];
-
+#if defined(num_clipTetrahedralBoxes) && num_clipTetrahedralBoxes > 0
+// Check if a point is inside a specific tetrahedral box (6 tetrahedra = 24 vec3 vertices)
+bool pointInClipTetrahedralBox(int boxIdx, vec3 point) {
+	int base = boxIdx * 24;
+	for(int t = 0; t < 6; t++) {
+		int idx = base + t * 4;
+		vec3 a = uClipTetrahedralBoxes[idx + 0];
+		vec3 b = uClipTetrahedralBoxes[idx + 1];
+		vec3 c = uClipTetrahedralBoxes[idx + 2];
+		vec3 d = uClipTetrahedralBoxes[idx + 3];
 		if(pointInTetrahedron(point, a, b, c, d)) {
 			return true;
 		}
@@ -1335,25 +1354,24 @@ bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], in
 	return false;
 }
 
-// Overload: tests against all tetrahedrons in the array (up to max_clip_tetrahedrons)
-bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], vec3 point) {
-	int count = tetrahedrons.length() / 4;
-	return pointInClipTetrahedron(tetrahedrons, count, point);
+// Overload checking across all tetrahedral boxes in uClipTetrahedralBoxes
+bool pointInClipTetrahedralBox(vec3 tetrahedrons[num_clipTetrahedralBoxes * 24], vec3 point) {
+	int totalTets = num_clipTetrahedralBoxes * 6;
+	for(int t = 0; t < totalTets; t++) {
+		int idx = t * 4;
+		vec3 a = tetrahedrons[idx + 0];
+		vec3 b = tetrahedrons[idx + 1];
+		vec3 c = tetrahedrons[idx + 2];
+		vec3 d = tetrahedrons[idx + 3];
+		if(pointInTetrahedron(point, a, b, c, d)) {
+			return true;
+		}
+	}
+	return false;
 }
+#endif
 
-// Overload: accepts vec3 point with count trailing
-bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], vec3 point, int count) {
-	return pointInClipTetrahedron(tetrahedrons, count, point);
-}
 
-// Overloads for vec4 point (using .xyz)
-bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], vec4 point) {
-	return pointInClipTetrahedron(tetrahedrons, point.xyz);
-}
-
-bool pointInClipTetrahedron(vec3 tetrahedrons[max_clip_tetrahedron_vertices], int count, vec4 point) {
-	return pointInClipTetrahedron(tetrahedrons, count, point.xyz);
-}
 
 // ---------------------------------------------------------------
 // Sphere world-space info extracted from its inverse matrix.
@@ -2045,14 +2063,7 @@ bool checkInsideCluster() {
 
 // works differently from clipping, as it does not take in or out directly points, just signals them with true or false
 
-#define FILTER_STOP 0
-#define FILTER_BOXVOLUME 1
-#define FILTER_SPHEREVOLUME 2
-#define FILTER_POLYGON 4
-#define FILTER_POLYGONVOLUME 5
-#define FILTER_LINEBOXVOLUME 6//newer method on boxes but different rendering options and added distance function test. Requires info encoded
-#define FILTER_LOGIC 10
-#define FILTER_NONE 255
+
 
 // #define num_clipboxes 22//added outside, while defining the uniform list
 //  check all the required variables are defined
@@ -2102,6 +2113,7 @@ bool doFiltering(bool isInside) {
 	int polygonFilterIndex = 0;
 	int boxFilterIndex = 0;
 	int sphereFilterIndex = 0;
+	int tetboxFilterIndex = 0;
 
 	int logicFilterIndex = 0;
 
@@ -2173,7 +2185,21 @@ bool doFiltering(bool isInside) {
 
 				#endif
 
-
+			    #if defined(num_clipTetrahedralBoxes) && num_clipTetrahedralBoxes > 0
+					if(filterType == FILTER_TETRAHEDRALBOXVOLUME) {
+						// check if point is inside tetbox using world-space coordinates
+						isIn = pointInClipTetrahedralBox(tetboxFilterIndex, worldPosition.xyz);
+						//isIn=true;
+						if(isIn) {
+							currentFilterChainValue = currentFilterChainValue && isIn;
+							stopped  = false;
+							colorize = true;
+							assignedColor = vec3(1.0, 0.0, 0.0);
+						}
+						tetboxFilterIndex++;
+						continue;
+					}
+				#endif
 
 
 				///////////////////////////////////////////////////////////////

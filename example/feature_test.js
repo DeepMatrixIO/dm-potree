@@ -55,28 +55,6 @@ document.body.onload = function () {
 
 	// Test Suite States & Assertions List
 	const tests = {
-		'load-lion': {
-			id: 'load-lion',
-			name: "Load 'Lion Takanawa'",
-			status: 'status-load-lion',
-			checkbox: 'check-load-lion',
-			passed: false,
-			run: async () => {
-				log("Loading classic 'Lion Takanawa' pointcloud (cloud.js)...");
-				try {
-					Potree.loadPointCloud("../pointclouds/lion_takanawa/cloud.js", "Lion Takanawa", function (e) {
-						sceneSG.addPointCloud(e.pointcloud);
-						viewer.zoomTo(e.pointcloud);
-						log("SUCCESS: 'Lion Takanawa' pointcloud added to scene.", "success");
-						setPassState('load-lion', true);
-						setTimeout(() => fillBBoxExtremes(false), 300);
-					});
-				} catch (err) {
-					log("ERROR loading Lion: " + err.message, "error");
-					setPassState('load-lion', false);
-				}
-			}
-		},
 		'load-veg': {
 			id: 'load-veg',
 			name: "Load 'Vegetation'",
@@ -1225,6 +1203,6 @@ document.body.onload = function () {
 
 	// Load default pointcloud as initial demo validation
 	setTimeout(() => {
-		tests['load-lion'].run();
+		tests['load-veg'].run();
 	}, 1200);
 };

@@ -11,7 +11,6 @@
 		{"thumb": "thumbnails/toolbar.jpg", "label": "Toolbar", "url": "toolbar.html"},
 		{"thumb": "thumbnails/matcap.jpg", "label": "Matcap", "url": "matcap.html"},
 		{"thumb": "thumbnails/heidentor.png", "label": "Heidentor", "url": "heidentor.html"},
-		{"thumb": "thumbnails/lion.png", "label": "Lion", "url": "lion.html"},
 		{"thumb": "thumbnails/lion_las.png", "label": "Lion LAS", "url": "lion_las.html"},
 
 		{"thumb": "thumbnails/lion_las.png", "label": "Lion LAZ", "url": "lion_laz.html"},

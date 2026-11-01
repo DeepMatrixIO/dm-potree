@@ -52,6 +52,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.clipPolygons = [];
 		this.pointClusters = [];
 		this.clipSpheres = [];
+		this.clipTetrahedralBoxes = [];
 
 		// adding all extra arrays for filtering and custom  rendering order for clips
 		this.mixedFilters = [];//arbitrary array to store either box clips, polygon clips or even filters to be applied in order, each returns true false
@@ -638,42 +639,31 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.clipTetrahedralBoxes.length !== clipTetrahedralBoxes.length &&
 			(clipTetrahedralBoxes.length === 0 || this.clipTetrahedralBoxes.length === 0);
 
-		//setting uniform count value
-		this.uniforms.clipTetrahedralBoxCount.value = this.clipTetrahedralBoxes.length * 6;//
-		this.clipTetrahedralBoxes = clipTetrahedralBoxes;
+		//setting uniform count value per boxes, not per tetrahedron
+		this.uniforms.clipTetrahedralBoxCount.value = clipTetrahedralBoxes.length;
+
+		this.clipTetrahedralBoxes = clipTetrahedralBoxes;//just storing the reference to objects here, not in shader
 
 		if (doUpdate) {
 			this.updateShaderSource();//only if it has changed size
 		}
 
-		//for the time being, each box is made from 8 coordinates, 6 tetrahedrals, each made of 4 vertices so in explicit way
-		// total floats = 8 * 3 = 24.   Internally made of 6 tetrahedrons with a specific index for each vertex index
-		// so a tetrahedral is made of 6 * 4 indices= 24 indices, but if convention is set, no need for indices, just hardcoding
-		// but static sizes
-		//if so, use
-		// T_1 :[0, 1, 2, 6]
-		// T_2 :[0, 1, 5, 6]
-		// T_3 : [0, 3, 2, 6]
-		// T_4 : [0, 3, 7, 6]
-		// T_5  [0, 4, 5, 6]
-		// T_6 [0, 4, 7, 6]
-		//
-		this.uniforms.clipTetrahedralBoxes.value = new Float32Array(this.clipTetrahedralBoxes.length);//same length for the moment unless using indices, which may reduce them from 72 per box to 24 per box
+		// Each tetrahedral box is made of 6 tetrahedra, each with 4 vertices, each vertex with 3 coords (x,y,z) = 72 floats per box
+		this.uniforms.clipTetrahedralBoxes.value = new Float32Array(this.clipTetrahedralBoxes.length * 72);
 
-
-
-		//setting uniform values per tetrahedron but can be directly added, but as
+		// Setting uniform values per tetrahedron (72 floats per box)
 		for (let i = 0;i < this.clipTetrahedralBoxes.length;i++) {
-			let tet = clipTetrahedralBoxes[i];
-
-			//writes the array at a given positio
-			this.uniforms.clipTetrahedralBoxes.value.set(tet.getCoordinatesArray(), 72 * i);//6 tets per box, 12 floats per tet, 72 floats per box
+			let tetBox = clipTetrahedralBoxes[i];
+			let volume = tetBox.tet || tetBox;
+			if (volume && typeof volume.getCoordinatesArray === 'function') {
+				this.uniforms.clipTetrahedralBoxes.value.set(volume.getCoordinatesArray(), 72 * i);
+			}
 		}
 
 		//doing some cleanup if one is null
-		for (let i = 0;i < this.uniforms.clipSpheres.value.length;i++) {
-			if (Number.isNaN(this.uniforms.clipSpheres.value[i])) {
-				this.uniforms.clipSpheres.value[i] = Infinity;
+		for (let i = 0;i < this.uniforms.clipTetrahedralBoxes.value.length;i++) {
+			if (Number.isNaN(this.uniforms.clipTetrahedralBoxes.value[i])) {
+				this.uniforms.clipTetrahedralBoxes.value[i] = Infinity;
 			}
 		}
 	}
@@ -741,6 +731,9 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			this.setDefine("num_logical_filters", "#define num_logical_filters " + logicalFilters.length);//logical filter arrays
 			this.setDefine("num_int_values", "#define num_int_values " + flat.integer_filter_values.length);//required for integer value lists
 			this.setDefine("num_float_values", "#define num_float_values " + flat.float_filter_values.length);//required for float value lists. More common
+
+			// this.setDefine("num_clip_box_tetrahedrals", "#define num_clip_box_tetrahedrals " + this.clipTetrahedralBoxes.length);//required for float value lists. More common
+
 			this.setDefine("visible_classes", "#define visible_classes " + Object.keys(viewer.classifications).filter(k => k !== 'DEFAULT').length);//classes and its visibility are always committed
 
 			// this.setCustomDefine("num_filter_attributes", logicalFilters.length);//set the define for filtering, 0 non
