@@ -122,6 +122,41 @@ export class TetrahedralSegmentBox {
 		return target.copy(this.center);
 	}
 
+	getWorldP1(target = new Vector3()) {
+		if (this.parentVolume) {
+			this.parentVolume.updateMatrixWorld(true);
+			return target.copy(this.p1).applyMatrix4(this.parentVolume.matrixWorld);
+		}
+		return target.copy(this.p1);
+	}
+
+	getWorldP2(target = new Vector3()) {
+		if (this.parentVolume) {
+			this.parentVolume.updateMatrixWorld(true);
+			return target.copy(this.p2).applyMatrix4(this.parentVolume.matrixWorld);
+		}
+		return target.copy(this.p2);
+	}
+
+	getWorldVertices() {
+		if (this.parentVolume) {
+			this.parentVolume.updateMatrixWorld(true);
+			return this.vertices.map(v => v.clone().applyMatrix4(this.parentVolume.matrixWorld));
+		}
+		return this.vertices.map(v => v.clone());
+	}
+
+	getWorldVertexPosition(index, target = new Vector3()) {
+		if (index >= 0 && index < this.vertices.length) {
+			if (this.parentVolume) {
+				this.parentVolume.updateMatrixWorld(true);
+				return target.copy(this.vertices[index]).applyMatrix4(this.parentVolume.matrixWorld);
+			}
+			return target.copy(this.vertices[index]);
+		}
+		return target;
+	}
+
 	updateMatrixWorld() {
 		if (this.parentVolume) {
 			this.parentVolume.updateMatrixWorld(true);
@@ -560,6 +595,9 @@ export class TetrahedralLineVolume extends Volume {
 		}
 
 		if (cleaned.length < 2) {
+			this.position.set(0, 0, 0);
+			this.updateMatrix();
+			this.updateMatrixWorld(true);
 			this.points = cleaned;
 			this.rings = [];
 			this.boxes = [];
@@ -567,10 +605,115 @@ export class TetrahedralLineVolume extends Volume {
 			return;
 		}
 
-		this.points = cleaned;
+		if (options.local === true) {
+			this.points = cleaned;
+		} else {
+			// Center vertices to eliminate WebGL float32 precision jitter at large world coordinates
+			let minX = Infinity, minY = Infinity, minZ = Infinity;
+			let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+			for (const p of cleaned) {
+				if (p.x < minX) minX = p.x;
+				if (p.y < minY) minY = p.y;
+				if (p.z < minZ) minZ = p.z;
+				if (p.x > maxX) maxX = p.x;
+				if (p.y > maxY) maxY = p.y;
+				if (p.z > maxZ) maxZ = p.z;
+			}
+
+			const center = options.center ? options.center.clone() : new Vector3(
+				(minX + maxX) * 0.5,
+				(minY + maxY) * 0.5,
+				(minZ + maxZ) * 0.5
+			);
+
+			this.position.copy(center);
+			this.rotation.set(0, 0, 0);
+			this.scale.set(1, 1, 1);
+			this.updateMatrix();
+			this.updateMatrixWorld(true);
+
+			this.points = cleaned.map(p => p.clone().sub(center));
+		}
+
 		this.updateGeometry();
 		this._updateHandles();
 		this.dispatchEvent({type: 'change', object: this});
+	}
+
+	/**
+	 * Recalculates the bounding center of the polyline in world coordinates,
+	 * re-anchors this.position to that center, and re-offsets all internal vertices/points
+	 * to local coordinates. This completely eliminates 32-bit floating point precision jitter
+	 * when viewing or manipulating lines with large geographic/UTM coordinates.
+	 */
+	recenter() {
+		if (!this.points || this.points.length < 2) return;
+
+		const worldPoints = this.getWorldPoints();
+
+		let minX = Infinity, minY = Infinity, minZ = Infinity;
+		let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+		for (const p of worldPoints) {
+			if (p.x < minX) minX = p.x;
+			if (p.y < minY) minY = p.y;
+			if (p.z < minZ) minZ = p.z;
+			if (p.x > maxX) maxX = p.x;
+			if (p.y > maxY) maxY = p.y;
+			if (p.z > maxZ) maxZ = p.z;
+		}
+
+		const newCenter = new Vector3(
+			(minX + maxX) * 0.5,
+			(minY + maxY) * 0.5,
+			(minZ + maxZ) * 0.5
+		);
+
+		this.position.copy(newCenter);
+		this.rotation.set(0, 0, 0);
+		this.scale.set(1, 1, 1);
+		this.updateMatrix();
+		this.updateMatrixWorld(true);
+
+		const invMat = this.matrixWorld.clone().invert();
+		this.points = worldPoints.map(wp => wp.clone().applyMatrix4(invMat));
+
+		this.updateGeometry();
+		this._updateHandles();
+		this.dispatchEvent({type: 'change', object: this});
+	}
+
+	/**
+	 * Returns the polyline points transformed into world coordinates.
+	 * @returns {Array<Vector3>}
+	 */
+	getWorldPoints() {
+		this.updateMatrixWorld(true);
+		return this.points.map(p => p.clone().applyMatrix4(this.matrixWorld));
+	}
+
+	/**
+	 * Returns the polyline points.
+	 * @param {Object} [options={}]
+	 *        - world: boolean (default true; set false for local coordinates)
+	 * @returns {Array<Vector3>}
+	 */
+	getPoints(options = {}) {
+		const world = options.world !== undefined ? options.world : true;
+		if (world) {
+			return this.getWorldPoints();
+		}
+		return this.points.map(p => p.clone());
+	}
+
+	/**
+	 * Returns the world position of a specific polyline vertex index.
+	 */
+	getWorldVertexPosition(pointIndex, target = new Vector3()) {
+		if (pointIndex >= 0 && pointIndex < this.points.length) {
+			this.updateMatrixWorld(true);
+			return target.copy(this.points[pointIndex]).applyMatrix4(this.matrixWorld);
+		}
+		return target;
 	}
 
 	/**
@@ -977,7 +1120,7 @@ export class TetrahedralLineVolume extends Volume {
 			e.drag.pointStart = null;
 			e.drag.dragPlane = null;
 		}
-		this.updateGeometry();
+		this.recenter();
 		this.dispatchEvent({type: 'position_changed', object: this, pointIndex});
 	}
 
@@ -1225,7 +1368,7 @@ export class TetrahedralLineVolume extends Volume {
 			renderMode: this._renderMode,
 			maxDistance: this.maxDistance,
 			minDistance: this.minDistance,
-			points: this.points.map(p => [p.x, p.y, p.z]),
+			points: this.getWorldPoints().map(p => [p.x, p.y, p.z]),
 			matrix: this.matrix.toArray(),
 			matrixWorld: this.matrixWorld.toArray()
 		};
