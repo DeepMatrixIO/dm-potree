@@ -37,25 +37,25 @@ export class TetrahedralBoxTool extends EventDispatcher {
 		this.viewer.inputHandler.registerInteractiveScene(this.scene);
 
 		this.onRemove = e => {
-			if (e.volume instanceof TetrahedralBoxVolume) {
+			if (e.volume instanceof TetrahedralBoxVolume || e.volume.isTetrahedralLineVolume || e.volume.isTetrahedralVolume || e.volume.constructor.name === 'TetrahedralLineVolume') {
 				this.scene.remove(e.volume);
 			}
 		};
 
 		this.onAdd = e => {
-			if (e.volume instanceof TetrahedralBoxVolume) {
+			if (e.volume instanceof TetrahedralBoxVolume || e.volume.isTetrahedralLineVolume || e.volume.isTetrahedralVolume || e.volume.constructor.name === 'TetrahedralLineVolume') {
 				this.scene.add(e.volume);
 			}
 		};
 
 		for (let volume of viewer.scene.volumes) {
-			if (volume instanceof TetrahedralBoxVolume) {
+			if (volume instanceof TetrahedralBoxVolume || volume.isTetrahedralLineVolume || volume.isTetrahedralVolume || volume.constructor.name === 'TetrahedralLineVolume') {
 				this.onAdd({volume: volume});
 			}
 		}
 
 		this.viewer.inputHandler.addEventListener('delete', e => {
-			let volumes = e.selection.filter(item => (item instanceof TetrahedralBoxVolume));
+			let volumes = e.selection.filter(item => (item instanceof TetrahedralBoxVolume || item.isTetrahedralLineVolume || item.isTetrahedralVolume));
 			volumes.forEach(vol => this.viewer.scene.removeVolume(vol));
 		});
 
@@ -375,7 +375,7 @@ export class TetrahedralBoxTool extends EventDispatcher {
 	 */
 	getVolumes() {
 		if (!this.viewer || !this.viewer.scene) return [];
-		return this.viewer.scene.volumes.filter(v => v instanceof TetrahedralBoxVolume);
+		return this.viewer.scene.volumes.filter(v => (v instanceof TetrahedralBoxVolume) || v.isTetrahedralLineVolume || v.isTetrahedralVolume);
 	}
 
 	/**

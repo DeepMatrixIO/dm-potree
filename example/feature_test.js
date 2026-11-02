@@ -3,6 +3,8 @@ import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
 import {SphereVolume} from '../src/utils/Volume.js';
 import {TetrahedralBoxTool, TetTool} from '../src/utils/TetrahedralBoxTool.js';
 import {TetrahedralBoxVolume, TetrahedralVolume} from '../src/utils/TetrahedralBoxVolume.js';
+import {TetrahedralLineTool, TetLineTool} from '../src/utils/TetrahedralLineTool.js';
+import {TetrahedralLineVolume} from '../src/utils/TetrahedralLineVolume.js';
 
 document.body.onload = function () {
 	// Add stylesheets dynamically
@@ -609,6 +611,96 @@ document.body.onload = function () {
 					setPassState('tet-volume', false);
 				}
 			}
+		},
+		'tet-line': {
+			id: 'tet-line',
+			name: 'Tetrahedral Line Tool (TetrahedralLineTool)',
+			status: 'status-tet-line',
+			checkbox: 'check-tet-line',
+			passed: false,
+			run: async () => {
+				log("TETRAHEDRAL LINE TOOL: Executing TetrahedralLineTool test with coordinate array, GeoJSON, or last measurement...");
+				try {
+					const input = document.getElementById('input-tet-line');
+					let raw = input ? input.value.trim() : '';
+
+					if (!raw) {
+						fillTetLineBBoxExtremes(true);
+						raw = input ? input.value.trim() : '';
+					}
+
+					if (!raw) {
+						log("ERROR: Coordinate array is empty. Extract last measurement, fill BBox, or enter coordinates.", "error");
+						setPassState('tet-line', false);
+						return;
+					}
+
+					const distInput = document.getElementById('input-tet-line-dist');
+					const distVal = distInput ? parseFloat(distInput.value) : 5;
+					const distanceParam = (isNaN(distVal) || distVal <= 0) ? 5 : distVal;
+					const showTet = currentTetLineShowTet;
+					const options = {
+						distance: distanceParam,
+						radius: distanceParam,
+						showTet: showTet,
+						showCenterLine: true,
+						clip: true
+					};
+
+					// 1. If active measure from last measurement extraction
+					if (activeMeasureForTetLine && activeMeasureForTetLine.points && activeMeasureForTetLine.points.length >= 2) {
+						const tool = new TetrahedralLineTool(viewer, options);
+						viewer.tetrahedralLineTool = tool;
+						const boxes = tool.fromMeasure(activeMeasureForTetLine, options);
+						const uniformCoords = tool.getCoordinatesArray();
+						log(`SUCCESS: TetrahedralLineTool.fromMeasure created ${boxes.length} topologically connected tetrahedral boxes (shared vertices at joints) live-bound to measurement nodes (distance = ${distanceParam}, showTet = ${showTet}). Total uniform float coordinates = ${uniformCoords.length} (${boxes.length * 6} tetrahedra).`, "success");
+						setPassState('tet-line', true);
+						return;
+					}
+
+					let parsed = null;
+					try {
+						if (raw.startsWith('{') || raw.startsWith('[')) {
+							parsed = JSON.parse(raw);
+						}
+					} catch (e) {}
+
+					// 2. GeoJSON input (direct constructor or fromGeoJSON)
+					if (parsed && typeof parsed === 'object' && (parsed.type === 'Feature' || parsed.type === 'FeatureCollection' || parsed.type === 'LineString' || parsed.type === 'MultiLineString')) {
+						const tool = new TetrahedralLineTool(parsed, {viewer, ...options});
+						viewer.tetrahedralLineTool = tool;
+						const boxes = tool.boxes;
+						const uniformCoords = tool.getCoordinatesArray();
+						log(`SUCCESS: new TetrahedralLineTool(geoJSON) created ${boxes.length} topologically connected tetrahedral boxes with distance = ${distanceParam}. Uniform coordinates array: ${uniformCoords.length} floats (${boxes.length * 6} tetrahedra).`, "success");
+						setPassState('tet-line', true);
+						return;
+					}
+
+					// 3. Coordinate array input (direct constructor with coordinate array)
+					let lineArray = parsed;
+					if (!lineArray || !Array.isArray(lineArray)) {
+						lineArray = raw.replace(/[\[\]]/g, '').split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+					}
+
+					if (!lineArray || lineArray.length < 6) {
+						log("ERROR: Invalid linestring array. Provide at least 2 points (6 numbers, e.g. [x0, y0, z0, x1, y1, z1]) or GeoJSON.", "error");
+						setPassState('tet-line', false);
+						return;
+					}
+
+					// Test constructor with coordinate array directly!
+					const tool = new TetrahedralLineTool(lineArray, {viewer, ...options});
+					viewer.tetrahedralLineTool = tool;
+					const boxes = tool.boxes;
+					const uniformCoords = tool.getCoordinatesArray();
+					log(`SUCCESS: new TetrahedralLineTool(coordsArray) constructed ${boxes.length} tetrahedral boxes centered on line segments with shared joint vertices. getCoordinatesArray() returned ${uniformCoords.length} floats for uniform population.`, "success");
+					setPassState('tet-line', true);
+				} catch (err) {
+					log("ERROR running TetrahedralLineTool: " + err.message, "error");
+					console.error("ERROR running TetrahedralLineTool:", err);
+					setPassState('tet-line', false);
+				}
+			}
 		}
 	};
 
@@ -1049,6 +1141,228 @@ document.body.onload = function () {
 		btnTetVolume.addEventListener('click', () => {
 			setProcessingState('tet-volume');
 			tests['tet-volume'].run();
+		});
+	}
+	// -------------------------------------------------------------
+	// TETRAHEDRAL LINE TOOL BUTTON HANDLERS
+	// -------------------------------------------------------------
+	let currentTetLineShowTet = true;
+	let activeMeasureForTetLine = null;
+
+	function fillTetLineBBoxExtremes(force = false) {
+		const input = document.getElementById('input-tet-line');
+		if (!input) return;
+		if (!force && input.value.trim() !== '') return;
+
+		const extremes = getPointCloudBBoxExtremes();
+		if (extremes) {
+			input.value = JSON.stringify(extremes);
+			log(`Pointcloud bbox extremes loaded into TetrahedralLineTool input: [${extremes.join(', ')}]`, 'info');
+		} else if (force) {
+			log("No pointcloud loaded yet to calculate bbox extremes. Load a pointcloud or draw a measurement first.", "error");
+		}
+	}
+
+	const tetLineInputEl = document.getElementById('input-tet-line');
+	if (tetLineInputEl) {
+		tetLineInputEl.addEventListener('input', () => {
+			activeMeasureForTetLine = null;
+		});
+	}
+
+	const btnTetLineBBox = document.getElementById('btn-tet-line-bbox');
+	if (btnTetLineBBox) {
+		btnTetLineBBox.addEventListener('click', (e) => {
+			e.stopPropagation();
+			activeMeasureForTetLine = null;
+			fillTetLineBBoxExtremes(true);
+		});
+	}
+
+	const btnTetLineMeasure = document.getElementById('btn-tet-line-measure');
+	if (btnTetLineMeasure) {
+		btnTetLineMeasure.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const measurements = sceneSG.measurements || [];
+			if (measurements.length === 0) {
+				log("No measurements in scene. Draw a distance or line measurement first.", "error");
+				return;
+			}
+			let lastMeasure = measurements[measurements.length - 1];
+			if (!lastMeasure.points || lastMeasure.points.length < 2) {
+				const lineMeasures = measurements.filter(m => m.points && m.points.length >= 2);
+				if (lineMeasures.length > 0) {
+					lastMeasure = lineMeasures[lineMeasures.length - 1];
+				} else {
+					log("Last measurement has fewer than 2 points. Draw a line with Distance Tool first.", "error");
+					return;
+				}
+			}
+			activeMeasureForTetLine = lastMeasure;
+			const xyz = typeof lastMeasure.toXYZArray === 'function'
+				? lastMeasure.toXYZArray()
+				: lastMeasure.points.map(p => [p.position.x, p.position.y, p.position.z]).flat();
+			const input = document.getElementById('input-tet-line');
+			if (input) input.value = JSON.stringify(xyz);
+			log(`SUCCESS: Extracted coords from last measurement (${lastMeasure.points.length} nodes) into TetrahedralLineTool: [${xyz.map(v => typeof v === 'number' ? v.toFixed(2) : v).join(', ')}]`, 'success');
+		});
+	}
+
+	const btnTetLineFromLastMeasure = document.getElementById('btn-tet-line-from-last-measure')
+		|| document.querySelector('button[name="FromLastMEasure"]');
+	if (btnTetLineFromLastMeasure) {
+		btnTetLineFromLastMeasure.addEventListener('click', (e) => {
+			e.stopPropagation();
+			setProcessingState('tet-line');
+			try {
+				const measurements = sceneSG.measurements || (viewer.scene ? viewer.scene.measurements : []) || [];
+				let lastMeasure = null;
+				if (measurements.length > 0) {
+					const lineMeasures = measurements.filter(m => m.points && m.points.length >= 2);
+					if (lineMeasures.length > 0) {
+						lastMeasure = lineMeasures[lineMeasures.length - 1];
+					}
+				}
+
+				const distInput = document.getElementById('input-tet-line-dist');
+				const distVal = distInput ? parseFloat(distInput.value) : 5;
+				const distanceParam = (isNaN(distVal) || distVal <= 0) ? 5 : distVal;
+
+				currentTetLineShowTet = true;
+				const showTetBtn = document.getElementById('btn-tet-line-toggle-showtet');
+				if (showTetBtn) showTetBtn.textContent = '🔺 showTet: ON';
+
+				const options = {
+					distance: distanceParam,
+					radius: distanceParam,
+					showTet: true,
+					showCenterLine: true,
+					clip: true,
+					viewer: viewer,
+					scene: sceneSG
+				};
+
+				const tool = new TetrahedralLineTool(viewer, options);
+				viewer.tetrahedralLineTool = tool;
+				let boxes = [];
+
+				if (lastMeasure) {
+					activeMeasureForTetLine = lastMeasure;
+					boxes = tool.fromMeasure(lastMeasure, options);
+					const xyz = typeof lastMeasure.toXYZArray === 'function'
+						? lastMeasure.toXYZArray()
+						: lastMeasure.points.map(p => [p.position.x, p.position.y, p.position.z]).flat();
+					const input = document.getElementById('input-tet-line');
+					if (input) input.value = JSON.stringify(xyz);
+				} else {
+					// Fallback to pointcloud bounding box extremes if no measurement drawn yet
+					const extremes = getPointCloudBBoxExtremes();
+					if (extremes) {
+						log("No existing measurement in scene with >= 2 points. Generating a 3D linestring from point cloud bounds...", "info");
+						const p1 = [extremes[0] + (extremes[3] - extremes[0]) * 0.15, extremes[1] + (extremes[4] - extremes[1]) * 0.15, extremes[2] + (extremes[5] - extremes[2]) * 0.2];
+						const mid = [(extremes[0] + extremes[3]) / 2, (extremes[1] + extremes[4]) / 2, extremes[5] * 0.85 + extremes[2] * 0.15];
+						const p2 = [extremes[3] - (extremes[3] - extremes[0]) * 0.15, extremes[4] - (extremes[4] - extremes[1]) * 0.15, extremes[5] - (extremes[5] - extremes[2]) * 0.2];
+						const coords = [...p1, ...mid, ...p2];
+						boxes = tool.fromArray(coords, options);
+						const input = document.getElementById('input-tet-line');
+						if (input) input.value = JSON.stringify(coords);
+					} else {
+						log("ERROR: No measurements in scene with at least 2 points. Draw a distance or line measurement first.", "error");
+						setPassState('tet-line', false);
+						return;
+					}
+				}
+
+				const volume = tool.volume;
+				if (!volume) {
+					log("ERROR: Failed to create TetrahedralLineVolume.", "error");
+					setPassState('tet-line', false);
+					return;
+				}
+
+				volume.showTet = true;
+				if (volume.tetLines) volume.tetLines.visible = true;
+				if (volume.tetMesh) volume.tetMesh.visible = true;
+
+				if (sceneSG && !sceneSG.volumes.includes(volume)) {
+					sceneSG.addVolume(volume);
+				}
+				if (viewer.tetrahedralBoxTool && !viewer.tetrahedralBoxTool.scene.children.includes(volume)) {
+					viewer.tetrahedralBoxTool.scene.add(volume);
+				}
+
+				if (viewer && typeof viewer.requestRender === 'function') {
+					viewer.requestRender();
+				}
+
+				const uniformCoords = tool.getCoordinatesArray();
+				const nodeCount = lastMeasure ? lastMeasure.points.length : 3;
+				log(`SUCCESS [FromLastMEasure]: Created TetrahedralLineVolume from ${lastMeasure ? 'last measurement' : 'point cloud path'} (${nodeCount} nodes). Created ${boxes.length} topological boxes (${boxes.length * 6} tetrahedra) with showTet: ON visible on screen. Coordinates array: ${uniformCoords.length} floats.`, "success");
+				setPassState('tet-line', true);
+			} catch (err) {
+				log("ERROR in FromLastMEasure: " + err.message, "error");
+				console.error("ERROR in FromLastMEasure:", err);
+				setPassState('tet-line', false);
+			}
+		});
+	}
+
+	const btnTetLineToggleShowTet = document.getElementById('btn-tet-line-toggle-showtet');
+	if (btnTetLineToggleShowTet) {
+		btnTetLineToggleShowTet.addEventListener('click', (e) => {
+			e.stopPropagation();
+			currentTetLineShowTet = !currentTetLineShowTet;
+			btnTetLineToggleShowTet.textContent = currentTetLineShowTet ? '🔺 showTet: ON' : '⬜ showTet: OFF';
+			if (sceneSG && sceneSG.volumes) {
+				sceneSG.volumes.forEach(v => {
+					if (v instanceof TetrahedralLineVolume || v.isTetrahedralLineVolume) {
+						v.showTet = currentTetLineShowTet;
+					}
+				});
+			}
+			log(`TetrahedralLineTool showTet set to: ${currentTetLineShowTet ? 'ON' : 'OFF'}`, 'info');
+		});
+	}
+
+	const btnTetLineDumpUniform = document.getElementById('btn-tet-line-dump-uniform');
+	if (btnTetLineDumpUniform) {
+		btnTetLineDumpUniform.addEventListener('click', (e) => {
+			e.stopPropagation();
+			let tool = viewer.tetrahedralLineTool;
+			let coords = null;
+			if (tool && typeof tool.getCoordinatesArray === 'function') {
+				coords = tool.getCoordinatesArray();
+			} else if (sceneSG && sceneSG.volumes) {
+				const lineVol = sceneSG.volumes.find(v => v instanceof TetrahedralLineVolume || v.isTetrahedralLineVolume);
+				if (lineVol) {
+					coords = lineVol.getCoordinatesArray();
+				}
+			}
+
+			if (coords && coords.length > 0) {
+				const numBoxes = Math.round(coords.length / 72);
+				const numTets = numBoxes * 6;
+				const sample = [coords[0].toFixed(2), coords[1].toFixed(2), coords[2].toFixed(2)].join(', ');
+				log(`SUCCESS: getCoordinatesArray() extracted ${coords.length} float coordinates for ${numBoxes} box(es) (${numTets} tetrahedra). Sample vertex 0: [${sample}]. Ready for uniform uClipTetrahedralBoxes.`, 'success');
+			} else {
+				log("No active TetrahedralLineTool volume in scene to dump coordinates. Run the tool test first.", "error");
+			}
+		});
+	}
+
+	const btnClearMixedFiltersTetLine = document.getElementById('btn-clear-mixed-filters-tetline');
+	if (btnClearMixedFiltersTetLine) {
+		btnClearMixedFiltersTetLine.addEventListener('click', (e) => {
+			e.stopPropagation();
+			clearAllMixedFilters();
+		});
+	}
+
+	const btnTetLine = document.getElementById('btn-tet-line');
+	if (btnTetLine) {
+		btnTetLine.addEventListener('click', () => {
+			setProcessingState('tet-line');
+			tests['tet-line'].run();
 		});
 	}
 

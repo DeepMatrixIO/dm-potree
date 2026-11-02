@@ -9,6 +9,7 @@ import {PolygonClipVolume} from "../utils/PolygonClipVolume.js";
 import {BoxVolume, SphereVolume} from "../utils/Volume.js";
 import {LineBoxVolume} from "../utils/LineVolume.js";
 import {TetrahedralBoxVolume, TetrahedralVolume} from "../utils/TetrahedralBoxVolume.js";
+import {TetrahedralLineVolume} from "../utils/TetrahedralLineVolume.js";
 import {View} from "./View.js";
 
 export class PScene extends EventDispatcher {
@@ -225,7 +226,11 @@ export class PScene extends EventDispatcher {
 		}
 
 		if (jsonFilter.intType === FilterIntType.TETBOXVOLUME) {
-			filter = TetrahedralBoxVolume.fromJSON(jsonFilter);
+			if (jsonFilter.points && jsonFilter.points.length > 0) {
+				filter = TetrahedralLineVolume.fromJSON(jsonFilter);
+			} else {
+				filter = TetrahedralBoxVolume.fromJSON(jsonFilter);
+			}
 			this.addVolume(filter);
 			this.addFilter(filter);
 		}

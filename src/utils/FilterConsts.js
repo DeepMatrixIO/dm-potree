@@ -2,8 +2,9 @@ export class FilterIntType {
 	// static STOP = 0; //no filter
 	static BOXVOLUME = 1; //volume filter
 	static SPHEREVOLUME = 2; //sphere filter
-	static TETBOXVOLUME = 3; //thedetrnder filter
+	static TETBOXVOLUME = 3; //box made of tetrahedrals. Only 6 per box
 	static POLYGONVOLUME = 4; //polygofililter
+	static TETCOLLECTIONVOLUME = 3; //Collection of logically connected tetrahedrals, NO single tet is dangling.
 
 	static LINEBOXVOLUME = 6; //line distance filter. Box drawn around a line, horizontally aligned. Simillar to profile definition.
 	static LINECYLINDERVOLUME = 7; //cylinder filter, mayu use 3

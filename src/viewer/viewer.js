@@ -2624,7 +2624,13 @@ export class Viewer extends EventDispatcher {
 						spheres.push(filt);
 					}
 				} if (filt && (filt.intType === FilterIntType.TETBOXVOLUME)) {//addingtetboxvolume filters to the processing queue
-					if (!tetBoxes.includes(filt)) {
+					if (filt.boxes && Array.isArray(filt.boxes) && filt.boxes.length > 0) {
+						for (let b of filt.boxes) {
+							if (!tetBoxes.includes(b)) {
+								tetBoxes.push(b);
+							}
+						}
+					} else if (!tetBoxes.includes(filt)) {
 						tetBoxes.push(filt);
 					}
 				}
@@ -2634,7 +2640,7 @@ export class Viewer extends EventDispatcher {
 
 			// Include any remaining clipping volumes in this.scene.volumes that were not in mixedFilters
 			for (let vol of this.scene.volumes) {
-				if (vol && vol.clip && vol.visible && !boxes.includes(vol)) {
+				if (vol && vol.clip && vol.visible && !boxes.includes(vol) && !vol.isTetrahedralVolume && !vol.isTetrahedralBoxVolume && !vol.isTetrahedralLineVolume && vol.intType !== FilterIntType.TETBOXVOLUME && vol.intType !== FilterIntType.SPHEREVOLUME) {
 					boxes.push(vol);
 				}
 			}
