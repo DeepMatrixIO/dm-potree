@@ -1209,6 +1209,7 @@ document.body.onload = function () {
 	}
 
 	const btnTetLineFromLastMeasure = document.getElementById('btn-tet-line-from-last-measure')
+		|| document.querySelector('button[name="FromLineMeasure"]')
 		|| document.querySelector('button[name="FromLastMEasure"]');
 	if (btnTetLineFromLastMeasure) {
 		btnTetLineFromLastMeasure.addEventListener('click', (e) => {
@@ -1297,11 +1298,11 @@ document.body.onload = function () {
 
 				const uniformCoords = tool.getCoordinatesArray();
 				const nodeCount = lastMeasure ? lastMeasure.points.length : 3;
-				log(`SUCCESS [FromLastMEasure]: Created TetrahedralLineVolume from ${lastMeasure ? 'last measurement' : 'point cloud path'} (${nodeCount} nodes). Created ${boxes.length} topological boxes (${boxes.length * 6} tetrahedra) with showTet: ON visible on screen. Coordinates array: ${uniformCoords.length} floats.`, "success");
+				log(`SUCCESS [FromLineMeasure]: Created TetrahedralLineVolume from ${lastMeasure ? 'last measurement' : 'point cloud path'} (${nodeCount} nodes). Created ${boxes.length} topological boxes (${boxes.length * 6} tetrahedra) with showTet: ON visible on screen. Coordinates array: ${uniformCoords.length} floats.`, "success");
 				setPassState('tet-line', true);
 			} catch (err) {
-				log("ERROR in FromLastMEasure: " + err.message, "error");
-				console.error("ERROR in FromLastMEasure:", err);
+				log("ERROR in FromLineMeasure: " + err.message, "error");
+				console.error("ERROR in FromLineMeasure:", err);
 				setPassState('tet-line', false);
 			}
 		});
