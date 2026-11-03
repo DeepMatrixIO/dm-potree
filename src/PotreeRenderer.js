@@ -1458,6 +1458,7 @@ export class Renderer {
 				`#define num_clipspheres ${numClipSpheres}`,
 				`#define num_clippolygons ${numClipPolygons}`,
 				`#define num_clipTetrahedralBoxes ${numClipTetrahedralBoxes}`,
+				`#define max_clip_tet_volumes 16`,
 
 				`#define num_clipprofileboxes ${numClipProfileBoxes}`,//profiles being taken out
 
@@ -1761,6 +1762,11 @@ export class Renderer {
 				const lClipTetrahedralBoxes = shader.uniformLocations["uClipTetrahedralBoxes[0]"] || shader.uniformLocations["clipTetrahedralBoxes[0]"];
 				if (lClipTetrahedralBoxes !== undefined) {
 					gl.uniform3fv(lClipTetrahedralBoxes, material.uniforms.clipTetrahedralBoxes.value);
+				}
+
+				const lClipTetVolumeBoxCounts = shader.uniformLocations["uClipTetVolumeBoxCounts[0]"];
+				if (lClipTetVolumeBoxCounts !== undefined && material.uniforms.clipTetVolumeBoxCounts) {
+					gl.uniform1iv(lClipTetVolumeBoxCounts, material.uniforms.clipTetVolumeBoxCounts.value);
 				}
 			}
 

@@ -2610,6 +2610,7 @@ export class Viewer extends EventDispatcher {
 			let boxes = [];
 			let spheres = [];
 			let tetBoxes = [];
+			let tetVolumeBoxCounts = [];
 
 			// Maintain exact order of box volumes matching mixedFilters sequence,
 			// so shader's boxFilterIndex aligns precisely with clipBoxes
@@ -2625,17 +2626,19 @@ export class Viewer extends EventDispatcher {
 					}
 				} if (filt && (filt.intType === FilterIntType.TETBOXVOLUME)) {//addingtetboxvolume filters to the processing queue
 					if (filt.boxes && Array.isArray(filt.boxes) && filt.boxes.length > 0) {
+						let count = 0;
 						for (let b of filt.boxes) {
 							if (!tetBoxes.includes(b)) {
 								tetBoxes.push(b);
+								count++;
 							}
 						}
+						tetVolumeBoxCounts.push(count);
 					} else if (!tetBoxes.includes(filt)) {
 						tetBoxes.push(filt);
+						tetVolumeBoxCounts.push(1);
 					}
 				}
-
-
 			}
 
 			// Include any remaining clipping volumes in this.scene.volumes that were not in mixedFilters
@@ -2744,7 +2747,7 @@ export class Viewer extends EventDispatcher {
 				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//selection polygons only
 				//additional clipping must be added here
 				pointcloud.material.setClipSpheres(clipSpheres);
-				pointcloud.material.setClipTetrahedralBox(clipTetrahedrals);
+				pointcloud.material.setClipTetrahedralBox(clipTetrahedrals, tetVolumeBoxCounts);
 
 
 

@@ -1227,6 +1227,9 @@ export class TetrahedralLineVolume extends Volume {
 		if (material.uniforms.clipTetrahedralBoxCount) {
 			material.uniforms.clipTetrahedralBoxCount.value = numBoxes;
 		}
+		if (material.uniforms.clipTetVolumeBoxCounts) {
+			material.uniforms.clipTetVolumeBoxCounts.value = new Int32Array([numBoxes]);
+		}
 
 		// 4. Color uniform
 		if (material.uniforms.uClipTetraColor) {

@@ -84,11 +84,17 @@ uniform float uOrthoHeight;
 
 #define FILTER_STOP 0
 #define FILTER_BOXVOLUME 1
-#define FILTER_SPHEREVOLUME 2
-#define FILTER_TETRAHEDRALBOXVOLUME 3
+#define FILTER_SPHEREVOLUME 2 //just added
+
+#define FILTER_TETRAHEDRALBOXVOLUME 3 //just added
+
 #define FILTER_POLYGON 4
-#define FILTER_POLYGONVOLUME 5
+
+#define FILTER_TETCOLLECTIONVOLUME 5  //just added
+
 #define FILTER_LINEBOXVOLUME 6//newer method on boxes but different rendering options and added distance function test. Requires info encoded
+
+
 #define FILTER_LOGIC 10
 #define FILTER_NONE 255
 
@@ -202,6 +208,9 @@ uniform mat4 uClipSpheres[num_clipspheres];
 
 #if defined(num_clipTetrahedralBoxes) && num_clipTetrahedralBoxes > 0
 uniform vec3 uClipTetrahedralBoxes[num_clipTetrahedralBoxes * 24];
+#if defined(max_clip_tet_volumes) && max_clip_tet_volumes > 0
+uniform int uClipTetVolumeBoxCounts[max_clip_tet_volumes];
+#endif
 #endif
 
 
@@ -1354,6 +1363,16 @@ bool pointInClipTetrahedralBox(int boxIdx, vec3 point) {
 	return false;
 }
 
+// Check if a point is inside any tetrahedral box in a chain (range of connected boxes)
+bool pointInClipTetrahedralBoxChain(int startBox, int count, vec3 point) {
+	for(int b = 0; b < count; b++) {
+		if(pointInClipTetrahedralBox(startBox + b, point)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Overload checking across all tetrahedral boxes in uClipTetrahedralBoxes
 bool pointInClipTetrahedralBox(vec3 tetrahedrons[num_clipTetrahedralBoxes * 24], vec3 point) {
 	int totalTets = num_clipTetrahedralBoxes * 6;
@@ -2116,6 +2135,7 @@ bool doFiltering(bool isInside) {
 	int boxFilterIndex = 0;
 	int sphereFilterIndex = 0;
 	int tetboxFilterIndex = 0;
+	int tetVolumeFilterIndex = 0;
 
 	int logicFilterIndex = 0;
 
@@ -2181,15 +2201,28 @@ bool doFiltering(bool isInside) {
 
 			    #if defined(num_clipTetrahedralBoxes) && num_clipTetrahedralBoxes > 0
 					if(filterType == FILTER_TETRAHEDRALBOXVOLUME) {
-						// check if point is inside tetbox using world-space coordinates
-						isIn = pointInClipTetrahedralBox(tetboxFilterIndex, worldPosition.xyz);
+						int count = 1;
+						#if defined(max_clip_tet_volumes) && max_clip_tet_volumes > 0
+						if(tetVolumeFilterIndex < max_clip_tet_volumes && uClipTetVolumeBoxCounts[tetVolumeFilterIndex] > 0) {
+							count = uClipTetVolumeBoxCounts[tetVolumeFilterIndex];
+						} else {
+							count = num_clipTetrahedralBoxes - tetboxFilterIndex;
+						}
+						#else
+						count = num_clipTetrahedralBoxes - tetboxFilterIndex;
+						#endif
+						if(count < 1) count = 1;
+
+						// check if point is inside any tetrahedron in this volume's chain
+						isIn = pointInClipTetrahedralBoxChain(tetboxFilterIndex, count, worldPosition.xyz);
 						currentFilterChainValue = currentFilterChainValue && isIn;
 						stopped = false;
 
 						if(isIn) {
 							assignedColor = vec3(1.0, 0.0, 0.0);
 						}
-						tetboxFilterIndex++;
+						tetboxFilterIndex += count;
+						tetVolumeFilterIndex++;
 						continue;
 					}
 				#endif

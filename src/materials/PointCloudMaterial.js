@@ -164,6 +164,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			clipSpheres: {type: 'Matrix4fv', value: []},
 
 			clipTetrahedralBoxCount: {type: 'f', value: 0},
+			clipTetVolumeBoxCounts: {type: 'iv', value: new Int32Array(16)},
 			clipTetrahedralBoxes: {type: '3fv', value: []}, //packing as v3c x y z
 
 
@@ -630,7 +631,7 @@ export class PointCloudMaterial extends RawShaderMaterial {
 	//we are receiving an array ot tet objects as tet, and for each 6 set of coordinates or an explicit version
 
 	//is so hardcoded on the tetVolume, but is a TexBox
-	setClipTetrahedralBox(clipTetrahedralBoxes) {
+	setClipTetrahedralBox(clipTetrahedralBoxes, volumeBoxCounts = null) {
 		if (!clipTetrahedralBoxes) {
 			return;
 		}
@@ -643,6 +644,18 @@ export class PointCloudMaterial extends RawShaderMaterial {
 		this.uniforms.clipTetrahedralBoxCount.value = clipTetrahedralBoxes.length;
 
 		this.clipTetrahedralBoxes = clipTetrahedralBoxes;//just storing the reference to objects here, not in shader
+
+		if (volumeBoxCounts && Array.isArray(volumeBoxCounts)) {
+			const arr = new Int32Array(Math.max(16, volumeBoxCounts.length));
+			for (let i = 0; i < volumeBoxCounts.length; i++) {
+				arr[i] = volumeBoxCounts[i];
+			}
+			this.uniforms.clipTetVolumeBoxCounts.value = arr;
+		} else if (!this.uniforms.clipTetVolumeBoxCounts || this.uniforms.clipTetVolumeBoxCounts.value.length === 0) {
+			this.uniforms.clipTetVolumeBoxCounts = {type: 'iv', value: new Int32Array([clipTetrahedralBoxes.length])};
+		} else {
+			this.uniforms.clipTetVolumeBoxCounts.value[0] = clipTetrahedralBoxes.length;
+		}
 
 		if (doUpdate) {
 			this.updateShaderSource();//only if it has changed size
