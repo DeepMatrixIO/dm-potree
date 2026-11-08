@@ -1032,7 +1032,10 @@ export class Viewer extends EventDispatcher {
 	setDescription(value) {
 		this.description = value;
 
-		document.getElementById('potree_description').innerHTML = value;		//$('#potree_description').text(value);
+		const el = document.getElementById('potree_description');
+		if (el) {
+			el.innerHTML = value;
+		}
 	}
 
 	getDescription() {

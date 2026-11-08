@@ -5,7 +5,10 @@
 import {Potree, PScene, Viewer} from '../dist/potree_module.js';//as index is changed name to potree_module
 
 
-document.body.onload = function () {
+let initialized = false;
+function init() {
+	if (initialized) return;
+	initialized = true;
 
 	// let pointClouds: PointCloudOctree[] = [];
 
@@ -76,7 +79,7 @@ document.body.onload = function () {
 	viewer.setFOV(60);
 	viewer.setPointBudget(1_000_000);
 	viewer.loadSettingsFromURL();
-	viewer.setBackground("skybox");//is crashing due to missing loader
+	viewer.setBackground("gradient");
 
 
 	console.log(potree_viewer)
@@ -160,6 +163,14 @@ document.body.onload = function () {
 	}
 	);
 
+}
+
+document.body.onload = init;
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+	init();
+} else {
+	window.addEventListener('DOMContentLoaded', init);
+	window.addEventListener('load', init);
 }
 
 

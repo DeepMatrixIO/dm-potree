@@ -6,7 +6,10 @@ import {TetrahedralBoxVolume, TetrahedralVolume} from '../src/utils/TetrahedralB
 import {TetrahedralLineTool, TetLineTool} from '../src/utils/TetrahedralLineTool.js';
 import {TetrahedralLineVolume} from '../src/utils/TetrahedralLineVolume.js';
 
-document.body.onload = function () {
+let initialized = false;
+function init() {
+	if (initialized) return;
+	initialized = true;
 	// Add stylesheets dynamically
 	const stylesheets = `
 		<link rel="stylesheet" type="text/css" href="./potree/potree.css">
@@ -1520,4 +1523,12 @@ document.body.onload = function () {
 	setTimeout(() => {
 		tests['load-veg'].run();
 	}, 1200);
-};
+}
+
+document.body.onload = init;
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+	init();
+} else {
+	window.addEventListener('DOMContentLoaded', init);
+	window.addEventListener('load', init);
+}

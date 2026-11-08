@@ -1,8 +1,8 @@
 {
 	"name": "dm_potree",
-	"private": true,
 	"version": "1.8.0",
 	"description": "WebGL2 point cloud viewer. Modernized. Module version.",
+	"type": "module",
 	"keywords": [
 		"point",
 		"cloud",
@@ -15,16 +15,21 @@
 		"browser",
 		"tool"
 	],
-
 	"main": "./dist/potree_module.js",
 	"module": "./dist/potree_module.js",
+	"files": [
+		"dist"
+	],
 	"exports": {
 		".": {
 			"import": "./dist/potree_module.js",
 			"default": "./dist/potree_module.js"
-		}
+		},
+		"./potree.css": "./dist/potree/potree.css",
+		"./*": "./*"
 	},
 	"scripts": {
+		"prepare": "npm run build",
 		"start_old": "gulp watch",
 		"build_old": "gulp build pack",
 		"build_bad": "webpack --mode production",
@@ -33,7 +38,7 @@
 		"build:module": "npm run build:workers && vite build",
 		"start": "npm run build:module && npm run dev",
 		"dev": "npm run build:module && vite --port 5200 --open",
-		"dev_tests": "npm run build:module && vite --port 5200 --open /feature_test",
+		"dev_tests": "npm run build:module && vite --port 5200 --open /feature_test.html",
 		"check:imports": "node scripts/check-missing-imports.mjs --scope src --allow Potree,viewer",
 		"check:imports:all": "node scripts/check-missing-imports.mjs --scope all --allow Potree,viewer",
 		"postinstall": "npm run build"

@@ -25,6 +25,17 @@ export default defineConfig({
 		},
 	},
 	plugins: [
+		{
+			name: 'html-rewrite',
+			configureServer(server) {
+				server.middlewares.use((req, res, next) => {
+					if (req.url === '/feature_test') {
+						req.url = '/feature_test.html';
+					}
+					next();
+				});
+			},
+		},
 		viteStaticCopy({
 			targets: [
 				{src: 'src/viewer/potree.css', dest: 'potree'},

@@ -304,4 +304,6 @@ export class Potree {
 
 }
 
+export default Potree;
+
 

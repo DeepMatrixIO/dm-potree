@@ -1,8 +1,10 @@
 
 
-export {Potree } from  "./PotreeGlobal.js";//this is the module in charge
-export {Viewer} from  "./viewer/viewer.js";//this is the module in charge
-export {PScene} from "./viewer/Scene.js";//this is the module in charge
+import {Potree} from "./PotreeGlobal.js";
+export {Potree};
+export {Viewer} from "./viewer/viewer.js";
+export {PScene} from "./viewer/Scene.js";
+export default Potree;
 
 
 export {CameraMode, ClipMethod, ClipTask, ElevationGradientRepeat, MOUSE, PointShape, PointSizeType, TreeType} from "./defines.js";
