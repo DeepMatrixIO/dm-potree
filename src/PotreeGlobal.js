@@ -32,7 +32,7 @@ import {ProfileRequest, ProfileData} from "./ProfileRequest.js";
 
 // export * from "./materials/ClassificationScheme.js";
 // export * from "./materials/EyeDomeLightingMaterial.js";
-// import {Gradients} from "./materials/Gradients.js";
+import {Gradients} from "./materials/Gradients.js";
 // export * from "./materials/NormalizationEDLMaterial.js";
 // export * from "./materials/NormalizationMaterial.js";
 import {PointCloudMaterial} from "./materials/PointCloudMaterial.js";
@@ -165,8 +165,8 @@ export class Potree {
 		this.TreeType = DEFINES.TreeType;
 		this.LengthUnits = DEFINES.LengthUnits;
 
-		// this.Gradients=Gradients;
-		// this.allGradients=Gradients;
+		this.Gradients = Gradients;
+		this.allGradients = Gradients;
 
 		this.updatePointClouds = POTREE_UPDATE_VISIBILITY.updatePointClouds;
 		this.updateVisibility = POTREE_UPDATE_VISIBILITY.updateVisibility;

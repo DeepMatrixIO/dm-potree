@@ -144,7 +144,7 @@ uniform float uOrthoHeight;
 #define OP_XOR 25
 
 #define OP_COLORIZE 100// sets global color and returns true
-#define OP_DISTANCE_MAP 101// sets global color and returns true
+#define OP_DISTANCE_MAP 101// sets global color and returns true, applies for box volumes as they have the line info.
 
 #define OP_STOP 254
 #define OP_ALL 255
@@ -1560,7 +1560,7 @@ bool doLogicalEval(int operator, int attributeIdx, float attributeValue, float c
 
 	} else
 
-	if(operator == OP_DISTANCE_MAP) {//takes a list of predefined colors to render based on distance. Does not have anything to do with classification
+	if(operator == OP_DISTANCE_MAP) {//performs a discrete coloring starting from the min distance to the max distance at equal spaces, using the number of colors provided
 
 		//have to check if i am inside
 		// olderColor = assignedColor;

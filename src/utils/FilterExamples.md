@@ -197,3 +197,62 @@ int values [ 2, 3 ,4,6,8,10]
 float values [ 6, 3.14, 4.0 , 99.2 ]
 [100 (colorize), 3(start index of color values), , ,1 (from_float_array) ]
 ===============================
+
+
+===============================
+Relies on having computed the  distance of the current point to a given line, computed before coloring as minLineDistance
+DISTANCE_MAP = 101
+Example
+float values = [ start_distance,end_distance,r1,g1,b1,r2,g2,b2,r3,g3,b3,r4,g4,b4 ]
+float values = [ 2.0,10,0, 0.1,0.5,0.3,0.2,1.0,0.0,1.0.0.5,0.3, 0.2,0.4,0.6 ]
+filter = [101 (distance_map), 4(number_of_colors or equal distance zones), 0(float_array_offset), NA ,1 (from_float_array) ]
+
+So this starts coloring from distance 2 up to 10 using 4 colors
+
+===============================
+
+We  take an extension to this to incorporate non uniform distances
+DISTANCE_MAP_NONUNIFORM
+float values = [ start_distance,distance1,distance2,distance3,distance4=end_distance, r1,g1,b1, r2,g2,b2,r3,g3,b3,r4,g4,b4 ]
+float values = [3.0,4.9,6.8,9.9,11.91,
+0.1,0.5,0.3,
+0.2,1.0,0.0,
+1.0.0.5,0.3,
+0.2,0.4,0.6 ]
+filter = [102 (distance_map_nonuniform), 4(number_of_colors or equal distance zones), 0(float_array_offset), NA ,1 (from_float_array) ]
+
+So based on distance, we check which  color index is used using for... which may be slow
+
+
+
+
+How to add new logical or graphical operations:
+
+1) Update the FilterConst.js file with a new index for the new operation i.e.  DISTANCE_LINE_MAP = 102
+
+2) Check viewer.js update() method, in the section  to commit custom clip volumes and mixed filters
+2.1)  Collect Mixed filter Volumes and primitives  .Each one is gathered in a respective array. In a future may be not required.
+2.2) Extract and store clipBox information per volume type where a clipbox applies. Used as the filter or prefilter for geometric primitives. Each primitive stores its own information
+2.3) Commit clip data  to material using pointcloud.material.setCLipXXX() This is data per geometrical type
+2.4) Commit all the mixed filters, splitting between types: geometrical and logical,  setting count per type. Key step is the flattening of all mixed filters, as they are arrays.
+
+NOTE: Check step 2.1 and 2.2 as 2.1 may be not reqired
+Check step 2.3 and 2.4 so each type could also set its own defines and uniforms
+
+
+
+3) When commiting data,  defines and uniforms can be set. which in viewer is split in various 2.x steps. Review code there
+setClipProfile
+setClipBoxes
+setClipSpheres
+setClipTetrahedrals
+setPointClusters
+setClipPolygons
+
+setMixedFilters()
+
+
+4) In potreeRenderer , while rendering, the actual defines and  uniforms are defined based on material and is tied to  Shader code. Here the shader code is updated
+
+
+within the renderNodes, explicit code is used to populate the actual uniforms

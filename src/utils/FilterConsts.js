@@ -1,5 +1,6 @@
 export class FilterIntType {
-	// static STOP = 0; //no filter
+	static MIXEDFILTER = 0; // All filters have this as well
+
 	static BOXVOLUME = 1; //volume filter
 	static SPHEREVOLUME = 2; //sphere filter
 

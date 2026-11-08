@@ -400,7 +400,7 @@ export class Viewer extends EventDispatcher {
 				this.profileTool = new ProfileTool(this);//Creates profile.js profiles
 				this.volumeTool = new VolumeTool(this);//has its own update and render methods . Creates Box or SPhere volumes
 				this.tetrahedralBoxTool = new TetrahedralBoxTool(this); // tool for creating and inserting TetrahedralBoxVolumes
-		this.tetTool = this.tetrahedralBoxTool; // backwards compatibility alias
+				this.tetTool = this.tetrahedralBoxTool; // backwards compatibility alias
 				this.clippingTool = new ClippingTool(this);//for polygon clips and polygonClipVolume
 				this.transformationTool = new TransformationTool(this);//persistent handler attached per object to rotate and translate 3d object s
 				this.navigationCube = new NavigationCube(this);//currently not attached nor used
@@ -2600,17 +2600,27 @@ export class Viewer extends EventDispatcher {
 
 		}
 
-		{ // update in built clip boxes
+		// VOLUMEs AND MIXED VOLUMES
+		{ // add the volumes and mixed volues as well
+
+			//discard unused
 			let mixedFilters = this.scene.mixedFilters.filter(filt => {
 				if (!filt.visible || !filt.initialized) return false;
 				if (filt.clip !== undefined && !filt.clip) return false;
 				return true;
 			});
 
+			/////////////////////////
+			//geoemtric primitives
 			let boxes = [];
 			let spheres = [];
 			let tetBoxes = [];
 			let tetVolumeBoxCounts = [];
+
+			let clipPolygons = [];
+
+			let profileBoxes = [];
+
 
 			// Maintain exact order of box volumes matching mixedFilters sequence,
 			// so shader's boxFilterIndex aligns precisely with clipBoxes
@@ -2641,7 +2651,23 @@ export class Viewer extends EventDispatcher {
 				}
 			}
 
-			// Include any remaining clipping volumes in this.scene.volumes that were not in mixedFilters
+
+			//////////////
+			//CLIP POLYGONS
+			for (let filt of mixedFilters) {
+				if (filt && (filt.intType === FilterIntType.POLYGON || filt.intType === FilterIntType.POLYGONVOLUME)) {
+					if (!clipPolygons.includes(filt)) {
+						clipPolygons.push(filt);
+					}
+				}
+			}
+
+			//GATHERING PROFILE BOXES
+			for (let profile of this.scene.profiles) {
+				profileBoxes.push(...profile.boxes);
+			}
+
+			// gATHERING THE OTHER NON MIXED FILTERS
 			for (let vol of this.scene.volumes) {
 				if (vol && vol.clip && vol.visible && !boxes.includes(vol) && !vol.isTetrahedralVolume && !vol.isTetrahedralBoxVolume && !vol.isTetrahedralLineVolume && vol.intType !== FilterIntType.TETBOXVOLUME && vol.intType !== FilterIntType.SPHEREVOLUME) {
 					boxes.push(vol);
@@ -2650,53 +2676,38 @@ export class Viewer extends EventDispatcher {
 
 
 
-			// Needed for .getInverse(), pre-empt a determinant of 0, see #815 / #816
-			let degenerate = (box) => box.matrixWorld.determinant() !== 0;
-
 			///////////////////////////////////////////////////////////////////////
-			// CLIPBOXES
-
+			// Storing info per primitive type
+			// CLIPBOXES,
+			let degenerate = (box) => box.matrixWorld.determinant() !== 0;
 			let clipBoxes = boxes.filter(degenerate).map(box => {
 				box.updateMatrixWorld();
-
 				let boxInverse = box.matrixWorld.clone().invert();//added for clipProfileBoxes
 				let boxPosition = box.getWorldPosition(new Vector3());
-
 				return {box: box, inverse: boxInverse, position: boxPosition};
 			});
 			///////////////////////////////////////////////////////////////////////
 			// CLIPSPHERES
 			let clipSpheres = spheres.filter(degenerate).map(sphere => {
 				sphere.updateMatrixWorld();
-
 				let inverse = sphere.matrixWorld.clone().invert();//added for clipProfileBoxes
 				let position = sphere.getWorldPosition(new Vector3());
-
 				return {sphere: sphere, inverse: inverse, position: position};
 			});
-
-
 			///////////////////////////////////////////////////////////////////////
 			// CLIPTETRAHEDRONS
 			//is not sphere, so its a set of coordinates and maybe indices
 			let clipTetrahedrals = tetBoxes.filter(degenerate).map(tet => {
 				tet.updateMatrixWorld();//as an object
-
 				let inverse = tet.matrixWorld.clone().invert();//
 				let position = tet.getWorldPosition(new Vector3());
 				//tet itself is the volumeObject, and it has multiple stuff
 				return {tet: tet, inverse: inverse, position: position};
 			});
 
-
 			///////////////////////////////////////////////////////////////////////
 			// CLIPPROFILEBOXES
 			// profile segments
-			let profileBoxes = [];
-			for (let profile of this.scene.profiles) {
-				profileBoxes.push(...profile.boxes);
-			}
-
 			let clipProfileBoxes = profileBoxes.filter(degenerate).map(box => {
 				box.updateMatrixWorld();
 				let boxInverse = box.matrixWorld.clone().invert();
@@ -2705,16 +2716,9 @@ export class Viewer extends EventDispatcher {
 				return {box: box, inverse: boxInverse, position: boxPosition};
 			});
 
-			//////////////
-
-			let clipPolygons = [];
-			for (let filt of mixedFilters) {
-				if (filt && (filt.intType === FilterIntType.POLYGON || filt.intType === FilterIntType.POLYGONVOLUME)) {
-					if (!clipPolygons.includes(filt)) {
-						clipPolygons.push(filt);
-					}
-				}
-			}
+			//CLIP POYGONS
+			//GATHERING POLYGONS
+			//TO DO, STANDARDIZE CODE WITH OTHER TyPES
 			for (let vol of this.scene.polygonClipVolumes) {
 				if (vol && vol.initialized && vol.visible && !clipPolygons.includes(vol)) {
 					clipPolygons.push(vol);
@@ -2740,75 +2744,48 @@ export class Viewer extends EventDispatcher {
 
 
 
-			// set clip volumes in material, all of them
-			//this is hardcoded
+			// SET DATA TO POINTCLOUD MATERIAL PER TYPE
+			// Hardcoded inPointCloudMaterial.js
 			for (let pointcloud of visiblePointClouds) {
 				pointcloud.material.setClipBoxes(clipBoxes);//selection std volumes only
 				pointcloud.material.setClipPolygons(clipPolygons, this.clippingTool.maxPolygonVertices);//selection polygons only
 				//additional clipping must be added here
 				pointcloud.material.setClipSpheres(clipSpheres);
 				pointcloud.material.setClipTetrahedralBox(clipTetrahedrals, tetVolumeBoxCounts);
-
-
-
-
-
-
 				pointcloud.material.setClipProfileBoxes(clipProfileBoxes);//profiles only, taken out from clipBoxes
 
 				pointcloud.material.clipTask = this.clipTask;
 				pointcloud.material.clipMethod = this.clipMethod;
 
+				//////////
 				//added for classification and segmentation
 				//const pointCloudPointClusters = this.scene.pointClusters.map(cluster => cluster.filterSegmentsByPointCloud(pointcloud.identifier));
-
 				const pointCloudPointClusters = this.scene.pointClusters.filter(pc => pc.visible).map(//TODO take identifier from some other place or default it
 					cluster => {
 						let identifier = pointcloud.dataId || pointcloud.identifier || pointcloud.id || 0;
 						return cluster.filterSegmentsByPointCloud(identifier);
 					}
 				);
-
 				pointcloud.material.setPointClusters(pointCloudPointClusters);
 				//pointcloud.material.setClipPlanes(clipPlanes);
 
 			}
 		}
 
-		// takes scene data into pointcloudmaterial, to be rendered in potreeRenderer
-		{
-			//1) retrieve mixed filter list
+
+		{//commit all the mixed filters now that data is being set
+			//1) retrieve mixed filter list, may be redundant
 			let mixedFilters = this.scene.mixedFilters.filter(filt => {
 				if (!filt.visible || !filt.initialized) return false;
 				if (filt.clip !== undefined && !filt.clip) return false;
 				return true;
 			});
-
-
-			// let filterList = this.scene.filters.filter(filter => vol.enabled);//checking visilibity to avoid/ignore it
-
-
-			// console.log("filterList", filterList);
-
-			// let integer_filter_values = this.scene.integerFilterValues;// no checkups as jus plain arrays
-			// console.log("integer_filter_values", integer_filter_values);
-
-			// let float_filter_values = this.scene.floatFilterValues;// no checkups as jus plain arrays
-			// console.log("float_filter_values", float_filter_values);
-
-			//all data is commited to pointcloudMAterial, to be rendered in potreeRenderer
-
-
-			// if (mixedFilters.length > 0) {
 			for (let pointcloud of visiblePointClouds) {
 				pointcloud.material.setMixedFilters(mixedFilters);//joint list of filters, spatial and logical, and others. Set defines them properly. Taken care in potreerenderer
-
-				//					pointcloud.material.setFilterPackedAttributes(['classification','seg_type']);//TODO   extract if from actual filters, just for testing
-
 				pointcloud.material.updateShaderSource();
 
 			}
-			// }
+
 		}
 
 
