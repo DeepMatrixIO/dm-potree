@@ -17,6 +17,7 @@
 	],
 
 	"main": "./dist/potree_module.js",
+	"module": "./dist/potree_module.js",
 	"exports": {
 		".": {
 			"import": "./dist/potree_module.js",
