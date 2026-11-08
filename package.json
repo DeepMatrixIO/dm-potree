@@ -18,7 +18,16 @@
 	"main": "./dist/potree_module.js",
 	"module": "./dist/potree_module.js",
 	"files": [
-		"dist"
+		"dist",
+		"src",
+		"resources",
+		"examples",
+		"example",
+		"scripts",
+		"vite.config.mjs",
+		"vite.workers.config.mjs",
+		"index.html",
+		"feature_test.html"
 	],
 	"exports": {
 		".": {
