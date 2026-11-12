@@ -2268,7 +2268,8 @@ bool doFiltering(bool isInside) {
 				//clip polygon volume
 				////////////////////////////////////////////////////////////////
 				#if defined(num_clippolygons) && num_clippolygons > 0
-					if(filterType == FILTER_POLYGONVOLUME || filterType == FILTER_POLYGON) {
+					// if(filterType == FILTER_POLYGONVOLUME || filterType == FILTER_POLYGON) {
+					if( filterType == FILTER_POLYGON) {
 						isIn = pointInClipPolygon(position, polygonFilterIndex);
 						currentFilterChainValue = currentFilterChainValue && isIn;
 						stopped = false;
