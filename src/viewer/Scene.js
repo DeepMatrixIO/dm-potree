@@ -252,6 +252,40 @@ export class PScene extends EventDispatcher {
 	}
 
 
+	/** Given a list of numeric classesin classification attribute a static filter is created to select only those classes */
+	addStaticFilterSelectClasses(inClasses) {
+		if (inClasses.length == 0) return;
+		let operator = FilterOperationType.IN;
+		let attributeIndex = 0; //use the first item in the attribute list
+		let integerList = [];//unused
+		let optIndex1 = 0;//start index from array
+		let optIndex2 = inClasses.length;//inClasses
+		let listType = 1;//float
+		let attributeList = ['classification'];
+		let floatList = inClasses;
+
+
+		let filter = new PointCloudFilter(
+			operator, attributeIndex, optIndex1, optIndex2, listType,
+			attributeList,
+			integerList,
+			floatList
+
+		);
+
+		//to avoid issues, is just a JSON definition
+		//this.filters.push(filter);//order is kept in this array
+		this.addFilter(filter);//order is kept in this array
+		// this.volumes.push(volume);
+		this.dispatchEvent({
+			'type': 'filter_added',
+			'scene': this,
+			'filter': filter
+		});
+		return filter;
+	}
+
+
 
 	addStaticFilter(operator, attributeIndex, optIndex1, optIndex2, listType, attributeList, integerList, floatList) {//filter i set of objects containing all items, making easier to manage items
 
