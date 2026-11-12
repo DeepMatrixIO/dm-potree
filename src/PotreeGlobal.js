@@ -29,6 +29,8 @@ import {ProfileRequest, ProfileData} from "./ProfileRequest.js";
 // export * from "./viewer/SaveProject.js";
 // export * from "./WorkerPool.js";
 // export * from "./XHRFactory.js";
+import {XHRFactory} from "./XHRFactory.js";
+
 
 // export * from "./materials/ClassificationScheme.js";
 // export * from "./materials/EyeDomeLightingMaterial.js";
@@ -61,6 +63,7 @@ import {PointCloudMaterial} from "./materials/PointCloudMaterial.js";
 // export * from "./utils/ProfileTool.js";
 // export * from "./utils/ScreenBoxSelectTool.js";
 // export * from "./utils/SpotLightHelper.js";
+import {SpotLightHelper} from "./utils/SpotLightHelper";
 // export * from "./utils/TransformationTool.js";
 // export * from "./utils/Volume.js";
 // export * from "./utils/VolumeTool.js";
@@ -105,6 +108,11 @@ import {WorkerPool} from "./WorkerPool.js";
 
 
 export class Potree {
+	static version = {
+		major: 1,
+		minor: 8,
+		suffix: '.2'
+	};
 
 	//for completeness it would be good to add a constructor
 	constructor() {
@@ -114,12 +122,7 @@ export class Potree {
 		this.workerPool = new WorkerPool();
 
 		//  const
-		this.version = {
-			major: 1,
-			minor: 8,
-			suffix: '.2'
-
-		};
+		this.version = Potree.version;
 
 		this.lru = new LRU();
 
@@ -174,6 +177,10 @@ export class Potree {
 		this.PointCloudMaterial = PointCloudMaterial;
 
 		this.ProfileRequest = ProfileRequest;
+
+		this.XHRFactory = XHRFactory;
+
+		this.SpotLightHelper = SpotLightHelper;
 
 		// window.Potree=this;
 		window.exports = this;//FIX for LRU and other imports

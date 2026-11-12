@@ -105,7 +105,7 @@ class VanillaSingleSlider {
 
 		if (params.slide) {
 			this.input.addEventListener("input", (e) => {
-				params.slide(e, { value: parseFloat(this.input.value) });
+				params.slide(e, {value: parseFloat(this.input.value)});
 			});
 		}
 		this.container.appendChild(this.input);
@@ -284,7 +284,7 @@ class VanillaDoubleSlider {
 		this.updateHighlight();
 
 		if (this.onSlide) {
-			this.onSlide({}, { values: [...this.values] });
+			this.onSlide({}, {values: [...this.values]});
 		}
 	}
 
@@ -482,9 +482,9 @@ class VanillaTree {
 		contentDiv.addEventListener("click", (evt) => {
 			if (evt.target === checkbox) {
 				if (checkbox.checked) {
-					this.trigger("check_node", { node: nodeObj });
+					this.trigger("check_node", {node: nodeObj});
 				} else {
-					this.trigger("uncheck_node", { node: nodeObj });
+					this.trigger("uncheck_node", {node: nodeObj});
 				}
 				return;
 			}
@@ -492,20 +492,20 @@ class VanillaTree {
 			if (this.selectedNode === nodeObj) {
 				contentDiv.classList.remove("selected");
 				this.selectedNode = null;
-				this.trigger("deselect_node", { node: nodeObj });
+				this.trigger("deselect_node", {node: nodeObj});
 			} else {
 				if (this.selectedNode) {
 					this.selectedNode.contentDiv.classList.remove("selected");
 				}
 				this.selectedNode = nodeObj;
 				contentDiv.classList.add("selected");
-				this.trigger("select_node", { node: nodeObj });
+				this.trigger("select_node", {node: nodeObj});
 			}
 		});
 
 		contentDiv.addEventListener("dblclick", (evt) => {
 			if (evt.target === checkbox) return;
-			this.trigger("dblclick_node", { node: nodeObj, originalEvent: evt });
+			this.trigger("dblclick_node", {node: nodeObj, originalEvent: evt});
 		});
 
 		return id;
@@ -515,7 +515,7 @@ class VanillaTree {
 		const node = this.nodes.get(id);
 		if (node) {
 			node.checkbox.checked = true;
-			this.trigger("check_node", { node: node });
+			this.trigger("check_node", {node: node});
 		}
 	}
 
@@ -523,7 +523,7 @@ class VanillaTree {
 		const node = this.nodes.get(id);
 		if (node) {
 			node.checkbox.checked = false;
-			this.trigger("uncheck_node", { node: node });
+			this.trigger("uncheck_node", {node: node});
 		}
 	}
 
@@ -540,7 +540,7 @@ class VanillaTree {
 		if (node) {
 			if (this.selectedNode === node) {
 				this.selectedNode = null;
-				this.trigger("deselect_node", { node: node });
+				this.trigger("deselect_node", {node: node});
 			}
 			node.element.remove();
 			this.nodes.delete(id);
@@ -559,7 +559,7 @@ class VanillaTree {
 
 	get_json(id) {
 		const node = this.nodes.get(id);
-		if (!node) return { children: [] };
+		if (!node) return {children: []};
 		const getChildrenData = (nodeId) => {
 			const arr = [];
 			this.nodes.forEach(n => {
@@ -633,7 +633,11 @@ export class Sidebar {
 
 		this.initSettings();//settings
 
-		document.querySelector('#potree_version_number').innerHTML = Potree.version.major + "." + Potree.version.minor + Potree.version.suffix;
+		const ver = (Potree && Potree.version) || (window.Potree && window.Potree.version) || {major: 1, minor: 8, suffix: '.2'};
+		const elVer = document.querySelector('#potree_version_number');
+		if (elVer) {
+			elVer.innerHTML = ver.major + "." + ver.minor + ver.suffix;
+		}
 	}
 
 
@@ -1779,7 +1783,7 @@ export class Sidebar {
 	}
 
 	initAccordion() {
-		document.querySelectorAll('.accordion > h3').forEach(function(header) {
+		document.querySelectorAll('.accordion > h3').forEach(function (header) {
 			let content = header.nextElementSibling;
 
 			//header.classList.add('accordion-header', 'ui-widget');
@@ -1805,24 +1809,24 @@ export class Sidebar {
 			["IT", "it"]
 		];
 
-		let elLanguages =  document.querySelector('#potree_languages');
+		// let elLanguages =  document.querySelector('#potree_languages');
 
-		for (let i = 0;i < languages.length;i++) {
-			let [key, value] = languages[i];
-			let element = document.createElement('a');
-			element.textContent = key;
-			element.addEventListener('click', () => this.viewer.setLanguage(value));
+		// for (let i = 0;i < languages.length;i++) {
+		// 	let [key, value] = languages[i];
+		// 	let element = document.createElement('a');
+		// 	element.textContent = key;
+		// 	element.addEventListener('click', () => this.viewer.setLanguage(value));
 
-			if (i === 0) {
-				element.style.marginLeft = "30px";
-			}
+		// 	if (i === 0) {
+		// 		element.style.marginLeft = "30px";
+		// 	}
 
-			elLanguages.append(element);
+		// 	elLanguages.append(element);
 
-			if (i < languages.length - 1) {
-				elLanguages.append(document.createTextNode(' - '));
-			}
-		}
+		// 	if (i < languages.length - 1) {
+		// 		elLanguages.append(document.createTextNode(' - '));
+		// 	}
+		// }
 
 
 		// to close all, call

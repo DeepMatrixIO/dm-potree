@@ -47,20 +47,27 @@ export class PathAnimation {
 		//required global access to viewer or make it independent
 
 
-		setTimeout(() => {
-			this.tween.start();
+		this.running = true;
+		this.tween.start();
 
-			const animate = (time = 0) => {
+		if (!this.rafStarted) {
+			this.rafStarted = true;
+			const animate = (time) => {
+				if (!this.running) {
+					this.rafStarted = false;
+					return;
+				}
 				requestAnimationFrame(animate);
-				this.tween.update(time);
-
+				if (this.tween) {
+					this.tween.update(time);
+				}
 			};
-			animate();
-
-		}, 0);
+			requestAnimationFrame(animate);
+		}
 	}
 
 	stop() {
+		this.running = false;
 		if (!this.tween) {
 			return;
 		}
@@ -70,12 +77,12 @@ export class PathAnimation {
 	}
 
 	pause() {
+		this.running = false;
 		if (!this.tween) {
 			return;
 		}
 
 		this.tween.stop();
-		TWEEN.remove(this.tween);
 		this.tween = null;
 	}
 

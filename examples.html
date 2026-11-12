@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Potree Examples & Feature Testing Portal</title>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+	<style>
+		:root {
+			--bg-base: #0b0f19;
+			--bg-card: rgba(17, 24, 39, 0.75);
+			--border-card: rgba(255, 255, 255, 0.08);
+			--accent: #38bdf8;
+			--accent-hover: #0ea5e9;
+			--text-main: #f3f4f6;
+			--text-muted: #9ca3af;
+		}
+
+		* { box-sizing: border-box; }
+		body, html {
+			margin: 0;
+			padding: 0;
+			background-color: var(--bg-base);
+			color: var(--text-main);
+			font-family: 'Inter', system-ui, -apple-system, sans-serif;
+			min-height: 100vh;
+			overflow-x: hidden;
+		}
+
+		/* Top Navigation Bar */
+		header {
+			position: sticky;
+			top: 0;
+			z-index: 100;
+			background: rgba(11, 15, 25, 0.85);
+			backdrop-filter: blur(16px);
+			-webkit-backdrop-filter: blur(16px);
+			border-bottom: 1px solid var(--border-card);
+			padding: 16px 32px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 20px;
+			flex-wrap: wrap;
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.brand-logo {
+			width: 32px;
+			height: 32px;
+			background: linear-gradient(135deg, #0284c7, #38bdf8);
+			border-radius: 8px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 800;
+			color: #fff;
+			font-size: 16px;
+			box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+		}
+
+		.brand-title {
+			font-size: 18px;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+			color: #fff;
+		}
+
+		.brand-subtitle {
+			font-size: 12px;
+			color: var(--text-muted);
+			font-weight: 500;
+		}
+
+		/* Search and Filter Controls */
+		.controls-bar {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			flex: 1;
+			max-width: 500px;
+		}
+
+		.search-box {
+			width: 100%;
+			position: relative;
+		}
+
+		.search-input {
+			width: 100%;
+			padding: 9px 14px 9px 38px;
+			background: rgba(31, 41, 55, 0.6);
+			border: 1px solid rgba(255, 255, 255, 0.12);
+			border-radius: 8px;
+			color: #fff;
+			font-family: inherit;
+			font-size: 13px;
+			transition: all 0.2s;
+			outline: none;
+		}
+
+		.search-input:focus {
+			border-color: var(--accent);
+			background: rgba(31, 41, 55, 0.9);
+			box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+		}
+
+		.search-icon {
+			position: absolute;
+			left: 12px;
+			top: 50%;
+			transform: translateY(-50%);
+			color: var(--text-muted);
+			pointer-events: none;
+		}
+
+		/* Quick action buttons in header */
+		.header-actions {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.btn-pill {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 8px 16px;
+			border-radius: 8px;
+			font-size: 13px;
+			font-weight: 600;
+			text-decoration: none;
+			transition: all 0.2s;
+			cursor: pointer;
+			border: 1px solid transparent;
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, #0284c7, #0369a1);
+			color: #fff;
+			box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+		}
+
+		.btn-primary:hover {
+			background: linear-gradient(135deg, #0ea5e9, #0284c7);
+			transform: translateY(-1px);
+		}
+
+		.btn-outline {
+			background: rgba(255, 255, 255, 0.05);
+			color: #e5e7eb;
+			border-color: rgba(255, 255, 255, 0.15);
+		}
+
+		.btn-outline:hover {
+			background: rgba(255, 255, 255, 0.1);
+			border-color: rgba(255, 255, 255, 0.3);
+		}
+
+		/* Hero Banner */
+		.hero {
+			padding: 36px 32px 20px;
+			max-width: 1400px;
+			margin: 0 auto;
+		}
+
+		.hero h1 {
+			margin: 0 0 8px;
+			font-size: 28px;
+			font-weight: 800;
+			letter-spacing: -0.03em;
+		}
+
+		.hero p {
+			margin: 0;
+			color: var(--text-muted);
+			font-size: 14px;
+			max-width: 700px;
+			line-height: 1.5;
+		}
+
+		/* Category Filter Navigation */
+		.category-nav {
+			display: flex;
+			gap: 8px;
+			padding: 16px 32px;
+			max-width: 1400px;
+			margin: 0 auto;
+			overflow-x: auto;
+			white-space: nowrap;
+		}
+
+		.cat-btn {
+			padding: 7px 14px;
+			border-radius: 20px;
+			font-size: 12px;
+			font-weight: 600;
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			color: var(--text-muted);
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.cat-btn:hover {
+			background: rgba(255, 255, 255, 0.1);
+			color: #fff;
+		}
+
+		.cat-btn.active {
+			background: rgba(56, 189, 248, 0.2);
+			border-color: var(--accent);
+			color: var(--accent);
+			box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+		}
+
+		/* Main Content Grid */
+		main {
+			max-width: 1400px;
+			margin: 0 auto;
+			padding: 10px 32px 60px;
+		}
+
+		.section-title {
+			font-size: 18px;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+			margin: 32px 0 16px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			color: #e5e7eb;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+			padding-bottom: 10px;
+		}
+
+		.badge-count {
+			font-size: 11px;
+			font-weight: 700;
+			background: rgba(255, 255, 255, 0.1);
+			color: var(--text-muted);
+			padding: 2px 8px;
+			border-radius: 12px;
+		}
+
+		.cards-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+			gap: 20px;
+		}
+
+		/* Example Card */
+		.card {
+			background: var(--bg-card);
+			border: 1px solid var(--border-card);
+			border-radius: 12px;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s, border-color 0.2s;
+			text-decoration: none;
+			color: inherit;
+			position: relative;
+		}
+
+		.card:hover {
+			transform: translateY(-4px);
+			border-color: rgba(56, 189, 248, 0.4);
+			box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.15);
+		}
+
+		.card-thumb-wrap {
+			position: relative;
+			width: 100%;
+			height: 160px;
+			background: #111827;
+			overflow: hidden;
+		}
+
+		.card-thumb {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			transition: transform 0.4s ease;
+		}
+
+		.card:hover .card-thumb {
+			transform: scale(1.05);
+		}
+
+		.card-badge {
+			position: absolute;
+			top: 10px;
+			right: 10px;
+			background: rgba(17, 24, 39, 0.85);
+			backdrop-filter: blur(4px);
+			border: 1px solid rgba(255, 255, 255, 0.15);
+			color: var(--accent);
+			font-size: 10px;
+			font-weight: 700;
+			padding: 3px 8px;
+			border-radius: 9999px;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.card-body {
+			padding: 16px;
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			gap: 12px;
+		}
+
+		.card-title {
+			font-size: 14px;
+			font-weight: 700;
+			color: #fff;
+			margin: 0 0 4px;
+		}
+
+		.card-desc {
+			font-size: 12px;
+			color: var(--text-muted);
+			margin: 0;
+			line-height: 1.45;
+		}
+
+		.card-footer {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			font-size: 11px;
+			font-weight: 600;
+			color: var(--accent);
+			padding-top: 10px;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.no-results {
+			text-align: center;
+			padding: 60px 20px;
+			color: var(--text-muted);
+			font-size: 15px;
+			display: none;
+		}
+	</style>
+</head>
+<body>
+
+	<header>
+		<div class="brand">
+			<div class="brand-logo">P</div>
+			<div>
+				<div class="brand-title">Potree Module Examples</div>
+				<div class="brand-subtitle">Interactive Feature & Component Showcase (72 examples)</div>
+			</div>
+		</div>
+
+		<div class="controls-bar">
+			<div class="search-box">
+				<svg class="search-icon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+					<path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"/>
+				</svg>
+				<input type="text" id="searchInput" class="search-input" placeholder="Search examples by name, category or feature...">
+			</div>
+		</div>
+
+		<div class="header-actions">
+			<a href="/index.html" class="btn-pill btn-primary">
+				<span>🚀</span> Main Viewer (index.html)
+			</a>
+			<a href="/feature_test.html" class="btn-pill btn-outline">
+				<span>🧪</span> Feature Tests
+			</a>
+		</div>
+	</header>
+
+	<div class="hero">
+		<h1>Explore Potree Examples</h1>
+		<p>Browse and run the full library of Potree examples, converted to modern ES module architecture. Click any card to launch the viewer with that feature configured.</p>
+	</div>
+
+	<div class="category-nav">
+		<button class="cat-btn active" data-filter="all">All (72)</button>
+		<button class="cat-btn" data-filter="featured">🌟 Featured</button>
+		<button class="cat-btn" data-filter="tools">📏 Tools & Clipping</button>
+		<button class="cat-btn" data-filter="data">📂 Loaders & Formats</button>
+		<button class="cat-btn" data-filter="rendering">🎨 Shaders & Materials</button>
+		<button class="cat-btn" data-filter="camera">🎥 Camera & Animation</button>
+		<button class="cat-btn" data-filter="cesium">🌍 Cesium</button>
+		<button class="cat-btn" data-filter="vr">🕶️ VR</button>
+		<button class="cat-btn" data-filter="showcase">🏛️ Showcase Models</button>
+	</div>
+
+	<main id="mainContainer">
+
+		<section class="section-group" data-category="featured">
+			<div class="section-title">
+				<span>🌟 Featured Workspaces</span>
+				<span class="badge-count">2</span>
+			</div>
+			<div class="cards-grid">
+	
+			<a class="card" href="/index.html" data-title="main viewer (index.html)" data-desc="core development viewer executing example/index.js with default point cloud and sidebar." data-category="featured">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Dev Viewer (index.js)" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Core Entry</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Dev Viewer (index.js)</h3>
+						<p class="card-desc">Core development viewer executing example/index.js with default point cloud and sidebar.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/feature_test.html" data-title="feature test suite dashboard" data-desc="interactive testing dashboard for tools, filters, clipping, and tetrahedral volumes." data-category="featured">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/clipping_volume.png" alt="Feature Test Suite Dashboard" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Test Suite</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Feature Test Suite Dashboard</h3>
+						<p class="card-desc">Interactive testing dashboard for tools, filters, clipping, and tetrahedral volumes.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			</div>
+		</section>
+	
+		<section class="section-group" data-category="tools">
+			<div class="section-title">
+				<span>📏 Tools, Measurements & Clipping</span>
+				<span class="badge-count">9</span>
+			</div>
+			<div class="cards-grid">
+	
+			<a class="card" href="/example/clipping_volume.html" data-title="clipping volume" data-desc="volumetric box clipping with inside/outside/highlight filters." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/clipping_volume.png" alt="Clipping Volume" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Clipping Volume</h3>
+						<p class="card-desc">Volumetric box clipping with inside/outside/highlight filters.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/measurements.html" data-title="measurements" data-desc="distance, angle, height, area, and circle measurements." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/measurements.png" alt="Measurements" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Measurements</h3>
+						<p class="card-desc">Distance, angle, height, area, and circle measurements.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/elevation_profile.html" data-title="elevation profile" data-desc="draw profile paths across terrain and inspect cross-sections." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/elevation_profile.png" alt="Elevation Profile" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Elevation Profile</h3>
+						<p class="card-desc">Draw profile paths across terrain and inspect cross-sections.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/annotations.html" data-title="annotations" data-desc="interactive 3d points of interest and camera bookmarks." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/annotations.png" alt="Annotations" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Annotations</h3>
+						<p class="card-desc">Interactive 3D points of interest and camera bookmarks.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/annotation_hierarchy.html" data-title="hierarchical annotations" data-desc="nested multi-level annotation tree with custom actions." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/annotation_hierarchy.png" alt="Hierarchical Annotations" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Hierarchical Annotations</h3>
+						<p class="card-desc">Nested multi-level annotation tree with custom actions.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/testing/transformation_tool.html" data-title="transformation tool" data-desc="interactive gizmo for translating and rotating scene objects." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Transformation Tool" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Transformation Tool</h3>
+						<p class="card-desc">Interactive Gizmo for translating and rotating scene objects.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/testing/annotations_performance.html" data-title="annotations performance" data-desc="benchmark high volume annotation rendering." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/annotations.png" alt="Annotations Performance" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Annotations Performance</h3>
+						<p class="card-desc">Benchmark high volume annotation rendering.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/toolbar.html" data-title="toolbar" data-desc="quick-access measurement and clipping toolbar atop viewer." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/toolbar.jpg" alt="Toolbar" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Toolbar</h3>
+						<p class="card-desc">Quick-access measurement and clipping toolbar atop viewer.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/custom_sidebar_section.html" data-title="custom sidebar section" data-desc="inject custom ui sections and controllers into sidebar." data-category="tools">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/custom_sidebar_section.png" alt="Custom Sidebar Section" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Tools</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Custom Sidebar Section</h3>
+						<p class="card-desc">Inject custom UI sections and controllers into sidebar.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			</div>
+		</section>
+	
+		<section class="section-group" data-category="data">
+			<div class="section-title">
+				<span>📂 Formats, Loaders & Attributes</span>
+				<span class="badge-count">17</span>
+			</div>
+			<div class="cards-grid">
+	
+			<a class="card" href="/example/classifications.html" data-title="classifications" data-desc="asprs lidar classification filtering and color schemes." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/classifications.jpg" alt="Classifications" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Classifications</h3>
+						<p class="card-desc">ASPRS LiDAR classification filtering and color schemes.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/copc.html" data-title="copc loader" data-desc="cloud optimized point cloud direct http range loading." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lion_las.png" alt="COPC Loader" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">COPC Loader</h3>
+						<p class="card-desc">Cloud Optimized Point Cloud direct HTTP range loading.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/ept.html" data-title="ept (entwine point tile)" data-desc="entwine format streaming and octree traversal." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lion.png" alt="EPT (Entwine Point Tile)" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">EPT (Entwine Point Tile)</h3>
+						<p class="card-desc">Entwine format streaming and octree traversal.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/ept_binary.html" data-title="ept binary" data-desc="raw binary stream parsing for entwine datasets." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lion_las.png" alt="EPT Binary" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">EPT Binary</h3>
+						<p class="card-desc">Raw binary stream parsing for Entwine datasets.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/ept_zstandard.html" data-title="ept zstandard" data-desc="zstandard compressed entwine stream decoding." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lion_las.png" alt="EPT zstandard" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">EPT zstandard</h3>
+						<p class="card-desc">Zstandard compressed Entwine stream decoding.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/lion_las.html" data-title="lion las" data-desc="direct las format loading without server preprocessing." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lion_las.png" alt="Lion LAS" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Lion LAS</h3>
+						<p class="card-desc">Direct LAS format loading without server preprocessing.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/lion_laz.html" data-title="lion laz" data-desc="compressed laz point cloud stream decompression." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lion_las.png" alt="Lion LAZ" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Lion LAZ</h3>
+						<p class="card-desc">Compressed LAZ point cloud stream decompression.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/geopackage.html" data-title="geopackage" data-desc="loading vector overlays and geometries from sqlite geopackage." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/geopackage.jpg" alt="Geopackage" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Geopackage</h3>
+						<p class="card-desc">Loading vector overlays and geometries from SQLite GeoPackage.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/shapefiles.html" data-title="shapefiles" data-desc="render gis shapefile polygons and lines over point clouds." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/shapefiles.png" alt="Shapefiles" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Shapefiles</h3>
+						<p class="card-desc">Render GIS shapefile polygons and lines over point clouds.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/load_project.html" data-title="load project" data-desc="save and reload full scene states and annotations json." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/load_project.jpg" alt="Load Project" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Load Project</h3>
+						<p class="card-desc">Save and reload full scene states and annotations JSON.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/multiple_pointclouds.html" data-title="multiple point clouds" data-desc="render and blend multiple overlapping point clouds." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/multiple_point_clouds.png" alt="Multiple Point Clouds" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Multiple Point Clouds</h3>
+						<p class="card-desc">Render and blend multiple overlapping point clouds.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/extra_attributes.html" data-title="extra attributes" data-desc="custom scalar attribute extraction and visualization." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Extra Attributes" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Extra Attributes</h3>
+						<p class="card-desc">Custom scalar attribute extraction and visualization.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/extra_attributes_vegetation.html" data-title="extra attributes (vegetation)" data-desc="vegetation ndvi and segmented point attribute shaders." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Extra Attributes (Vegetation)" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Extra Attributes (Vegetation)</h3>
+						<p class="card-desc">Vegetation NDVI and segmented point attribute shaders.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/extra_attributes_calkini.html" data-title="extra attributes (calkini)" data-desc="high density agricultural point cloud classification." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Extra Attributes (Calkini)" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Extra Attributes (Calkini)</h3>
+						<p class="card-desc">High density agricultural point cloud classification.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/extra_attributes_fragua.html" data-title="extra attributes (fragua)" data-desc="multi-spectral attribute coloring and segmentation." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Extra Attributes (Fragua)" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Extra Attributes (Fragua)</h3>
+						<p class="card-desc">Multi-spectral attribute coloring and segmentation.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/extra_attributes_inegi.html" data-title="extra attributes (inegi)" data-desc="official geospatial lidar with normal and intensity attributes." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Extra Attributes (INEGI)" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Extra Attributes (INEGI)</h3>
+						<p class="card-desc">Official geospatial LiDAR with normal and intensity attributes.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/extra_attributes_kmeans.html" data-title="extra attributes (kmeans)" data-desc="point cluster visualization from kmeans attributes." data-category="data">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Extra Attributes (KMeans)" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Data</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Extra Attributes (KMeans)</h3>
+						<p class="card-desc">Point cluster visualization from KMeans attributes.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			</div>
+		</section>
+	
+		<section class="section-group" data-category="rendering">
+			<div class="section-title">
+				<span>🎨 Rendering, Lighting & Materials</span>
+				<span class="badge-count">7</span>
+			</div>
+			<div class="cards-grid">
+	
+			<a class="card" href="/example/matcap.html" data-title="matcap shading" data-desc="sphere-mapped lighting textures for stylized point rendering." data-category="rendering">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/matcap.jpg" alt="Matcap Shading" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Rendering</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Matcap Shading</h3>
+						<p class="card-desc">Sphere-mapped lighting textures for stylized point rendering.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/light.html" data-title="point lights" data-desc="realtime dynamic three.js lighting and point illumination." data-category="rendering">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Point Lights" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Rendering</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Point Lights</h3>
+						<p class="card-desc">Realtime dynamic Three.js lighting and point illumination.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/light_animated.html" data-title="animated lights" data-desc="moving light sources with real-time shadow & diffuse updates." data-category="rendering">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Animated Lights" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Rendering</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Animated Lights</h3>
+						<p class="card-desc">Moving light sources with real-time shadow & diffuse updates.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/gradient_colors.html" data-title="gradient colors" data-desc="custom color gradients mapped across elevation or intensity." data-category="rendering">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/gradient_colors.png" alt="Gradient Colors" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Rendering</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Gradient Colors</h3>
+						<p class="card-desc">Custom color gradients mapped across elevation or intensity.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/lines.html" data-title="lines & wireframes" data-desc="three.js fat lines and vector overlays in point cloud space." data-category="rendering">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Lines & Wireframes" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Rendering</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Lines & Wireframes</h3>
+						<p class="card-desc">Three.js Fat Lines and vector overlays in Point Cloud space.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/meshes.html" data-title="meshes" data-desc="load obj and 3d textured meshes alongside point clouds." data-category="rendering">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/meshes.png" alt="Meshes" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Rendering</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Meshes</h3>
+						<p class="card-desc">Load OBJ and 3D textured meshes alongside point clouds.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/custom_isolines.html" data-title="custom isolines" data-desc="elevation contour lines rendered directly on point surface." data-category="rendering">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Custom Isolines" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Rendering</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Custom Isolines</h3>
+						<p class="card-desc">Elevation contour lines rendered directly on point surface.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			</div>
+		</section>
+	
+		<section class="section-group" data-category="camera">
+			<div class="section-title">
+				<span>🎥 Camera, Animation & 360</span>
+				<span class="badge-count">5</span>
+			</div>
+			<div class="cards-grid">
+	
+			<a class="card" href="/example/camera_animation.html" data-title="camera animation" data-desc="keyframed camera fly-through paths with bezier smoothing." data-category="camera">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/camera_animation.jpg" alt="Camera Animation" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Camera</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Camera Animation</h3>
+						<p class="card-desc">Keyframed camera fly-through paths with bezier smoothing.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/animation_paths.html" data-title="animation paths" data-desc="pre-computed camera trajectory paths across complex terrain." data-category="camera">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/animation_paths.png" alt="Animation Paths" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Camera</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Animation Paths</h3>
+						<p class="card-desc">Pre-computed camera trajectory paths across complex terrain.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/oriented_images.html" data-title="oriented images" data-desc="photogrammetry camera frustums and aligned high-res photos." data-category="camera">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/oriented_images.jpg" alt="Oriented Images" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Camera</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Oriented Images</h3>
+						<p class="card-desc">Photogrammetry camera frustums and aligned high-res photos.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/360.html" data-title="360 images" data-desc="spherical 360 panorama nodes georeferenced to 3d points." data-category="camera">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/360.jpg" alt="360 Images" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Camera</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">360 Images</h3>
+						<p class="card-desc">Spherical 360 panorama nodes georeferenced to 3D points.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/deviceorientation.html" data-title="device orientation" data-desc="mobile gyro and compass camera orientation controls." data-category="camera">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/viewer.png" alt="Device Orientation" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Camera</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Device Orientation</h3>
+						<p class="card-desc">Mobile gyro and compass camera orientation controls.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			</div>
+		</section>
+	
+		<section class="section-group" data-category="cesium">
+			<div class="section-title">
+				<span>🌍 Cesium Integration</span>
+				<span class="badge-count">3</span>
+			</div>
+			<div class="cards-grid">
+	
+			<a class="card" href="/example/cesium_ca13.html" data-title="cesium ca13" data-desc="synchronized potree point cloud inside cesium 3d globe." data-category="cesium">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/cesium_ca13.png" alt="Cesium CA13" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Cesium</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Cesium CA13</h3>
+						<p class="card-desc">Synchronized Potree point cloud inside Cesium 3D Globe.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/cesium_retz.html" data-title="cesium retz" data-desc="large scale municipal terrain rendered on cesium globe." data-category="cesium">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/cesium_retz.png" alt="Cesium Retz" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Cesium</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Cesium Retz</h3>
+						<p class="card-desc">Large scale municipal terrain rendered on Cesium globe.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/cesium_sorvilier.html" data-title="cesium sorvilier" data-desc="high precision valley point cloud with cesium imagery." data-category="cesium">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/cesium_sorvilier.png" alt="Cesium Sorvilier" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Cesium</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Cesium Sorvilier</h3>
+						<p class="card-desc">High precision valley point cloud with Cesium imagery.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			</div>
+		</section>
+	
+		<section class="section-group" data-category="vr">
+			<div class="section-title">
+				<span>🕶️ Virtual Reality (WebXR)</span>
+				<span class="badge-count">5</span>
+			</div>
+			<div class="cards-grid">
+	
+			<a class="card" href="/example/vr_heidentor.html" data-title="vr heidentor" data-desc="webxr immersive vr inspection for heidentor monument." data-category="vr">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/heidentor.jpg" alt="VR Heidentor" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">VR</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">VR Heidentor</h3>
+						<p class="card-desc">WebXR immersive VR inspection for Heidentor monument.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/vr_eclepens.html" data-title="vr eclepens" data-desc="immersive vr quarry walkthrough with 6dof teleportation." data-category="vr">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/eclepens.jpg" alt="VR Eclepens" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">VR</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">VR Eclepens</h3>
+						<p class="card-desc">Immersive VR quarry walkthrough with 6DOF teleportation.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/vr_morro_bay.html" data-title="vr morro bay" data-desc="vr coastline flythrough and volumetric inspection." data-category="vr">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/ca13.png" alt="VR Morro Bay" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">VR</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">VR Morro Bay</h3>
+						<p class="card-desc">VR coastline flythrough and volumetric inspection.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/vr_lion.html" data-title="vr lion" data-desc="vr controller scale and orientation tests on high-res statue." data-category="vr">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lion.png" alt="VR Lion" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">VR</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">VR Lion</h3>
+						<p class="card-desc">VR controller scale and orientation tests on high-res statue.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/vr_dechen_cave.html" data-title="vr dechen cave" data-desc="subterranean cave exploration in full immersive vr." data-category="vr">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/dechen_cave.jpg" alt="VR Dechen Cave" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">VR</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">VR Dechen Cave</h3>
+						<p class="card-desc">Subterranean cave exploration in full immersive VR.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			</div>
+		</section>
+	
+		<section class="section-group" data-category="showcase">
+			<div class="section-title">
+				<span>🏛️ Showcase Datasets</span>
+				<span class="badge-count">24</span>
+			</div>
+			<div class="cards-grid">
+	
+			<a class="card" href="/example/showcase/matterhorn.html" data-title="matterhorn" data-desc="showcase 3d capture: matterhorn" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/matterhorn.jpg" alt="Matterhorn" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Matterhorn</h3>
+						<p class="card-desc">Showcase 3D capture: Matterhorn</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/retz.html" data-title="retz" data-desc="showcase 3d capture: retz" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/retz.jpg" alt="Retz" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Retz</h3>
+						<p class="card-desc">Showcase 3D capture: Retz</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/lake_tahoe.html" data-title="lake tahoe" data-desc="showcase 3d capture: lake tahoe" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lake_tahoe.jpg" alt="Lake Tahoe" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Lake Tahoe</h3>
+						<p class="card-desc">Showcase 3D capture: Lake Tahoe</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/sorvilier.html" data-title="sorvilier" data-desc="showcase 3d capture: sorvilier" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/vol_total.jpg" alt="Sorvilier" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Sorvilier</h3>
+						<p class="card-desc">Showcase 3D capture: Sorvilier</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/grab_15.html" data-title="grave" data-desc="showcase 3d capture: grave" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/grab_15.jpg" alt="Grave" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Grave</h3>
+						<p class="card-desc">Showcase 3D capture: Grave</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/tern_auscover_chowilla.html" data-title="chowilla" data-desc="showcase 3d capture: chowilla" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/chowilla.jpg" alt="Chowilla" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Chowilla</h3>
+						<p class="card-desc">Showcase 3D capture: Chowilla</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/chiller.html" data-title="chiller" data-desc="showcase 3d capture: chiller" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/chiller.jpg" alt="Chiller" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Chiller</h3>
+						<p class="card-desc">Showcase 3D capture: Chiller</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/cooler_tower.html" data-title="cooler" data-desc="showcase 3d capture: cooler" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/cooler_tower.jpg" alt="Cooler" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Cooler</h3>
+						<p class="card-desc">Showcase 3D capture: Cooler</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/dechen_cave.html" data-title="dechen cave" data-desc="showcase 3d capture: dechen cave" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/dechen_cave.jpg" alt="Dechen Cave" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Dechen Cave</h3>
+						<p class="card-desc">Showcase 3D capture: Dechen Cave</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/doverMillRuins.html" data-title="ruins" data-desc="showcase 3d capture: ruins" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/DoverMillRuins.jpg" alt="Ruins" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Ruins</h3>
+						<p class="card-desc">Showcase 3D capture: Ruins</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/eclepens.html" data-title="eclepens" data-desc="showcase 3d capture: eclepens" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/eclepens.jpg" alt="Eclepens" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Eclepens</h3>
+						<p class="card-desc">Showcase 3D capture: Eclepens</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/heidentor.html" data-title="heidentor" data-desc="showcase 3d capture: heidentor" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/heidentor.jpg" alt="Heidentor" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Heidentor</h3>
+						<p class="card-desc">Showcase 3D capture: Heidentor</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/land_building.html" data-title="building" data-desc="showcase 3d capture: building" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/land_building.jpg" alt="Building" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Building</h3>
+						<p class="card-desc">Showcase 3D capture: Building</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/LDHI_module.html" data-title="ldhi" data-desc="showcase 3d capture: ldhi" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/LDHI_module.jpg" alt="LDHI" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">LDHI</h3>
+						<p class="card-desc">Showcase 3D capture: LDHI</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/lion_head_simone_garagnani.html" data-title="lion head" data-desc="showcase 3d capture: lion head" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/lion_head.jpg" alt="Lion Head" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Lion Head</h3>
+						<p class="card-desc">Showcase 3D capture: Lion Head</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/overpass.html" data-title="overpass" data-desc="showcase 3d capture: overpass" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/overpass.jpg" alt="Overpass" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Overpass</h3>
+						<p class="card-desc">Showcase 3D capture: Overpass</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/pielach.html" data-title="pielach" data-desc="showcase 3d capture: pielach" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/pielach.jpg" alt="Pielach" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Pielach</h3>
+						<p class="card-desc">Showcase 3D capture: Pielach</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/pompei.html" data-title="pompei" data-desc="showcase 3d capture: pompei" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/pompei.jpg" alt="pompei" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">pompei</h3>
+						<p class="card-desc">Showcase 3D capture: pompei</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/santorini.html" data-title="santorini" data-desc="showcase 3d capture: santorini" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/santorini.jpg" alt="Santorini" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Santorini</h3>
+						<p class="card-desc">Showcase 3D capture: Santorini</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/skatepark.html" data-title="skatepark" data-desc="showcase 3d capture: skatepark" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/skatepark.jpg" alt="Skatepark" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Skatepark</h3>
+						<p class="card-desc">Showcase 3D capture: Skatepark</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/subsea_equipment.html" data-title="subsea eq." data-desc="showcase 3d capture: subsea eq." data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/subsea_equipment.jpg" alt="Subsea Eq." onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Subsea Eq.</h3>
+						<p class="card-desc">Showcase 3D capture: Subsea Eq.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/subsea_manifold.html" data-title="subsea man." data-desc="showcase 3d capture: subsea man." data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/subseamanifold.jpg" alt="Subsea Man." onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Subsea Man.</h3>
+						<p class="card-desc">Showcase 3D capture: Subsea Man.</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/westend_palais.html" data-title="westend palais" data-desc="showcase 3d capture: westend palais" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/westend_palais.jpg" alt="Westend Palais" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Westend Palais</h3>
+						<p class="card-desc">Showcase 3D capture: Westend Palais</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			<a class="card" href="/example/showcase/whitby.html" data-title="whitby" data-desc="showcase 3d capture: whitby" data-category="showcase">
+				<div class="card-thumb-wrap">
+					<img class="card-thumb" src="/thumbnails/whitby.jpg" alt="Whitby" onerror="this.src='/thumbnails/viewer.png'">
+					<div class="card-badge">Showcase</div>
+				</div>
+				<div class="card-body">
+					<div>
+						<h3 class="card-title">Whitby</h3>
+						<p class="card-desc">Showcase 3D capture: Whitby</p>
+					</div>
+					<div class="card-footer">
+						<span>Launch Example</span>
+						<span>→</span>
+					</div>
+				</div>
+			</a>
+		
+			</div>
+		</section>
+	
+		<div id="noResults" class="no-results">
+			<h3>No matching examples found</h3>
+			<p>Try searching for a different keyword like "clipping", "cesium", "las", "vr" or "measure".</p>
+		</div>
+	</main>
+
+	<script>
+		const searchInput = document.getElementById('searchInput');
+		const catBtns = document.querySelectorAll('.cat-btn');
+		const cards = document.querySelectorAll('.card');
+		const sections = document.querySelectorAll('.section-group');
+		const noResults = document.getElementById('noResults');
+
+		let currentFilter = 'all';
+		let currentQuery = '';
+
+		function filterCards() {
+			let visibleCount = 0;
+
+			sections.forEach(section => {
+				const sectionCategory = section.getAttribute('data-category');
+				const sectionCards = section.querySelectorAll('.card');
+				let sectionVisible = 0;
+
+				sectionCards.forEach(card => {
+					const cardCategory = card.getAttribute('data-category');
+					const title = card.getAttribute('data-title');
+					const desc = card.getAttribute('data-desc');
+
+					const matchesCategory = currentFilter === 'all' || cardCategory === currentFilter;
+					const matchesQuery = !currentQuery || title.includes(currentQuery) || desc.includes(currentQuery);
+
+					if (matchesCategory && matchesQuery) {
+						card.style.display = 'flex';
+						sectionVisible++;
+						visibleCount++;
+					} else {
+						card.style.display = 'none';
+					}
+				});
+
+				if (sectionVisible > 0) {
+					section.style.display = 'block';
+				} else {
+					section.style.display = 'none';
+				}
+			});
+
+			noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+		}
+
+		searchInput.addEventListener('input', e => {
+			currentQuery = e.target.value.toLowerCase().trim();
+			filterCards();
+		});
+
+		catBtns.forEach(btn => {
+			btn.addEventListener('click', () => {
+				catBtns.forEach(b => b.classList.remove('active'));
+				btn.classList.add('active');
+				currentFilter = btn.getAttribute('data-filter');
+				filterCards();
+			});
+		});
+	</script>
+</body>
+</html>

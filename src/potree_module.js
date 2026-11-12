@@ -1,9 +1,31 @@
 
 
 import {Potree} from "./PotreeGlobal.js";
+import {Viewer} from "./viewer/viewer.js";
+import {PScene} from "./viewer/Scene.js";
+import {Volume, BoxVolume, SphereVolume} from "./utils/Volume.js";
+import {PolygonClipVolume} from "./utils/PolygonClipVolume.js";
+import {PointCloudOctree} from "./PointCloudOctree.js";
+import {AnimationPath} from "./AnimationPath.js";
+import {SpotLightHelper} from "./utils/SpotLightHelper.js";
+import * as DEFINES from "./defines.js";
+
+Potree.Viewer = Viewer;
+Potree.Scene = PScene;
+Potree.PScene = PScene;
+Potree.BoxVolume = BoxVolume;
+Potree.SphereVolume = SphereVolume;
+Potree.Volume = Volume;
+Potree.PolygonClipVolume = PolygonClipVolume;
+Potree.PointCloudOctree = PointCloudOctree;
+Potree.AnimationPath = AnimationPath;
+Potree.SpotLightHelper = SpotLightHelper;
+Object.assign(Potree, DEFINES);
+
 export {Potree};
-export {Viewer} from "./viewer/viewer.js";
-export {PScene} from "./viewer/Scene.js";
+export {Viewer};
+export {PScene};
+export {PScene as Scene};
 export default Potree;
 
 
@@ -12,7 +34,7 @@ export {CameraMode, ClipMethod, ClipTask, ElevationGradientRepeat, MOUSE, PointS
 export {Action} from "./Actions.js";
 export {AnimationPath} from "./AnimationPath.js";
 export {Annotation} from "./Annotation.js";
-export * as DEFINES from "./defines.js";
+export {DEFINES};
 
 export {Enum} from "./Enum.js";
 export {EventDispatcher} from "./EventDispatcher.js";
@@ -55,7 +77,7 @@ export {GeoPackageLoader} from "./loader/GeoPackageLoader.js";
 export {POCLoader} from "./loader/POCLoader.js";
 export {PointAttributes} from "./loader/PointAttributes.js";
 export {ShapefileLoader} from "./loader/ShapefileLoader.js";
-export {OctreeLoader,NodeLoader} from "./modules/loader/2.0/OctreeLoader.js";
+export {OctreeLoader, NodeLoader} from "./modules/loader/2.0/OctreeLoader.js";
 
 export {Box3Helper} from "./utils/Box3Helper.js";
 export {ClippingTool} from "./utils/ClippingTool.js";
@@ -72,7 +94,7 @@ export {ProfileTool} from "./utils/ProfileTool.js";
 export {ScreenBoxSelectTool} from "./utils/ScreenBoxSelectTool.js";
 export {SpotLightHelper} from "./utils/SpotLightHelper.js";
 export {TransformationTool} from "./utils/TransformationTool.js";
-export {Volume,SphereVolume} from "./utils/Volume.js";
+export {Volume, BoxVolume, SphereVolume} from "./utils/Volume.js";
 export {TetrahedralBoxVolume, TetrahedralVolume} from "./utils/TetrahedralBoxVolume.js";
 export {TetrahedralLineVolume, TetrahedralLineTool, TetrahedralSegmentBox, TetLineTool} from "./utils/TetrahedralLineVolume.js";
 export {VolumeTool} from "./utils/VolumeTool.js";
@@ -89,7 +111,8 @@ export {OrientedImages} from "./modules/OrientedImages/OrientedImages.js";
 
 // export {OctreeLoader,NodeLoader} from "./modules/loader/2.0/OctreeLoader.js";
 
-export {updateFetchToken} from './tokenUpdater.js';//NOT IN USE HERE
+export {updateFetchToken, setPotreeAuthToken} from './tokenUpdater.js';
+
 
 // export {ClusteredPoint} from './dm_custom_tools/clustering/ClusteredPoint.js';
 export {ClusterTool} from './dm_custom_tools/clustering/ClusterTool.js';

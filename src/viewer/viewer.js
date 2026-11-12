@@ -1849,14 +1849,17 @@ export class Viewer extends EventDispatcher {
 
 	toggleSidebar() {
 		try {
-			const sidebarArea = this.renderArea.querySelector('#potree_sidebar_container');
+			const sidebarArea = document.querySelector('#potree_sidebar_container') || this.renderArea.querySelector('#potree_sidebar_container');
 			if (!sidebarArea) return;
+			const sidebarWidth = 300;
 			this._sidebarOpen = !this._sidebarOpen;
 
 			if (this._sidebarOpen) {
 				sidebarArea.style.display = '';
+				this.renderer.domElement.style.left = `${sidebarWidth}px`;
 			} else {
 				sidebarArea.style.display = 'none';
+				this.renderer.domElement.style.left = '0px';
 			}
 		} catch (e) {
 			console.error("Error toggling sidebar viewer.toggleSidebar", e);
@@ -1911,41 +1914,50 @@ export class Viewer extends EventDispatcher {
 		}
 
 		let viewer = this;
-		let sidebarContainer = this.renderArea.querySelector('#potree_sidebar_container');
+		let sidebarContainer = document.querySelector('#potree_sidebar_container') || this.renderArea.querySelector('#potree_sidebar_container');
 		if (!sidebarContainer) {
 			sidebarContainer = document.createElement('div');
 			sidebarContainer.id = 'potree_sidebar_container';
-			this.renderArea.appendChild(sidebarContainer);
+			if (this.renderArea.parentElement) {
+				this.renderArea.parentElement.appendChild(sidebarContainer);
+			} else {
+				this.renderArea.appendChild(sidebarContainer);
+			}
 		}
 
 		// Load sidebar.html using fetch instead of jQuery.load
-		// fetch(new URL(Potree.scriptPath + '/sidebar.html').href)
-		// let url=new URL( './potree/sidebar.html',import.meta.url);
-		let path = `./potree/sidebar.html`;
+		let path = Potree.scriptPath ? `${Potree.scriptPath}/sidebar.html` : `./potree/sidebar.html`;
 		fetch(path)
-			.then(response => response.text())
+			.then(response => {
+				if (!response.ok) {
+					return fetch('/potree/sidebar.html').then(r => r.text());
+				}
+				return response.text();
+			})
 			.then(html => {
 				sidebarContainer.innerHTML = html;
+				sidebarContainer.style.width = '300px';
+				sidebarContainer.style.height = '100%';
+				sidebarContainer.style.display = '';
 				this._sidebarOpen = true;
 				this.renderer.domElement.style.left = '300px';
+
 				//toggle button
+				const iconBase = Potree.resourcePath || '/resources';
 				let imgMenuToggle = document.createElement('img');
-				// imgMenuToggle.src = new URL(Potree.resourcePath + '/icons/menu_button.svg').href;
-				imgMenuToggle.src = '/icons/menu_button.svg';
-				imgMenuToggle.onclick = this.toggleSidebar;
+				imgMenuToggle.src = `${iconBase}/icons/menu_button.svg`;
+				imgMenuToggle.onclick = () => this.toggleSidebar();
 				imgMenuToggle.classList.add('potree_menu_toggle');
 
 				//map toggle
 				let imgMapToggle = document.createElement('img');
-				// imgMapToggle.src = new URL(Potree.resourcePath + '/icons/map_icon.png').href;
-				imgMapToggle.src = '/icons/map_icon.png'
-
+				imgMapToggle.src = `${iconBase}/icons/map_icon.png`;
 				imgMapToggle.style.display = 'none';
 				imgMapToggle.onclick = e => {this.toggleMap();};
 				imgMapToggle.id = 'potree_map_toggle';
 
 				//quickButtons
-				let elButtons = this.renderArea.querySelector('#potree_quick_buttons');
+				let elButtons = document.querySelector('#potree_quick_buttons') || this.renderArea.querySelector('#potree_quick_buttons');
 				if (!elButtons) {
 					elButtons = document.createElement('div');
 					elButtons.id = 'potree_quick_buttons';
@@ -1955,37 +1967,21 @@ export class Viewer extends EventDispatcher {
 				elButtons.appendChild(imgMenuToggle);
 				elButtons.appendChild(imgMapToggle);
 
-				this.sidebar = new Sidebar(this);//not really workking as needs a sidebar_Root
+				this.sidebar = new Sidebar(this);
 				this.sidebar.init();
 
-
-				// Migrate i18n to i18next (install via npm)
-				// import('i18next').then(i18next => {
-				// 	i18next.init({
-				// 		lng: 'en',
-				// 		resources: {
-				// 			en: {
-				// 				translation: {
-				// 					// Add your translations here
-				// 				}
-				// 			}
-				// 		}
-				// 	}, function (err, t) {
-				// 		// Apply translations to body
-				// 		document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
-				// 	});
-				// });
-
-
 				//appends the required html elements
-				// fetch(new URL(Potree.scriptPath + '/profile.html').href)//requires to fix scriptPath, which may be used extensively
-				fetch(new URL('/potree/profile.html').href)
-					.then(response => response.text())
+				const profilePath = Potree.scriptPath ? `${Potree.scriptPath}/profile.html` : '/potree/profile.html';
+				fetch(profilePath)
+					.then(response => {
+						if (!response.ok) return fetch('/potree/profile.html').then(r => r.text());
+						return response.text();
+					})
 					.then(html => {
 						//1
 						const template = document.createElement('template');
 						template.innerHTML = html;
-						document.body.appendChild(template.content);//this
+						document.body.appendChild(template.content);
 
 						//2
 						this.profileWindow = new ProfileWindow(this);
@@ -1993,11 +1989,9 @@ export class Viewer extends EventDispatcher {
 						//3
 						this.profileWindowController = new ProfileWindowController(this);
 
-						//accessing the html components, but should be unaware of the implementation
 						//4
 						const elProfileWindow = document.getElementById('profile_window');
 						const elProfileTitlebar = document.getElementById('profile_titlebar');
-
 
 						if (elProfileWindow && elProfileTitlebar) {
 							makeDraggable(elProfileWindow, {
@@ -2022,6 +2016,14 @@ export class Viewer extends EventDispatcher {
 							task();
 						}
 					});
+			})
+			.catch(err => {
+				console.error('Failed to load sidebar:', err);
+				this.guiLoaded = true;
+				for (let task of this.guiLoadTasks) {
+					task();
+				}
+			});
 
 				////////////////////////////////////////////////////// PROFILE WINDOW REMOVED FOR TESTING PURPOSES
 				// Load profile.html using fetch
@@ -2064,7 +2066,6 @@ export class Viewer extends EventDispatcher {
 				// 			}
 				// 		});
 				// 	});
-			});
 
 		return this.promiseGuiLoaded();
 	}

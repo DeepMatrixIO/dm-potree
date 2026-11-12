@@ -31,6 +31,8 @@ export default defineConfig({
 				server.middlewares.use((req, res, next) => {
 					if (req.url === '/feature_test') {
 						req.url = '/feature_test.html';
+					} else if (req.url.startsWith('/build/potree/')) {
+						req.url = req.url.replace('/build/potree/', '/dist/potree/');
 					}
 					next();
 				});

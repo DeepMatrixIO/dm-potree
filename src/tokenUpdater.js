@@ -1,4 +1,4 @@
-import { XHRFactory } from "./XHRFactory";
+import {XHRFactory} from "./XHRFactory";
 function updateFetchToken(fetchOptions) {
 
 	// window.Potree.XHRFactory.config.customHeaders.forEach(function (header) {//added by jguerrer
@@ -7,5 +7,11 @@ function updateFetchToken(fetchOptions) {
 	});
 	return fetchOptions;
 }
-
-export {updateFetchToken};
+// Add this function:
+function setPotreeAuthToken(token) {
+	if (!token) return;
+	XHRFactory.config.customHeaders = [
+		{header: 'Authorization', value: `Bearer ${token}`}
+	];
+}
+export {updateFetchToken, setPotreeAuthToken};

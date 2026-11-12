@@ -186,10 +186,10 @@ export const turbo_4_array = [
 export const TURBO_4_ARRAY = turbo_4_array;
 
 export const turbo_4_array_reversed = [
-	122 / 255, 4 / 255, 3 / 255,    // #7a0403
-	251 / 255, 186 / 255, 57 / 255, // #faba39
+	255 / 255, 4 / 255, 0 / 255,    // #ff0400ff
+	255 / 255, 255 / 255, 0 / 255,  // #ffff00ff
 	26 / 255, 228 / 255, 182 / 255, // #1ae4b6
-	70 / 255, 248 / 255, 132 / 255,    // #46f884
+	8 / 255, 0 / 255, 255 / 255,    // #0800ffff
 ];
 export const TURBO_4_ARRAY_REVERSED = turbo_4_array_reversed;
 

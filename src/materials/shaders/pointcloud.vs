@@ -2516,7 +2516,49 @@ void main() {
 		float bias = vRadius * 2.0f;
 
 		for(int j = 0; j < 9; j++) {
-			vec4 depthMapValue = texture(uShadowMap[i], vec2(u, v) + sampleLocations[j]);
+			vec2 sampleUv = vec2(u, v) + sampleLocations[j];
+			vec4 depthMapValue;
+			if(i == 0) {
+				depthMapValue = texture(uShadowMap[0], sampleUv);
+			}
+#if num_shadowmaps > 1
+			else if(i == 1) {
+				depthMapValue = texture(uShadowMap[1], sampleUv);
+			}
+#endif
+#if num_shadowmaps > 2
+			else if(i == 2) {
+				depthMapValue = texture(uShadowMap[2], sampleUv);
+			}
+#endif
+#if num_shadowmaps > 3
+			else if(i == 3) {
+				depthMapValue = texture(uShadowMap[3], sampleUv);
+			}
+#endif
+#if num_shadowmaps > 4
+			else if(i == 4) {
+				depthMapValue = texture(uShadowMap[4], sampleUv);
+			}
+#endif
+#if num_shadowmaps > 5
+			else if(i == 5) {
+				depthMapValue = texture(uShadowMap[5], sampleUv);
+			}
+#endif
+#if num_shadowmaps > 6
+			else if(i == 6) {
+				depthMapValue = texture(uShadowMap[6], sampleUv);
+			}
+#endif
+#if num_shadowmaps > 7
+			else if(i == 7) {
+				depthMapValue = texture(uShadowMap[7], sampleUv);
+			}
+#endif
+			else {
+				depthMapValue = texture(uShadowMap[0], sampleUv);
+			}
 
 			float linearDepthFromSM = depthMapValue.x + bias;
 			float linearDepthFromViewer = distanceToLight;

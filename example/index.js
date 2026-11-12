@@ -57,6 +57,10 @@ function init() {
 		<div id="potree_render_area" style="background-image: url('/resources/images/background.jpg');">
 		</div>
 		<div id="potree_sidebar_container"> </div>
+		<div style="position: fixed; top: 12px; right: 15px; z-index: 10001; display: flex; gap: 8px;">
+			<a href="/examples.html" style="background: rgba(17, 24, 39, 0.9); color: #38bdf8; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">📚 All Examples</a>
+			<a href="/feature_test.html" style="background: rgba(17, 24, 39, 0.9); color: #38bdf8; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">🧪 Feature Tests</a>
+		</div>
 	</div>`;
 
 	// Example: Insert into the body
@@ -97,28 +101,38 @@ function init() {
 	//that is removed in favour
 
 
-	viewer.loadGUI(() => {//no more jquery pls
+	viewer.loadGUI(() => {
 		viewer.setLanguage('en');
-		// $("#menu_scene").next().show();
-		viewer.toggleSidebar();
 
-		// Add floating test suite switch link at bottom of sidebar
+		// Ensure sidebar is open and visible
+		if (!viewer._sidebarOpen) {
+			viewer.toggleSidebar();
+		}
+
+		// Open Tools section so the toolbar with measurement icons is visible
+		const menuTools = document.querySelector('#menu_tools');
+		if (menuTools && menuTools.nextElementSibling) {
+			menuTools.nextElementSibling.style.display = 'block';
+		}
+
+		// Add quick navigation links at the bottom of the sidebar
 		const sidebar = document.getElementById('potree_sidebar_container');
 		if (sidebar) {
 			const linkDiv = document.createElement('div');
-			linkDiv.style.position = 'absolute';
-			linkDiv.style.bottom = '15px';
-			linkDiv.style.left = '15px';
-			linkDiv.style.right = '15px';
-			linkDiv.style.padding = '10px';
-			linkDiv.style.background = 'rgba(2, 132, 199, 0.2)';
-			linkDiv.style.border = '1px solid #0284c7';
+			linkDiv.style.margin = '15px 10px 25px 10px';
+			linkDiv.style.padding = '12px';
+			linkDiv.style.background = 'rgba(2, 132, 199, 0.12)';
+			linkDiv.style.border = '1px solid rgba(2, 132, 199, 0.5)';
 			linkDiv.style.borderRadius = '8px';
-			linkDiv.style.zIndex = '1000';
 			linkDiv.innerHTML = `
-				<a href="feature_test.html" style="color: #0ea5e9; text-decoration: none; font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-					<span>🧪</span> Open Feature Test Suite
-				</a>
+				<div style="display: flex; flex-direction: column; gap: 8px;">
+					<a href="/examples.html" style="color: #38bdf8; text-decoration: none; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+						<span>📚</span> All Examples Gallery
+					</a>
+					<a href="/feature_test.html" style="color: #38bdf8; text-decoration: none; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+						<span>🧪</span> Feature Test Suite
+					</a>
+				</div>
 			`;
 			sidebar.appendChild(linkDiv);
 		}
