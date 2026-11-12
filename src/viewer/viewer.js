@@ -1870,8 +1870,14 @@ export class Viewer extends EventDispatcher {
 
 			if (this._sidebarOpen) {
 				sidebarArea.style.display = '';
+				if (this.renderer && this.renderer.domElement) {
+					this.renderer.domElement.style.left = '300px';
+				}
 			} else {
 				sidebarArea.style.display = 'none';
+				if (this.renderer && this.renderer.domElement) {
+					this.renderer.domElement.style.left = '0px';
+				}
 			}
 		} catch (e) {
 			console.error("Error toggling sidebar viewer.toggleSidebar", e);
@@ -1947,7 +1953,7 @@ export class Viewer extends EventDispatcher {
 				let imgMenuToggle = document.createElement('img');
 				// imgMenuToggle.src = new URL(Potree.resourcePath + '/icons/menu_button.svg').href;
 				imgMenuToggle.src = '/icons/menu_button.svg';
-				imgMenuToggle.onclick = this.toggleSidebar;
+				imgMenuToggle.onclick = () => this.toggleSidebar();
 				imgMenuToggle.classList.add('potree_menu_toggle');
 
 				//map toggle
