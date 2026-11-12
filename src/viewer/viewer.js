@@ -138,6 +138,7 @@ export class Viewer extends EventDispatcher {
 		this._ecefPerspectiveCamera = new PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 		this._ecefOrthographicCamera = new OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
 
+		this._activeAttributeName = null;
 
 
 
@@ -1123,6 +1124,20 @@ export class Viewer extends EventDispatcher {
 			this.dispatchEvent({
 				type: "elevation_gradient_repeat_changed",
 				viewer: this
+			});
+		}
+	}
+
+
+	get activeAttributeName() {
+		return this._activeAttributeName;
+	}
+
+	set activeAttributeName(value) {
+		this._activeAttributeName = value;
+		if (this.scene && this.scene.pointclouds) {
+			this.scene.pointclouds.forEach(pc => {
+				pc.material.activeAttributeName = value;
 			});
 		}
 	}
