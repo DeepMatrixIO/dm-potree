@@ -606,6 +606,10 @@ export class Sidebar {
 
 	createToolIcon(icon, title, callback) {
 		let element = document.createElement('img');
+		const resPath = Potree.resourcePath || '/dist/resources';
+		if (typeof icon === 'string' && icon.startsWith('undefined/')) {
+			icon = icon.replace('undefined/', `${resPath}/`);
+		}
 		element.src = icon;
 		element.style.width = "32px";
 		element.style.height = "32px";
@@ -646,6 +650,7 @@ export class Sidebar {
 
 		// ANGLE
 		let elToolbar = document.querySelector('#tools');
+		if (!elToolbar) return;
 		elToolbar.append(this.createToolIcon(
 			Potree.resourcePath + '/icons/angle.png',
 			'[title]tt.angle_measurement',

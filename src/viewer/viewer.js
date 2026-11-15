@@ -1862,19 +1862,42 @@ export class Viewer extends EventDispatcher {
 
 	//explicit action to modofy the render area for sidebar.  Should be removed or placed outside.
 
-	toggleSidebar() {
+	toggleSidebar(open) {
 		try {
-			const sidebarArea = document.querySelector('#potree_sidebar_container') || this.renderArea.querySelector('#potree_sidebar_container');
-			if (!sidebarArea) return;
-			const sidebarWidth = 300;
-			this._sidebarOpen = !this._sidebarOpen;
+			const sidebarArea = document.querySelector('#potree_sidebar_container') || (this.renderArea && this.renderArea.querySelector('#potree_sidebar_container'));
+			const renderArea = this.renderArea || document.querySelector('#potree_render_area');
+			if (!sidebarArea && !renderArea) return;
+
+			if (open !== undefined) {
+				this._sidebarOpen = Boolean(open);
+			} else {
+				this._sidebarOpen = !this._sidebarOpen;
+			}
+
+			const sidebarWidth = '300px';
 
 			if (this._sidebarOpen) {
-				sidebarArea.style.display = '';
-				this.renderer.domElement.style.left = `${sidebarWidth}px`;
+				if (sidebarArea) {
+					sidebarArea.style.display = '';
+					sidebarArea.style.width = sidebarWidth;
+					sidebarArea.style.zIndex = '100';
+				}
+				if (renderArea) {
+					renderArea.style.left = sidebarWidth;
+				}
+				if (this.renderer && this.renderer.domElement) {
+					this.renderer.domElement.style.left = '0px';
+				}
 			} else {
-				sidebarArea.style.display = 'none';
-				this.renderer.domElement.style.left = '0px';
+				if (sidebarArea) {
+					sidebarArea.style.display = 'none';
+				}
+				if (renderArea) {
+					renderArea.style.left = '0px';
+				}
+				if (this.renderer && this.renderer.domElement) {
+					this.renderer.domElement.style.left = '0px';
+				}
 			}
 		} catch (e) {
 			console.error("Error toggling sidebar viewer.toggleSidebar", e);
@@ -1922,6 +1945,32 @@ export class Viewer extends EventDispatcher {
 	//profile is openly added and is not restricted to be present
 
 
+	async loadTemplate(filename) {
+		const candidates = [
+			Potree.scriptPath ? `${Potree.scriptPath}/potree/${filename}` : null,
+			Potree.scriptPath ? `${Potree.scriptPath}/${filename}` : null,
+			`/dist/potree/${filename}`,
+			`/build/potree/${filename}`,
+			`/example/potree/${filename}`,
+			`/potree/${filename}`,
+			`./potree/${filename}`,
+			`/src/viewer/${filename}`
+		].filter(Boolean);
+
+		for (const url of candidates) {
+			try {
+				const res = await fetch(url);
+				if (res.ok) {
+					const text = await res.text();
+					if (text && !text.includes('<!DOCTYPE html>') && (text.includes('sidebar_root') || text.includes('profile_window') || text.includes('accordion') || text.includes('menu_tools'))) {
+						return text;
+					}
+				}
+			} catch (e) {}
+		}
+		throw new Error(`Failed to load ${filename}`);
+	}
+
 	loadGUI(callback) {
 
 		if (callback) {
@@ -1929,33 +1978,28 @@ export class Viewer extends EventDispatcher {
 		}
 
 		let viewer = this;
-		let sidebarContainer = document.querySelector('#potree_sidebar_container') || this.renderArea.querySelector('#potree_sidebar_container');
+		let sidebarContainer = document.querySelector('#potree_sidebar_container') || (this.renderArea && this.renderArea.querySelector('#potree_sidebar_container'));
 		if (!sidebarContainer) {
 			sidebarContainer = document.createElement('div');
 			sidebarContainer.id = 'potree_sidebar_container';
-			if (this.renderArea.parentElement) {
+			if (this.renderArea && this.renderArea.parentElement) {
 				this.renderArea.parentElement.appendChild(sidebarContainer);
-			} else {
+			} else if (this.renderArea) {
 				this.renderArea.appendChild(sidebarContainer);
+			} else {
+				document.body.appendChild(sidebarContainer);
 			}
 		}
 
-		// Load sidebar.html using fetch instead of jQuery.load
-		let path = Potree.scriptPath ? `${Potree.scriptPath}/sidebar.html` : `./potree/sidebar.html`;
-		fetch(path)
-			.then(response => {
-				if (!response.ok) {
-					return fetch('/potree/sidebar.html').then(r => r.text());
-				}
-				return response.text();
-			})
+		this.loadTemplate('sidebar.html')
 			.then(html => {
 				sidebarContainer.innerHTML = html;
 				sidebarContainer.style.width = '300px';
 				sidebarContainer.style.height = '100%';
-				sidebarContainer.style.display = '';
-				this._sidebarOpen = true;
-				this.renderer.domElement.style.left = '300px';
+				sidebarContainer.style.display = 'none';
+				this._sidebarOpen = false;
+				if (this.renderArea) this.renderArea.style.left = '0px';
+				if (this.renderer && this.renderer.domElement) this.renderer.domElement.style.left = '0px';
 
 				//toggle button
 				const iconBase = Potree.resourcePath || '/resources';
@@ -1972,12 +2016,16 @@ export class Viewer extends EventDispatcher {
 				imgMapToggle.id = 'potree_map_toggle';
 
 				//quickButtons
-				let elButtons = document.querySelector('#potree_quick_buttons') || this.renderArea.querySelector('#potree_quick_buttons');
+				let elButtons = document.querySelector('#potree_quick_buttons') || (this.renderArea && this.renderArea.querySelector('#potree_quick_buttons'));
 				if (!elButtons) {
 					elButtons = document.createElement('div');
 					elButtons.id = 'potree_quick_buttons';
 					elButtons.className = 'quick_buttons_container';
-					this.renderArea.appendChild(elButtons);
+					if (this.renderArea) {
+						this.renderArea.appendChild(elButtons);
+					} else {
+						document.body.appendChild(elButtons);
+					}
 				}
 				elButtons.appendChild(imgMenuToggle);
 				elButtons.appendChild(imgMapToggle);
@@ -1985,55 +2033,37 @@ export class Viewer extends EventDispatcher {
 				this.sidebar = new Sidebar(this);
 				this.sidebar.init();
 
-				//appends the required html elements
-				const profilePath = Potree.scriptPath ? `${Potree.scriptPath}/profile.html` : '/potree/profile.html';
-				fetch(profilePath)
-					.then(response => {
-						if (!response.ok) return fetch('/potree/profile.html').then(r => r.text());
-						return response.text();
-					})
-					.then(html => {
-						//1
-						const template = document.createElement('template');
-						template.innerHTML = html;
-						document.body.appendChild(template.content);
+				return this.loadTemplate('profile.html');
+			})
+			.then(html => {
+				const template = document.createElement('template');
+				template.innerHTML = html;
+				document.body.appendChild(template.content);
 
-						//2
-						this.profileWindow = new ProfileWindow(this);
+				this.profileWindow = new ProfileWindow(this);
+				this.profileWindowController = new ProfileWindowController(this);
 
-						//3
-						this.profileWindowController = new ProfileWindowController(this);
+				const elProfileWindow = document.getElementById('profile_window');
+				const elProfileTitlebar = document.getElementById('profile_titlebar');
 
-						//4
-						const elProfileWindow = document.getElementById('profile_window');
-						const elProfileTitlebar = document.getElementById('profile_titlebar');
-
-						if (elProfileWindow && elProfileTitlebar) {
-							makeDraggable(elProfileWindow, {
-								handle: elProfileTitlebar,
-								containment: document.body,
-							});
-							makeResizable(elProfileWindow, {
-								containment: document.body,
-								handles: ['n', 'e', 's', 'w'],
-							});
-						}
-
-						this.guiLoaded = true;
-						for (let task of this.guiLoadTasks) {
-							task();
-						}
-					})
-					.catch(err => {
-						console.error('Failed to load profile window:', err);
-						this.guiLoaded = true;
-						for (let task of this.guiLoadTasks) {
-							task();
-						}
+				if (elProfileWindow && elProfileTitlebar) {
+					makeDraggable(elProfileWindow, {
+						handle: elProfileTitlebar,
+						containment: document.body,
 					});
+					makeResizable(elProfileWindow, {
+						containment: document.body,
+						handles: ['n', 'e', 's', 'w'],
+					});
+				}
+
+				this.guiLoaded = true;
+				for (let task of this.guiLoadTasks) {
+					task();
+				}
 			})
 			.catch(err => {
-				console.error('Failed to load sidebar:', err);
+				console.error('Failed to load GUI template:', err);
 				this.guiLoaded = true;
 				for (let task of this.guiLoadTasks) {
 					task();
@@ -3100,7 +3130,8 @@ export class Viewer extends EventDispatcher {
 		let pRenderer = this.getPRenderer();
 
 		{ // resize
-			const sidebarOffset = this._sidebarOpen ? 300 : 0;
+			const isRenderAreaShifted = this.renderArea && this.renderArea.style.left && this.renderArea.style.left !== '0px';
+			const sidebarOffset = (this._sidebarOpen && !isRenderAreaShifted) ? 300 : 0;
 			const width = this.scaleFactor * (this.renderArea.clientWidth - sidebarOffset);
 			const height = this.scaleFactor * this.renderArea.clientHeight;
 

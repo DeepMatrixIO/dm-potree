@@ -33,6 +33,12 @@ export default defineConfig({
 						req.url = '/feature_test.html';
 					} else if (req.url.startsWith('/build/potree/')) {
 						req.url = req.url.replace('/build/potree/', '/dist/potree/');
+					} else if (req.url.startsWith('/potree/')) {
+						req.url = req.url.replace('/potree/', '/dist/potree/');
+					} else if (req.url.startsWith('/sidebar.html')) {
+						req.url = '/dist/potree/sidebar.html';
+					} else if (req.url.startsWith('/profile.html')) {
+						req.url = '/dist/potree/profile.html';
 					}
 					next();
 				});

@@ -20,6 +20,8 @@ Potree.PolygonClipVolume = PolygonClipVolume;
 Potree.PointCloudOctree = PointCloudOctree;
 Potree.AnimationPath = AnimationPath;
 Potree.SpotLightHelper = SpotLightHelper;
+Potree.scriptPath = Potree.scriptPath;
+Potree.resourcePath = Potree.resourcePath;
 Object.assign(Potree, DEFINES);
 
 export {Potree};

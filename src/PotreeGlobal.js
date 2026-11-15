@@ -114,6 +114,30 @@ export class Potree {
 		suffix: '.2'
 	};
 
+	static get scriptPath() {
+		if (this._scriptPath) return this._scriptPath;
+		if (typeof document !== 'undefined' && document.currentScript && document.currentScript.src) {
+			let path = new URL(document.currentScript.src + '/..').href;
+			return path.endsWith('/') ? path.slice(0, -1) : path;
+		} else if (import.meta && import.meta.url) {
+			let path = new URL(import.meta.url + '/..').href;
+			return path.endsWith('/') ? path.slice(0, -1) : path;
+		}
+		return '/dist';
+	}
+
+	static set scriptPath(value) {
+		this._scriptPath = value;
+	}
+
+	static get resourcePath() {
+		return this._resourcePath || (this.scriptPath + '/resources');
+	}
+
+	static set resourcePath(value) {
+		this._resourcePath = value;
+	}
+
 	//for completeness it would be good to add a constructor
 	constructor() {
 		this.segmentsAttributeKey = 'seg_cluster_id';//used to set the attribute key for the segments
@@ -138,23 +162,8 @@ export class Potree {
 		this.debug = {};
 
 
-		// TODO enable this  or make it configurable as is not in use or set as root, so
-		this.scriptPath = "";
-
-		if (document.currentScript && document.currentScript.src) {
-			this.scriptPath = new URL(document.currentScript.src + '/..').href;
-			if (this.scriptPath.slice(-1) === '/') {
-				this.scriptPath = this.scriptPath.slice(0, -1);
-			}
-		} else if (import.meta) {
-			this.scriptPath = new URL(import.meta.url + "/..").href;
-			if (this.scriptPath.slice(-1) === '/') {
-				this.scriptPath = this.scriptPath.slice(0, -1);
-			}
-		} else {
-			console.error('Potree was unable to find its script path using document.currentScript. Is Potree included with a script tag? Does your browser support this function?');
-		}
-		this.resourcePath = this.scriptPath + '/resources';
+		this.scriptPath = Potree.scriptPath;
+		this.resourcePath = Potree.resourcePath;
 
 		/////
 
