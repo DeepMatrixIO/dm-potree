@@ -138,6 +138,7 @@ export class Viewer extends EventDispatcher {
 		this._ecefPerspectiveCamera = new PerspectiveCamera(60, 1, 0.1, 1000);//ADDED by  @jguerrer // runs on each loop before general update.
 		this._ecefOrthographicCamera = new OrthographicCamera(-500, 500, 500, -500, -1000000, 1000000);//ADDED by  @jguerrer // runs on each loop before general update.
 
+		this._activeAttributeName = null;
 
 
 
@@ -1127,6 +1128,20 @@ export class Viewer extends EventDispatcher {
 		}
 	}
 
+
+	get activeAttributeName() {
+		return this._activeAttributeName;
+	}
+
+	set activeAttributeName(value) {
+		this._activeAttributeName = value;
+		if (this.scene && this.scene.pointclouds) {
+			this.scene.pointclouds.forEach(pc => {
+				pc.material.activeAttributeName = value;
+			});
+		}
+	}
+
 	setPointBudget(value) {
 		if (Potree.pointBudget !== value) {
 			Potree.pointBudget = parseInt(value);
@@ -2025,47 +2040,47 @@ export class Viewer extends EventDispatcher {
 				}
 			});
 
-				////////////////////////////////////////////////////// PROFILE WINDOW REMOVED FOR TESTING PURPOSES
-				// Load profile.html using fetch
-				// fetch(new URL(Potree.scriptPath + '/profile.html').href)
+		////////////////////////////////////////////////////// PROFILE WINDOW REMOVED FOR TESTING PURPOSES
+		// Load profile.html using fetch
+		// fetch(new URL(Potree.scriptPath + '/profile.html').href)
 
-				// fetch(new URL('/potree/profile.html').href)
-				// let profilePath = `./potree/profile.html`;
-				// fetch(profilePath)
-				// 	.then(response => response.text())
-				// 	.then(profileHtml => {
-				// 		let elProfile = document.createElement('div');
-				// 		elProfile.innerHTML = profileHtml;
-				// 		// Append children to body
-				// 		while (elProfile.firstChild) {
-				// 			document.body.appendChild(elProfile.firstChild);
-				// 		}
+		// fetch(new URL('/potree/profile.html').href)
+		// let profilePath = `./potree/profile.html`;
+		// fetch(profilePath)
+		// 	.then(response => response.text())
+		// 	.then(profileHtml => {
+		// 		let elProfile = document.createElement('div');
+		// 		elProfile.innerHTML = profileHtml;
+		// 		// Append children to body
+		// 		while (elProfile.firstChild) {
+		// 			document.body.appendChild(elProfile.firstChild);
+		// 		}
 
-				// 		// Replace jQuery UI draggable/resizable with a library or custom implementation
-				// 		// Example: Using interact.js (install via npm)
+		// 		// Replace jQuery UI draggable/resizable with a library or custom implementation
+		// 		// Example: Using interact.js (install via npm)
 
-				// 		//removed for testing unless find another way
-				// 		import('interactjs').then(interact => {
-				// 			interact('#profile_window')
-				// 				.draggable({
-				// 					// Configure drag options
-				// 				})
-				// 				.resizable({
-				// 					// Configure resize options
-				// 				});
-				// 		});
-
-
+		// 		//removed for testing unless find another way
+		// 		import('interactjs').then(interact => {
+		// 			interact('#profile_window')
+		// 				.draggable({
+		// 					// Configure drag options
+		// 				})
+		// 				.resizable({
+		// 					// Configure resize options
+		// 				});
+		// 		});
 
 
-				// 		// Document ready equivalent
-				// 		document.addEventListener('DOMContentLoaded', () => {
-				// 			this.guiLoaded = true;
-				// 			for (let task of this.guiLoadTasks) {
-				// 				task();
-				// 			}
-				// 		});
-				// 	});
+
+
+		// 		// Document ready equivalent
+		// 		document.addEventListener('DOMContentLoaded', () => {
+		// 			this.guiLoaded = true;
+		// 			for (let task of this.guiLoadTasks) {
+		// 				task();
+		// 			}
+		// 		});
+		// 	});
 
 		return this.promiseGuiLoaded();
 	}

@@ -692,9 +692,8 @@ export class PointCloudMaterial extends RawShaderMaterial {
 			return;
 		}
 
-		this.clipPolygons = clipPolygons;
-
 		let doUpdate = this.clipPolygons.length !== clipPolygons.length;
+		this.clipPolygons = clipPolygons;
 
 		if (doUpdate) {
 			this.updateShaderSource();

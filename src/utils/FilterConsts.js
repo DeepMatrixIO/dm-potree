@@ -6,7 +6,8 @@ export class FilterIntType {
 
 	static TETBOXVOLUME = 3; //single box made of tetrahedrals. Only 6 per box
 
-	static POLYGONVOLUME = 4; //polygofililter
+
+	static POLYGON = 4; // alias for PolygonClipVolume
 
 	static TETCOLLECTIONVOLUME = 5; //Collection of logically connected tetrahedrals, NO single tet is dangling.
 
