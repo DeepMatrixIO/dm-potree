@@ -14,9 +14,14 @@ import {Utils} from "../utils.js";
 
 
 function copyMaterial(source, target) {
+	if (!source || !target) return;
 
-	for (let name of Object.keys(target.uniforms)) {
-		target.uniforms[name].value = source.uniforms[name].value;
+	if (target.uniforms && source.uniforms) {
+		for (let name of Object.keys(target.uniforms)) {
+			if (source.uniforms[name] !== undefined) {
+				target.uniforms[name].value = source.uniforms[name].value;
+			}
+		}
 	}
 
 	target.gradientTexture = source.gradientTexture;
@@ -173,6 +178,21 @@ class Batch {
 
 }
 
+function setAttributeUpdateRange(attribute, start, count) {
+	if (typeof attribute.addUpdateRange === 'function') {
+		if (typeof attribute.clearUpdateRanges === 'function') {
+			attribute.clearUpdateRanges();
+		}
+		if (count > 0) {
+			attribute.addUpdateRange(start, count);
+		}
+	} else if (attribute.updateRange) {
+		attribute.updateRange.offset = start;
+		attribute.updateRange.count = count;
+	}
+	attribute.needsUpdate = true;
+}
+
 class ProfileFakeOctree extends PointCloudTree {
 
 	constructor(octree) {
@@ -233,9 +253,7 @@ class ProfileFakeOctree extends PointCloudTree {
 
 				for (let key of Object.keys(this.currentBatch.geometry.attributes)) {
 					let attribute = this.currentBatch.geometry.attributes[key];
-					attribute.updateRange.offset = updateRange.start;
-					attribute.updateRange.count = updateRange.count;
-					attribute.needsUpdate = true;
+					setAttributeUpdateRange(attribute, updateRange.start, updateRange.count);
 				}
 
 				this.currentBatch.geometry.computeBoundingBox();
@@ -266,6 +284,7 @@ class ProfileFakeOctree extends PointCloudTree {
 			for (let attributeName of Object.keys(data.data)) {
 				let source = data.data[attributeName];
 				let target = geometry.attributes[attributeName];
+				if (!target) continue;
 				let numElements = target.itemSize;
 
 				for (let item = 0;item < numElements;item++) {
@@ -275,10 +294,11 @@ class ProfileFakeOctree extends PointCloudTree {
 
 			{
 				let position = geometry.attributes.position;
-
-				position.array[3 * index + 0] = x;
-				position.array[3 * index + 1] = y;
-				position.array[3 * index + 2] = z;
+				if (position) {
+					position.array[3 * index + 0] = x;
+					position.array[3 * index + 1] = y;
+					position.array[3 * index + 2] = z;
+				}
 			}
 
 			updateRange.count++;
@@ -287,16 +307,11 @@ class ProfileFakeOctree extends PointCloudTree {
 
 		for (let key of Object.keys(this.currentBatch.geometry.attributes)) {
 			let attribute = this.currentBatch.geometry.attributes[key];
-			//this does not exist in newer versions, but addUpdateRanges
-			//attribute.updateRange.offset = updateRange.start;//???????
-			//attribute.updateRange.count = updateRange.count;
-
-
-			//newer threejs versions use addUpdateRanges
-			attribute.clearUpdateRanges()
-			attribute.addUpdateRange(updateRange.start, updateRange.count);
-			attribute.needsUpdate = true;
+			setAttributeUpdateRange(attribute, updateRange.start, updateRange.count);
 		}
+
+		this.currentBatch.geometry.computeBoundingBox();
+		this.currentBatch.geometry.computeBoundingSphere();
 
 		data.projectedBox = projectedBox;
 
@@ -313,7 +328,7 @@ class ProfileFakeOctree extends PointCloudTree {
 			let constructor = buffer.constructor;
 			let normalized = false;
 
-			if (this.trueOctree.root.sceneNode) {
+			if (this.trueOctree.root && this.trueOctree.root.sceneNode && this.trueOctree.root.sceneNode.geometry && this.trueOctree.root.sceneNode.geometry.attributes) {
 				if (this.trueOctree.root.sceneNode.geometry.attributes[attributeName]) {
 					normalized = this.trueOctree.root.sceneNode.geometry.attributes[attributeName].normalized;
 				}
@@ -366,17 +381,23 @@ export class ProfileWindow extends EventDispatcher {
 		this.viewer = viewer;
 		this.elRoot = document.getElementById('profile_window');
 
-		let profileCanvasContainer = this.elRoot ? this.elRoot.querySelector('#profileCanvasContainer') : null;
+		let profileCanvasContainer = this.elRoot ? (this.elRoot.querySelector('#profileCanvasContainer') || this.elRoot.querySelector('#vienvasContainer')) : null;
 
 		if (!profileCanvasContainer) {
-			console.log("profileCanvasContainer is null, using viewer.renderer.domElement");
-			this.renderArea = this.viewer.renderer.domElement;///// must set a container somewhere
-		} else {
-			this.renderArea = profileCanvasContainer;
+			profileCanvasContainer = document.getElementById('profileCanvasContainer') || document.getElementById('vienvasContainer');
 		}
-		// this.renderArea = this.elRoot ? this.elRoot.querySelector('#profileCanvasContainer') : null;
 
-		this.svg = document.getElementById('profileSVG');
+		if (!profileCanvasContainer && this.elRoot) {
+			let drawContainer = this.elRoot.querySelector('#profile_draw_container') || this.elRoot;
+			profileCanvasContainer = document.createElement('div');
+			profileCanvasContainer.id = 'profileCanvasContainer';
+			profileCanvasContainer.style.cssText = 'position: absolute; left: 41px; top: 0; bottom: 20px; width: calc(100% - 41px); height: calc(100% - 20px);';
+			drawContainer.appendChild(profileCanvasContainer);
+		}
+
+		this.renderArea = profileCanvasContainer || document.createElement('div');
+
+		this.svg = document.getElementById('profileSVG') || (this.elRoot ? this.elRoot.querySelector('#profileSVG') : null);
 		this.mouseIsDown = false;
 
 		this.projectedBox = new Box3();
@@ -388,7 +409,7 @@ export class ProfileWindow extends EventDispatcher {
 		this.scale = new Vector3(1, 1, 1);
 
 		this.autoFitEnabled = true; // completely disable/enable
-		this.autoFit = false; // internal
+		this.autoFit = true; // internal
 
 		const setIconSrc = (id, src) => {
 			const el = document.getElementById(id);
@@ -440,12 +461,32 @@ export class ProfileWindow extends EventDispatcher {
 			}
 		});
 
+		if (typeof ResizeObserver !== 'undefined' && this.renderArea) {
+			const ro = new ResizeObserver(() => {
+				if (this.enabled && this.renderArea.clientWidth > 0 && this.renderArea.clientHeight > 0) {
+					this.render();
+				}
+			});
+			ro.observe(this.renderArea);
+		}
+
 		this.renderArea.addEventListener('mousedown', e => {
 			this.mouseIsDown = true;
 		});
 
 		this.renderArea.addEventListener('mouseup', e => {
 			this.mouseIsDown = false;
+		});
+
+		this.renderArea.addEventListener('mouseleave', () => {
+			this.mouseIsDown = false;
+			this.pickSphere.visible = false;
+			const elProps = this.elRoot ? this.elRoot.querySelector('#profileSelectionProperties') : null;
+			if (elProps) elProps.style.display = 'none';
+			if (this.viewer && this.viewer.scene && this.viewer.scene.scene) {
+				this.viewer.scene.scene.remove(this.viewerPickSphere);
+			}
+			this.render();
 		});
 
 		let viewerPickSphereSizeHandler = () => {
@@ -846,39 +887,46 @@ export class ProfileWindow extends EventDispatcher {
 		let marginLeft = this.renderArea.offsetLeft;
 
 		if (!this.svg) {
+			this.svg = document.getElementById('profileSVG') || (this.elRoot ? this.elRoot.querySelector('#profileSVG') : null);
+		}
+
+		if (!this.svg) {
 			return;
 		}
 
 		this.svg.innerHTML = '';
 
+		let w = width > 0 ? width : 100;
+		let h = height > 0 ? height : 100;
+
 		this.scaleX = createLinearScale(
 			[this.camera.left + this.camera.position.x, this.camera.right + this.camera.position.x],
-			[0, width]
+			[0, w]
 		);
 		this.scaleY = createLinearScale(
 			[this.camera.bottom + this.camera.position.z, this.camera.top + this.camera.position.z],
-			[height, 0]
+			[h, 0]
 		);
 
 		this.xAxis = createSimpleAxis('bottom')
 			.scale(this.scaleX)
 			.orient('bottom')
-			.innerTickSize(-height)
+			.innerTickSize(-h)
 			.outerTickSize(1)
 			.tickPadding(10)
-			.ticks(width / 50);
+			.ticks(Math.max(2, Math.round(w / 50)));
 
 		this.yAxis = createSimpleAxis('left')
 			.scale(this.scaleY)
 			.orient('left')
-			.innerTickSize(-width)
+			.innerTickSize(-w)
 			.outerTickSize(1)
 			.tickPadding(10)
-			.ticks(height / 20);
+			.ticks(Math.max(2, Math.round(h / 20)));
 
 		this.elXAxis = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 		this.elXAxis.setAttribute('class', 'x axis');
-		this.elXAxis.setAttribute('transform', `translate(${marginLeft}, ${height})`);
+		this.elXAxis.setAttribute('transform', `translate(${marginLeft}, ${h})`);
 		this.xAxis.call(this.elXAxis);
 		this.svg.appendChild(this.elXAxis);
 
@@ -922,20 +970,22 @@ export class ProfileWindow extends EventDispatcher {
 
 			let size = this.projectedBox.getSize(new Vector3());
 
-			let sx = width / size.x;
-			let sy = height / size.z;
-			let scale = Math.min(sx, sy);
+			if (width > 0 && height > 0) {
+				let sx = size.x > 0 ? (width / size.x) : 1;
+				let sy = size.z > 0 ? (height / size.z) : 1;
+				let scale = Math.min(sx, sy);
 
-			let center = this.projectedBox.getCenter(new Vector3());
-			this.scale.set(scale, scale, 1);
-			this.camera.position.copy(center);
-
-			//console.log("camera: ", this.camera.position.toArray().join(", "));
+				if (isFinite(scale) && scale > 0) {
+					let center = this.projectedBox.getCenter(new Vector3());
+					this.scale.set(scale, scale, 1);
+					this.camera.position.copy(center);
+				}
+			}
 		}
 
 		//console.log(entry);
 
-		this.render();//crashes while rendering.
+		this.render();
 
 		let numPoints = 0;
 		for (let [key, value] of this.pointclouds.entries()) {
@@ -968,7 +1018,7 @@ export class ProfileWindow extends EventDispatcher {
 		}
 		this.pickSphere.visible = false;
 
-		const elSelectionProperties = this.elRoot.querySelector('#profileSelectionProperties');
+		const elSelectionProperties = this.elRoot ? this.elRoot.querySelector('#profileSelectionProperties') : null;
 		if (elSelectionProperties) elSelectionProperties.style.display = 'none';
 
 		this.render();
@@ -977,6 +1027,8 @@ export class ProfileWindow extends EventDispatcher {
 	show() {
 		if (this.elRoot) this.elRoot.style.display = '';
 		this.enabled = true;
+		this.initSVG();
+		this.render();
 	}
 
 	hide() {
@@ -989,10 +1041,19 @@ export class ProfileWindow extends EventDispatcher {
 		let width = this.renderArea.clientWidth;
 		let height = this.renderArea.clientHeight;
 
-		let left = (-width / 2) / this.scale.x;
-		let right = (+width / 2) / this.scale.x;
-		let top = (+height / 2) / this.scale.y;
-		let bottom = (-height / 2) / this.scale.y;
+		if (width <= 0 || height <= 0) return;
+		if (!this.scaleX || !this.scaleY) {
+			this.initSVG();
+		}
+		if (!this.scaleX || !this.scaleY) return;
+
+		let sx = (this.scale.x && isFinite(this.scale.x) && this.scale.x > 0) ? this.scale.x : 1;
+		let sy = (this.scale.y && isFinite(this.scale.y) && this.scale.y > 0) ? this.scale.y : 1;
+
+		let left = (-width / 2) / sx;
+		let right = (+width / 2) / sx;
+		let top = (+height / 2) / sy;
+		let bottom = (-height / 2) / sy;
 
 		this.camera.left = left;
 		this.camera.right = right;
@@ -1007,23 +1068,27 @@ export class ProfileWindow extends EventDispatcher {
 
 		let marginLeft = this.renderArea.offsetLeft;
 
-		this.xAxis.scale(this.scaleX)
-			.orient('bottom')
-			.innerTickSize(-height)
-			.outerTickSize(1)
-			.tickPadding(10)
-			.ticks(width / 50);
-		this.yAxis.scale(this.scaleY)
-			.orient('left')
-			.innerTickSize(-width)
-			.outerTickSize(1)
-			.tickPadding(10)
-			.ticks(height / 20);
+		if (this.elXAxis && this.xAxis) {
+			this.xAxis.scale(this.scaleX)
+				.orient('bottom')
+				.innerTickSize(-height)
+				.outerTickSize(1)
+				.tickPadding(10)
+				.ticks(Math.max(2, Math.round(width / 50)));
+			this.elXAxis.setAttribute('transform', `translate(${marginLeft}, ${height})`);
+			this.xAxis.call(this.elXAxis);
+		}
 
-		this.elXAxis.setAttribute('transform', `translate(${marginLeft}, ${height})`);
-		this.xAxis.call(this.elXAxis);
-		this.elYAxis.setAttribute('transform', `translate(${marginLeft}, 0)`);
-		this.yAxis.call(this.elYAxis);
+		if (this.elYAxis && this.yAxis) {
+			this.yAxis.scale(this.scaleY)
+				.orient('left')
+				.innerTickSize(-width)
+				.outerTickSize(1)
+				.tickPadding(10)
+				.ticks(Math.max(2, Math.round(height / 20)));
+			this.elYAxis.setAttribute('transform', `translate(${marginLeft}, 0)`);
+			this.yAxis.call(this.elYAxis);
+		}
 	}
 
 	requestScaleUpdate() {
@@ -1052,6 +1117,8 @@ export class ProfileWindow extends EventDispatcher {
 		let width = this.renderArea.clientWidth;
 		let height = this.renderArea.clientHeight;
 
+		if (width <= 0 || height <= 0) return;
+
 		let {renderer, pRenderer, camera, profileScene, scene} = this;
 		let {scaleX, pickSphere} = this;
 
@@ -1068,17 +1135,20 @@ export class ProfileWindow extends EventDispatcher {
 
 			copyMaterial(source, target);
 			target.size = 2;
+			target.pointSizeType = PointSizeType.FIXED;
 		}
 
 		pRenderer.render(profileScene, camera, null);
 
-		let radius = Math.abs(scaleX.invert(0) - scaleX.invert(5));
+		if (scaleX && pickSphere) {
+			let radius = Math.abs(scaleX.invert(0) - scaleX.invert(5));
 
-		if (radius === 0) {
-			pickSphere.visible = false;
-		} else {
-			pickSphere.scale.set(radius, radius, radius);
-			pickSphere.visible = true;
+			if (radius === 0 || !isFinite(radius)) {
+				pickSphere.visible = false;
+			} else {
+				pickSphere.scale.set(radius, radius, radius);
+				pickSphere.visible = true;
+			}
 		}
 
 		renderer.render(scene, camera);
