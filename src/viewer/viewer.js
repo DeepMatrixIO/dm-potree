@@ -2079,8 +2079,17 @@ export class Viewer extends EventDispatcher {
 
 
 
-	setProfileWindow(profileWindow) {
-		this._profileWindow = profileWindow;
+	// setProfileWindow(profileWindow) {
+	// 	this._profileWindow = profileWindow;
+	// }
+
+
+	get profileWindowController() {
+		return this._profileWindowController;//do not run on null profile window object
+	}
+
+	set profileWindowController(profileWindowController) {
+		this._profileWindowController = profileWindowController;
 	}
 
 	//dont run on null profile window object
@@ -2115,7 +2124,7 @@ export class Viewer extends EventDispatcher {
 				this.profileWindow = new ProfileWindow(this);
 
 				//3
-				this._profileWindowController = new ProfileWindowController(this);
+				this.profileWindowController = new ProfileWindowController(this);
 
 				//accessing the html components, but should be unaware of the implementation
 				//4
