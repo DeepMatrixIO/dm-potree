@@ -3,20 +3,12 @@
 import {Vector3,Matrix4,Plane} from 'three'
 import {MeasurePanel} from "./MeasurePanel.js";
 import {ProfileWindow, ProfileWindowController} from "../profile.js";
+import {loadProfileUI} from "../profile_ui.js";
 import {makeDraggable, makeResizable} from "../../utils/VanillaWindowControls.js";
 
-// Fetches profile.html and injects #profile_window into the DOM the first time it's needed.
-async function ensureProfileWindowElement(){
-	if(document.getElementById('profile_window')){
-		return;
-	}
-
-	let response = await fetch('./potree/profile.html');
-	let html = await response.text();
-
-	let template = document.createElement('template');
-	template.innerHTML = html;
-	document.body.appendChild(template.content);
+// Ensures #profile_window and its styles exist in the DOM without fetching HTML.
+function ensureProfileWindowElement(){
+	return loadProfileUI();
 }
 
 export class ProfilePanel extends MeasurePanel{

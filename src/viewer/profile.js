@@ -1025,7 +1025,7 @@ export class ProfileWindow extends EventDispatcher {
 	}
 
 	show() {
-		if (this.elRoot) this.elRoot.style.display = '';
+		if (this.elRoot) this.elRoot.style.display = 'block';
 		this.enabled = true;
 		this.initSVG();
 		this.render();

@@ -33,6 +33,7 @@ import {PScene} from "./Scene.js";
 
 import {MapView} from "./map.js";//requires OL.
 import {ProfileWindow, ProfileWindowController} from "./profile.js";
+import {loadProfileUI} from "./profile_ui.js";
 import {Sidebar} from "./sidebar.js";//not in use but it populates the sidebar functions
 
 import {AnnotationTool} from "../utils/AnnotationTool.js";
@@ -1913,23 +1914,7 @@ export class Viewer extends EventDispatcher {
 	}
 
 
-	//add all graphical elements, which may be ommited on std module and required explicit loading
-
-	// it initializes a Sidebar from sidebar.html which subsecuently loads profile.html  and map.
-
-	//is we disable map, no more ol is needed here
-	//
-
-	//it looks for potree_sidebar_container and potree_quick_buttons in the dom, so they need to be present in the html file
-	//profile is openly added and is not restricted to be present
-
-
-	loadGUI(callback) {
-
-		if (callback) {
-			this.onGUILoaded(callback);
-		}
-
+	loadSidebarGUI() {
 		let viewer = this;
 		let sidebarContainer = this.renderArea.querySelector('#potree_sidebar_container');
 		if (!sidebarContainer) {
@@ -1938,9 +1923,6 @@ export class Viewer extends EventDispatcher {
 			this.renderArea.appendChild(sidebarContainer);
 		}
 
-		// Load sidebar.html using fetch instead of jQuery.load
-		// fetch(new URL(Potree.scriptPath + '/sidebar.html').href)
-		// let url=new URL( './potree/sidebar.html',import.meta.url);
 		let path = `./potree/sidebar.html`;
 		fetch(path)
 			.then(response => response.text())
@@ -1982,7 +1964,7 @@ export class Viewer extends EventDispatcher {
 				// fetch(new URL(Potree.scriptPath + '/profile.html').href)//requires to fix scriptPath, which may be used extensively
 				////  ////
 
-				this.loadProfileGUI();
+				// this.loadProfileGUI();
 
 				// fetch(new URL('/potree/profile.html').href)
 				// 	.then(response => response.text())
@@ -2070,6 +2052,37 @@ export class Viewer extends EventDispatcher {
 				// 		});
 				// 	});
 			});
+	}
+
+
+	//add all graphical elements, which may be ommited on std module and required explicit loading
+
+	// it initializes a Sidebar from sidebar.html which subsecuently loads profile.html  and map.
+
+	//is we disable map, no more ol is needed here
+	//
+
+	//it looks for potree_sidebar_container and potree_quick_buttons in the dom, so they need to be present in the html file
+	//profile is openly added and is not restricted to be present
+
+
+	loadGUI(callback) {
+
+		if (callback) {
+			this.onGUILoaded(callback);
+		}
+
+
+
+
+
+
+		this.loadSidebarGUI();
+		this.loadProfileGUI();
+		// Load sidebar.html using fetch instead of jQuery.load
+		// fetch(new URL(Potree.scriptPath + '/sidebar.html').href)
+		// let url=new URL( './potree/sidebar.html',import.meta.url);
+
 
 		return this.promiseGuiLoaded();
 	}
@@ -2106,55 +2119,51 @@ export class Viewer extends EventDispatcher {
 		this._profileWindow = profileWindow;
 	}
 
-	loadProfileGUI(profileUrl = '/potree/profile.html') {
-		fetch(new URL(profileUrl, window.location.origin).href)
-			.then(response => {
-				if (!response.ok) {
-					throw new Error(`Failed to fetch ${profileUrl}: ${response.status} ${response.statusText}`);
-				}
-				return response.text();
-			})
-			.then(html => {
-				//1
-				const template = document.createElement('template');
-				template.innerHTML = html;
-				document.body.appendChild(template.content);//this
+	loadProfileGUI(options = {}) {
+		try {
+			// 1. Build and mount Profile UI & styles programmatically (no HTML fetch)
+			this.profileUI = loadProfileUI(options);
 
-				//2
+			// 2. Instantiate ProfileWindow and Controller
+			if (!this._profileWindow) {
 				this.profileWindow = new ProfileWindow(this);
-
-				//3
+			}
+			if (!this._profileWindowController) {
 				this.profileWindowController = new ProfileWindowController(this);
+			}
 
-				//accessing the html components, but should be unaware of the implementation
-				//4
-				const elProfileWindow = document.getElementById('profile_window');
-				const elProfileTitlebar = document.getElementById('profile_titlebar');
+			// Re-apply custom icon overrides if provided (after ProfileWindow sets defaults)
+			if (options && options.icons) {
+				this.profileUI.setIcons(options.icons);
+			}
 
+			// 3. Make profile window draggable and resizable
+			const elProfileWindow = this.profileUI.elements.window;
+			const elProfileTitlebar = this.profileUI.elements.titlebar;
 
-				if (elProfileWindow && elProfileTitlebar) {
-					makeDraggable(elProfileWindow, {
-						handle: elProfileTitlebar,
-						containment: document.body,
-					});
-					makeResizable(elProfileWindow, {
-						containment: document.body,
-						handles: ['n', 'e', 's', 'w'],
-					});
-				}
+			if (elProfileWindow && elProfileTitlebar) {
+				makeDraggable(elProfileWindow, {
+					handle: elProfileTitlebar,
+					containment: document.body,
+				});
+				makeResizable(elProfileWindow, {
+					containment: document.body,
+					handles: ['n', 'e', 's', 'w'],
+				});
+			}
+		} catch (err) {
+			console.error('Failed to load profile window:', err);
+		}
 
-				this.guiLoaded = true;
-				for (let task of this.guiLoadTasks) {
-					task();
-				}
-			})
-			.catch(err => {
-				console.error('Failed to load profile window:', err);
-				this.guiLoaded = true;
-				for (let task of this.guiLoadTasks) {
-					task();
-				}
-			});
+		if (!this.guiLoaded) {
+			this.guiLoaded = true;
+			const tasks = this.guiLoadTasks.splice(0, this.guiLoadTasks.length);
+			for (let task of tasks) {
+				task();
+			}
+		}
+
+		return this.profileUI;
 	}
 
 	setLanguage(lang) {
