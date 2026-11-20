@@ -1,5 +1,4 @@
 import proj4 from 'proj4';
-import i18next from 'i18next';
 import {
 	Clock,
 	Matrix4,
@@ -1979,70 +1978,55 @@ export class Viewer extends EventDispatcher {
 				this.sidebar = new Sidebar(this);//not really workking as needs a sidebar_Root
 				this.sidebar.init();
 
-
-				// Migrate i18n to i18next (install via npm)
-				// import('i18next').then(i18next => {
-				// 	i18next.init({
-				// 		lng: 'en',
-				// 		resources: {
-				// 			en: {
-				// 				translation: {
-				// 					// Add your translations here
-				// 				}
-				// 			}
-				// 		}
-				// 	}, function (err, t) {
-				// 		// Apply translations to body
-				// 		document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
-				// 	});
-				// });
-
-
 				//appends the required html elements
 				// fetch(new URL(Potree.scriptPath + '/profile.html').href)//requires to fix scriptPath, which may be used extensively
-				fetch(new URL('/potree/profile.html').href)
-					.then(response => response.text())
-					.then(html => {
-						//1
-						const template = document.createElement('template');
-						template.innerHTML = html;
-						document.body.appendChild(template.content);//this
+				////  ////
 
-						//2
-						this.profileWindow = new ProfileWindow(this);
+				this.loadProfileGUI();
 
-						//3
-						this.profileWindowController = new ProfileWindowController(this);
+				// fetch(new URL('/potree/profile.html').href)
+				// 	.then(response => response.text())
+				// 	.then(html => {
+				// 		//1
+				// 		const template = document.createElement('template');
+				// 		template.innerHTML = html;
+				// 		document.body.appendChild(template.content);//this
 
-						//accessing the html components, but should be unaware of the implementation
-						//4
-						const elProfileWindow = document.getElementById('profile_window');
-						const elProfileTitlebar = document.getElementById('profile_titlebar');
+				// 		//2
+				// 		this.profileWindow = new ProfileWindow(this);
+
+				// 		//3
+				// 		this.profileWindowController = new ProfileWindowController(this);
+
+				// 		//accessing the html components, but should be unaware of the implementation
+				// 		//4
+				// 		const elProfileWindow = document.getElementById('profile_window');
+				// 		const elProfileTitlebar = document.getElementById('profile_titlebar');
 
 
-						if (elProfileWindow && elProfileTitlebar) {
-							makeDraggable(elProfileWindow, {
-								handle: elProfileTitlebar,
-								containment: document.body,
-							});
-							makeResizable(elProfileWindow, {
-								containment: document.body,
-								handles: ['n', 'e', 's', 'w'],
-							});
-						}
+				// 		if (elProfileWindow && elProfileTitlebar) {
+				// 			makeDraggable(elProfileWindow, {
+				// 				handle: elProfileTitlebar,
+				// 				containment: document.body,
+				// 			});
+				// 			makeResizable(elProfileWindow, {
+				// 				containment: document.body,
+				// 				handles: ['n', 'e', 's', 'w'],
+				// 			});
+				// 		}
 
-						this.guiLoaded = true;
-						for (let task of this.guiLoadTasks) {
-							task();
-						}
-					})
-					.catch(err => {
-						console.error('Failed to load profile window:', err);
-						this.guiLoaded = true;
-						for (let task of this.guiLoadTasks) {
-							task();
-						}
-					});
+				// 		this.guiLoaded = true;
+				// 		for (let task of this.guiLoadTasks) {
+				// 			task();
+				// 		}
+				// 	})
+				// 	.catch(err => {
+				// 		console.error('Failed to load profile window:', err);
+				// 		this.guiLoaded = true;
+				// 		for (let task of this.guiLoadTasks) {
+				// 			task();
+				// 		}
+				// 	});
 
 				////////////////////////////////////////////////////// PROFILE WINDOW REMOVED FOR TESTING PURPOSES
 				// Load profile.html using fetch
@@ -2090,10 +2074,82 @@ export class Viewer extends EventDispatcher {
 		return this.promiseGuiLoaded();
 	}
 
+
+
+
+
+
+	setProfileWindow(profileWindow) {
+		this._profileWindow = profileWindow;
+	}
+
+	//dont run on null profile window object
+	get profileWindow() {
+
+		if (!this._profileWindow) {
+			this.loadProfileGUI();
+		}
+		return this._profileWindow;
+
+	}
+
+	set profileWindow(profileWindow) {
+		this._profileWindow = profileWindow;
+	}
+
+	loadProfileGUI(profileUrl = '/potree/profile.html') {
+		fetch(new URL(profileUrl, window.location.origin).href)
+			.then(response => {
+				if (!response.ok) {
+					throw new Error(`Failed to fetch ${profileUrl}: ${response.status} ${response.statusText}`);
+				}
+				return response.text();
+			})
+			.then(html => {
+				//1
+				const template = document.createElement('template');
+				template.innerHTML = html;
+				document.body.appendChild(template.content);//this
+
+				//2
+				this.profileWindow = new ProfileWindow(this);
+
+				//3
+				this._profileWindowController = new ProfileWindowController(this);
+
+				//accessing the html components, but should be unaware of the implementation
+				//4
+				const elProfileWindow = document.getElementById('profile_window');
+				const elProfileTitlebar = document.getElementById('profile_titlebar');
+
+
+				if (elProfileWindow && elProfileTitlebar) {
+					makeDraggable(elProfileWindow, {
+						handle: elProfileTitlebar,
+						containment: document.body,
+					});
+					makeResizable(elProfileWindow, {
+						containment: document.body,
+						handles: ['n', 'e', 's', 'w'],
+					});
+				}
+
+				this.guiLoaded = true;
+				for (let task of this.guiLoadTasks) {
+					task();
+				}
+			})
+			.catch(err => {
+				console.error('Failed to load profile window:', err);
+				this.guiLoaded = true;
+				for (let task of this.guiLoadTasks) {
+					task();
+				}
+			});
+	}
+
 	setLanguage(lang) {
-		i18next.changeLanguage(lang);
-		// Apply translations to body or specific elements
-		document.body.innerHTML = i18next.t('yourKey'); // Example: Replace with actual translation
+		// Translations are handled by the host UI; kept as a no-op for compatibility.
 	}
 
 	setServer(server) {

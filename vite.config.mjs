@@ -21,7 +21,7 @@ export default defineConfig({
 			fileName: () => 'potree_module.js',
 		},
 		rollupOptions: {
-			external: ['three', '@tweenjs/tween.js', 'proj4', 'i18next'],
+			external: ['three', '@tweenjs/tween.js', 'proj4'],
 		},
 	},
 	plugins: [

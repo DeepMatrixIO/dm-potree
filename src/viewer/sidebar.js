@@ -610,7 +610,7 @@ export class Sidebar {
 		element.style.width = "32px";
 		element.style.height = "32px";
 		element.className = "button-icon";
-		element.setAttribute("data-i18n", title);
+		element.title = title;
 		element.addEventListener("click", callback);
 
 		return element;
@@ -1793,37 +1793,6 @@ export class Sidebar {
 				}
 			});
 		});
-
-		let languages = [
-			["EN", "en"],
-			["FR", "fr"],
-			["DE", "de"],
-			["JP", "jp"],
-			["ES", "es"],
-			["SE", "se"],
-			["ZH", "zh"],
-			["IT", "it"]
-		];
-
-		let elLanguages =  document.querySelector('#potree_languages');
-
-		for (let i = 0;i < languages.length;i++) {
-			let [key, value] = languages[i];
-			let element = document.createElement('a');
-			element.textContent = key;
-			element.addEventListener('click', () => this.viewer.setLanguage(value));
-
-			if (i === 0) {
-				element.style.marginLeft = "30px";
-			}
-
-			elLanguages.append(element);
-
-			if (i < languages.length - 1) {
-				elLanguages.append(document.createTextNode(' - '));
-			}
-		}
-
 
 		// to close all, call
 		// $(".accordion > div").hide()
