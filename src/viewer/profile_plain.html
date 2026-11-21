@@ -1,0 +1,51 @@
+<div id="profile_window">
+
+	<div id="profile_titlebar" class="pv-titlebar">
+		<span class="profile-title-wrapper">
+			<span id="profile_window_title">Profile</span>
+		</span>
+		<span id="profileInfo"> </span>
+		<img id="closeProfileContainer" class="button-icon" />
+	</div>
+
+	<div class="pw_content">
+		<div class="pv-main-color profile-main-container">
+			<div class="profile-toolbar">
+				<span class="profile-points-label">Points:&nbsp;</span>
+				<span id="profile_num_points">-</span>
+				<span class="profile-toolbar-spacer"></span>
+				<span class="profile-toolbar-controls">
+					<input id="potree_profile_rotate_amount" type="text" maxlength="4" value="10" />
+					<img id="potree_profile_rotate_cw" class="text-icon" />
+					<img id="potree_profile_rotate_ccw" class="text-icon" />
+					<img id="potree_profile_move_forward" class="text-icon" />
+					<img id="potree_profile_move_backward" class="text-icon" />
+
+					<a id="potree_download_profile_dxf2D_link" href="#" download="profile_2D.dxf">
+						<img id="potree_download_dxf2D_icon" class="text-icon" />
+					</a>
+
+					<a id="potree_download_profile_dxf3D_link" href="#" download="profile_3D.dxf">
+						<img id="potree_download_dxf3D_icon" class="text-icon" />
+					</a>
+
+					<a id="potree_download_profile_ortho_link" href="#" download="profile.csv">
+						<img id="potree_download_csv_icon" class="text-icon" />
+					</a>
+
+					<a id="potree_download_profile_link" href="#" download="profile.las">
+						<img id="potree_download_las_icon" class="text-icon" />
+					</a>
+				</span>
+			</div>
+
+			<div id="profile_draw_container">
+				<div class="profile-canvas-bg"></div>
+				<svg id="profileSVG"></svg>
+				<div id="profileCanvasContainer"></div>
+				<div id="profileSelectionProperties"></div>
+			</div>
+		</div>
+	</div>
+
+</div>

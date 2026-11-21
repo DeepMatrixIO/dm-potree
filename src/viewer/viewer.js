@@ -1924,7 +1924,7 @@ export class Viewer extends EventDispatcher {
 		}
 
 		let path = `./potree/sidebar.html`;
-		fetch(path)
+		return fetch(path)
 			.then(response => response.text())
 			.then(html => {
 				sidebarContainer.innerHTML = html;
@@ -1959,98 +1959,16 @@ export class Viewer extends EventDispatcher {
 
 				this.sidebar = new Sidebar(this);//not really workking as needs a sidebar_Root
 				this.sidebar.init();
-
-				//appends the required html elements
-				// fetch(new URL(Potree.scriptPath + '/profile.html').href)//requires to fix scriptPath, which may be used extensively
-				////  ////
-
-				// this.loadProfileGUI();
-
-				// fetch(new URL('/potree/profile.html').href)
-				// 	.then(response => response.text())
-				// 	.then(html => {
-				// 		//1
-				// 		const template = document.createElement('template');
-				// 		template.innerHTML = html;
-				// 		document.body.appendChild(template.content);//this
-
-				// 		//2
-				// 		this.profileWindow = new ProfileWindow(this);
-
-				// 		//3
-				// 		this.profileWindowController = new ProfileWindowController(this);
-
-				// 		//accessing the html components, but should be unaware of the implementation
-				// 		//4
-				// 		const elProfileWindow = document.getElementById('profile_window');
-				// 		const elProfileTitlebar = document.getElementById('profile_titlebar');
-
-
-				// 		if (elProfileWindow && elProfileTitlebar) {
-				// 			makeDraggable(elProfileWindow, {
-				// 				handle: elProfileTitlebar,
-				// 				containment: document.body,
-				// 			});
-				// 			makeResizable(elProfileWindow, {
-				// 				containment: document.body,
-				// 				handles: ['n', 'e', 's', 'w'],
-				// 			});
-				// 		}
-
-				// 		this.guiLoaded = true;
-				// 		for (let task of this.guiLoadTasks) {
-				// 			task();
-				// 		}
-				// 	})
-				// 	.catch(err => {
-				// 		console.error('Failed to load profile window:', err);
-				// 		this.guiLoaded = true;
-				// 		for (let task of this.guiLoadTasks) {
-				// 			task();
-				// 		}
-				// 	});
-
-				////////////////////////////////////////////////////// PROFILE WINDOW REMOVED FOR TESTING PURPOSES
-				// Load profile.html using fetch
-				// fetch(new URL(Potree.scriptPath + '/profile.html').href)
-
-				// fetch(new URL('/potree/profile.html').href)
-				// let profilePath = `./potree/profile.html`;
-				// fetch(profilePath)
-				// 	.then(response => response.text())
-				// 	.then(profileHtml => {
-				// 		let elProfile = document.createElement('div');
-				// 		elProfile.innerHTML = profileHtml;
-				// 		// Append children to body
-				// 		while (elProfile.firstChild) {
-				// 			document.body.appendChild(elProfile.firstChild);
-				// 		}
-
-				// 		// Replace jQuery UI draggable/resizable with a library or custom implementation
-				// 		// Example: Using interact.js (install via npm)
-
-				// 		//removed for testing unless find another way
-				// 		import('interactjs').then(interact => {
-				// 			interact('#profile_window')
-				// 				.draggable({
-				// 					// Configure drag options
-				// 				})
-				// 				.resizable({
-				// 					// Configure resize options
-				// 				});
-				// 		});
-
-
-
-
-				// 		// Document ready equivalent
-				// 		document.addEventListener('DOMContentLoaded', () => {
-				// 			this.guiLoaded = true;
-				// 			for (let task of this.guiLoadTasks) {
-				// 				task();
-				// 			}
-				// 		});
-				// 	});
+			})
+			.catch(err => {
+				console.warn('Failed to load sidebar GUI:', err);
+			})
+			.finally(() => {
+				this.guiLoaded = true;
+				const tasks = this.guiLoadTasks.splice(0, this.guiLoadTasks.length);
+				for (let task of tasks) {
+					task();
+				}
 			});
 	}
 
@@ -2153,14 +2071,6 @@ export class Viewer extends EventDispatcher {
 			}
 		} catch (err) {
 			console.error('Failed to load profile window:', err);
-		}
-
-		if (!this.guiLoaded) {
-			this.guiLoaded = true;
-			const tasks = this.guiLoadTasks.splice(0, this.guiLoadTasks.length);
-			for (let task of tasks) {
-				task();
-			}
 		}
 
 		return this.profileUI;

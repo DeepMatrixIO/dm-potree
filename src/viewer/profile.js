@@ -16,16 +16,23 @@ import {Utils} from "../utils.js";
 function copyMaterial(source, target) {
 	if (!source || !target) return;
 
+	const excludedUniforms = new Set([
+		'clipBoxes',
+		'clipBoxCount',
+		'clipPolygons',
+		'clipPolygonCount',
+		'visibleNodes',
+	]);
+
 	if (target.uniforms && source.uniforms) {
 		for (let name of Object.keys(target.uniforms)) {
-			if (source.uniforms[name] !== undefined) {
+			if (!excludedUniforms.has(name) && source.uniforms[name] !== undefined) {
 				target.uniforms[name].value = source.uniforms[name].value;
 			}
 		}
 	}
 
 	target.gradientTexture = source.gradientTexture;
-	target.visibleNodesTexture = source.visibleNodesTexture;
 	target.classificationTexture = source.classificationTexture;
 	target.matcapTexture = source.matcapTexture;
 
@@ -464,6 +471,9 @@ export class ProfileWindow extends EventDispatcher {
 		if (typeof ResizeObserver !== 'undefined' && this.renderArea) {
 			const ro = new ResizeObserver(() => {
 				if (this.enabled && this.renderArea.clientWidth > 0 && this.renderArea.clientHeight > 0) {
+					this.fitToProjectedBox();
+					this.initSVG();
+					this.updateScales();
 					this.render();
 				}
 			});
@@ -964,24 +974,7 @@ export class ProfileWindow extends EventDispatcher {
 		entry.addPoints(points);//this should be where data is added.
 		this.projectedBox.union(entry.projectedBox);
 
-		if (this.autoFit && this.autoFitEnabled) {
-			let width = this.renderArea.clientWidth;
-			let height = this.renderArea.clientHeight;
-
-			let size = this.projectedBox.getSize(new Vector3());
-
-			if (width > 0 && height > 0) {
-				let sx = size.x > 0 ? (width / size.x) : 1;
-				let sy = size.z > 0 ? (height / size.z) : 1;
-				let scale = Math.min(sx, sy);
-
-				if (isFinite(scale) && scale > 0) {
-					let center = this.projectedBox.getCenter(new Vector3());
-					this.scale.set(scale, scale, 1);
-					this.camera.position.copy(center);
-				}
-			}
-		}
+		this.fitToProjectedBox();
 
 		//console.log(entry);
 
@@ -1024,16 +1017,56 @@ export class ProfileWindow extends EventDispatcher {
 		this.render();
 	}
 
+	fitToProjectedBox() {
+		if (!this.autoFit || !this.autoFitEnabled || this.projectedBox.isEmpty()) {
+			return;
+		}
+
+		let width = this.renderArea.clientWidth;
+		let height = this.renderArea.clientHeight;
+		if (width <= 0 || height <= 0) {
+			return;
+		}
+
+		let size = this.projectedBox.getSize(new Vector3());
+		let sx = size.x > 0 ? (width / size.x) : 1;
+		let sy = size.z > 0 ? (height / size.z) : 1;
+		let scale = Math.min(sx, sy);
+
+		if (isFinite(scale) && scale > 0) {
+			let center = this.projectedBox.getCenter(new Vector3());
+			this.scale.set(scale, scale, 1);
+			this.camera.position.copy(center);
+		}
+	}
+
 	show() {
 		if (this.elRoot) this.elRoot.style.display = 'block';
 		this.enabled = true;
+		this.fitToProjectedBox();
 		this.initSVG();
+		this.updateScales();
 		this.render();
 	}
 
 	hide() {
 		if (this.elRoot) this.elRoot.style.display = 'none';
 		this.enabled = false;
+	}
+
+	updateCameraProjection() {
+		let width = this.renderArea.clientWidth;
+		let height = this.renderArea.clientHeight;
+		if (width <= 0 || height <= 0) return;
+
+		let sx = (this.scale.x && isFinite(this.scale.x) && this.scale.x > 0) ? this.scale.x : 1;
+		let sy = (this.scale.y && isFinite(this.scale.y) && this.scale.y > 0) ? this.scale.y : 1;
+
+		this.camera.left = (-width / 2) / sx;
+		this.camera.right = (+width / 2) / sx;
+		this.camera.top = (+height / 2) / sy;
+		this.camera.bottom = (-height / 2) / sy;
+		this.camera.updateProjectionMatrix();
 	}
 
 	updateScales() {
@@ -1047,19 +1080,7 @@ export class ProfileWindow extends EventDispatcher {
 		}
 		if (!this.scaleX || !this.scaleY) return;
 
-		let sx = (this.scale.x && isFinite(this.scale.x) && this.scale.x > 0) ? this.scale.x : 1;
-		let sy = (this.scale.y && isFinite(this.scale.y) && this.scale.y > 0) ? this.scale.y : 1;
-
-		let left = (-width / 2) / sx;
-		let right = (+width / 2) / sx;
-		let top = (+height / 2) / sy;
-		let bottom = (-height / 2) / sy;
-
-		this.camera.left = left;
-		this.camera.right = right;
-		this.camera.top = top;
-		this.camera.bottom = bottom;
-		this.camera.updateProjectionMatrix();
+		this.updateCameraProjection();
 
 		this.scaleX.domain([this.camera.left + this.camera.position.x, this.camera.right + this.camera.position.x])
 			.range([0, width]);
@@ -1110,14 +1131,19 @@ export class ProfileWindow extends EventDispatcher {
 			setTimeout(this.requestScaleUpdate.bind(this), 100);
 			this.scaleUpdatePending = true;
 		}
-
 	}
+
+
+	//in charge of rendering the points from the fake potree.
 
 	render() {
 		let width = this.renderArea.clientWidth;
 		let height = this.renderArea.clientHeight;
 
 		if (width <= 0 || height <= 0) return;
+
+		this.fitToProjectedBox();
+		this.updateCameraProjection();
 
 		let {renderer, pRenderer, camera, profileScene, scene} = this;
 		let {scaleX, pickSphere} = this;
