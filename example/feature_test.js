@@ -1,6 +1,6 @@
 import {Vector3, SphereGeometry, MeshBasicMaterial, Mesh} from 'three';
 import {Potree, PScene, Viewer, Profile, Measure} from '../dist/potree_module.js';
-import {extractZAtXY} from '../src/utils/pointcloud_tools.js';
+import {extractZAtXY, extractZHistogramAtXY} from '../src/utils/pointcloud_tools.js';
 import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
 import {SphereVolume} from '../src/utils/Volume.js';
 import {TetrahedralBoxTool, TetTool} from '../src/utils/TetrahedralBoxTool.js';
@@ -344,32 +344,51 @@ function init() {
 					}
 
 					const width = widthInput ? (parseFloat(widthInput.value) || 1.5) : 1.5;
+					const binSizeInput = document.getElementById('input-extract-z-binsize');
+					const binSize = binSizeInput ? (parseFloat(binSizeInput.value) || 0.25) : 0.25;
 					const modeSelect = document.getElementById('select-extract-z-mode');
 					const selectedMode = modeSelect ? modeSelect.value : 'all';
 					const showInProfileWindow = Boolean(showWinCheck && showWinCheck.checked);
 
-					log(`Loading all intersecting octree nodes around XY=(${x.toFixed(3)}, ${y.toFixed(3)}), width=${width}m into ProfileFakeOctree...`, "info");
+					log(`Loading all intersecting octree nodes around XY=(${x.toFixed(3)}, ${y.toFixed(3)}), width=${width}m, binSize=${binSize}m into ProfileFakeOctree...`, "info");
 
-					const result = await extractZAtXY(viewer, x, y, {
+					const histResult = await extractZHistogramAtXY(viewer, x, y, {
 						width,
+						binSize,
 						mode: selectedMode,
 						showInProfileWindow,
 					});
 
-					if (result.numPoints === 0 || result.zMin === null) {
+					if (histResult.numPoints === 0 || histResult.statistics.min === null) {
 						if (outputBox) {
 							outputBox.style.display = 'block';
-							outputBox.innerHTML = `No points found around XY=(${x.toFixed(3)}, ${y.toFixed(3)}) within width=${result.width.toFixed(2)}m.`;
+							outputBox.innerHTML = `No points found around XY=(${x.toFixed(3)}, ${y.toFixed(3)}) within width=${histResult.width.toFixed(2)}m.`;
 						}
-						log(`WARNING: 0 points found around XY=(${x.toFixed(3)}, ${y.toFixed(3)}) (width=${result.width.toFixed(2)}m). Try another XY inside the point cloud or increase Width.`, "error");
+						const histContainer = document.getElementById('histogram-extract-z-container');
+						if (histContainer) histContainer.style.display = 'none';
+						log(`WARNING: 0 points found around XY=(${x.toFixed(3)}, ${y.toFixed(3)}) (width=${histResult.width.toFixed(2)}m). Try another XY inside the point cloud or increase Width.`, "error");
 						setPassState('extract-z-xy', false);
 						return;
 					}
 
-					window.__lastExtractZResult = result;
-					renderExtractedZConfirmation(result, selectedMode);
+					const stats = histResult.statistics;
+					const normalizedResult = {
+						...histResult,
+						zMin: stats.min,
+						zMax: stats.max,
+						zAvg: stats.avg,
+						zMean: stats.mean,
+						zMedian: stats.median,
+						zIdw: stats.idw,
+						zClosest: stats.closest,
+						closestPoint: stats.closestPoint || { distanceXY: 0 },
+					};
 
-					log(`SUCCESS: Extracted all Z metrics at XY=(${x.toFixed(3)}, ${y.toFixed(3)}): Min=${result.zMin.toFixed(4)}, Max=${result.zMax.toFixed(4)}, Avg=${result.zAvg.toFixed(4)}, Median=${result.zMedian.toFixed(4)}, IDW=${result.zIdw.toFixed(4)}, Closest=${result.zClosest.toFixed(4)} (${result.numPoints} points, max octree level=${result.highestLevelServed}).`, "success");
+					window.__lastExtractZResult = normalizedResult;
+					renderExtractedZConfirmation(normalizedResult, selectedMode);
+					renderZHistogramGraph(histResult);
+
+					log(`SUCCESS: Extracted Z & ${histResult.histogram.numBins}-bin (${binSize}m) histogram at XY=(${x.toFixed(3)}, ${y.toFixed(3)}): Min=${stats.min.toFixed(4)}, Max=${stats.max.toFixed(4)}, Avg=${stats.avg.toFixed(4)}, Median=${stats.median.toFixed(4)}, PeakBin=[${histResult.histogram.peakBin.zStart.toFixed(2)}..${histResult.histogram.peakBin.zEnd.toFixed(2)}m (${histResult.histogram.peakBin.count} pts)] from ${histResult.numPoints} points (max octree level=${histResult.highestLevelServed}).`, "success");
 					setPassState('extract-z-xy', true);
 				} catch (err) {
 					log("ERROR extracting Z at XY: " + err.message, "error");
@@ -1641,6 +1660,92 @@ function init() {
 				`<b>FakeOctree Points:</b> ${result.numPoints} | <b>Max Octree Level:</b> ${result.highestLevelServed}`,
 			].join('<br>');
 		}
+	}
+
+	function renderZHistogramGraph(histResult) {
+		const container = document.getElementById('histogram-extract-z-container');
+		const graphEl = document.getElementById('histogram-extract-z-graph');
+		const jsonEl = document.getElementById('histogram-extract-z-json');
+		if (!container || !graphEl) return;
+
+		container.style.display = 'flex';
+		if (jsonEl) {
+			jsonEl.textContent = histResult.json;
+		}
+
+		const { bins, maxBinCount, zMin, zMax, binSize, numBins, peakBin } = histResult.histogram;
+		const stats = histResult.statistics;
+
+		const svgW = 310;
+		const svgH = 135;
+		const padL = 34;
+		const padR = 10;
+		const padT = 14;
+		const padB = 26;
+		const plotW = svgW - padL - padR;
+		const plotH = svgH - padT - padB;
+
+		const safeMaxCount = Math.max(1, maxBinCount);
+		const barStep = plotW / Math.max(1, bins.length);
+		const barW = Math.max(1.5, barStep - (bins.length > 40 ? 0.5 : 1.5));
+
+		const zToX = (zVal) => {
+			if (zMax <= zMin) return padL + plotW * 0.5;
+			const t = Math.max(0, Math.min(1, (zVal - zMin) / (zMax - zMin)));
+			return padL + t * plotW;
+		};
+
+		let barsSvg = '';
+		for (let i = 0; i < bins.length; i++) {
+			const b = bins[i];
+			const bh = (b.count / safeMaxCount) * plotH;
+			const bx = padL + i * barStep;
+			const by = padT + (plotH - bh);
+			const isPeak = peakBin && b.index === peakBin.index && b.count > 0;
+			const fill = isPeak ? '#00ff88' : (b.count > 0 ? '#38bdf8' : '#1e293b');
+			barsSvg += `<rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}" width="${barW.toFixed(2)}" height="${Math.max(1, bh).toFixed(2)}" fill="${fill}" rx="1">`
+				+ `<title>Bin #${b.index}: Z=[${b.zStart.toFixed(2)}m .. ${b.zEnd.toFixed(2)}m] | Count: ${b.count} (${b.percentage}%)</title>`
+				+ `</rect>`;
+		}
+
+		const xMin = padL;
+		const xAvg = zToX(stats.avg);
+		const xMax = padL + plotW;
+
+		graphEl.innerHTML = `
+			<svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="display:block;background:#090d16;border-radius:4px;border:1px solid #1e293b;">
+				<!-- Y grid & labels -->
+				<line x1="${padL}" y1="${padT}" x2="${svgW - padR}" y2="${padT}" stroke="#1e293b" stroke-dasharray="2,2"/>
+				<line x1="${padL}" y1="${padT + plotH * 0.5}" x2="${svgW - padR}" y2="${padT + plotH * 0.5}" stroke="#1e293b" stroke-dasharray="2,2"/>
+				<line x1="${padL}" y1="${padT + plotH}" x2="${svgW - padR}" y2="${padT + plotH}" stroke="#475569"/>
+				<text x="${padL - 4}" y="${padT + 4}" fill="#94a3b8" font-size="8.5" text-anchor="end">${maxBinCount}</text>
+				<text x="${padL - 4}" y="${padT + plotH * 0.5 + 3}" fill="#64748b" font-size="8" text-anchor="end">${Math.round(maxBinCount * 0.5)}</text>
+				<text x="${padL - 4}" y="${padT + plotH}" fill="#94a3b8" font-size="8.5" text-anchor="end">0</text>
+
+				<!-- Histogram bars (upwards from zMin to zMax in ${binSize}m bins) -->
+				${barsSvg}
+
+				<!-- Avg Z marker line -->
+				<line x1="${xAvg.toFixed(2)}" y1="${padT}" x2="${xAvg.toFixed(2)}" y2="${padT + plotH}" stroke="#facc15" stroke-width="1.2" stroke-dasharray="3,2"/>
+				<text x="${xAvg.toFixed(2)}" y="${padT - 3}" fill="#facc15" font-size="8" text-anchor="middle">Avg ${stats.avg.toFixed(2)}m</text>
+
+				<!-- X axis Z labels (Min -> Max) -->
+				<text x="${xMin}" y="${svgH - 12}" fill="#00ff88" font-size="8.5" text-anchor="start">Min ${zMin.toFixed(2)}m</text>
+				<text x="${(padL + plotW * 0.5).toFixed(1)}" y="${svgH - 3}" fill="#94a3b8" font-size="8" text-anchor="middle">${numBins} bins × ${binSize}m (span ${stats.span.toFixed(2)}m)</text>
+				<text x="${xMax}" y="${svgH - 12}" fill="#ff5555" font-size="8.5" text-anchor="end">Max ${zMax.toFixed(2)}m</text>
+			</svg>
+		`;
+	}
+
+	const btnToggleZHistJson = document.getElementById('btn-toggle-z-hist-json');
+	if (btnToggleZHistJson) {
+		btnToggleZHistJson.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const jsonEl = document.getElementById('histogram-extract-z-json');
+			if (jsonEl) {
+				jsonEl.style.display = jsonEl.style.display === 'none' ? 'block' : 'none';
+			}
+		});
 	}
 
 	const selectExtractZMode = document.getElementById('select-extract-z-mode');

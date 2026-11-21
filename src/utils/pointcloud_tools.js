@@ -443,3 +443,201 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 	}
 	return results;
 }
+
+/**
+ * Force-loads all intersecting octree nodes around (x, y) into ProfileFakeOctree(s),
+ * scans all points from top to bottom to find min/max Z and summary statistics,
+ * and scans upwards from zMin to zMax in `binSize` (default 0.25m) steps to build
+ * a vertical Z histogram. Returns a JSON-serializable object (and `.json` string).
+ *
+ * @param {object|Array} viewerOrPointclouds - Viewer, PScene, PointCloudOctree, or PointCloudOctree[]
+ * @param {number} x - World X coordinate
+ * @param {number} y - World Y coordinate
+ * @param {object} [options]
+ * @param {number} [options.width=1.0] - Search column width (meters) around (x, y)
+ * @param {number} [options.radius] - Optional horizontal search radius (sets width = 2 * radius)
+ * @param {number} [options.binSize=0.25] - Vertical Z bin size in meters (defaults to 0.25m)
+ * @param {number} [options.maxDepth=Number.MAX_VALUE] - Maximum octree depth to load (defaults to all levels)
+ * @param {boolean} [options.autoExpand=true] - Automatically expand search width if 0 points found in initial column
+ * @param {boolean} [options.showInProfileWindow=false] - Whether to also display the query profile in viewer.profileWindow
+ * @param {Function} [options.onProgress] - Progress callback
+ * @returns {Promise<object>} JSON-serializable object containing { x, y, width, binSize, numPoints, highestLevelServed, statistics, histogram, json }
+ */
+export async function extractZHistogramAtXY(viewerOrPointclouds, x, y, options = {}) {
+	const binSize = Math.max(0.01, Number(options.binSize) || 0.25);
+
+	// Use extractZAtXY to load all octree levels into ProfileFakeOctrees and get base stats
+	const baseResult = await extractZAtXY(viewerOrPointclouds, x, y, options);
+	const {
+		width,
+		numPoints,
+		highestLevelServed,
+		fakeOctrees,
+		lowestPoint,
+		highestPoint,
+		closestPoint,
+	} = baseResult;
+
+	const numX = Number(x);
+	const numY = Number(y);
+
+	if (numPoints === 0 || baseResult.zMin === null || baseResult.zMax === null) {
+		const emptyPayload = {
+			x: numX,
+			y: numY,
+			width,
+			binSize,
+			numPoints: 0,
+			highestLevelServed,
+			statistics: {
+				min: null,
+				max: null,
+				span: 0,
+				avg: null,
+				mean: null,
+				median: null,
+				mode: null,
+				stdDev: null,
+				idw: null,
+				closest: null,
+				lowestPoint: null,
+				highestPoint: null,
+				closestPoint: null,
+			},
+			histogram: {
+				binSize,
+				numBins: 0,
+				zMin: null,
+				zMax: null,
+				maxBinCount: 0,
+				peakBin: null,
+				bins: [],
+			},
+		};
+		return {
+			...emptyPayload,
+			json: JSON.stringify(emptyPayload, null, 2),
+		};
+	}
+
+	// 1. Collect all Z values from the loaded ProfileFakeOctrees and scan top-to-bottom for min/max & variance
+	const zList = [];
+	for (const [pointcloud, fakeOctree] of fakeOctrees.entries()) {
+		const pcOffsetZ = pointcloud.position.z;
+		for (const pointsBatch of fakeOctree.points) {
+			const n = pointsBatch.numPoints;
+			const posArr = pointsBatch.data.position;
+			if (!posArr) continue;
+			for (let i = 0; i < n; i++) {
+				zList.push(posArr[3 * i + 2] + pcOffsetZ);
+			}
+		}
+	}
+
+	// Sort top-to-bottom first to verify min/max, then scan upwards from zMin to zMax
+	zList.sort((a, b) => b - a);
+	const zMax = zList[0];
+	const zMin = zList[zList.length - 1];
+	const zSpan = Math.max(0, zMax - zMin);
+	const zMean = baseResult.zMean;
+
+	let varianceSum = 0;
+	for (let i = 0; i < zList.length; i++) {
+		const diff = zList[i] - zMean;
+		varianceSum += diff * diff;
+	}
+	const zStdDev = Math.sqrt(varianceSum / zList.length);
+
+	// 2. Scan upwards from zMin to zMax generating 0.25m (binSize) bins
+	const numBins = Math.max(1, Math.ceil(zSpan / binSize) || 1);
+	const counts = new Uint32Array(numBins);
+
+	for (let i = zList.length - 1; i >= 0; i--) {
+		const wz = zList[i];
+		let binIdx = Math.floor((wz - zMin) / binSize);
+		if (binIdx < 0) binIdx = 0;
+		if (binIdx >= numBins) binIdx = numBins - 1;
+		counts[binIdx]++;
+	}
+
+	const bins = [];
+	let cumulativeCount = 0;
+	let maxBinCount = 0;
+	let peakBin = null;
+
+	for (let k = 0; k < numBins; k++) {
+		const zStart = Number((zMin + k * binSize).toFixed(4));
+		const zEnd = Number((zMin + (k + 1) * binSize).toFixed(4));
+		const zCenter = Number(((zStart + zEnd) * 0.5).toFixed(4));
+		const count = counts[k];
+		cumulativeCount += count;
+		const density = Number((count / numPoints).toFixed(6));
+		const percentage = Number(((count / numPoints) * 100).toFixed(2));
+		const cumulativePercentage = Number(((cumulativeCount / numPoints) * 100).toFixed(2));
+
+		const binEntry = {
+			index: k,
+			zStart,
+			zEnd,
+			zCenter,
+			count,
+			density,
+			percentage,
+			cumulativeCount,
+			cumulativePercentage,
+		};
+		bins.push(binEntry);
+
+		if (count > maxBinCount) {
+			maxBinCount = count;
+			peakBin = binEntry;
+		}
+	}
+
+	const zMode = peakBin ? peakBin.zCenter : zMean;
+
+	const serializePt = (pt) => pt ? {
+		x: Number(pt.x.toFixed(4)),
+		y: Number(pt.y.toFixed(4)),
+		z: Number(pt.z.toFixed(4)),
+		distanceXY: Number(pt.distanceXY.toFixed(4)),
+	} : null;
+
+	const payload = {
+		x: Number(numX.toFixed(4)),
+		y: Number(numY.toFixed(4)),
+		width: Number(width.toFixed(4)),
+		binSize: Number(binSize.toFixed(4)),
+		numPoints,
+		highestLevelServed,
+		statistics: {
+			min: Number(zMin.toFixed(4)),
+			max: Number(zMax.toFixed(4)),
+			span: Number(zSpan.toFixed(4)),
+			avg: Number(zMean.toFixed(4)),
+			mean: Number(zMean.toFixed(4)),
+			median: Number(baseResult.zMedian.toFixed(4)),
+			mode: Number(zMode.toFixed(4)),
+			stdDev: Number(zStdDev.toFixed(4)),
+			idw: Number(baseResult.zIdw.toFixed(4)),
+			closest: Number(baseResult.zClosest.toFixed(4)),
+			lowestPoint: serializePt(lowestPoint),
+			highestPoint: serializePt(highestPoint),
+			closestPoint: serializePt(closestPoint),
+		},
+		histogram: {
+			binSize: Number(binSize.toFixed(4)),
+			numBins,
+			zMin: Number(zMin.toFixed(4)),
+			zMax: Number(zMax.toFixed(4)),
+			maxBinCount,
+			peakBin,
+			bins,
+		},
+	};
+
+	return {
+		...payload,
+		json: JSON.stringify(payload, null, 2),
+	};
+}
