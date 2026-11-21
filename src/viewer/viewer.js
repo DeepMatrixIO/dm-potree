@@ -2107,7 +2107,7 @@ export class Viewer extends EventDispatcher {
 	}
 
 	loadProfileGUI(profileUrl = '/potree/profile.html') {
-		fetch(new URL(profileUrl, window.location.origin).href)
+		return fetch(new URL(profileUrl, window.location.origin).href)
 			.then(response => {
 				if (!response.ok) {
 					throw new Error(`Failed to fetch ${profileUrl}: ${response.status} ${response.statusText}`);

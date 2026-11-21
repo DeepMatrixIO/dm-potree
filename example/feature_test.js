@@ -1,4 +1,5 @@
-import {Potree, PScene, Viewer} from '../dist/potree_module.js';
+import {Vector3} from 'three';
+import {Potree, PScene, Viewer, Profile} from '../dist/potree_module.js';
 import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
 import {SphereVolume} from '../src/utils/Volume.js';
 import {TetrahedralBoxTool, TetTool} from '../src/utils/TetrahedralBoxTool.js';
@@ -247,6 +248,59 @@ function init() {
 				}
 			}
 		},
+		'cross-profile': {
+			id: 'cross-profile',
+			name: 'Cross-Cloud Profile & 2D Window',
+			status: 'status-cross-profile',
+			checkbox: 'check-cross-profile',
+			passed: false,
+			run: async () => {
+				log("Creating a profile across the loaded point cloud bounding box...");
+				if (sceneSG.pointclouds.length === 0) {
+					log("WARNING: No point clouds loaded in scene. Load a pointcloud first!", "error");
+					setPassState('cross-profile', false);
+					return;
+				}
+				try {
+					const bbox = viewer.getBoundingBox();
+					if (!bbox || !isFinite(bbox.min.x) || !isFinite(bbox.max.x)) {
+						throw new Error("Could not determine point cloud bounding box.");
+					}
+
+					const center = bbox.getCenter(new Vector3());
+					const size = bbox.getSize(new Vector3());
+
+					let start, end;
+					if (size.x >= size.y) {
+						start = new Vector3(bbox.min.x, center.y, center.z);
+						end = new Vector3(bbox.max.x, center.y, center.z);
+					} else {
+						start = new Vector3(center.x, bbox.min.y, center.z);
+						end = new Vector3(center.x, bbox.max.y, center.z);
+					}
+
+					const profile = new Profile();
+					profile.name = "BBox Cross Profile";
+					const profileWidth = Math.max(1, Math.min(size.x, size.y) * 0.05);
+					profile.setWidth(profileWidth);
+					profile.addMarker(start);
+					profile.addMarker(end);
+					sceneSG.addProfile(profile);
+
+					if (!viewer._profileWindow || !viewer._profileWindowController) {
+						await viewer.loadProfileGUI();
+					}
+					viewer.profileWindow.show();
+					viewer.profileWindowController.setProfile(profile);
+
+					log(`SUCCESS: Profile inserted across point cloud bbox from (${start.x.toFixed(2)}, ${start.y.toFixed(2)}, ${start.z.toFixed(2)}) to (${end.x.toFixed(2)}, ${end.y.toFixed(2)}, ${end.z.toFixed(2)}), width=${profileWidth.toFixed(2)}m. ProfileWindow opened.`, "success");
+					setPassState('cross-profile', true);
+				} catch (err) {
+					log("ERROR creating cross-cloud profile: " + err.message, "error");
+					setPassState('cross-profile', false);
+				}
+			}
+		},
 		'clear-measures': {
 			id: 'clear-measures',
 			name: 'Clear Calculations',
@@ -257,6 +311,12 @@ function init() {
 				log("Clearing all drawings, paths, volumes and measurements...");
 				try {
 					sceneSG.removeAllMeasurements();
+					while (sceneSG.profiles && sceneSG.profiles.length > 0) {
+						sceneSG.removeProfile(sceneSG.profiles[0]);
+					}
+					if (viewer._profileWindow) {
+						viewer._profileWindow.hide();
+					}
 					activeMeasureForLineTool = null;
 					hideOnScreenInstructions();
 					log("SUCCESS: Drawing canvas cleared successfully.", "success");
@@ -508,7 +568,7 @@ function init() {
 						sphere.clip = true;
 						sphere.initialized = true;
 						sceneSG.addVolume(sphere);
-												sceneSG.addStaticStopFilter();//required to stop further testing
+						sceneSG.addStaticStopFilter();//required to stop further testing
 
 						// viewer.requestRender();
 						log(`SUCCESS: Created SphereVolume at pointcloud center [${cx.toFixed(2)}, ${cy.toFixed(2)}, ${cz.toFixed(2)}] with radius = ${r}.`, "success");
@@ -563,7 +623,7 @@ function init() {
 							return;
 						}
 						let coords = null;
-						try { coords = JSON.parse(rawCoord); } catch (e) {
+						try {coords = JSON.parse(rawCoord);} catch (e) {
 							coords = rawCoord.replace(/[\[\]]/g, '').split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
 						}
 						if (coords && coords.length >= 3) {

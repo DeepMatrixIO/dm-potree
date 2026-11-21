@@ -711,11 +711,31 @@
 						</div>
 					</div>
 
+					<!-- Cross-Cloud Profile -->
+					<div class="test-item" id="item-cross-profile">
+						<div class="test-meta">
+							<div class="test-title-area">
+								<span class="test-title">9. Cross-Cloud Profile &amp; 2D Window</span>
+								<span class="test-desc">Insert a profile across the loaded point cloud bounding box and
+									show its 2D profile window.</span>
+							</div>
+							<div class="status-container">
+								<span class="status-badge status-idle" id="status-cross-profile">Untested</span>
+							</div>
+						</div>
+						<div class="test-actions-row">
+							<label class="manual-check">
+								<input type="checkbox" id="check-cross-profile"> Checked Passed
+							</label>
+							<button class="action-btn" id="btn-cross-profile">▶ Show 2D Profile</button>
+						</div>
+					</div>
+
 					<!-- Clear Measurements -->
 					<div class="test-item" id="item-clear-measures">
 						<div class="test-meta">
 							<div class="test-title-area">
-								<span class="test-title">9. Clear Calculations & Helpers</span>
+								<span class="test-title">10. Clear Calculations & Helpers</span>
 								<span class="test-desc">Wipe all lines, profiles, and measurements from the viewer
 									canvas.</span>
 							</div>
@@ -828,7 +848,8 @@
 							<button class="action-btn" id="btn-change-cliptask">▶ Cycle Filter</button>
 							<button class="action-btn" id="btn-clear-mixed-filters"
 								style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;"
-								title="Remove all mixed filters, volumes and clips from scene">🗑️ Clear Mixed Filters</button>
+								title="Remove all mixed filters, volumes and clips from scene">🗑️ Clear Mixed
+								Filters</button>
 						</div>
 					</div>
 
@@ -926,19 +947,20 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">16. Tetrahedral Box Volume Tool (TetrahedralBoxTool)</span>
-								<span class="test-desc">Insert a 6-tetrahedra volume interactively by raycasting on the point cloud, or pick coordinates from an existing point measurement.</span>
+								<span class="test-desc">Insert a 6-tetrahedra volume interactively by raycasting on the
+									point cloud, or pick coordinates from an existing point measurement.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-tet-volume">Untested</span>
 							</div>
 						</div>
 						<div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
-							<input type="text" id="input-tet-coords"
-								placeholder="[x, y, z] or GeoJSON Point Feature"
+							<input type="text" id="input-tet-coords" placeholder="[x, y, z] or GeoJSON Point Feature"
 								style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #e5e7eb; border-radius: 4px;">
 							<button class="action-btn" id="btn-tet-extract-measure"
 								title="Extract latest measurement coordinates"
-								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📋 Extract Coord</button>
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📋 Extract
+								Coord</button>
 						</div>
 						<div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
 							<label for="input-tet-scale"
@@ -950,7 +972,8 @@
 								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">🔺 showTet: ON</button>
 							<button class="action-btn" id="btn-tet-by-hand"
 								title="Insert into screen interactively by raycasting on the point cloud"
-								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">🖐️ Insert on Screen</button>
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">🖐️ Insert on
+								Screen</button>
 						</div>
 						<div class="test-actions-row" style="margin-top: 6px; flex-wrap: wrap; gap: 6px;">
 							<label class="manual-check">
@@ -958,7 +981,8 @@
 							</label>
 							<button class="action-btn" id="btn-tet-from-point"
 								title="Pick coordinate from latest point measurement and insert Tet"
-								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📍 From Point Measure</button>
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📍 From Point
+								Measure</button>
 							<button class="action-btn" id="btn-tet-volume">▶ Test TetrahedralBoxTool</button>
 							<button class="action-btn" id="btn-clear-mixed-filters-tet"
 								style="padding: 4px 8px; font-size: 11px; white-space: nowrap; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;"
@@ -972,7 +996,8 @@
 						<div class="test-meta">
 							<div class="test-title-area">
 								<span class="test-title">17. Tetrahedral Line Tool (TetrahedralLineTool)</span>
-								<span class="test-desc">Create topologically connected sequence of tetrahedral boxes along a linestring or extract coords from last measurement.</span>
+								<span class="test-desc">Create topologically connected sequence of tetrahedral boxes
+									along a linestring or extract coords from last measurement.</span>
 							</div>
 							<div class="status-container">
 								<span class="status-badge status-idle" id="status-tet-line">Untested</span>
@@ -982,8 +1007,7 @@
 							<input type="text" id="input-tet-line"
 								placeholder="[x0, y0, z0, x1, y1, z1, ...] or GeoJSON"
 								style="flex: 1; min-width: 0; padding: 5px 8px; font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #e5e7eb; border-radius: 4px;">
-							<button class="action-btn" id="btn-tet-line-bbox"
-								title="Fill with Pointcloud BBox Extremes"
+							<button class="action-btn" id="btn-tet-line-bbox" title="Fill with Pointcloud BBox Extremes"
 								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📐 BBox</button>
 							<button class="action-btn" id="btn-tet-line-measure"
 								title="Extract coords from the last measurement"
@@ -1000,7 +1024,8 @@
 								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">🔺 showTet: ON</button>
 							<button class="action-btn" id="btn-tet-line-dump-uniform"
 								title="Extract and inspect uniform coordinates array (getCoordinatesArray)"
-								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📊 Dump Uniform Coords</button>
+								style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">📊 Dump Uniform
+								Coords</button>
 						</div>
 						<div class="test-actions-row" style="margin-top: 6px; flex-wrap: wrap; gap: 6px;">
 							<label class="manual-check">
