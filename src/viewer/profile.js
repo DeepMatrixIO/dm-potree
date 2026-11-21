@@ -193,7 +193,7 @@ function setAttributeUpdateRange(attribute, start, count) {
 	attribute.needsUpdate = true;
 }
 
-class ProfileFakeOctree extends PointCloudTree {
+export class ProfileFakeOctree extends PointCloudTree {
 
 	constructor(octree) {
 		super();

@@ -723,6 +723,12 @@
 								<span class="status-badge status-idle" id="status-cross-profile">Untested</span>
 							</div>
 						</div>
+						<div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+							<label style="font-size: 11px; color: #94a3b8;">Profile Width (m):
+								<input type="number" id="input-cross-profile-width" step="0.5" min="0.05" placeholder="Auto (5% BBox)"
+									style="width: 115px; padding: 3px 6px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 11px;">
+							</label>
+						</div>
 						<div class="test-actions-row">
 							<label class="manual-check">
 								<input type="checkbox" id="check-cross-profile"> Checked Passed
@@ -731,11 +737,69 @@
 						</div>
 					</div>
 
+					<!-- Extract Z at XY using ProfileFakeOctree -->
+					<div class="test-item" id="item-extract-z-xy">
+						<div class="test-meta">
+							<div class="test-title-area">
+								<span class="test-title">10. Extract Z at XY (Profile Fake Octree)</span>
+								<span class="test-desc">Load all octree levels around an (X, Y) coordinate into a
+									ProfileFakeOctree and extract Z (Closest, IDW, Mean, Min, Max).</span>
+							</div>
+							<div class="status-container">
+								<span class="status-badge status-idle" id="status-extract-z-xy">Untested</span>
+							</div>
+						</div>
+						<div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+							<div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+								<label style="font-size: 11px; color: #94a3b8;">X:
+									<input type="number" id="input-extract-z-x" step="any" placeholder="Auto (center)"
+										style="width: 105px; padding: 3px 6px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 11px;">
+								</label>
+								<label style="font-size: 11px; color: #94a3b8;">Y:
+									<input type="number" id="input-extract-z-y" step="any" placeholder="Auto (center)"
+										style="width: 105px; padding: 3px 6px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 11px;">
+								</label>
+								<label style="font-size: 11px; color: #94a3b8;">Width (m):
+									<input type="number" id="input-extract-z-width" step="0.1" min="0.05" value="1.5"
+										style="width: 55px; padding: 3px 6px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 11px;">
+								</label>
+								<label style="font-size: 11px; color: #94a3b8;">Markers:
+									<select id="select-extract-z-mode"
+										style="padding: 3px 6px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 11px;">
+										<option value="all" selected>All (Min + Avg + Max Spheres)</option>
+										<option value="min">Min / Lowest Z Only</option>
+										<option value="max">Max / Highest Z Only</option>
+										<option value="avg">Avg / Mean Z Only</option>
+										<option value="median">Median Z Only</option>
+										<option value="idw">IDW Interpolated Z Only</option>
+										<option value="closest">Closest XY Point Z Only</option>
+									</select>
+								</label>
+							</div>
+							<div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+								<button class="action-btn" id="btn-extract-z-center" style="font-size: 11px; padding: 3px 8px;">🎯 Fill BBox Center XY</button>
+								<button class="action-btn" id="btn-extract-z-pick" style="font-size: 11px; padding: 3px 8px;">🖱️ Pick XY on Cloud</button>
+								<label style="font-size: 11px; color: #cbd5e1; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+									<input type="checkbox" id="check-extract-z-show-window"> Open ProfileWindow
+								</label>
+							</div>
+							<div id="output-extract-z-xy"
+								style="display: none; font-family: monospace; font-size: 11px; padding: 6px 8px; border-radius: 4px; background: rgba(15, 23, 42, 0.85); border: 1px solid #0284c7; color: #e2e8f0; line-height: 1.4;">
+							</div>
+						</div>
+						<div class="test-actions-row">
+							<label class="manual-check">
+								<input type="checkbox" id="check-extract-z-xy"> Checked Passed
+							</label>
+							<button class="action-btn" id="btn-extract-z-xy">▶ Extract Z</button>
+						</div>
+					</div>
+
 					<!-- Clear Measurements -->
 					<div class="test-item" id="item-clear-measures">
 						<div class="test-meta">
 							<div class="test-title-area">
-								<span class="test-title">10. Clear Calculations & Helpers</span>
+								<span class="test-title">11. Clear Calculations & Helpers</span>
 								<span class="test-desc">Wipe all lines, profiles, and measurements from the viewer
 									canvas.</span>
 							</div>

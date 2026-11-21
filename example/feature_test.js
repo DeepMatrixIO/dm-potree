@@ -1,5 +1,6 @@
-import {Vector3} from 'three';
-import {Potree, PScene, Viewer, Profile} from '../dist/potree_module.js';
+import {Vector3, SphereGeometry, MeshBasicMaterial, Mesh} from 'three';
+import {Potree, PScene, Viewer, Profile, Measure} from '../dist/potree_module.js';
+import {extractZAtXY} from '../src/utils/pointcloud_tools.js';
 import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
 import {SphereVolume} from '../src/utils/Volume.js';
 import {TetrahedralBoxTool, TetTool} from '../src/utils/TetrahedralBoxTool.js';
@@ -281,11 +282,19 @@ function init() {
 
 					const profile = new Profile();
 					profile.name = "BBox Cross Profile";
-					const profileWidth = Math.max(1, Math.min(size.x, size.y) * 0.05);
+					const widthInput = document.getElementById('input-cross-profile-width');
+					const customWidth = widthInput ? parseFloat(widthInput.value) : NaN;
+					const profileWidth = (Number.isFinite(customWidth) && customWidth > 0)
+						? customWidth
+						: parseFloat(Math.max(1, Math.min(size.x, size.y) * 0.05).toFixed(2));
+					if (widthInput && (!Number.isFinite(customWidth) || customWidth <= 0)) {
+						widthInput.value = String(profileWidth);
+					}
 					profile.setWidth(profileWidth);
 					profile.addMarker(start);
 					profile.addMarker(end);
 					sceneSG.addProfile(profile);
+					window.__activeCrossProfile = profile;
 
 					if (!viewer._profileWindow || !viewer._profileWindowController) {
 						await viewer.loadProfileGUI();
@@ -301,6 +310,73 @@ function init() {
 				}
 			}
 		},
+		'extract-z-xy': {
+			id: 'extract-z-xy',
+			name: 'Extract Z at XY (Profile Fake Octree)',
+			status: 'status-extract-z-xy',
+			checkbox: 'check-extract-z-xy',
+			passed: false,
+			run: async () => {
+				if (sceneSG.pointclouds.length === 0) {
+					log("WARNING: No point clouds loaded in scene. Load a pointcloud first!", "error");
+					setPassState('extract-z-xy', false);
+					return;
+				}
+				try {
+					const xInput = document.getElementById('input-extract-z-x');
+					const yInput = document.getElementById('input-extract-z-y');
+					const widthInput = document.getElementById('input-extract-z-width');
+					const showWinCheck = document.getElementById('check-extract-z-show-window');
+					const outputBox = document.getElementById('output-extract-z-xy');
+
+					let x = xInput ? parseFloat(xInput.value) : NaN;
+					let y = yInput ? parseFloat(yInput.value) : NaN;
+
+					if (!Number.isFinite(x) || !Number.isFinite(y)) {
+						const defaultXY = getPointCloudRepresentativeXY();
+						if (!defaultXY) {
+							throw new Error("Could not determine point cloud XY bounds.");
+						}
+						x = defaultXY.x;
+						y = defaultXY.y;
+						if (xInput) xInput.value = String(x);
+						if (yInput) yInput.value = String(y);
+					}
+
+					const width = widthInput ? (parseFloat(widthInput.value) || 1.5) : 1.5;
+					const modeSelect = document.getElementById('select-extract-z-mode');
+					const selectedMode = modeSelect ? modeSelect.value : 'all';
+					const showInProfileWindow = Boolean(showWinCheck && showWinCheck.checked);
+
+					log(`Loading all intersecting octree nodes around XY=(${x.toFixed(3)}, ${y.toFixed(3)}), width=${width}m into ProfileFakeOctree...`, "info");
+
+					const result = await extractZAtXY(viewer, x, y, {
+						width,
+						mode: selectedMode,
+						showInProfileWindow,
+					});
+
+					if (result.numPoints === 0 || result.zMin === null) {
+						if (outputBox) {
+							outputBox.style.display = 'block';
+							outputBox.innerHTML = `No points found around XY=(${x.toFixed(3)}, ${y.toFixed(3)}) within width=${result.width.toFixed(2)}m.`;
+						}
+						log(`WARNING: 0 points found around XY=(${x.toFixed(3)}, ${y.toFixed(3)}) (width=${result.width.toFixed(2)}m). Try another XY inside the point cloud or increase Width.`, "error");
+						setPassState('extract-z-xy', false);
+						return;
+					}
+
+					window.__lastExtractZResult = result;
+					renderExtractedZConfirmation(result, selectedMode);
+
+					log(`SUCCESS: Extracted all Z metrics at XY=(${x.toFixed(3)}, ${y.toFixed(3)}): Min=${result.zMin.toFixed(4)}, Max=${result.zMax.toFixed(4)}, Avg=${result.zAvg.toFixed(4)}, Median=${result.zMedian.toFixed(4)}, IDW=${result.zIdw.toFixed(4)}, Closest=${result.zClosest.toFixed(4)} (${result.numPoints} points, max octree level=${result.highestLevelServed}).`, "success");
+					setPassState('extract-z-xy', true);
+				} catch (err) {
+					log("ERROR extracting Z at XY: " + err.message, "error");
+					setPassState('extract-z-xy', false);
+				}
+			}
+		},
 		'clear-measures': {
 			id: 'clear-measures',
 			name: 'Clear Calculations',
@@ -313,6 +389,16 @@ function init() {
 					sceneSG.removeAllMeasurements();
 					while (sceneSG.profiles && sceneSG.profiles.length > 0) {
 						sceneSG.removeProfile(sceneSG.profiles[0]);
+					}
+					if (window.__extractedZMarkers) {
+						for (const m of window.__extractedZMarkers) {
+							if (sceneSG.measurements && sceneSG.measurements.includes(m)) {
+								sceneSG.removeMeasurement(m);
+							} else {
+								sceneSG.scene.remove(m);
+							}
+						}
+						window.__extractedZMarkers = [];
 					}
 					if (viewer._profileWindow) {
 						viewer._profileWindow.hide();
@@ -337,23 +423,27 @@ function init() {
 				log("SPATIAL PICK: Hold CTRL and click on the point cloud to register a raycast pick.");
 				showOnScreenInstructions("Raycast Point Pick", "Click anywhere on a loaded point cloud. Live coordinates of your click will be written directly into the console/dashboard.");
 				try {
-					// Registering custom click handler via viewer logic
+					// Registering custom click handler on renderer.domElement
+					const domElement = viewer.renderer.domElement;
 					const clickListener = (event) => {
-						const intersection = viewer.inputHandler.getMousePointCloudIntersection(event.mouse);
-						if (intersection) {
-							const pt = intersection.point;
-							log(`Raycast Intersection Found: X: ${pt.x.toFixed(3)}, Y: ${pt.y.toFixed(3)}, Z: ${pt.z.toFixed(3)}`, "success");
+						if (event.button !== 0) return;
+						const intersection = viewer.inputHandler.getMousePointCloudIntersection();
+						const pt = intersection && (intersection.location || (intersection.point && intersection.point.position));
+						if (pt) {
+							const px = pt.x !== undefined ? pt.x : pt[0];
+							const py = pt.y !== undefined ? pt.y : pt[1];
+							const pz = pt.z !== undefined ? pt.z : pt[2];
+							log(`Raycast Intersection Found: X: ${px.toFixed(3)}, Y: ${py.toFixed(3)}, Z: ${pz.toFixed(3)}`, "success");
 							setPassState('point-pick', true);
 						}
 					};
 
-					// Check if listener is registered, add it to input handler
-					viewer.inputHandler.addEventListener('click', clickListener);
+					domElement.addEventListener('mouseup', clickListener);
 					log("Raycast selection active. Try clicking the point cloud.", "info");
 
 					// Automatically remove after 30 seconds to clean up, or manual flag
 					setTimeout(() => {
-						viewer.inputHandler.removeEventListener('click', clickListener);
+						domElement.removeEventListener('mouseup', clickListener);
 						log("Picking listener detached (30s elapsed).", "info");
 					}, 30000);
 
@@ -1427,6 +1517,203 @@ function init() {
 		btnTetLine.addEventListener('click', () => {
 			setProcessingState('tet-line');
 			tests['tet-line'].run();
+		});
+	}
+
+	function getPointCloudRepresentativeXY() {
+		if (!sceneSG || sceneSG.pointclouds.length === 0) return null;
+		const pc = sceneSG.pointclouds[0];
+
+		// Prefer an actual point near the middle of the loaded root node so narrow/corridor pointclouds are guaranteed to hit points
+		const root = pc.pcoGeometry && pc.pcoGeometry.root;
+		if (root && root.geometry && root.geometry.attributes && root.geometry.attributes.position) {
+			const posAttr = root.geometry.attributes.position;
+			if (posAttr.count > 0) {
+				const midIdx = Math.floor(posAttr.count / 2);
+				const worldPt = new Vector3(
+					posAttr.array[3 * midIdx + 0],
+					posAttr.array[3 * midIdx + 1],
+					posAttr.array[3 * midIdx + 2]
+				).add(pc.position);
+				return {
+					x: parseFloat(worldPt.x.toFixed(3)),
+					y: parseFloat(worldPt.y.toFixed(3)),
+				};
+			}
+		}
+
+		// Fallback to tight position attribute range if available
+		const posMeta = pc.getAttribute && pc.getAttribute('position');
+		if (posMeta && Array.isArray(posMeta.range) && Array.isArray(posMeta.range[0]) && Array.isArray(posMeta.range[1])) {
+			return {
+				x: parseFloat(((posMeta.range[0][0] + posMeta.range[1][0]) * 0.5).toFixed(3)),
+				y: parseFloat(((posMeta.range[0][1] + posMeta.range[1][1]) * 0.5).toFixed(3)),
+			};
+		}
+
+		const bbox = viewer.getBoundingBox();
+		if (bbox && isFinite(bbox.min.x)) {
+			const center = bbox.getCenter(new Vector3());
+			return {
+				x: parseFloat(center.x.toFixed(3)),
+				y: parseFloat(center.y.toFixed(3)),
+			};
+		}
+		return null;
+	}
+
+	const inputCrossProfileWidth = document.getElementById('input-cross-profile-width');
+	if (inputCrossProfileWidth) {
+		inputCrossProfileWidth.addEventListener('input', () => {
+			const val = parseFloat(inputCrossProfileWidth.value);
+			if (Number.isFinite(val) && val > 0 && window.__activeCrossProfile) {
+				window.__activeCrossProfile.setWidth(val);
+				log(`Updated Cross-Cloud Profile width to ${val.toFixed(2)}m.`, "info");
+			}
+		});
+	}
+
+	function renderExtractedZConfirmation(result, selectedMode = 'min') {
+		if (!result || result.numPoints === 0) return;
+
+		if (!window.__extractedZMarkers) {
+			window.__extractedZMarkers = [];
+		}
+		// Remove previous confirmation markers before placing updated mode marker(s)
+		while (window.__extractedZMarkers.length > 0) {
+			const prev = window.__extractedZMarkers.pop();
+			if (sceneSG.measurements && sceneSG.measurements.includes(prev)) {
+				sceneSG.removeMeasurement(prev);
+			} else {
+				sceneSG.scene.remove(prev);
+			}
+		}
+
+		const addConfirmSphere = (label, zVal, colorHex) => {
+			if (!Number.isFinite(zVal)) return;
+			const m = new Measure();
+			m.name = `${label}_Z_(${result.x.toFixed(2)},${result.y.toFixed(2)})`;
+			m.showDistances = false;
+			m.showAngles = false;
+			m.showArea = false;
+			m.showCoordinates = true;
+			m.closed = false;
+			m.maxMarkers = 1;
+			m.color.setHex(colorHex);
+			m.addMarker(new Vector3(result.x, result.y, zVal));
+			if (m.spheres && m.spheres[0] && m.spheres[0].material) {
+				m.spheres[0].material.color.setHex(colorHex);
+			}
+			sceneSG.addMeasurement(m);
+			window.__extractedZMarkers.push(m);
+		};
+
+		const modeMap = {
+			min: { label: 'Min/Lowest', z: result.zMin, color: 0x00ff88, css: '#00ff88' },
+			max: { label: 'Max/Highest', z: result.zMax, color: 0xff5555, css: '#ff5555' },
+			avg: { label: 'Avg/Mean', z: result.zAvg, color: 0xfacc15, css: '#facc15' },
+			median: { label: 'Median', z: result.zMedian, color: 0xc084fc, css: '#c084fc' },
+			idw: { label: 'IDW', z: result.zIdw, color: 0x38bdf8, css: '#38bdf8' },
+			closest: { label: 'Closest XY', z: result.zClosest, color: 0xfb923c, css: '#fb923c' },
+		};
+
+		if (selectedMode === 'all') {
+			addConfirmSphere('Min', result.zMin, 0x00ff88);
+			addConfirmSphere('Avg', result.zAvg, 0xfacc15);
+			addConfirmSphere('Max', result.zMax, 0xff5555);
+		} else {
+			const active = modeMap[selectedMode] || modeMap.min;
+			addConfirmSphere(active.label, active.z, active.color);
+		}
+
+		const activeInfo = modeMap[selectedMode] || modeMap.min;
+		const outputBox = document.getElementById('output-extract-z-xy');
+		if (outputBox) {
+			outputBox.style.display = 'block';
+			outputBox.innerHTML = [
+				`<b>XY Query:</b> (${result.x.toFixed(3)}, ${result.y.toFixed(3)}) | <b>Column Width:</b> ${result.width.toFixed(2)}m`,
+				selectedMode === 'all'
+					? `<b>Selected Mode:</b> All Spheres (<span style="color:#00ff88">Min</span> + <span style="color:#facc15">Avg</span> + <span style="color:#ff5555">Max</span>)`
+					: `<b>Selected Z (${activeInfo.label}):</b> <span style="color:${activeInfo.css};font-weight:700">${activeInfo.z.toFixed(4)}</span>`,
+				`<b>Min (Lowest):</b> <span style="color:#00ff88">${result.zMin.toFixed(4)}</span> | <b>Max (Highest):</b> <span style="color:#ff5555">${result.zMax.toFixed(4)}</span>`,
+				`<b>Avg (Mean):</b> <span style="color:#facc15">${result.zAvg.toFixed(4)}</span> | <b>Median:</b> <span style="color:#c084fc">${result.zMedian.toFixed(4)}</span>`,
+				`<b>IDW:</b> <span style="color:#38bdf8">${result.zIdw.toFixed(4)}</span> | <b>Closest XY:</b> <span style="color:#fb923c">${result.zClosest.toFixed(4)}</span> (dXY = ${result.closestPoint.distanceXY.toFixed(4)}m)`,
+				`<b>FakeOctree Points:</b> ${result.numPoints} | <b>Max Octree Level:</b> ${result.highestLevelServed}`,
+			].join('<br>');
+		}
+	}
+
+	const selectExtractZMode = document.getElementById('select-extract-z-mode');
+	if (selectExtractZMode) {
+		selectExtractZMode.addEventListener('change', () => {
+			if (window.__lastExtractZResult) {
+				renderExtractedZConfirmation(window.__lastExtractZResult, selectExtractZMode.value);
+				log(`Switched extracted Z display mode to '${selectExtractZMode.value.toUpperCase()}'.`, "info");
+			}
+		});
+	}
+
+	const btnExtractZCenter = document.getElementById('btn-extract-z-center');
+	if (btnExtractZCenter) {
+		btnExtractZCenter.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const xy = getPointCloudRepresentativeXY();
+			if (!xy) {
+				log("Load a pointcloud first before filling XY.", "error");
+				return;
+			}
+			const xInput = document.getElementById('input-extract-z-x');
+			const yInput = document.getElementById('input-extract-z-y');
+			if (xInput) xInput.value = String(xy.x);
+			if (yInput) yInput.value = String(xy.y);
+			log(`Filled representative pointcloud XY: (${xy.x}, ${xy.y})`, "info");
+		});
+	}
+
+	const btnExtractZPick = document.getElementById('btn-extract-z-pick');
+	if (btnExtractZPick) {
+		btnExtractZPick.addEventListener('click', (e) => {
+			e.stopPropagation();
+			if (sceneSG.pointclouds.length === 0) {
+				log("Load a pointcloud first before picking XY.", "error");
+				return;
+			}
+			showOnScreenInstructions("Pick XY for Z Extraction", "Move cursor over the point cloud and left-click to pick (X, Y) and extract Z across all octree levels.");
+			log("Move cursor over the pointcloud and click to deposit pick sphere and extract Z...", "info");
+
+			const pickMeasure = viewer.measuringTool.startInsertion({
+				showDistances: false,
+				showAngles: false,
+				showCoordinates: true,
+				showArea: false,
+				closed: false,
+				maxMarkers: 1,
+				name: 'XY_Pick_Target',
+			});
+
+			const onMarkerDropped = (evt) => {
+				pickMeasure.removeEventListener('marker_dropped', onMarkerDropped);
+				hideOnScreenInstructions();
+				const droppedPos = pickMeasure.points && pickMeasure.points[0] ? pickMeasure.points[0].position : null;
+				// Remove the temporary red picking marker so the green confirmation sphere/marker takes its place
+				sceneSG.removeMeasurement(pickMeasure);
+
+				if (droppedPos && Number.isFinite(droppedPos.x) && Number.isFinite(droppedPos.y)) {
+					const px = parseFloat(droppedPos.x.toFixed(3));
+					const py = parseFloat(droppedPos.y.toFixed(3));
+					const xInput = document.getElementById('input-extract-z-x');
+					const yInput = document.getElementById('input-extract-z-y');
+					if (xInput) xInput.value = String(px);
+					if (yInput) yInput.value = String(py);
+					log(`Picked XY=(${px}, ${py}) from pointcloud. Extracting Z from all octree levels...`, "info");
+					setProcessingState('extract-z-xy');
+					tests['extract-z-xy'].run();
+				} else {
+					log("WARNING: Could not intersect pointcloud at clicked location. Try clicking directly on visible points.", "error");
+				}
+			};
+
+			pickMeasure.addEventListener('marker_dropped', onMarkerDropped);
 		});
 	}
 

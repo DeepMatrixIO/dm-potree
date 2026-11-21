@@ -60,12 +60,17 @@ export class ProfileRequest {
 		this.highestLevelServed = 0;
 
 		this.priorityQueue = new BinaryHeap(function (x) { return 1 / x.weight; });
+		this.queuedNodes = new Set();
 
 		this.initialize();
 	}
 
 	initialize () {
-		this.priorityQueue.push({node: this.pointcloud.pcoGeometry.root, weight: Infinity});
+		const root = this.pointcloud.pcoGeometry.root;
+		if (root) {
+			this.queuedNodes.add(root);
+			this.priorityQueue.push({node: root, weight: Infinity});
+		}
 	};
 
 	// traverse the node and add intersecting descendants to queue
@@ -79,15 +84,17 @@ export class ProfileRequest {
 		}
 
 		while (stack.length > 0) {
-			let node = stack.pop();
-			let weight = node.boundingSphere.radius;
-
-			this.priorityQueue.push({node: node, weight: weight});
+			let current = stack.pop();
+			if (!this.queuedNodes.has(current)) {
+				this.queuedNodes.add(current);
+				let weight = current.boundingSphere.radius;
+				this.priorityQueue.push({node: current, weight: weight});
+			}
 
 			// add children that intersect the cutting plane
-			if (node.level < this.maxDepth) {
+			if (current.level < this.maxDepth) {
 				for (let i = 0; i < 8; i++) {
-					let child = node.children[i];
+					let child = current.children[i];
 					if (child && this.pointcloud.nodeIntersectsProfile(child, this.profile)) {
 						stack.push(child);
 					}
@@ -129,18 +136,19 @@ export class ProfileRequest {
 			if (node.loaded) {
 				// add points to result
 				intersectedNodes.push(node);
-				exports.lru.touch(node);
+				const lru = (typeof Potree !== 'undefined' && Potree.lru)
+					? Potree.lru
+					: (typeof window !== 'undefined' && window.Potree && window.Potree.lru)
+						? window.Potree.lru
+						: (typeof exports !== 'undefined' && exports.lru)
+							? exports.lru
+							: null;
+				if (lru) {
+					lru.touch(node);
+				}
 				this.highestLevelServed = Math.max(node.getLevel(), this.highestLevelServed);
 
-				var geom = node.pcoGeometry;
-				var hierarchyStepSize = geom ? geom.hierarchyStepSize : 1;
-
-				var doTraverse = node.getLevel() === 0 ||
-					(node.level % hierarchyStepSize === 0 && node.hasChildren);
-
-				if (doTraverse) {
-					this.traverse(node);
-				}
+				this.traverse(node);
 			} else {
 				node.load();
 				this.priorityQueue.push(element);
