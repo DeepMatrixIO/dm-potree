@@ -295,6 +295,7 @@ export class MeasuringTool extends EventDispatcher {
 			// labels
 			let labels = measure.edgeLabels.concat(measure.angleLabels);
 			for (let label of labels) {
+				if (!label.visible) continue;
 				let distance = camera.position.distanceTo(label.getWorldPosition(new Vector3()));
 				let pr = Utils.projectedRadius(1, camera, distance, clientWidth, clientHeight);
 				let scale = (70 / pr);
@@ -307,33 +308,36 @@ export class MeasuringTool extends EventDispatcher {
 			}
 
 			// coordinate labels
-			for (let j = 0;j < measure.coordinateLabels.length;j++) {
-				let label = measure.coordinateLabels[j];
-				let sphere = measure.spheres[j];
+			if (measure.showCoordinates) {
+				for (let j = 0;j < measure.coordinateLabels.length;j++) {
+					let label = measure.coordinateLabels[j];
+					if (!label.visible) continue;
+					let sphere = measure.spheres[j];
 
-				let distance = camera.position.distanceTo(sphere.getWorldPosition(new Vector3()));
+					let distance = camera.position.distanceTo(sphere.getWorldPosition(new Vector3()));
 
-				let screenPos = sphere.getWorldPosition(new Vector3()).clone().project(camera);
-				screenPos.x = Math.round((screenPos.x + 1) * clientWidth / 2);
-				screenPos.y = Math.round((-screenPos.y + 1) * clientHeight / 2);
-				screenPos.z = 0;
-				screenPos.y -= 30;
+					let screenPos = sphere.getWorldPosition(new Vector3()).clone().project(camera);
+					screenPos.x = Math.round((screenPos.x + 1) * clientWidth / 2);
+					screenPos.y = Math.round((-screenPos.y + 1) * clientHeight / 2);
+					screenPos.z = 0;
+					screenPos.y -= 30;
 
-				let labelPos = new Vector3(
-					(screenPos.x / clientWidth) * 2 - 1,
-					-(screenPos.y / clientHeight) * 2 + 1,
-					0.5);
-				labelPos.unproject(camera);
-				if (this.viewer.scene.cameraMode == CameraMode.PERSPECTIVE) {
-					let direction = labelPos.sub(camera.position).normalize();
-					labelPos = new Vector3().addVectors(
-						camera.position, direction.multiplyScalar(distance));
+					let labelPos = new Vector3(
+						(screenPos.x / clientWidth) * 2 - 1,
+						-(screenPos.y / clientHeight) * 2 + 1,
+						0.5);
+					labelPos.unproject(camera);
+					if (this.viewer.scene.cameraMode == CameraMode.PERSPECTIVE) {
+						let direction = labelPos.sub(camera.position).normalize();
+						labelPos = new Vector3().addVectors(
+							camera.position, direction.multiplyScalar(distance));
 
+					}
+					label.position.copy(labelPos);
+					let pr = Utils.projectedRadius(1, camera, distance, clientWidth, clientHeight);
+					let scale = (70 / pr);
+					label.scale.set(scale, scale, scale);
 				}
-				label.position.copy(labelPos);
-				let pr = Utils.projectedRadius(1, camera, distance, clientWidth, clientHeight);
-				let scale = (70 / pr);
-				label.scale.set(scale, scale, scale);
 			}
 
 			// {

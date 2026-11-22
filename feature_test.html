@@ -783,6 +783,7 @@
 							<div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
 								<button class="action-btn" id="btn-extract-z-center" style="font-size: 11px; padding: 3px 8px;">🎯 Fill BBox Center XY</button>
 								<button class="action-btn" id="btn-extract-z-pick" style="font-size: 11px; padding: 3px 8px;">🖱️ Pick XY on Cloud</button>
+								<button class="action-btn" id="btn-extract-z-circle-pick" style="font-size: 11px; padding: 3px 8px; background: #0f766e;">🖱️ Pick Measure → 3m Circle</button>
 								<label style="font-size: 11px; color: #cbd5e1; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
 									<input type="checkbox" id="check-extract-z-show-window"> Open ProfileWindow
 								</label>
@@ -801,10 +802,12 @@
 									style="display: none; max-height: 160px; overflow: auto; margin: 0; padding: 6px; border-radius: 4px; background: #020617; color: #38bdf8; font-size: 10px; line-height: 1.35; border: 1px solid #1e293b;"></pre>
 							</div>
 						</div>
-						<div class="test-actions-row">
+						<div class="test-actions-row" style="flex-wrap: wrap; gap: 6px;">
 							<label class="manual-check">
 								<input type="checkbox" id="check-extract-z-xy"> Checked Passed
 							</label>
+							<button class="action-btn" id="btn-extract-z-circle" style="background: #0d9488;">⭕ 3m Z-Circle (0.5m)</button>
+							<button class="action-btn" id="btn-extract-z-batch" style="background: #0369a1;">📍 Batch 3×3 XY Grid</button>
 							<button class="action-btn" id="btn-extract-z-xy">▶ Extract Z &amp; Histogram</button>
 						</div>
 					</div>

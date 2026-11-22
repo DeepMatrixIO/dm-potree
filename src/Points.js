@@ -12,6 +12,9 @@ export class Points {
 	}
 
 	add (points) {
+		if (!points || points.numPoints === 0) {
+			return;
+		}
 		let currentSize = this.numPoints;
 		let additionalSize = points.numPoints;
 		let newSize = currentSize + additionalSize;

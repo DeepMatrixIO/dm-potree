@@ -395,14 +395,58 @@ export class PointCloudOctree extends PointCloudTree {
 
 	nodeIntersectsProfile(node, profile) {
 		let bbWorld = node.boundingBox.clone().applyMatrix4(this.matrixWorld);
+
+		if (profile.customXYBox) {
+			if (
+				bbWorld.max.x < profile.customXYBox.min.x ||
+				bbWorld.min.x > profile.customXYBox.max.x ||
+				bbWorld.max.y < profile.customXYBox.min.y ||
+				bbWorld.min.y > profile.customXYBox.max.y
+			) {
+				return false;
+			}
+		}
+
 		let bsWorld = bbWorld.getBoundingSphere(new Sphere());
+
+		if (Array.isArray(profile.customSegments) && profile.customSegments.length > 0) {
+			for (let i = 0; i < profile.customSegments.length; i++) {
+				const seg = profile.customSegments[i];
+				const halfW = (seg.width || profile.width) * 0.5;
+				const minX = Math.min(seg.start.x, seg.end.x) - halfW;
+				const maxX = Math.max(seg.start.x, seg.end.x) + halfW;
+				const minY = Math.min(seg.start.y, seg.end.y) - halfW;
+				const maxY = Math.max(seg.start.y, seg.end.y) + halfW;
+
+				if (
+					bbWorld.max.x >= minX &&
+					bbWorld.min.x <= maxX &&
+					bbWorld.max.y >= minY &&
+					bbWorld.min.y <= maxY
+				) {
+					return true;
+				}
+			}
+			return false;
+		}
 
 		let intersects = false;
 
 		for (let i = 0;i < profile.points.length - 1;i++) {
+			const p0 = profile.points[i + 0];
+			const p1 = profile.points[i + 1];
+			const halfW = profile.width * 0.5;
+			if (
+				bbWorld.max.x < Math.min(p0.x, p1.x) - halfW ||
+				bbWorld.min.x > Math.max(p0.x, p1.x) + halfW ||
+				bbWorld.max.y < Math.min(p0.y, p1.y) - halfW ||
+				bbWorld.min.y > Math.max(p0.y, p1.y) + halfW
+			) {
+				continue;
+			}
 
-			let start = new Vector3(profile.points[i + 0].x, profile.points[i + 0].y, bsWorld.center.z);
-			let end = new Vector3(profile.points[i + 1].x, profile.points[i + 1].y, bsWorld.center.z);
+			let start = new Vector3(p0.x, p0.y, bsWorld.center.z);
+			let end = new Vector3(p1.x, p1.y, bsWorld.center.z);
 
 			let closest = new Line3(start, end).closestPointToPoint(bsWorld.center, true, new Vector3());
 			let distance = closest.distanceTo(bsWorld.center);

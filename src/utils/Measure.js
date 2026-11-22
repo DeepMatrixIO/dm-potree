@@ -718,43 +718,51 @@ export class Measure extends Object3D {
 
 			{ // edge labels
 				let edgeLabel = this.edgeLabels[i];
+				let isVisible = this.showDistances && (index < lastIndex || this.closed) && this.points.length >= 2;
+				edgeLabel.visible = isVisible;
 
-				let center = new Vector3().add(point.position);
-				center.add(nextPoint.position);
-				center = center.multiplyScalar(0.5);
-				let distance = point.position.distanceTo(nextPoint.position);
+				if (isVisible) {
+					let center = new Vector3().add(point.position);
+					center.add(nextPoint.position);
+					center = center.multiplyScalar(0.5);
+					let distance = point.position.distanceTo(nextPoint.position);
 
-				edgeLabel.position.copy(center);
+					edgeLabel.position.copy(center);
 
-				let suffix = "";
-				if (this.lengthUnit != null && this.lengthUnitDisplay != null) {
-					distance = distance / this.lengthUnit.unitspermeter * this.lengthUnitDisplay.unitspermeter;  //convert to meters then to the display unit
-					suffix = this.lengthUnitDisplay.code;
+					let suffix = "";
+					if (this.lengthUnit != null && this.lengthUnitDisplay != null) {
+						distance = distance / this.lengthUnit.unitspermeter * this.lengthUnitDisplay.unitspermeter;  //convert to meters then to the display unit
+						suffix = this.lengthUnitDisplay.code;
+					}
+
+					let txtLength = Utils.addCommas(distance.toFixed(2));
+					edgeLabel.setText(`${txtLength} ${suffix}`);
+					edgeLabel.visible = distance > 0;
 				}
-
-				let txtLength = Utils.addCommas(distance.toFixed(2));
-				edgeLabel.setText(`${txtLength} ${suffix}`);
-				edgeLabel.visible = this.showDistances && (index < lastIndex || this.closed) && this.points.length >= 2 && distance > 0;
 			}
 
 			{ // angle labels
 				let angleLabel = this.angleLabels[i];
-				let angle = this.getAngleBetweenLines(point, previousPoint, nextPoint);
+				let isVisible = this.showAngles && (index < lastIndex || this.closed) && this.points.length >= 3;
+				angleLabel.visible = isVisible;
 
-				let dir = nextPoint.position.clone().sub(previousPoint.position);
-				dir.multiplyScalar(0.5);
-				dir = previousPoint.position.clone().add(dir).sub(point.position).normalize();
+				if (isVisible) {
+					let angle = this.getAngleBetweenLines(point, previousPoint, nextPoint);
 
-				let dist = Math.min(point.position.distanceTo(previousPoint.position), point.position.distanceTo(nextPoint.position));
-				dist = dist / 9;
+					let dir = nextPoint.position.clone().sub(previousPoint.position);
+					dir.multiplyScalar(0.5);
+					dir = previousPoint.position.clone().add(dir).sub(point.position).normalize();
 
-				let labelPos = point.position.clone().add(dir.multiplyScalar(dist));
-				angleLabel.position.copy(labelPos);
+					let dist = Math.min(point.position.distanceTo(previousPoint.position), point.position.distanceTo(nextPoint.position));
+					dist = dist / 9;
 
-				let msg = Utils.addCommas((angle * (180.0 / Math.PI)).toFixed(1)) + '\u00B0';
-				angleLabel.setText(msg);
+					let labelPos = point.position.clone().add(dir.multiplyScalar(dist));
+					angleLabel.position.copy(labelPos);
 
-				angleLabel.visible = this.showAngles && (index < lastIndex || this.closed) && this.points.length >= 3 && angle > 0;
+					let msg = Utils.addCommas((angle * (180.0 / Math.PI)).toFixed(1)) + '\u00B0';
+					angleLabel.setText(msg);
+					angleLabel.visible = angle > 0;
+				}
 			}
 		}
 
@@ -865,17 +873,19 @@ export class Measure extends Object3D {
 		{ // update area label
 			this.areaLabel.position.copy(centroid);
 			this.areaLabel.visible = this.showArea && this.points.length >= 3;
-			let area = this.getArea();
+			if (this.areaLabel.visible) {
+				let area = this.getArea();
 
-			let suffix = "";
-			if (this.lengthUnit != null && this.lengthUnitDisplay != null) {
-				area = area / Math.pow(this.lengthUnit.unitspermeter, 2) * Math.pow(this.lengthUnitDisplay.unitspermeter, 2);  //convert to square meters then to the square display unit
-				suffix = this.lengthUnitDisplay.code;
+				let suffix = "";
+				if (this.lengthUnit != null && this.lengthUnitDisplay != null) {
+					area = area / Math.pow(this.lengthUnit.unitspermeter, 2) * Math.pow(this.lengthUnitDisplay.unitspermeter, 2);  //convert to square meters then to the square display unit
+					suffix = this.lengthUnitDisplay.code;
+				}
+
+				let txtArea = Utils.addCommas(area.toFixed(1));
+				let msg = `${txtArea} ${suffix}\u00B2`;
+				this.areaLabel.setText(msg);
 			}
-
-			let txtArea = Utils.addCommas(area.toFixed(1));
-			let msg = `${txtArea} ${suffix}\u00B2`;
-			this.areaLabel.setText(msg);
 		}
 
 		// this.updateAzimuth();

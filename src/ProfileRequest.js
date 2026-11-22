@@ -10,9 +10,15 @@ export class ProfileData {
 		this.segments = [];
 		this.boundingBox = new Box3();
 
-		for (let i = 0; i < profile.points.length - 1; i++) {
-			let start = profile.points[i];
-			let end = profile.points[i + 1];
+		const customSegments = (Array.isArray(profile.customSegments) && profile.customSegments.length > 0)
+			? profile.customSegments
+			: null;
+		const segCount = customSegments ? customSegments.length : Math.max(0, profile.points.length - 1);
+
+		for (let i = 0; i < segCount; i++) {
+			let start = customSegments ? customSegments[i].start : profile.points[i];
+			let end = customSegments ? customSegments[i].end : profile.points[i + 1];
+			let segWidth = (customSegments && customSegments[i].width) ? customSegments[i].width : profile.width;
 
 			let startGround = new Vector3(start.x, start.y, 0);
 			let endGround = new Vector3(end.x, end.y, 0);
@@ -29,6 +35,8 @@ export class ProfileData {
 			let segment = {
 				start: start,
 				end: end,
+				width: segWidth,
+				queryIndex: (customSegments && customSegments[i].queryIndex !== undefined) ? customSegments[i].queryIndex : i,
 				cutPlane: cutPlane,
 				halfPlane: halfPlane,
 				length: length,
@@ -122,10 +130,12 @@ export class ProfileRequest {
 
 		let start = performance.now();
 
-		let maxNodesPerUpdate = 1;
+		let maxNodesPerUpdate = this.maxNodesPerUpdate || 20;
 		let intersectedNodes = [];
+		let unloadedElements = [];
 
-		for (let i = 0; i < Math.min(maxNodesPerUpdate, this.priorityQueue.size()); i++) {
+		let queueCheckCount = Math.min(maxNodesPerUpdate, this.priorityQueue.size());
+		for (let i = 0; i < queueCheckCount; i++) {
 			let element = this.priorityQueue.pop();
 			let node = element.node;
 
@@ -151,8 +161,12 @@ export class ProfileRequest {
 				this.traverse(node);
 			} else {
 				node.load();
-				this.priorityQueue.push(element);
+				unloadedElements.push(element);
 			}
+		}
+
+		for (let el of unloadedElements) {
+			this.priorityQueue.push(el);
 		}
 
 		if (intersectedNodes.length > 0) {
@@ -213,8 +227,9 @@ export class ProfileRequest {
 			pos.applyMatrix4(matrix);
 			let distance = Math.abs(segment.cutPlane.distanceToPoint(pos));
 			let centerDistance = Math.abs(segment.halfPlane.distanceToPoint(pos));
+			let segWidth = segment.width || this.profile.width;
 
-			if (distance < this.profile.width / 2 && centerDistance < segment.length / 2) {
+			if (distance < segWidth / 2 && centerDistance < segment.length / 2) {
 				svp.subVectors(pos, segment.start);
 				let localMileage = segmentDir.dot(svp);
 
@@ -257,123 +272,203 @@ export class ProfileRequest {
 	* getPointsInsideProfile(nodes, target){
 		let checkpoint = performance.now();
 		let totalMileage = 0;
-
 		let pointsProcessed = 0;
 
-		for (let segment of target.segments) {
-			for (let node of nodes) {
-				let numPoints = node.numPoints;
-				let geometry = node.geometry;
+		const segments = target.segments;
+		if (!segments || segments.length === 0 || !nodes || nodes.length === 0) {
+			yield true;
+			return;
+		}
 
-				if(!numPoints){
+		// Precompute per-segment metadata (direction, mileage offset, 2D XY bounding box)
+		const segMeta = new Array(segments.length);
+		for (let s = 0; s < segments.length; s++) {
+			const segment = segments[s];
+			const segWidth = segment.width || target.profile.width;
+			const halfW = segWidth * 0.5;
+			const halfLen = segment.length * 0.5;
+			const sv = new Vector3().subVectors(segment.end, segment.start).setZ(0);
+			const segmentDir = sv.clone().normalize();
+
+			segMeta[s] = {
+				segment,
+				segWidth,
+				halfW,
+				halfLen,
+				segmentDir,
+				mileageOffset: totalMileage,
+				minX: Math.min(segment.start.x, segment.end.x) - halfW,
+				maxX: Math.max(segment.start.x, segment.end.x) + halfW,
+				minY: Math.min(segment.start.y, segment.end.y) - halfW,
+				maxY: Math.max(segment.start.y, segment.end.y) + halfW,
+			};
+			totalMileage += segment.length;
+		}
+
+		// Process each node ONCE, testing each transformed point against only the segments overlapping that node
+		let pos = new Vector3();
+		let svp = new Vector3();
+
+		for (let node of nodes) {
+			let numPoints = node.numPoints;
+			let geometry = node.geometry;
+			if (!numPoints || !geometry || !geometry.attributes || !geometry.attributes.position) {
+				continue;
+			}
+
+			let bbWorld = node.boundingBox.clone().applyMatrix4(this.pointcloud.matrixWorld);
+			let bsWorld = bbWorld.getBoundingSphere(new Sphere());
+
+			// Find all segments that overlap this node's world XY bounds
+			let activeSegs = [];
+			let unionMinX = Infinity;
+			let unionMaxX = -Infinity;
+			let unionMinY = Infinity;
+			let unionMaxY = -Infinity;
+
+			for (let s = 0; s < segMeta.length; s++) {
+				const sm = segMeta[s];
+				if (
+					bbWorld.max.x < sm.minX ||
+					bbWorld.min.x > sm.maxX ||
+					bbWorld.max.y < sm.minY ||
+					bbWorld.min.y > sm.maxY
+				) {
 					continue;
 				}
 
-				{ // skip if current node doesn't intersect current segment
-					let bbWorld = node.boundingBox.clone().applyMatrix4(this.pointcloud.matrixWorld);
-					let bsWorld = bbWorld.getBoundingSphere(new Sphere());
+				let start = new Vector3(sm.segment.start.x, sm.segment.start.y, bsWorld.center.z);
+				let end = new Vector3(sm.segment.end.x, sm.segment.end.y, bsWorld.center.z);
+				let closest = new Line3(start, end).closestPointToPoint(bsWorld.center, true, new Vector3());
+				let distance = closest.distanceTo(bsWorld.center);
+				if (distance >= (bsWorld.radius + sm.segWidth)) {
+					continue;
+				}
 
-					let start = new Vector3(segment.start.x, segment.start.y, bsWorld.center.z);
-					let end = new Vector3(segment.end.x, segment.end.y, bsWorld.center.z);
+				activeSegs.push({
+					meta: sm,
+					accepted: [],
+					mileage: [],
+					positions: [],
+					boundingBox: new Box3(),
+				});
 
-					let closest = new Line3(start, end).closestPointToPoint(bsWorld.center, true, new Vector3());
-					let distance = closest.distanceTo(bsWorld.center);
+				if (sm.minX < unionMinX) unionMinX = sm.minX;
+				if (sm.maxX > unionMaxX) unionMaxX = sm.maxX;
+				if (sm.minY < unionMinY) unionMinY = sm.minY;
+				if (sm.maxY > unionMaxY) unionMaxY = sm.maxY;
+			}
 
-					let intersects = (distance < (bsWorld.radius + target.profile.width));
+			if (activeSegs.length === 0) {
+				continue;
+			}
 
-					if(!intersects){
+			let nodeMatrix = new Matrix4().makeTranslation(...node.boundingBox.min.toArray());
+			let matrix = new Matrix4().multiplyMatrices(this.pointcloud.matrixWorld, nodeMatrix);
+			let view = geometry.attributes.position.array;
+			let pcPos = this.pointcloud.position;
+
+			pointsProcessed += numPoints;
+
+			for (let i = 0; i < numPoints; i++) {
+				pos.set(view[i * 3 + 0], view[i * 3 + 1], view[i * 3 + 2]);
+				pos.applyMatrix4(matrix);
+
+				const wx = pos.x;
+				const wy = pos.y;
+				const wz = pos.z;
+
+				// Fast union 2D XY bounding box reject
+				if (wx < unionMinX || wx > unionMaxX || wy < unionMinY || wy > unionMaxY) {
+					continue;
+				}
+
+				const lx = wx - pcPos.x;
+				const ly = wy - pcPos.y;
+				const lz = wz - pcPos.z;
+
+				for (let a = 0; a < activeSegs.length; a++) {
+					const bucket = activeSegs[a];
+					const sm = bucket.meta;
+
+					if (wx < sm.minX || wx > sm.maxX || wy < sm.minY || wy > sm.maxY) {
 						continue;
 					}
+
+					const segment = sm.segment;
+					const distance = Math.abs(segment.cutPlane.distanceToPoint(pos));
+					if (distance >= sm.halfW) {
+						continue;
+					}
+					const centerDistance = Math.abs(segment.halfPlane.distanceToPoint(pos));
+					if (centerDistance >= sm.halfLen) {
+						continue;
+					}
+
+					svp.subVectors(pos, segment.start);
+					const localMileage = sm.segmentDir.dot(svp);
+
+					bucket.accepted.push(i);
+					bucket.mileage.push(localMileage + sm.mileageOffset);
+					bucket.positions.push(lx, ly, lz);
+					bucket.boundingBox.expandByPoint(pos);
 				}
 
-				//{// DEBUG
-				//	console.log(node.name);
-				//	let boxHelper = new Potree.Box3Helper(node.getBoundingBox());
-				//	boxHelper.matrixAutoUpdate = false;
-				//	boxHelper.matrix.copy(viewer.scene.pointclouds[0].matrixWorld);
-				//	viewer.scene.scene.add(boxHelper);
-				//}
-
-				let sv = new Vector3().subVectors(segment.end, segment.start).setZ(0);
-				let segmentDir = sv.clone().normalize();
-
-				let points = new Points();
-
-				let nodeMatrix = new Matrix4().makeTranslation(...node.boundingBox.min.toArray());
-
-				let matrix = new Matrix4().multiplyMatrices(
-					this.pointcloud.matrixWorld, nodeMatrix);
-
-				pointsProcessed = pointsProcessed + numPoints;
-
-				let accepted = null;
-				let mileage = null;
-				let acceptedPositions = null;
-				for(let result of this.getAccepted(numPoints, node, matrix, segment, segmentDir, points,totalMileage)){
-					if(!result){
-						let duration = performance.now() - checkpoint;
-						//console.log(`getPointsInsideProfile yield after ${duration}ms`);
+				if ((i % 4000) === 0) {
+					let duration = performance.now() - checkpoint;
+					if (duration > 8) {
 						yield false;
 						checkpoint = performance.now();
-					}else{
-						[accepted, mileage, acceptedPositions] = result;
 					}
 				}
+			}
 
-				let duration = performance.now() - checkpoint;
-				if(duration > 4){
-					//console.log(`getPointsInsideProfile yield after ${duration}ms`);
-					yield false;
-					checkpoint = performance.now();
+			let relevantAttributes = Object.keys(geometry.attributes).filter(a => !["position", "indices"].includes(a));
+
+			for (let a = 0; a < activeSegs.length; a++) {
+				const bucket = activeSegs[a];
+				const numAccepted = bucket.accepted.length;
+				if (numAccepted === 0) {
+					continue;
 				}
 
-				points.data.position = acceptedPositions;
+				let points = new Points();
+				points.numPoints = numAccepted;
+				points.data.position = new Float32Array(bucket.positions);
+				points.data.mileage = new Float64Array(bucket.mileage);
+				points.boundingBox.copy(bucket.boundingBox);
 
-				let relevantAttributes = Object.keys(geometry.attributes).filter(a => !["position", "indices"].includes(a));
-				for(let attributeName of relevantAttributes){
-
+				for (let attributeName of relevantAttributes) {
 					let attribute = geometry.attributes[attributeName];
 					let numElements = attribute.array.length / numPoints;
-
-					if(numElements !== parseInt(numElements)){
-						debugger;
-					}
-
 					let Type = attribute.array.constructor;
-
-					let filteredBuffer = new Type(numElements * accepted.length);
-
+					let filteredBuffer = new Type(numElements * numAccepted);
 					let source = attribute.array;
-					let target = filteredBuffer;
 
-					for(let i = 0; i < accepted.length; i++){
-
-						let index = accepted[i];
-
+					for (let i = 0; i < numAccepted; i++) {
+						let index = bucket.accepted[i];
 						let start = index * numElements;
 						let end = start + numElements;
-						let sub = source.subarray(start, end);
-
-						target.set(sub, i * numElements);
+						filteredBuffer.set(source.subarray(start, end), i * numElements);
 					}
 
 					points.data[attributeName] = filteredBuffer;
 				}
 
-				points.data['mileage'] = mileage;
-				points.numPoints = accepted.length;
-
-				segment.points.add(points);
+				bucket.meta.segment.points.add(points);
 			}
 
-			totalMileage += segment.length;
+			let duration = performance.now() - checkpoint;
+			if (duration > 8) {
+				yield false;
+				checkpoint = performance.now();
+			}
 		}
 
 		for (let segment of target.segments) {
 			target.boundingBox.union(segment.points.boundingBox);
 		}
 
-		//console.log(`getPointsInsideProfile finished`);
 		yield true;
 	};
 

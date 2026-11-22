@@ -1,6 +1,6 @@
 import {Vector3, SphereGeometry, MeshBasicMaterial, Mesh} from 'three';
 import {Potree, PScene, Viewer, Profile, Measure} from '../dist/potree_module.js';
-import {extractZAtXY, extractZHistogramAtXY} from '../src/utils/pointcloud_tools.js';
+import {extractZAtXY, extractZBatchAtXY, extractZHistogramAtXY, extractZHistogramBatchAtXY, extractZCircleAtXY} from '../src/utils/pointcloud_tools.js';
 import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
 import {SphereVolume} from '../src/utils/Volume.js';
 import {TetrahedralBoxTool, TetTool} from '../src/utils/TetrahedralBoxTool.js';
@@ -1592,21 +1592,24 @@ function init() {
 		});
 	}
 
-	function renderExtractedZConfirmation(result, selectedMode = 'min') {
-		if (!result || result.numPoints === 0) return;
-
+	function clearExtractedZMarkers() {
 		if (!window.__extractedZMarkers) {
 			window.__extractedZMarkers = [];
 		}
-		// Remove previous confirmation markers before placing updated mode marker(s)
 		while (window.__extractedZMarkers.length > 0) {
 			const prev = window.__extractedZMarkers.pop();
 			if (sceneSG.measurements && sceneSG.measurements.includes(prev)) {
 				sceneSG.removeMeasurement(prev);
-			} else {
+			} else if (sceneSG.scene) {
 				sceneSG.scene.remove(prev);
 			}
 		}
+	}
+
+	function renderExtractedZConfirmation(result, selectedMode = 'min') {
+		if (!result || result.numPoints === 0) return;
+
+		clearExtractedZMarkers();
 
 		const addConfirmSphere = (label, zVal, colorHex) => {
 			if (!Number.isFinite(zVal)) return;
@@ -1751,10 +1754,362 @@ function init() {
 	const selectExtractZMode = document.getElementById('select-extract-z-mode');
 	if (selectExtractZMode) {
 		selectExtractZMode.addEventListener('change', () => {
-			if (window.__lastExtractZResult) {
+			if (window.__lastExtractZCircleResult) {
+				renderExtractedZCircleOutline(window.__lastExtractZCircleResult, selectExtractZMode.value);
+				log(`Switched 3m Z-circle outline mode to '${selectExtractZMode.value.toUpperCase()}'.`, "info");
+			} else if (window.__lastExtractZResult) {
 				renderExtractedZConfirmation(window.__lastExtractZResult, selectExtractZMode.value);
 				log(`Switched extracted Z display mode to '${selectExtractZMode.value.toUpperCase()}'.`, "info");
 			}
+		});
+	}
+
+	/**
+	 * Finds the latest user-placed measurement point in sceneSG.measurements (excluding confirmation markers),
+	 * or creates a 1-point Measure at the input/representative XY coordinate so there is a real measurement point.
+	 */
+	function resolveMeasurementPointForCircle() {
+		const markerSet = new Set(window.__extractedZMarkers || []);
+		const userMeasures = (sceneSG.measurements || []).filter(m => !markerSet.has(m) && Array.isArray(m.points) && m.points.length > 0);
+
+		if (userMeasures.length > 0) {
+			const latestMeasure = userMeasures[userMeasures.length - 1];
+			const ptObj = latestMeasure.points[latestMeasure.points.length - 1];
+			const pos = ptObj && ptObj.position ? ptObj.position : ptObj;
+			if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+				return {
+					measure: latestMeasure,
+					x: Number(pos.x.toFixed(3)),
+					y: Number(pos.y.toFixed(3)),
+					z: Number.isFinite(pos.z) ? pos.z : null,
+					source: `measurement '${latestMeasure.name || 'Measure'}'`,
+				};
+			}
+		}
+
+		// Otherwise use X/Y input fields (or representative pointcloud XY) and drop a 1-point Measure there
+		const xInput = document.getElementById('input-extract-z-x');
+		const yInput = document.getElementById('input-extract-z-y');
+		let cx = xInput ? parseFloat(xInput.value) : NaN;
+		let cy = yInput ? parseFloat(yInput.value) : NaN;
+
+		if (!Number.isFinite(cx) || !Number.isFinite(cy)) {
+			const defaultXY = getPointCloudRepresentativeXY();
+			if (!defaultXY) {
+				throw new Error("Could not determine point cloud XY bounds.");
+			}
+			cx = defaultXY.x;
+			cy = defaultXY.y;
+		}
+
+		const bbox = viewer.getBoundingBox();
+		const cz = bbox && isFinite(bbox.min.z) ? (bbox.min.z + bbox.max.z) * 0.5 : 0;
+
+		const centerMeasure = new Measure();
+		centerMeasure.name = 'Circle_Center_Measure';
+		centerMeasure.showDistances = false;
+		centerMeasure.showCoordinates = true;
+		centerMeasure.maxMarkers = 1;
+		centerMeasure.addMarker(new Vector3(cx, cy, cz));
+		sceneSG.addMeasurement(centerMeasure);
+
+		return {
+			measure: centerMeasure,
+			x: Number(cx.toFixed(3)),
+			y: Number(cy.toFixed(3)),
+			z: cz,
+			source: `created measurement 'Circle_Center_Measure'`,
+		};
+	}
+
+	/**
+	 * Renders the 3D discretized horizontal circle outline (3m radius, 0.5m step) in the scene
+	 * where every vertex takes its Z value from extractZBatchAtXY.
+	 */
+	function renderExtractedZCircleOutline(circleResult, selectedMode = 'all') {
+		clearExtractedZMarkers();
+
+		const addRingOutline = (label, metricKey, colorHex) => {
+			const ringMeasure = new Measure();
+			ringMeasure.name = `Z_Circle_${circleResult.radius}m_${label}`;
+			ringMeasure.showDistances = false;
+			ringMeasure.showCoordinates = false;
+			ringMeasure.showAngles = false;
+			ringMeasure.showArea = false;
+			ringMeasure.closed = true;
+			ringMeasure.showEdges = true;
+			ringMeasure.sphereGeometry = new SphereGeometry(0.11, 8, 8);
+			ringMeasure.color.setHex(colorHex);
+
+			for (const v of circleResult.vertices) {
+				const zVal = Number.isFinite(v[metricKey]) ? v[metricKey] : v.zMin;
+				ringMeasure.addMarker(new Vector3(v.x, v.y, zVal));
+			}
+
+			for (const s of ringMeasure.spheres) {
+				if (s.material) s.material.color.setHex(colorHex);
+			}
+			for (const edge of ringMeasure.edges) {
+				if (edge.material) {
+					edge.material.color.setHex(colorHex);
+					edge.material.linewidth = 3;
+				}
+			}
+
+			sceneSG.addMeasurement(ringMeasure);
+			window.__extractedZMarkers.push(ringMeasure);
+
+			// Also place a center marker at the same Z metric if centerResult matched
+			if (circleResult.centerResult && circleResult.centerResult.numPoints > 0) {
+				const cz = Number.isFinite(circleResult.centerResult[metricKey])
+					? circleResult.centerResult[metricKey]
+					: circleResult.centerResult.zMin;
+				const cm = new Measure();
+				cm.name = `Circle_Center_${label}`;
+				cm.showDistances = false;
+				cm.showCoordinates = false;
+				cm.maxMarkers = 1;
+				cm.color.setHex(colorHex);
+				cm.addMarker(new Vector3(circleResult.centerX, circleResult.centerY, cz));
+				sceneSG.addMeasurement(cm);
+				window.__extractedZMarkers.push(cm);
+			}
+		};
+
+		const modeConfig = {
+			min: { label: 'Min', key: 'zMin', color: 0x00ff88, css: '#00ff88' },
+			max: { label: 'Max', key: 'zMax', color: 0xff5555, css: '#ff5555' },
+			avg: { label: 'Avg', key: 'zAvg', color: 0xfacc15, css: '#facc15' },
+			median: { label: 'Median', key: 'zMedian', color: 0xc084fc, css: '#c084fc' },
+			idw: { label: 'IDW', key: 'zIdw', color: 0x38bdf8, css: '#38bdf8' },
+			closest: { label: 'Closest', key: 'zClosest', color: 0xfb923c, css: '#fb923c' },
+		};
+
+		if (selectedMode === 'all') {
+			addRingOutline('Min', 'zMin', 0x00ff88);
+			addRingOutline('Avg', 'zAvg', 0xfacc15);
+			addRingOutline('Max', 'zMax', 0xff5555);
+		} else {
+			const cfg = modeConfig[selectedMode] || modeConfig.min;
+			addRingOutline(cfg.label, cfg.key, cfg.color);
+		}
+
+		// Compute outline min/max across the 38 circumference vertices
+		const activeKey = (modeConfig[selectedMode] || modeConfig.min).key;
+		const ringZValues = circleResult.vertices.map(v => v[activeKey]).filter(Number.isFinite);
+		const ringMinZ = ringZValues.length > 0 ? Math.min(...ringZValues) : 0;
+		const ringMaxZ = ringZValues.length > 0 ? Math.max(...ringZValues) : 0;
+		const summary = circleResult.summary;
+
+		const outputBox = document.getElementById('output-extract-z-xy');
+		if (outputBox) {
+			const rowsHtml = circleResult.vertices.map(v =>
+				`<div>#${v.index} (${v.angleDeg.toFixed(0)}°, s=${v.arcLength.toFixed(2)}m) XY=(${v.x.toFixed(2)}, ${v.y.toFixed(2)}): ` +
+				`<span style="color:#00ff88;">Min=${v.zMin.toFixed(2)}</span> | ` +
+				`<span style="color:#facc15;">Avg=${v.zAvg.toFixed(2)}</span> | ` +
+				`<span style="color:#ff5555;">Max=${v.zMax.toFixed(2)}</span> ` +
+				`<span style="color:#94a3b8;">(${v.numPoints} pts)</span></div>`
+			).join('');
+
+			outputBox.style.display = 'block';
+			outputBox.innerHTML =
+				`<div style="color:#2dd4bf;font-weight:700;margin-bottom:4px;">⭕ 3m Z-Circle Outline (${circleResult.numVertices} vertices @ ${circleResult.actualStep.toFixed(2)}m step, C=${circleResult.circumference.toFixed(2)}m)</div>` +
+				`<div style="margin-bottom:4px;font-size:10.5px;"><b>Center XY:</b> (${circleResult.centerX.toFixed(3)}, ${circleResult.centerY.toFixed(3)}) | <b>Outline Z Range:</b> [${ringMinZ.toFixed(3)}m .. ${ringMaxZ.toFixed(3)}m] | <b>Octree Nodes Reused:</b> ${summary.uniqueNodesQueued} (${summary.elapsedMs} ms)</div>` +
+				`<div style="max-height:110px;overflow-y:auto;font-size:10.5px;line-height:1.35;">${rowsHtml}</div>`;
+		}
+
+		if (typeof viewer.requestRender === 'function') {
+			viewer.requestRender();
+		}
+	}
+
+	async function runDiscretizedZCircleFromMeasure(measureOrPoint, sourceLabel = 'measurement') {
+		const xInput = document.getElementById('input-extract-z-x');
+		const yInput = document.getElementById('input-extract-z-y');
+		const widthInput = document.getElementById('input-extract-z-width');
+		const binSizeInput = document.getElementById('input-extract-z-binsize');
+		const modeSelect = document.getElementById('select-extract-z-mode');
+
+		const width = widthInput ? (parseFloat(widthInput.value) || 1.0) : 1.0;
+		const binSize = binSizeInput ? (parseFloat(binSizeInput.value) || 0.25) : 0.25;
+		const selectedMode = modeSelect ? modeSelect.value : 'all';
+
+		const radius = 3.0;
+		const step = 0.5;
+
+		const circleResult = await extractZCircleAtXY(viewer, measureOrPoint, {
+			radius,
+			step,
+			width,
+			binSize,
+			mode: selectedMode,
+			includeHistogram: true,
+		});
+
+		if (xInput) xInput.value = String(circleResult.centerX);
+		if (yInput) yInput.value = String(circleResult.centerY);
+
+		// Position the source measurement point onto the extracted surface Z if present
+		if (measureOrPoint && Array.isArray(measureOrPoint.points) && measureOrPoint.points.length > 0 && circleResult.centerResult && circleResult.centerResult.zMin !== null) {
+			const lastPt = measureOrPoint.points[measureOrPoint.points.length - 1];
+			if (lastPt && lastPt.position) {
+				lastPt.position.z = circleResult.centerResult.zMin;
+				if (typeof measureOrPoint.update === 'function') {
+					measureOrPoint.update();
+				}
+			}
+		}
+
+		window.__lastExtractZCircleResult = circleResult;
+		if (circleResult.centerResult && circleResult.centerResult.numPoints > 0) {
+			window.__lastExtractZResult = circleResult.centerResult;
+			renderZHistogramGraph({
+				...circleResult.centerResult,
+				json: circleResult.json,
+			});
+		}
+
+		renderExtractedZCircleOutline(circleResult, selectedMode);
+
+		const s = circleResult.summary;
+		log(`SUCCESS: Drew virtual horizontal circle (radius=${radius.toFixed(1)}m, step=${step.toFixed(2)}m → ${circleResult.numVertices} outline vertices) around ${sourceLabel} XY=(${circleResult.centerX.toFixed(3)}, ${circleResult.centerY.toFixed(3)}) via extractZBatchAtXY (${s.totalPointsExtracted} pts across ${s.uniqueNodesQueued} unique octree nodes in ${s.elapsedMs}ms).`, "success");
+		setPassState('extract-z-xy', true);
+	}
+
+	function startInteractiveCircleMeasurementPick() {
+		if (sceneSG.pointclouds.length === 0) {
+			log("Load a pointcloud first before picking a measurement point for the 3m Z-circle.", "error");
+			return;
+		}
+		showOnScreenInstructions(
+			"Pick Measurement Point for 3m Z-Circle",
+			"Left-click on the point cloud to drop a measurement point. A 3m radius horizontal circle (discretized every 0.5m) will be drawn around its (X, Y) with outline Z values from extractZBatchAtXY."
+		);
+		log("Move cursor over the pointcloud and left-click to drop a measurement point and draw the 3m horizontal Z-circle (0.5m discretization)...", "info");
+
+		const pickMeasure = viewer.measuringTool.startInsertion({
+			showDistances: false,
+			showAngles: false,
+			showCoordinates: true,
+			showArea: false,
+			closed: false,
+			maxMarkers: 1,
+			name: 'Circle_Center_Measure',
+		});
+
+		let handled = false;
+		const domElement = viewer.renderer.domElement;
+
+		const handlePointCommitted = async (mouseEvt) => {
+			if (handled) return;
+			handled = true;
+			pickMeasure.removeEventListener('marker_dropped', onMarkerDropped);
+			domElement.removeEventListener('mouseup', onDomMouseUp, false);
+			hideOnScreenInstructions();
+
+			let droppedPos = (pickMeasure.points && pickMeasure.points[0] && pickMeasure.points[0].position)
+				? pickMeasure.points[0].position.clone()
+				: null;
+
+			// If the marker position is still (0, 0, 0), raycast directly at the mouse click location
+			if (!droppedPos || (droppedPos.x === 0 && droppedPos.y === 0 && droppedPos.z === 0)) {
+				let mousePos = viewer.inputHandler && viewer.inputHandler.mouse ? viewer.inputHandler.mouse : null;
+				if (mouseEvt && typeof mouseEvt.clientX === 'number') {
+					const rect = domElement.getBoundingClientRect();
+					mousePos = {
+						x: mouseEvt.clientX - rect.left,
+						y: mouseEvt.clientY - rect.top,
+					};
+				}
+				if (mousePos && Potree.Utils && typeof Potree.Utils.getMousePointCloudIntersection === 'function') {
+					const hit = Potree.Utils.getMousePointCloudIntersection(
+						mousePos,
+						viewer.scene.getActiveCamera(),
+						viewer,
+						viewer.scene.pointclouds,
+						{ pickClipped: true }
+					);
+					if (hit && hit.location) {
+						droppedPos = hit.location.clone();
+						if (pickMeasure.points && pickMeasure.points[0]) {
+							pickMeasure.setPosition(0, droppedPos);
+						}
+					}
+				}
+			}
+
+			if (droppedPos && Number.isFinite(droppedPos.x) && Number.isFinite(droppedPos.y) && !(droppedPos.x === 0 && droppedPos.y === 0)) {
+				setProcessingState('extract-z-xy');
+				try {
+					log(`Dropped measurement point at XY=(${droppedPos.x.toFixed(3)}, ${droppedPos.y.toFixed(3)}). Computing 3m circle (0.5m step, 38 vertices) via extractZBatchAtXY...`, "info");
+					// Remove the temporary picking marker so the extracted 3m circle & center marker replace it cleanly
+					sceneSG.removeMeasurement(pickMeasure);
+					await runDiscretizedZCircleFromMeasure({ x: droppedPos.x, y: droppedPos.y }, `dropped measurement point`);
+				} catch (err) {
+					log("ERROR drawing 3m Z-circle from picked measurement: " + err.message, "error");
+					setPassState('extract-z-xy', false);
+				}
+			} else {
+				sceneSG.removeMeasurement(pickMeasure);
+				log("WARNING: Could not intersect pointcloud at clicked location. Try clicking directly on visible points.", "error");
+			}
+		};
+
+		const onMarkerDropped = () => {
+			handlePointCommitted(null);
+		};
+
+		const onDomMouseUp = (evt) => {
+			if (evt.button !== 0) return;
+			setTimeout(() => handlePointCommitted(evt), 20);
+		};
+
+		pickMeasure.addEventListener('marker_dropped', onMarkerDropped);
+		domElement.addEventListener('mouseup', onDomMouseUp, false);
+	}
+
+	const btnExtractZCircle = document.getElementById('btn-extract-z-circle');
+	if (btnExtractZCircle) {
+		btnExtractZCircle.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			if (sceneSG.pointclouds.length === 0) {
+				log("WARNING: No point clouds loaded in scene. Load a pointcloud first!", "error");
+				setPassState('extract-z-xy', false);
+				return;
+			}
+
+			// Check if there is an existing user-dropped measurement point with valid non-zero coordinates
+			const markerSet = new Set(window.__extractedZMarkers || []);
+			const userMeasures = (sceneSG.measurements || []).filter(m => {
+				if (markerSet.has(m) || !Array.isArray(m.points) || m.points.length === 0) return false;
+				const pos = m.points[m.points.length - 1].position;
+				return pos && Number.isFinite(pos.x) && Number.isFinite(pos.y) && !(pos.x === 0 && pos.y === 0 && pos.z === 0);
+			});
+
+			// If the user is currently mid-drag placing a point (e.g. from Test #7) or has no measurement yet, let them drop the point on the cloud
+			const isDraggingPoint = Boolean(viewer.inputHandler && viewer.inputHandler.drag && viewer.inputHandler.drag.object);
+			if (userMeasures.length === 0 || isDraggingPoint) {
+				startInteractiveCircleMeasurementPick();
+				return;
+			}
+
+			setProcessingState('extract-z-xy');
+			try {
+				const resolved = resolveMeasurementPointForCircle();
+				log(`Taking XY=(${resolved.x.toFixed(3)}, ${resolved.y.toFixed(3)}) from ${resolved.source} and extracting 3m horizontal circle discretized every 0.5m via extractZBatchAtXY...`, "info");
+				await runDiscretizedZCircleFromMeasure(resolved.measure, resolved.source);
+			} catch (err) {
+				log("ERROR extracting 3m Z-circle: " + err.message, "error");
+				setPassState('extract-z-xy', false);
+			}
+		});
+	}
+
+	const btnExtractZCirclePick = document.getElementById('btn-extract-z-circle-pick');
+	if (btnExtractZCirclePick) {
+		btnExtractZCirclePick.addEventListener('click', (e) => {
+			e.stopPropagation();
+			startInteractiveCircleMeasurementPick();
 		});
 	}
 
@@ -1772,6 +2127,125 @@ function init() {
 			if (xInput) xInput.value = String(xy.x);
 			if (yInput) yInput.value = String(xy.y);
 			log(`Filled representative pointcloud XY: (${xy.x}, ${xy.y})`, "info");
+		});
+	}
+
+	const btnExtractZBatch = document.getElementById('btn-extract-z-batch');
+	if (btnExtractZBatch) {
+		btnExtractZBatch.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			if (sceneSG.pointclouds.length === 0) {
+				log("WARNING: No point clouds loaded in scene. Load a pointcloud first!", "error");
+				setPassState('extract-z-xy', false);
+				return;
+			}
+			setProcessingState('extract-z-xy');
+			try {
+				const xInput = document.getElementById('input-extract-z-x');
+				const yInput = document.getElementById('input-extract-z-y');
+				const widthInput = document.getElementById('input-extract-z-width');
+				const binSizeInput = document.getElementById('input-extract-z-binsize');
+				const modeSelect = document.getElementById('select-extract-z-mode');
+				const outputBox = document.getElementById('output-extract-z-xy');
+
+				let cx = xInput ? parseFloat(xInput.value) : NaN;
+				let cy = yInput ? parseFloat(yInput.value) : NaN;
+				if (!Number.isFinite(cx) || !Number.isFinite(cy)) {
+					const defaultXY = getPointCloudRepresentativeXY();
+					if (!defaultXY) {
+						throw new Error("Could not determine point cloud XY bounds.");
+					}
+					cx = defaultXY.x;
+					cy = defaultXY.y;
+					if (xInput) xInput.value = String(cx);
+					if (yInput) yInput.value = String(cy);
+				}
+
+				const width = widthInput ? (parseFloat(widthInput.value) || 1.5) : 1.5;
+				const binSize = binSizeInput ? (parseFloat(binSizeInput.value) || 0.25) : 0.25;
+				const selectedMode = modeSelect ? modeSelect.value : 'all';
+				const step = Math.max(width * 1.5, 2.0);
+
+				// Build a 3x3 grid of 9 close XY coordinates around (cx, cy)
+				const xyCollection = [];
+				for (let dy = -1; dy <= 1; dy++) {
+					for (let dx = -1; dx <= 1; dx++) {
+						xyCollection.push({
+							x: Number((cx + dx * step).toFixed(3)),
+							y: Number((cy + dy * step).toFixed(3)),
+						});
+					}
+				}
+
+				log(`Batch extracting Z & histograms for ${xyCollection.length} close XY points (3×3 grid, step=${step.toFixed(2)}m, width=${width}m) in a SINGLE shared octree pass...`, "info");
+
+				const batchResults = await extractZHistogramBatchAtXY(viewer, xyCollection, {
+					width,
+					binSize,
+					mode: selectedMode,
+				});
+
+				// Clear previous markers and place confirmation markers for all matched points in the batch
+				clearExtractedZMarkers();
+				const matchedResults = batchResults.filter(r => r.numPoints > 0);
+				if (matchedResults.length === 0) {
+					log(`WARNING: 0 points matched across the ${xyCollection.length}-point XY grid around (${cx.toFixed(2)}, ${cy.toFixed(2)}).`, "error");
+					setPassState('extract-z-xy', false);
+					return;
+				}
+
+				for (const item of matchedResults) {
+					const zToMark = (selectedMode === 'max') ? item.zMax
+						: (selectedMode === 'avg') ? item.zAvg
+						: (selectedMode === 'median') ? item.zMedian
+						: (selectedMode === 'idw') ? item.zIdw
+						: (selectedMode === 'closest') ? item.zClosest
+						: item.zMin;
+					const m = new Measure();
+					m.name = `BatchZ[${item.index}] (${zToMark.toFixed(2)}m)`;
+					m.showDistances = false;
+					m.showCoordinates = false;
+					m.maxMarkers = 1;
+					m.color.setHex(0x00ff88);
+					m.addMarker(new Vector3(item.x, item.y, zToMark));
+					sceneSG.addMeasurement(m);
+					window.__extractedZMarkers.push(m);
+				}
+
+				// Show batch summary table in outputBox and render center point's histogram + full batch JSON
+				const summary = batchResults.summary;
+				if (outputBox) {
+					const rowsHtml = batchResults.map(r => {
+						if (r.numPoints === 0) {
+							return `<div style="color:#94a3b8;">#${r.index} (${r.x.toFixed(1)}, ${r.y.toFixed(1)}): 0 pts</div>`;
+						}
+						return `<div>#${r.index} (${r.x.toFixed(1)}, ${r.y.toFixed(1)}): <span style="color:#00ff88;">Min=${r.zMin.toFixed(2)}</span> | <span style="color:#facc15;">Avg=${r.zAvg.toFixed(2)}</span> | <span style="color:#ff5555;">Max=${r.zMax.toFixed(2)}</span> <span style="color:#94a3b8;">(${r.numPoints} pts)</span></div>`;
+					}).join('');
+
+					outputBox.style.display = 'block';
+					outputBox.innerHTML =
+						`<div style="color:#38bdf8;font-weight:700;margin-bottom:4px;">Batch Collection: ${summary.numMatchedQueries}/${summary.numQueries} XY points | ${summary.totalPointsExtracted} pts | ${summary.uniqueNodesQueued} unique octree nodes | ${summary.elapsedMs} ms</div>` +
+						`<div style="max-height:110px;overflow-y:auto;font-size:10.5px;line-height:1.35;">${rowsHtml}</div>`;
+				}
+
+				const centerResult = batchResults[4] && batchResults[4].numPoints > 0 ? batchResults[4] : matchedResults[0];
+				window.__lastExtractZResult = centerResult;
+				window.__lastExtractZBatchResult = batchResults;
+				renderZHistogramGraph({
+					...centerResult,
+					json: batchResults.json,
+				});
+
+				if (typeof viewer.requestRender === 'function') {
+					viewer.requestRender();
+				}
+
+				log(`SUCCESS: Batch extracted ${summary.numMatchedQueries}/${summary.numQueries} XY points (${summary.totalPointsExtracted} total points) in ${summary.elapsedMs}ms reusing ${summary.uniqueNodesQueued} unique octree nodes (max level=${summary.highestLevelServed}).`, "success");
+				setPassState('extract-z-xy', true);
+			} catch (err) {
+				log("ERROR in batch Z extraction: " + err.message, "error");
+				setPassState('extract-z-xy', false);
+			}
 		});
 	}
 
