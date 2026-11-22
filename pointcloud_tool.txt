@@ -1,0 +1,312 @@
+================================================================================
+DM-POTREE: POINTCLOUD TOOLS USAGE GUIDE (pointcloud_tools.js)
+================================================================================
+
+Source File:  src/utils/pointcloud_tools.js
+Bundle Export: dist/potree_module.js
+
+Overview
+--------
+`pointcloud_tools.js` provides utilities for extracting elevation (Z) statistics,
+vertical Z histograms, and 3D terrain-draped shapes (such as discretized circles
+or polylines) at arbitrary (X, Y) coordinates across one or more octree point
+clouds.
+
+Unlike screen-space picking (`pointcloud.pick`), which only checks currently
+rendered points on screen, these functions use `ProfileRequest` and
+`ProfileFakeOctree` to force-load all intersecting octree nodes (all the way down
+to the deepest leaf level) inside vertical `(width x width)` search columns.
+
+
+================================================================================
+1. AVAILABLE EXPORTS
+================================================================================
+
+Import from `./dist/potree_module.js` (or `./src/utils/pointcloud_tools.js`):
+
+```javascript
+import {
+    extractZAtXY,
+    extractZHistogramAtXY,
+    extractZBatchAtXY,
+    extractZAtXYPoints,          // Alias for extractZBatchAtXY
+    extractZHistogramBatchAtXY,
+    extractZCircleAtXY,
+    createDiscretizedCircleXY,
+    createXYColumnProfile,
+    createMultiXYColumnProfile,
+    normalizeXYPointsCollection,
+} from './dist/potree_module.js';
+```
+
+All extraction functions accept `viewerOrPointclouds` as their first argument,
+which can be any of:
+  - `viewer` (a `Potree.Viewer` instance)
+  - `viewer.scene` (a `Potree.PScene` instance)
+  - `pointcloud` (a single `PointCloudOctree` instance)
+  - `[pc1, pc2, ...]` (an array of `PointCloudOctree` instances)
+
+
+================================================================================
+2. SINGLE-POINT Z EXTRACTION: extractZAtXY()
+================================================================================
+
+Signature:
+  `await extractZAtXY(viewerOrPointclouds, x, y, options = {})`
+
+Description:
+  Creates a vertical `(width x width)` column centered at `(x, y)`, force-loads
+  all intersecting octree nodes down to `maxDepth` into a `ProfileFakeOctree`,
+  and computes all Z metrics simultaneously (`min`, `max`, `avg`, `median`,
+  `idw`, `closest`).
+
+Options:
+  - `width` (number, default `1.0`):
+      Horizontal search column width in meters (`[x - W/2, x + W/2]` by
+      `[y - W/2, y + W/2]`).
+  - `radius` (number, optional):
+      Alternative to `width`; sets `width = 2 * radius`.
+  - `mode` (string, default `'min'`):
+      Selects which metric is copied to `result.z`:
+      `'min'` | `'max'` | `'avg'` | `'median'` | `'idw'` | `'closest'`
+      (Note: all metrics are always computed and returned regardless of `mode`).
+  - `autoExpand` (boolean, default `true`):
+      If `0` points are found in the initial column width, automatically retries
+      with an expanded width (`Math.max(width * 4, spacing * 2)`).
+  - `maxDepth` (number, default `Number.MAX_VALUE`):
+      Maximum octree level to traverse/load.
+  - `timeoutMs` (number, default `30000`):
+      Safety timeout in milliseconds.
+  - `showInProfileWindow` (boolean, default `false`):
+      If `true` (and a `Viewer` is passed), opens the 2D Profile window for the
+      query column.
+  - `onProgress` (function, optional):
+      Callback invoked as octree nodes stream in:
+      `({ pointcloud, fakeOctree, pointsServed, highestLevelServed }) => {}`
+
+Recipe:
+```javascript
+const res = await extractZAtXY(viewer, 547695.25, 1138690.50, {
+    width: 1.5,
+    autoExpand: true,
+});
+
+if (res.numPoints > 0) {
+    console.log('All Z values:', res.values);
+    // res.values => {
+    //   min: 12.34,
+    //   max: 24.81,
+    //   avg: 16.02,
+    //   mean: 16.02,
+    //   median: 15.89,
+    //   idw: 15.40,
+    //   closest: 15.12
+    // }
+
+    console.log('Lowest Z:', res.zMin, '3D point:', res.lowestPoint);
+    console.log('Highest Z:', res.zMax, '3D point:', res.highestPoint);
+    console.log('Average Z:', res.zAvg);
+    console.log('Median Z:', res.zMedian);
+    console.log('IDW Z:', res.zIdw);
+    console.log('Closest XY Z:', res.zClosest, 'dXY:', res.closestPoint.distanceXY);
+    console.log('Points loaded:', res.numPoints, 'Max level:', res.highestLevelServed);
+}
+```
+
+
+================================================================================
+3. SINGLE-POINT Z HISTOGRAM & STATISTICS: extractZHistogramAtXY()
+================================================================================
+
+Signature:
+  `await extractZHistogramAtXY(viewerOrPointclouds, x, y, options = {})`
+
+Description:
+  Loads all intersecting octree nodes around `(x, y)` into `ProfileFakeOctree`,
+  scans all points from top to bottom to find `min`, `max`, and standard
+  deviation, and then scans upwards from `zMin` to `zMax` in `binSize` steps
+  (default `0.25m`) to build a vertical Z histogram. Returns a JSON-serializable
+  object along with a formatted `.json` string.
+
+Options:
+  - Same options as `extractZAtXY`, plus:
+  - `binSize` (number, default `0.25`):
+      Vertical elevation bin height in meters (e.g., `0.25` for 25cm bins).
+
+Recipe:
+```javascript
+const hist = await extractZHistogramAtXY(viewer, 547695.25, 1138690.50, {
+    width: 1.5,
+    binSize: 0.25,
+});
+
+console.log('Summary Statistics:', hist.statistics);
+// {
+//   min, max, span, avg, mean, median, mode, stdDev, idw, closest,
+//   lowestPoint: { x, y, z, distanceXY },
+//   highestPoint: { x, y, z, distanceXY },
+//   closestPoint: { x, y, z, distanceXY }
+// }
+
+console.log('Peak Bin:', hist.histogram.peakBin);
+console.log('All Upward Bins (0.25m steps):', hist.histogram.bins);
+// Each bin entry:
+// {
+//   index: 0,
+//   zStart: 12.34,
+//   zEnd: 12.59,
+//   zCenter: 12.465,
+//   count: 42,
+//   density: 0.14,
+//   percentage: 14.0,
+//   cumulativeCount: 42,
+//   cumulativePercentage: 14.0
+// }
+
+// Ready-to-use JSON string:
+console.log(hist.json);
+```
+
+
+================================================================================
+4. MULTI-POINT COLLECTION Z EXTRACTION (SHARED OCTREE PASS):
+   extractZBatchAtXY() & extractZHistogramBatchAtXY()
+================================================================================
+
+Signatures:
+  `await extractZBatchAtXY(viewerOrPointclouds, xyPoints, options = {})`
+  `await extractZAtXYPoints(viewerOrPointclouds, xyPoints, options = {})`
+  `await extractZHistogramBatchAtXY(viewerOrPointclouds, xyPoints, options = {})`
+
+Why Use Batch Extraction for Nearby XY Points:
+  Calling `extractZAtXY` in a loop for $M$ close points would spawn $M$ separate
+  octree traversals and reload/re-scan the same octree nodes $M$ times.
+  `extractZBatchAtXY` builds a single disjoint multi-column profile
+  (`createMultiXYColumnProfile`) so `ProfileRequest` traverses the octree ONCE
+  per point cloud. Every octree node covering multiple nearby `(x, y)` points is
+  queued, loaded, and visited only once, and its points are bucketed directly
+  into each matching query point's `ProfileFakeOctree`.
+
+Accepted `xyPoints` Formats:
+  - Array of `{ x, y }` objects or `THREE.Vector2` / `THREE.Vector3` instances:
+    `[{ x: 100, y: 200 }, { x: 100.5, y: 200 }, ...]`
+  - Array of `[x, y]` or `[x, y, z]` coordinate arrays:
+    `[[100, 200], [100.5, 200], ...]`
+  - A `Potree.Measure` instance (`{ points: [{ position: Vector3 }, ...] }`)
+
+Options:
+  - `width` (number, default `1.0`): Column width (m) around each `(x, y)`.
+  - `mode` (string, default `'min'`): Primary Z metric assigned to `item.z`.
+  - `includeHistogram` (boolean, default `false` in `extractZBatchAtXY`,
+    always `true` in `extractZHistogramBatchAtXY`):
+    When `true`, attaches `.statistics`, `.histogram`, and `.json` to every point.
+  - `binSize` (number, default `0.25`): Vertical Z bin height in meters.
+  - `autoExpand` (boolean, default `true`): If a subset of query points had `0`
+    points in Pass 1, selectively retries ONLY those empty coordinates in Pass 2
+    while reusing the already-loaded octree nodes in memory.
+
+Recipe:
+```javascript
+const xyCollection = [
+    { x: 547695.0, y: 1138690.0 },
+    { x: 547695.5, y: 1138690.0 },
+    { x: 547696.0, y: 1138690.0 },
+    { x: 547696.5, y: 1138690.0 },
+];
+
+const results = await extractZBatchAtXY(viewer, xyCollection, {
+    width: 1.5,
+    includeHistogram: true,
+    binSize: 0.25,
+});
+
+// 1. Iterate over each point's result:
+for (const item of results) {
+    console.log(
+        `#${item.index} (${item.x}, ${item.y}):`,
+        `Min=${item.zMin}, Avg=${item.zAvg}, Max=${item.zMax}`,
+        `(${item.numPoints} pts)`
+    );
+}
+
+// 2. Inspect batch telemetry attached to the returned array:
+console.log(results.summary);
+// {
+//   numQueries: 4,
+//   numMatchedQueries: 4,
+//   totalPointsExtracted: 620,
+//   highestLevelServed: 5,
+//   uniqueNodesQueued: 12,   // Shared octree nodes visited once
+//   elapsedMs: 16.8
+// }
+
+// 3. Full batch JSON string (summary + all points):
+console.log(results.json);
+```
+
+
+================================================================================
+5. DISCRETIZED 3D HORIZONTAL Z-CIRCLE FROM A POINT OR MEASUREMENT:
+   extractZCircleAtXY() & createDiscretizedCircleXY()
+================================================================================
+
+Signatures:
+  `createDiscretizedCircleXY(centerX, centerY, radius = 3.0, step = 0.5)`
+  `await extractZCircleAtXY(viewerOrPointclouds, centerPointOrMeasure, options = {})`
+
+Description:
+  Takes an `(x, y)` coordinate—or a `Potree.Measure` instance—and generates a
+  virtual horizontal circle of `radius` meters (default `3.0m`), discretized
+  every `step` meters along the circumference (default `0.5m`, yielding 38
+  vertices around an 18.85m circumference).
+  It then queries the center point and all circumference vertices in a SINGLE
+  `extractZBatchAtXY` call (reusing all loaded octree nodes) and returns the
+  3D outline vertices (`min`, `max`, `avg`, `median`, `idw`, `closest`),
+  automatically interpolating from adjacent circle vertices if any single vertex
+  falls in a small point cloud gap.
+
+Options:
+  - `radius` (number, default `3.0`): Circle radius in meters.
+  - `step` (number, default `0.5`): Arc-length discretization step in meters.
+  - `width` (number, default `1.0`): Search column width (m) at each vertex.
+  - `mode` (string, default `'min'`): Primary Z metric assigned to `vertex.z`.
+  - `includeHistogram` (boolean, default `false`): Compute 0.25m Z histograms.
+  - `binSize` (number, default `0.25`): Histogram bin size in meters.
+
+Recipe (Taking XY from a Measurement and Drawing the 3D Circle Outline):
+```javascript
+import { Vector3, SphereGeometry } from 'three';
+import { Measure, extractZCircleAtXY } from './dist/potree_module.js';
+
+// Suppose `pointMeasure` is a Potree.Measure placed by the user
+// (or pass `{ x: 547695.0, y: 1138690.0 }` or `[547695.0, 1138690.0]`):
+const circle = await extractZCircleAtXY(viewer, pointMeasure, {
+    radius: 3.0,     // 3.0m horizontal radius
+    step: 0.5,       // discretized every 0.5m along the circumference (38 vertices)
+    width: 1.0,      // 1.0m search column width per vertex
+    mode: 'min',     // 'min' | 'max' | 'avg' | 'median' | 'idw' | 'closest'
+});
+
+// Draw the closed 3D circle outline in the Potree scene using a closed Measure:
+const circleOutline = new Measure();
+circleOutline.name = 'Virtual_Z_Circle_3m';
+circleOutline.closed = true;
+circleOutline.showEdges = true;
+circleOutline.showDistances = false;
+circleOutline.showCoordinates = false;
+circleOutline.showAngles = false;
+circleOutline.showArea = false;
+circleOutline.sphereGeometry = new SphereGeometry(0.11, 8, 8);
+circleOutline.color.setHex(0x00ff88);
+
+for (const v of circle.vertices) {
+    // Use v.z (selected mode), or v.zMin / v.zAvg / v.zMax directly:
+    circleOutline.addMarker(new Vector3(v.x, v.y, v.zMin));
+}
+
+viewer.scene.addMeasurement(circleOutline);
+viewer.requestRender();
+
+// Export the circle outline & statistics as JSON:
+console.log(circle.json);
+```
