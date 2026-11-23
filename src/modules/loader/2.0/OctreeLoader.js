@@ -24,108 +24,36 @@ export class NodeLoader {
 
 	constructor(url) {
 		this.url = url;
+		this.inFlightNodes = new Map();
+		this.hierarchyCache = new Map();
+		this.stats = {
+			httpRangeRequests: 0,
+			hierarchyRangeRequests: 0,
+			nodesDecodedFromNetwork: 0,
+			nodesCoalescedSaved: 0,
+			duplicateLoadsSkipped: 0,
+		};
 	}
 
-	async load(node) {
+	getStatsSnapshot() {
+		return { ...this.stats };
+	}
 
-		if (node.loaded || node.loading) {
-			return;
+	async decodeNodeBuffer(node, buffer, byteOffset, byteSize) {
+		const workerFile = this.metadata.encoding === "BROTLI"
+			? 'DecoderWorker_brotli.js'
+			: 'DecoderWorker.js';
+
+		// Vite module build writes workers to /example/workers while scriptPath is /dist.
+		let workerPath = `${Potree.scriptPath}/workers/2.0/${workerFile}`;
+		if (Potree.scriptPath.endsWith('/dist')) {
+			workerPath = `${window.location.origin}/example/workers/2.0/${workerFile}`;
 		}
 
-		node.loading = true;
-		Potree.numNodesLoading++;
-
-		// console.log(node.name, node.numPoints);
-
-		// if(loadedNodes.has(node.name)){
-		// 	// debugger;
-		// }
-		// loadedNodes.add(node.name);
-		let response = null;//moved here to debug
-
-		try {
-			if (node.nodeType === 2) {
-				await this.loadHierarchy(node);
-			}
-
-			let {byteOffset, byteSize} = node;
-
-
-			let urlOctree = `${this.url}/../octree.bin`;
-
-			let first = byteOffset;
-			let last = byteOffset + byteSize - 1n;
-
-			let buffer;
-
-			if (byteSize === 0n) {
-				buffer = new ArrayBuffer(0);
-				console.warn(`loaded node with 0 bytes: ${node.name}`);
-			} else {
-				// let response = await fetch(urlOctree, {
-				// 	headers: {
-				// 		'content-type': 'multipart/byteranges',
-				// 		'Range': `bytes=${first}-${last}`,
-				// 	},
-				// });
-				let fetchOptions = {
-					headers: {
-						'content-type': 'multipart/byteranges',
-						'Range': `bytes=${first}-${last}`,
-					}
-				};
-				let maxRetries = 3;
-				//fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
-				//let response = await fetch(urlOctree, fetchOptions);
-				let retry = 1;
-
-				do {
-
-					//normal request request
-					fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
-					response = await fetch(urlOctree, fetchOptions);
-
-					if (response.status >= 400) {
-						// console.log("OCTREELOADER " + (retry) + " loading node: " + node.name + " from: " + urlOctree +
-						// 	"\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
-						retry++;
-						//activeWait(500);//troublesome
-					} else {
-						// console.log("OCTREELOADER RELOAD " + (retry) + " loading node: " + node.name + " from: " + urlOctree +
-							// "\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
-						break;
-					}
-
-				} while (retry <= maxRetries && response.status >= 400);
-
-				//leave it for regular reload
-				if (response.status >= 400) {
-					throw new Error(`Failed to load node ${node.name} from ${urlOctree}. Status: ${response.status}, StatusText: ${response.statusText}, OK: ${response.ok}`);
-				}
-
-				//}
-				//if (retry > 1) {
-				//	console.log("OCTREELOADER DONE AT " + retry + " try.  Loading node: " + node.name + " from: " + urlOctree +
-				//		"\n STATUS: " + response.status + " TEXT: " + response.statusText + " OK: " + response.ok);
-				//}
-				buffer = await response.arrayBuffer();
-
-			}
-
-			const workerFile = this.metadata.encoding === "BROTLI"
-				? 'DecoderWorker_brotli.js'
-				: 'DecoderWorker.js';
-
-			// Vite module build writes workers to /example/workers while scriptPath is /dist.
-			let workerPath = `${Potree.scriptPath}/workers/2.0/${workerFile}`;
-			if (Potree.scriptPath.endsWith('/dist')) {
-				workerPath = `${window.location.origin}/example/workers/2.0/${workerFile}`;
-			}
-
+		return new Promise((resolve) => {
 			let worker = Potree.workerPool.getWorker(workerPath);
 
-			worker.onmessage = function (e) {
-
+			worker.onmessage = (e) => {
 				let data = e.data;
 				let buffers = data.attributeBuffers;
 
@@ -134,22 +62,20 @@ export class NodeLoader {
 				let geometry = new BufferGeometry();
 
 				for (let property in buffers) {
-
-					let buffer = buffers[property].buffer;
+					let propBuffer = buffers[property].buffer;
 
 					if (property === "position") {
-						geometry.setAttribute('position', new BufferAttribute(new Float32Array(buffer), 3));
+						geometry.setAttribute('position', new BufferAttribute(new Float32Array(propBuffer), 3));
 					} else if (property === "rgba") {
-						geometry.setAttribute('rgba', new BufferAttribute(new Uint8Array(buffer), 4, true));
+						geometry.setAttribute('rgba', new BufferAttribute(new Uint8Array(propBuffer), 4, true));
 					} else if (property === "NORMAL") {
-						//geometry.setAttribute('rgba', new BufferAttribute(new Uint8Array(buffer), 4, true));
-						geometry.setAttribute('normal', new BufferAttribute(new Float32Array(buffer), 3));
+						geometry.setAttribute('normal', new BufferAttribute(new Float32Array(propBuffer), 3));
 					} else if (property === "INDICES") {
-						let bufferAttribute = new BufferAttribute(new Uint8Array(buffer), 4);
+						let bufferAttribute = new BufferAttribute(new Uint8Array(propBuffer), 4);
 						bufferAttribute.normalized = true;
 						geometry.setAttribute('indices', bufferAttribute);
 					} else {
-						const bufferAttribute = new BufferAttribute(new Float32Array(buffer), 1);
+						const bufferAttribute = new BufferAttribute(new Float32Array(propBuffer), 1);
 
 						let batchAttribute = buffers[property].attribute;
 						bufferAttribute.potree = {
@@ -161,19 +87,23 @@ export class NodeLoader {
 
 						geometry.setAttribute(property, bufferAttribute);
 					}
-
 				}
-				// indices ??
 
 				node.density = data.density;
 				node.geometry = geometry;
 				node.loaded = true;
 				node.loading = false;
-				Potree.numNodesLoading--;
+				Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
 
-				node.byteOffset = byteOffset;//are not being set by the worker
+				node.byteOffset = byteOffset;
 				node.byteSize = byteSize;
+				this.stats.nodesDecodedFromNetwork++;
 
+				if (typeof Potree !== 'undefined' && Potree.lru) {
+					Potree.lru.touch(node);
+				}
+
+				resolve(node);
 			};
 
 			let pointAttributes = node.octreeGeometry.pointAttributes;
@@ -200,15 +130,223 @@ export class NodeLoader {
 			};
 
 			worker.postMessage(message, [message.buffer]);
-		} catch (e) {
-			node.loaded = false;
-			node.loading = false;
-			Potree.numNodesLoading--;
+		});
+	}
 
-			console.log(`OctreeLoader: failed to load ${node.name}`);
-			//console.log(e);
-			//console.log(`trying again!`);
+	async fetchByteRange(urlTarget, first, last) {
+		let fetchOptions = {
+			headers: {
+				'content-type': 'multipart/byteranges',
+				'Range': `bytes=${first}-${last}`,
+			}
+		};
+		let maxRetries = 3;
+		let retry = 1;
+		let response = null;
+
+		do {
+			fetchOptions = updateFetchToken(fetchOptions);
+			response = await fetch(urlTarget, fetchOptions);
+			if (response.status >= 400) {
+				retry++;
+			} else {
+				break;
+			}
+		} while (retry <= maxRetries && response.status >= 400);
+
+		if (response.status >= 400) {
+			throw new Error(`Failed to fetch range bytes=${first}-${last} from ${urlTarget}. Status: ${response.status}`);
 		}
+
+		return response.arrayBuffer();
+	}
+
+	/**
+	 * Coalesces multiple unloaded octree nodes whose byte ranges in `octree.bin` are adjacent or nearby
+	 * into merged HTTP Range requests, avoiding N separate round-trips and guaranteeing no duplicate loads.
+	 *
+	 * @param {Array<OctreeGeometryNode>} nodes
+	 * @param {object} [options]
+	 * @param {number} [options.maxMergeGapBytes=262144] - Max byte gap (256 KB default) between two nodes to merge into 1 HTTP Range request
+	 * @param {number} [options.maxGroupBytes=4194304] - Max merged range size (4 MB default)
+	 */
+	async loadNodesCoalesced(nodes, options = {}) {
+		if (!Array.isArray(nodes) || nodes.length === 0) {
+			return [];
+		}
+
+		const maxGap = BigInt(options.maxMergeGapBytes !== undefined ? options.maxMergeGapBytes : 262144);
+		const maxGroup = BigInt(options.maxGroupBytes !== undefined ? options.maxGroupBytes : 4194304);
+
+		const pendingPromises = [];
+		const coalescableNodes = [];
+
+		for (const node of nodes) {
+			if (!node) continue;
+			if (node.loaded) {
+				this.stats.duplicateLoadsSkipped++;
+				continue;
+			}
+			if (this.inFlightNodes.has(node.name)) {
+				this.stats.duplicateLoadsSkipped++;
+				pendingPromises.push(this.inFlightNodes.get(node.name));
+				continue;
+			}
+			// Proxy nodes (nodeType === 2) need hierarchy.bin loaded first
+			if (node.nodeType === 2 || node.byteOffset === undefined || node.byteSize === undefined) {
+				pendingPromises.push(this.load(node));
+				continue;
+			}
+			if (node.byteSize === 0n) {
+				node.loaded = true;
+				node.loading = false;
+				continue;
+			}
+			coalescableNodes.push(node);
+		}
+
+		if (coalescableNodes.length === 1) {
+			pendingPromises.push(this.load(coalescableNodes[0]));
+			return Promise.all(pendingPromises);
+		}
+
+		if (coalescableNodes.length > 1) {
+			coalescableNodes.sort((a, b) => (a.byteOffset < b.byteOffset ? -1 : a.byteOffset > b.byteOffset ? 1 : 0));
+
+			const groups = [];
+			let currentGroup = null;
+
+			for (const node of coalescableNodes) {
+				const nStart = node.byteOffset;
+				const nEnd = node.byteOffset + node.byteSize;
+
+				if (
+					!currentGroup ||
+					(nStart - currentGroup.endOffset) > maxGap ||
+					(nEnd - currentGroup.startOffset) > maxGroup
+				) {
+					currentGroup = {
+						startOffset: nStart,
+						endOffset: nEnd,
+						nodes: [node],
+					};
+					groups.push(currentGroup);
+				} else {
+					if (nEnd > currentGroup.endOffset) {
+						currentGroup.endOffset = nEnd;
+					}
+					currentGroup.nodes.push(node);
+				}
+			}
+
+			const urlOctree = `${this.url}/../octree.bin`;
+
+			for (const group of groups) {
+				if (group.nodes.length === 1) {
+					pendingPromises.push(this.load(group.nodes[0]));
+					continue;
+				}
+
+				for (const node of group.nodes) {
+					node.loading = true;
+					Potree.numNodesLoading++;
+				}
+
+				const groupPromise = (async () => {
+					try {
+						const first = group.startOffset;
+						const last = group.endOffset - 1n;
+						this.stats.httpRangeRequests++;
+						this.stats.nodesCoalescedSaved += (group.nodes.length - 1);
+
+						const mergedBuffer = await this.fetchByteRange(urlOctree, first, last);
+						const decodePromises = group.nodes.map(node => {
+							const relStart = Number(node.byteOffset - group.startOffset);
+							const relEnd = relStart + Number(node.byteSize);
+							const sliceBuffer = mergedBuffer.slice(relStart, relEnd);
+							return this.decodeNodeBuffer(node, sliceBuffer, node.byteOffset, node.byteSize);
+						});
+						return await Promise.all(decodePromises);
+					} catch (err) {
+						for (const node of group.nodes) {
+							node.loaded = false;
+							node.loading = false;
+							Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+						}
+						console.warn('OctreeLoader: coalesced range load failed, falling back:', err);
+						return [];
+					} finally {
+						for (const node of group.nodes) {
+							this.inFlightNodes.delete(node.name);
+						}
+					}
+				})();
+
+				for (const node of group.nodes) {
+					this.inFlightNodes.set(node.name, groupPromise);
+				}
+				pendingPromises.push(groupPromise);
+			}
+		}
+
+		return Promise.all(pendingPromises);
+	}
+
+	async load(node) {
+
+		if (node.loaded) {
+			this.stats.duplicateLoadsSkipped++;
+			return node;
+		}
+		if (this.inFlightNodes.has(node.name)) {
+			this.stats.duplicateLoadsSkipped++;
+			return this.inFlightNodes.get(node.name);
+		}
+		if (node.loading) {
+			this.stats.duplicateLoadsSkipped++;
+			return node;
+		}
+
+		node.loading = true;
+		Potree.numNodesLoading++;
+
+		const loadPromise = (async () => {
+			try {
+				if (node.nodeType === 2) {
+					await this.loadHierarchy(node);
+				}
+
+				let {byteOffset, byteSize} = node;
+				let urlOctree = `${this.url}/../octree.bin`;
+
+				let first = byteOffset;
+				let last = byteOffset + byteSize - 1n;
+
+				let buffer;
+
+				if (byteSize === 0n) {
+					buffer = new ArrayBuffer(0);
+					console.warn(`loaded node with 0 bytes: ${node.name}`);
+				} else {
+					this.stats.httpRangeRequests++;
+					buffer = await this.fetchByteRange(urlOctree, first, last);
+				}
+
+				return await this.decodeNodeBuffer(node, buffer, byteOffset, byteSize);
+			} catch (e) {
+				node.loaded = false;
+				node.loading = false;
+				Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+
+				console.log(`OctreeLoader: failed to load ${node.name}`);
+				return null;
+			} finally {
+				this.inFlightNodes.delete(node.name);
+			}
+		})();
+
+		this.inFlightNodes.set(node.name, loadPromise);
+		return loadPromise;
 	}
 
 	parseHierarchy(node, buffer) {
@@ -387,55 +525,30 @@ export class NodeLoader {
 	async loadHierarchy(node) {
 
 		let {hierarchyByteOffset, hierarchyByteSize} = node;
+		let cacheKey = `${hierarchyByteOffset}-${hierarchyByteSize}`;
+		if (this.hierarchyCache.has(cacheKey)) {
+			this.stats.duplicateLoadsSkipped++;
+			let cachedBuffer = await this.hierarchyCache.get(cacheKey);
+			this.parseHierarchy(node, cachedBuffer);
+			return;
+		}
+
 		let hierarchyPath = `${this.url}/../hierarchy.bin`;
 
 		let first = hierarchyByteOffset;
 		let last = first + hierarchyByteSize - 1n;
 
-		// let response = await fetch(hierarchyPath, {
-		// 	headers: {
-		// 		'content-type': 'multipart/byteranges',
-		// 		'Range': `bytes=${first}-${last}`,
-		// 	},
-		// });
-		let fetchOptions = {
-			headers: {
-				'content-type': 'multipart/byteranges',
-				Range: `bytes=${first}-${last}`,
-			},
-		};
-		fetchOptions = updateFetchToken(fetchOptions);//added by jguerrer
+		this.stats.hierarchyRangeRequests++;
+		let fetchPromise = this.fetchByteRange(hierarchyPath, first, last);
+		this.hierarchyCache.set(cacheKey, fetchPromise);
 
-		let response = await fetch(hierarchyPath, fetchOptions);
-
-
-
-		let buffer = await response.arrayBuffer();
-
-		this.parseHierarchy(node, buffer);
-
-		// let promise = new Promise((resolve) => {
-		// 	let generator = this.parseHierarchy(node, buffer);
-
-		// 	let repeatUntilDone = () => {
-		// 		let result = generator.next();
-
-		// 		if(result.done){
-		// 			resolve();
-		// 		}else{
-		// 			requestAnimationFrame(repeatUntilDone);
-		// 		}
-		// 	};
-
-		// 	repeatUntilDone();
-		// });
-
-		// await promise;
-
-
-
-
-
+		try {
+			let buffer = await fetchPromise;
+			this.parseHierarchy(node, buffer);
+		} catch (err) {
+			this.hierarchyCache.delete(cacheKey);
+			throw err;
+		}
 	}
 
 }

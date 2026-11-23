@@ -1914,7 +1914,8 @@ function init() {
 			outputBox.style.display = 'block';
 			outputBox.innerHTML =
 				`<div style="color:#2dd4bf;font-weight:700;margin-bottom:4px;">⭕ 3m Z-Circle Outline (${circleResult.numVertices} vertices @ ${circleResult.actualStep.toFixed(2)}m step, C=${circleResult.circumference.toFixed(2)}m)</div>` +
-				`<div style="margin-bottom:4px;font-size:10.5px;"><b>Center XY:</b> (${circleResult.centerX.toFixed(3)}, ${circleResult.centerY.toFixed(3)}) | <b>Outline Z Range:</b> [${ringMinZ.toFixed(3)}m .. ${ringMaxZ.toFixed(3)}m] | <b>Octree Nodes Reused:</b> ${summary.uniqueNodesQueued} (${summary.elapsedMs} ms)</div>` +
+				`<div style="margin-bottom:4px;font-size:10.5px;"><b>Center XY:</b> (${circleResult.centerX.toFixed(3)}, ${circleResult.centerY.toFixed(3)}) | <b>Outline Z Range:</b> [${ringMinZ.toFixed(3)}m .. ${ringMaxZ.toFixed(3)}m]</div>` +
+				`<div style="margin-bottom:4px;font-size:10.5px;color:#38bdf8;"><b>RAM Nodes Reused:</b> ${summary.ramNodesReused ?? summary.uniqueNodesQueued} | <b>HTTP Range Requests:</b> ${summary.httpRangeRequests ?? 0} (saved ${summary.nodesCoalescedSaved ?? 0} coalesced, ${summary.duplicateLoadsSkipped ?? 0} dupes skipped) | <b>Time:</b> ${summary.elapsedMs} ms</div>` +
 				`<div style="max-height:110px;overflow-y:auto;font-size:10.5px;line-height:1.35;">${rowsHtml}</div>`;
 		}
 
@@ -1972,7 +1973,7 @@ function init() {
 		renderExtractedZCircleOutline(circleResult, selectedMode);
 
 		const s = circleResult.summary;
-		log(`SUCCESS: Drew virtual horizontal circle (radius=${radius.toFixed(1)}m, step=${step.toFixed(2)}m → ${circleResult.numVertices} outline vertices) around ${sourceLabel} XY=(${circleResult.centerX.toFixed(3)}, ${circleResult.centerY.toFixed(3)}) via extractZBatchAtXY (${s.totalPointsExtracted} pts across ${s.uniqueNodesQueued} unique octree nodes in ${s.elapsedMs}ms).`, "success");
+		log(`SUCCESS: Drew virtual horizontal circle (radius=${radius.toFixed(1)}m, step=${step.toFixed(2)}m → ${circleResult.numVertices} outline vertices) around ${sourceLabel} XY=(${circleResult.centerX.toFixed(3)}, ${circleResult.centerY.toFixed(3)}) in ${s.elapsedMs}ms (${s.totalPointsExtracted} pts | RAM nodes reused=${s.ramNodesReused ?? s.uniqueNodesQueued} | HTTP Range requests=${s.httpRangeRequests ?? 0}, coalesced saved=${s.nodesCoalescedSaved ?? 0}).`, "success");
 		setPassState('extract-z-xy', true);
 	}
 
@@ -2224,7 +2225,7 @@ function init() {
 
 					outputBox.style.display = 'block';
 					outputBox.innerHTML =
-						`<div style="color:#38bdf8;font-weight:700;margin-bottom:4px;">Batch Collection: ${summary.numMatchedQueries}/${summary.numQueries} XY points | ${summary.totalPointsExtracted} pts | ${summary.uniqueNodesQueued} unique octree nodes | ${summary.elapsedMs} ms</div>` +
+						`<div style="color:#38bdf8;font-weight:700;margin-bottom:4px;">Batch Collection: ${summary.numMatchedQueries}/${summary.numQueries} XY points | ${summary.totalPointsExtracted} pts | RAM nodes: ${summary.ramNodesReused ?? summary.uniqueNodesQueued} | HTTP Range Reqs: ${summary.httpRangeRequests ?? 0} | ${summary.elapsedMs} ms</div>` +
 						`<div style="max-height:110px;overflow-y:auto;font-size:10.5px;line-height:1.35;">${rowsHtml}</div>`;
 				}
 
@@ -2240,7 +2241,7 @@ function init() {
 					viewer.requestRender();
 				}
 
-				log(`SUCCESS: Batch extracted ${summary.numMatchedQueries}/${summary.numQueries} XY points (${summary.totalPointsExtracted} total points) in ${summary.elapsedMs}ms reusing ${summary.uniqueNodesQueued} unique octree nodes (max level=${summary.highestLevelServed}).`, "success");
+				log(`SUCCESS: Batch extracted ${summary.numMatchedQueries}/${summary.numQueries} XY points (${summary.totalPointsExtracted} total points) in ${summary.elapsedMs}ms (RAM nodes reused=${summary.ramNodesReused ?? summary.uniqueNodesQueued}, HTTP Range requests=${summary.httpRangeRequests ?? 0}, coalesced saved=${summary.nodesCoalescedSaved ?? 0}).`, "success");
 				setPassState('extract-z-xy', true);
 			} catch (err) {
 				log("ERROR in batch Z extraction: " + err.message, "error");

@@ -133,6 +133,7 @@ export class ProfileRequest {
 		let maxNodesPerUpdate = this.maxNodesPerUpdate || 20;
 		let intersectedNodes = [];
 		let unloadedElements = [];
+		let nodesToLoad = [];
 
 		let queueCheckCount = Math.min(maxNodesPerUpdate, this.priorityQueue.size());
 		for (let i = 0; i < queueCheckCount; i++) {
@@ -160,8 +161,19 @@ export class ProfileRequest {
 
 				this.traverse(node);
 			} else {
-				node.load();
+				nodesToLoad.push(node);
 				unloadedElements.push(element);
+			}
+		}
+
+		if (nodesToLoad.length > 0) {
+			const loader = this.pointcloud && this.pointcloud.pcoGeometry && this.pointcloud.pcoGeometry.loader;
+			if (loader && typeof loader.loadNodesCoalesced === 'function') {
+				loader.loadNodesCoalesced(nodesToLoad);
+			} else {
+				for (let n of nodesToLoad) {
+					n.load();
+				}
 			}
 		}
 

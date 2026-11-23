@@ -1,4 +1,5 @@
-import { Box2, Vector3 } from 'three';
+import { Box2, Matrix4, Vector3 } from 'three';
+import { Points } from '../Points.js';
 import { ProfileRequest } from '../ProfileRequest.js';
 import { Profile } from './Profile.js';
 import { ProfileFakeOctree } from '../viewer/profile.js';
@@ -389,29 +390,57 @@ export async function extractZAtXY(viewerOrPointclouds, x, y, options = {}) {
 
 	let currentWidth = initialWidth;
 	let profile = options.profile || createXYColumnProfile(numX, numY, currentWidth);
-
-	let { fakeOctrees, highestLevelServed } = await loadProfileIntoFakeOctrees(
-		pointclouds,
-		profile,
-		options
-	);
-
 	const mode = options.mode || 'min';
-	let stats = computeZStatsFromFakeOctrees(fakeOctrees, numX, numY, Infinity, mode);
+	const maxDepth = options.maxDepth !== undefined ? Number(options.maxDepth) : Number.MAX_VALUE;
+	const preferLoadedNodes = options.preferLoadedNodes !== false && !options.forceFullDepth && !options.showInProfileWindow;
+	const onlyLoadedNodes = Boolean(options.onlyLoadedNodes);
+	const minPointsFromLoaded = Math.max(1, Number(options.minPointsFromLoaded) || 1);
 
-	// If no points fell inside the initial narrow column and autoExpand is enabled, retry with wider column
-	if (stats.numPoints === 0 && options.autoExpand !== false && !options.profile) {
-		const baseSpacing = pointclouds.reduce((maxS, pc) => {
-			const s = (pc.pcoGeometry && pc.pcoGeometry.spacing) ? pc.pcoGeometry.spacing : 1.0;
-			return Math.max(maxS, s);
-		}, 1.0);
-		currentWidth = Math.max(initialWidth * 4, baseSpacing * 2);
-		profile = createXYColumnProfile(numX, numY, currentWidth);
+	let fakeOctrees = null;
+	let highestLevelServed = 0;
+	let stats = null;
 
-		const retryResult = await loadProfileIntoFakeOctrees(pointclouds, profile, options);
-		fakeOctrees = retryResult.fakeOctrees;
-		highestLevelServed = Math.max(highestLevelServed, retryResult.highestLevelServed);
+	// Fast zero-network RAM pass if nodes covering (numX, numY) are already loaded in memory
+	if (preferLoadedNodes || onlyLoadedNodes) {
+		const singlePt = [{ index: 0, x: numX, y: numY }];
+		const ramPass = extractFromLoadedOctreeNodes(pointclouds, singlePt, currentWidth, maxDepth);
+		fakeOctrees = ramPass.perPointFakeOctrees[0];
+		highestLevelServed = ramPass.highestLevelServed;
 		stats = computeZStatsFromFakeOctrees(fakeOctrees, numX, numY, Infinity, mode);
+
+		if (stats.numPoints < minPointsFromLoaded && options.autoExpand !== false && ramPass.ramNodesReused > 0) {
+			const localExpandedWidth = Math.min(initialWidth * 2.5, Math.max(initialWidth * 2, 2.5));
+			const ramRetry = extractFromLoadedOctreeNodes(pointclouds, singlePt, localExpandedWidth, maxDepth);
+			const retryStats = computeZStatsFromFakeOctrees(ramRetry.perPointFakeOctrees[0], numX, numY, Infinity, mode);
+			if (retryStats.numPoints > 0) {
+				currentWidth = localExpandedWidth;
+				fakeOctrees = ramRetry.perPointFakeOctrees[0];
+				highestLevelServed = Math.max(highestLevelServed, ramRetry.highestLevelServed);
+				stats = retryStats;
+			}
+		}
+	}
+
+	if (!onlyLoadedNodes && (!stats || stats.numPoints < minPointsFromLoaded)) {
+		const netLoad = await loadProfileIntoFakeOctrees(
+			pointclouds,
+			profile,
+			options
+		);
+		fakeOctrees = netLoad.fakeOctrees;
+		highestLevelServed = Math.max(highestLevelServed, netLoad.highestLevelServed);
+		stats = computeZStatsFromFakeOctrees(fakeOctrees, numX, numY, Infinity, mode);
+
+		// If no points fell inside the initial narrow column and autoExpand is enabled, retry with modest local expansion
+		if (stats.numPoints === 0 && options.autoExpand !== false && !options.profile) {
+			currentWidth = Math.min(Math.max(initialWidth * 2.5, 2.5), Math.max(initialWidth * 4, 4.0));
+			profile = createXYColumnProfile(numX, numY, currentWidth);
+
+			const retryResult = await loadProfileIntoFakeOctrees(pointclouds, profile, options);
+			fakeOctrees = retryResult.fakeOctrees;
+			highestLevelServed = Math.max(highestLevelServed, retryResult.highestLevelServed);
+			stats = computeZStatsFromFakeOctrees(fakeOctrees, numX, numY, Infinity, mode);
+		}
 	}
 
 	if (options.showInProfileWindow && viewer) {
@@ -893,11 +922,239 @@ function buildZHistogramFromBaseResult(baseResult, numX, numY, binSize = 0.25) {
 }
 
 /**
+ * Captures a snapshot of aggregated NodeLoader HTTP Range Request telemetry across the given pointclouds.
+ */
+function getLoaderStatsSnapshot(pointclouds) {
+	let httpRangeRequests = 0;
+	let hierarchyRangeRequests = 0;
+	let nodesDecodedFromNetwork = 0;
+	let nodesCoalescedSaved = 0;
+	let duplicateLoadsSkipped = 0;
+
+	for (const pc of pointclouds) {
+		const stats = pc && pc.pcoGeometry && pc.pcoGeometry.loader && pc.pcoGeometry.loader.stats;
+		if (stats) {
+			httpRangeRequests += stats.httpRangeRequests || 0;
+			hierarchyRangeRequests += stats.hierarchyRangeRequests || 0;
+			nodesDecodedFromNetwork += stats.nodesDecodedFromNetwork || 0;
+			nodesCoalescedSaved += stats.nodesCoalescedSaved || 0;
+			duplicateLoadsSkipped += stats.duplicateLoadsSkipped || 0;
+		}
+	}
+
+	return {
+		httpRangeRequests,
+		hierarchyRangeRequests,
+		nodesDecodedFromNetwork,
+		nodesCoalescedSaved,
+		duplicateLoadsSkipped,
+	};
+}
+
+/**
+ * Synchronous, zero-network-request pass that traverses ONLY already-loaded octree nodes in RAM
+ * (`node.loaded === true` and `node.geometry`) and extracts points falling into each query column.
+ *
+ * When a point cloud region is already visible on screen (or cached in RAM from an earlier query),
+ * this satisfies batch and circle queries in 1–5 ms with 0 HTTP Range requests.
+ */
+function extractFromLoadedOctreeNodes(pointclouds, normalizedPoints, width, maxDepth = Number.MAX_VALUE) {
+	const numQueries = normalizedPoints.length;
+	const safeWidth = Math.max(0.05, Number(width) || 1.0);
+	const halfW = safeWidth * 0.5;
+
+	const sharedFakeOctrees = new Map();
+	const perPointFakeOctrees = Array.from({ length: numQueries }, () => new Map());
+
+	const queryBoxes = new Array(numQueries);
+	let unionMinX = Infinity;
+	let unionMaxX = -Infinity;
+	let unionMinY = Infinity;
+	let unionMaxY = -Infinity;
+
+	for (let k = 0; k < numQueries; k++) {
+		const pt = normalizedPoints[k];
+		const minX = pt.x - halfW;
+		const maxX = pt.x + halfW;
+		const minY = pt.y - halfW;
+		const maxY = pt.y + halfW;
+		queryBoxes[k] = { index: k, x: pt.x, y: pt.y, minX, maxX, minY, maxY };
+		if (minX < unionMinX) unionMinX = minX;
+		if (maxX > unionMaxX) unionMaxX = maxX;
+		if (minY < unionMinY) unionMinY = minY;
+		if (maxY > unionMaxY) unionMaxY = maxY;
+	}
+
+	let ramNodesReused = 0;
+	let highestLevelServed = 0;
+	const pos = new Vector3();
+
+	const lru = (typeof Potree !== 'undefined' && Potree.lru)
+		? Potree.lru
+		: (typeof window !== 'undefined' && window.Potree && window.Potree.lru)
+			? window.Potree.lru
+			: null;
+
+	for (const pointcloud of pointclouds) {
+		if (!pointcloud || !pointcloud.pcoGeometry || !pointcloud.pcoGeometry.root) continue;
+		pointcloud.updateMatrixWorld(true);
+
+		const sharedFakeOctree = new ProfileFakeOctree(pointcloud);
+		sharedFakeOctrees.set(pointcloud, sharedFakeOctree);
+
+		for (let k = 0; k < numQueries; k++) {
+			perPointFakeOctrees[k].set(pointcloud, {
+				trueOctree: pointcloud,
+				pcoGeometry: pointcloud.pcoGeometry,
+				points: [],
+				addPoints(data) {
+					if (data && data.numPoints > 0) {
+						this.points.push(data);
+					}
+				},
+			});
+		}
+
+		const visitedNodes = new Set();
+		const stack = [pointcloud.pcoGeometry.root];
+		const pcPos = pointcloud.position;
+
+		while (stack.length > 0) {
+			const node = stack.pop();
+			if (!node || visitedNodes.has(node)) continue;
+			visitedNodes.add(node);
+
+			const level = typeof node.getLevel === 'function' ? node.getLevel() : (node.level || 0);
+			if (level > maxDepth) continue;
+
+			const bbWorld = node.boundingBox.clone().applyMatrix4(pointcloud.matrixWorld);
+			if (
+				bbWorld.max.x < unionMinX ||
+				bbWorld.min.x > unionMaxX ||
+				bbWorld.max.y < unionMinY ||
+				bbWorld.min.y > unionMaxY
+			) {
+				continue;
+			}
+
+			// Find which query columns overlap this octree node's XY bounds
+			const matchingQueries = [];
+			let nodeUnionMinX = Infinity;
+			let nodeUnionMaxX = -Infinity;
+			let nodeUnionMinY = Infinity;
+			let nodeUnionMaxY = -Infinity;
+
+			for (let k = 0; k < numQueries; k++) {
+				const qb = queryBoxes[k];
+				if (
+					bbWorld.max.x >= qb.minX &&
+					bbWorld.min.x <= qb.maxX &&
+					bbWorld.max.y >= qb.minY &&
+					bbWorld.min.y <= qb.maxY
+				) {
+					matchingQueries.push({
+						qb,
+						positions: [],
+						mileage: [],
+					});
+					if (qb.minX < nodeUnionMinX) nodeUnionMinX = qb.minX;
+					if (qb.maxX > nodeUnionMaxX) nodeUnionMaxX = qb.maxX;
+					if (qb.minY < nodeUnionMinY) nodeUnionMinY = qb.minY;
+					if (qb.maxY > nodeUnionMaxY) nodeUnionMaxY = qb.maxY;
+				}
+			}
+
+			if (matchingQueries.length === 0) {
+				continue;
+			}
+
+			// Push intersecting children
+			if (level < maxDepth && node.children) {
+				for (let i = 0; i < 8; i++) {
+					const child = node.children[i];
+					if (child && !visitedNodes.has(child)) {
+						stack.push(child);
+					}
+				}
+			}
+
+			// Only scan points if this node is ALREADY loaded in RAM (0 network requests)
+			if (!node.loaded || !node.geometry || !node.geometry.attributes || !node.geometry.attributes.position) {
+				continue;
+			}
+
+			ramNodesReused++;
+			if (level > highestLevelServed) highestLevelServed = level;
+			if (lru) lru.touch(node);
+
+			const numPoints = node.numPoints;
+			if (!numPoints) continue;
+
+			const nodeMatrix = new Matrix4().makeTranslation(...node.boundingBox.min.toArray());
+			const matrix = new Matrix4().multiplyMatrices(pointcloud.matrixWorld, nodeMatrix);
+			const view = node.geometry.attributes.position.array;
+
+			for (let i = 0; i < numPoints; i++) {
+				pos.set(view[i * 3 + 0], view[i * 3 + 1], view[i * 3 + 2]);
+				pos.applyMatrix4(matrix);
+
+				const wx = pos.x;
+				const wy = pos.y;
+				const wz = pos.z;
+
+				if (wx < nodeUnionMinX || wx > nodeUnionMaxX || wy < nodeUnionMinY || wy > nodeUnionMaxY) {
+					continue;
+				}
+
+				const lx = wx - pcPos.x;
+				const ly = wy - pcPos.y;
+				const lz = wz - pcPos.z;
+
+				for (let m = 0; m < matchingQueries.length; m++) {
+					const mq = matchingQueries[m];
+					const qb = mq.qb;
+					if (wx >= qb.minX && wx <= qb.maxX && wy >= qb.minY && wy <= qb.maxY) {
+						mq.positions.push(lx, ly, lz);
+						mq.mileage.push(wx - qb.minX);
+					}
+				}
+			}
+
+			for (let m = 0; m < matchingQueries.length; m++) {
+				const mq = matchingQueries[m];
+				const count = mq.mileage.length;
+				if (count === 0) continue;
+
+				const pts = new Points();
+				pts.numPoints = count;
+				pts.data.position = new Float32Array(mq.positions);
+				pts.data.mileage = new Float64Array(mq.mileage);
+
+				const qIdx = mq.qb.index;
+				perPointFakeOctrees[qIdx].get(pointcloud).addPoints(pts);
+			}
+		}
+	}
+
+	return {
+		sharedFakeOctrees,
+		perPointFakeOctrees,
+		highestLevelServed,
+		ramNodesReused,
+	};
+}
+
+/**
  * Extracts Z positions and full vertical column statistics for a collection of (x, y) coordinates
  * in a SINGLE shared octree traversal pass per pointcloud.
  *
  * Nearby (x, y) points reuse the same loaded octree nodes without redundant octree traversal
  * or duplicate node requests.
+ *
+ * By default (`options.preferLoadedNodes !== false`), this first performs a synchronous zero-network
+ * pass over all already-loaded octree nodes in RAM (`node.loaded === true`), and only issues
+ * coalesced HTTP Range requests for query points that have 0 points in RAM (or when
+ * `options.forceFullDepth === true`).
  *
  * @param {object|Array} viewerOrPointclouds - Viewer, PScene, PointCloudOctree, or PointCloudOctree[]
  * @param {Array<[number, number]|{x: number, y: number}>|object} xyPoints - Collection of XY coordinates
@@ -905,6 +1162,10 @@ function buildZHistogramFromBaseResult(baseResult, numX, numY, binSize = 0.25) {
  * @param {number} [options.width=1.0] - Search column width (meters) around each (x, y)
  * @param {number} [options.radius] - Optional horizontal search radius (sets width = 2 * radius)
  * @param {string} [options.mode='min'] - Primary Z selector ('min'|'max'|'avg'|'median'|'idw'|'closest')
+ * @param {boolean} [options.preferLoadedNodes=true] - Satisfy queries from already-loaded RAM octree nodes first to avoid unnecessary HTTP Range requests
+ * @param {boolean} [options.onlyLoadedNodes=false] - Never make network requests; only use nodes already in RAM
+ * @param {boolean} [options.forceFullDepth=false] - Force downloading all unloaded octree levels down to maxDepth via coalesced Range requests
+ * @param {number} [options.minPointsFromLoaded=1] - Minimum points in RAM required before skipping network requests for a query point
  * @param {boolean} [options.includeHistogram=false] - Also compute the upward Z histogram (default 0.25m bins) for each point
  * @param {number} [options.binSize=0.25] - Vertical histogram bin size in meters when includeHistogram=true
  * @param {number} [options.maxDepth=Number.MAX_VALUE] - Maximum octree depth to load (defaults to all levels)
@@ -930,69 +1191,137 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 	const mode = options.mode || 'min';
 	const includeHistogram = Boolean(options.includeHistogram);
 	const binSize = Math.max(0.01, Number(options.binSize) || 0.25);
+	const maxDepth = options.maxDepth !== undefined ? Number(options.maxDepth) : Number.MAX_VALUE;
+	const preferLoadedNodes = options.preferLoadedNodes !== false && !options.forceFullDepth;
+	const onlyLoadedNodes = Boolean(options.onlyLoadedNodes);
+	const minPointsFromLoaded = Math.max(1, Number(options.minPointsFromLoaded) || 1);
 
-	// Pass 1: Single shared ProfileRequest across all XY points at initialWidth
-	const multiProfile = createMultiXYColumnProfile(normalizedPoints, initialWidth);
-	let {
-		sharedFakeOctrees,
-		perPointFakeOctrees,
-		highestLevelServed,
-		uniqueNodesQueued,
-	} = await loadMultiXYProfileIntoFakeOctrees(
-		pointclouds,
-		multiProfile,
-		normalizedPoints.length,
-		options
-	);
+	const netBefore = getLoaderStatsSnapshot(pointclouds);
 
 	const perPointWidths = new Array(normalizedPoints.length).fill(initialWidth);
 	const statsList = new Array(normalizedPoints.length);
-	const emptyIndices = [];
+	let sharedFakeOctrees = new Map();
+	let perPointFakeOctrees = Array.from({ length: normalizedPoints.length }, () => new Map());
+	let highestLevelServed = 0;
+	let uniqueNodesQueued = 0;
+	let ramNodesReused = 0;
 
-	for (let k = 0; k < normalizedPoints.length; k++) {
-		const pt = normalizedPoints[k];
-		const stats = computeZStatsFromFakeOctrees(perPointFakeOctrees[k], pt.x, pt.y, Infinity, mode);
-		statsList[k] = stats;
-		if (stats.numPoints === 0) {
-			emptyIndices.push(k);
+	// Step 1: Fast zero-network RAM pass across already-loaded octree nodes
+	let indicesNeedingNetwork = [];
+	if (preferLoadedNodes || onlyLoadedNodes) {
+		const ramPass = extractFromLoadedOctreeNodes(pointclouds, normalizedPoints, initialWidth, maxDepth);
+		sharedFakeOctrees = ramPass.sharedFakeOctrees;
+		perPointFakeOctrees = ramPass.perPointFakeOctrees;
+		highestLevelServed = ramPass.highestLevelServed;
+		ramNodesReused = ramPass.ramNodesReused;
+		uniqueNodesQueued = ramPass.ramNodesReused;
+
+		const emptyInRam = [];
+		for (let k = 0; k < normalizedPoints.length; k++) {
+			const pt = normalizedPoints[k];
+			const stats = computeZStatsFromFakeOctrees(perPointFakeOctrees[k], pt.x, pt.y, Infinity, mode);
+			statsList[k] = stats;
+			if (stats.numPoints < minPointsFromLoaded) {
+				emptyInRam.push(k);
+			}
 		}
+
+		// If some points had 0 hits at initialWidth in RAM and autoExpand is enabled,
+		// try a modest local width expansion in RAM FIRST before making any network requests!
+		if (emptyInRam.length > 0 && options.autoExpand !== false && ramNodesReused > 0) {
+			const localExpandedWidth = Math.min(initialWidth * 2.5, Math.max(initialWidth * 2, 2.5));
+			const retryRamPoints = emptyInRam.map(k => normalizedPoints[k]);
+			const ramRetryPass = extractFromLoadedOctreeNodes(pointclouds, retryRamPoints, localExpandedWidth, maxDepth);
+			highestLevelServed = Math.max(highestLevelServed, ramRetryPass.highestLevelServed);
+
+			for (let r = 0; r < emptyInRam.length; r++) {
+				const origIdx = emptyInRam[r];
+				const pt = normalizedPoints[origIdx];
+				const retryStats = computeZStatsFromFakeOctrees(ramRetryPass.perPointFakeOctrees[r], pt.x, pt.y, Infinity, mode);
+				if (retryStats.numPoints > 0) {
+					perPointFakeOctrees[origIdx] = ramRetryPass.perPointFakeOctrees[r];
+					perPointWidths[origIdx] = localExpandedWidth;
+					statsList[origIdx] = retryStats;
+				} else {
+					indicesNeedingNetwork.push(origIdx);
+				}
+			}
+		} else {
+			indicesNeedingNetwork = emptyInRam;
+		}
+	} else {
+		indicesNeedingNetwork = normalizedPoints.map((_, k) => k);
 	}
 
-	// Selective Pass 2: If autoExpand is enabled and a subset of XY points found 0 points,
-	// retry ONLY those empty XY points in a single shared pass with expanded width
-	if (emptyIndices.length > 0 && options.autoExpand !== false) {
-		const baseSpacing = pointclouds.reduce((maxS, pc) => {
-			const s = (pc.pcoGeometry && pc.pcoGeometry.spacing) ? pc.pcoGeometry.spacing : 1.0;
-			return Math.max(maxS, s);
-		}, 1.0);
-		const expandedWidth = Math.max(initialWidth * 4, baseSpacing * 2);
-		const retryPoints = emptyIndices.map(k => normalizedPoints[k]);
-		const retryProfile = createMultiXYColumnProfile(retryPoints, expandedWidth);
+	// Step 2: Only issue network ProfileRequest (with coalesced HTTP Range requests) for query points not yet satisfied from RAM
+	const multiProfile = createMultiXYColumnProfile(normalizedPoints, initialWidth);
+	if (!onlyLoadedNodes && indicesNeedingNetwork.length > 0) {
+		const netQueryPoints = indicesNeedingNetwork.map(k => normalizedPoints[k]);
+		const netProfile = createMultiXYColumnProfile(netQueryPoints, initialWidth);
 
-		const retryLoad = await loadMultiXYProfileIntoFakeOctrees(
+		const netLoad = await loadMultiXYProfileIntoFakeOctrees(
 			pointclouds,
-			retryProfile,
-			retryPoints.length,
+			netProfile,
+			netQueryPoints.length,
 			options
 		);
 
-		highestLevelServed = Math.max(highestLevelServed, retryLoad.highestLevelServed);
-		uniqueNodesQueued += retryLoad.uniqueNodesQueued;
+		if (sharedFakeOctrees.size === 0) {
+			sharedFakeOctrees = netLoad.sharedFakeOctrees;
+		}
+		highestLevelServed = Math.max(highestLevelServed, netLoad.highestLevelServed);
+		uniqueNodesQueued = Math.max(uniqueNodesQueued, netLoad.uniqueNodesQueued);
 
-		for (let r = 0; r < emptyIndices.length; r++) {
-			const originalIdx = emptyIndices[r];
-			const pt = normalizedPoints[originalIdx];
-			perPointFakeOctrees[originalIdx] = retryLoad.perPointFakeOctrees[r];
-			perPointWidths[originalIdx] = expandedWidth;
-			statsList[originalIdx] = computeZStatsFromFakeOctrees(
-				perPointFakeOctrees[originalIdx],
-				pt.x,
-				pt.y,
-				Infinity,
-				mode
+		const stillEmptyIndices = [];
+		for (let r = 0; r < indicesNeedingNetwork.length; r++) {
+			const origIdx = indicesNeedingNetwork[r];
+			const pt = normalizedPoints[origIdx];
+			perPointFakeOctrees[origIdx] = netLoad.perPointFakeOctrees[r];
+			const stats = computeZStatsFromFakeOctrees(perPointFakeOctrees[origIdx], pt.x, pt.y, Infinity, mode);
+			statsList[origIdx] = stats;
+			if (stats.numPoints === 0) {
+				stillEmptyIndices.push(origIdx);
+			}
+		}
+
+		// Step 3: Selective Pass 2 (modest local expansion, capped to avoid downloading huge surrounding areas)
+		if (stillEmptyIndices.length > 0 && options.autoExpand !== false) {
+			const expandedWidth = Math.min(Math.max(initialWidth * 2.5, 2.5), Math.max(initialWidth * 4, 4.0));
+			const retryPoints = stillEmptyIndices.map(k => normalizedPoints[k]);
+			const retryProfile = createMultiXYColumnProfile(retryPoints, expandedWidth);
+
+			const retryLoad = await loadMultiXYProfileIntoFakeOctrees(
+				pointclouds,
+				retryProfile,
+				retryPoints.length,
+				options
 			);
+
+			highestLevelServed = Math.max(highestLevelServed, retryLoad.highestLevelServed);
+			uniqueNodesQueued += retryLoad.uniqueNodesQueued;
+
+			for (let r = 0; r < stillEmptyIndices.length; r++) {
+				const originalIdx = stillEmptyIndices[r];
+				const pt = normalizedPoints[originalIdx];
+				perPointFakeOctrees[originalIdx] = retryLoad.perPointFakeOctrees[r];
+				perPointWidths[originalIdx] = expandedWidth;
+				statsList[originalIdx] = computeZStatsFromFakeOctrees(
+					perPointFakeOctrees[originalIdx],
+					pt.x,
+					pt.y,
+					Infinity,
+					mode
+				);
+			}
 		}
 	}
+
+	const netAfter = getLoaderStatsSnapshot(pointclouds);
+	const httpRangeRequests = (netAfter.httpRangeRequests - netBefore.httpRangeRequests)
+		+ (netAfter.hierarchyRangeRequests - netBefore.hierarchyRangeRequests);
+	const nodesDecodedFromNetwork = netAfter.nodesDecodedFromNetwork - netBefore.nodesDecodedFromNetwork;
+	const nodesCoalescedSaved = netAfter.nodesCoalescedSaved - netBefore.nodesCoalescedSaved;
+	const duplicateLoadsSkipped = netAfter.duplicateLoadsSkipped - netBefore.duplicateLoadsSkipped;
 
 	let totalPointsExtracted = 0;
 	const results = new Array(normalizedPoints.length);
@@ -1032,6 +1361,11 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 		totalPointsExtracted,
 		highestLevelServed,
 		uniqueNodesQueued,
+		ramNodesReused,
+		httpRangeRequests,
+		nodesDecodedFromNetwork,
+		nodesCoalescedSaved,
+		duplicateLoadsSkipped,
 		elapsedMs,
 	};
 

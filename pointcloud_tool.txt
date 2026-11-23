@@ -236,12 +236,89 @@ console.log(results.summary);
 //   numMatchedQueries: 4,
 //   totalPointsExtracted: 620,
 //   highestLevelServed: 5,
-//   uniqueNodesQueued: 12,   // Shared octree nodes visited once
-//   elapsedMs: 16.8
+//   uniqueNodesQueued: 12,
+//   ramNodesReused: 12,          // Nodes scanned directly from RAM (0 HTTP requests)
+//   httpRangeRequests: 0,        // Actual HTTP Range requests sent
+//   nodesDecodedFromNetwork: 0,  // Nodes fetched/decoded over network
+//   nodesCoalescedSaved: 0,      // HTTP Range requests saved by byte-range coalescing
+//   duplicateLoadsSkipped: 0,    // Duplicate node loads prevented
+//   elapsedMs: 3.4
 // }
 
 // 3. Full batch JSON string (summary + all points):
 console.log(results.json);
+```
+
+
+================================================================================
+6. SAVING HTTP RANGE REQUESTS & PREVENTING DUPLICATE NODE LOADS
+================================================================================
+
+When using a Potree 2.0 Range-Request point cloud (`octree.bin` + `hierarchy.bin`),
+three mechanisms ensure minimum network requests and zero duplicate node loads:
+
+1. RAM-First Octree Pass (`preferLoadedNodes: true`, enabled by default):
+   - Before making ANY HTTP `Range` request, `extractZBatchAtXY`, `extractZCircleAtXY`,
+     and `extractZAtXY` traverse all already-loaded octree nodes in memory
+     (`node.loaded === true` and `node.geometry`) that intersect the query columns.
+   - If a query column already has points in RAM (which is almost always true when
+     querying or dropping a point on a visible part of the point cloud), it returns
+     in 1–5 ms with **0 HTTP Range requests**.
+   - Every visited RAM node is touched in `Potree.lru` (`Potree.lru.touch(node)`)
+     so it stays pinned in memory across subsequent calls.
+
+2. Coalesced Multi-Node HTTP Range Requests (`NodeLoader.loadNodesCoalesced`):
+   - When a query targets an off-screen/unloaded region (or when `forceFullDepth: true`
+     is passed), `ProfileRequest` batches all unloaded nodes and passes them to
+     `loader.loadNodesCoalesced(nodes)`.
+   - Nodes whose byte ranges (`byteOffset .. byteOffset + byteSize`) in `octree.bin`
+     are adjacent or within `256 KB` of each other are merged into a **single HTTP
+     `Range: bytes=start-end` request** (up to `4 MB` per group), sliced in memory,
+     and decoded in parallel.
+
+3. In-Flight & Hierarchy Deduplication (`NodeLoader.inFlightNodes` & `hierarchyCache`):
+   - `NodeLoader` tracks `inFlightNodes` (by `node.name`) and `hierarchyCache`
+     (by `hierarchyByteOffset-hierarchyByteSize`).
+   - If the viewer render loop or another query requests a node that is already
+     loaded or currently downloading, the existing Promise is reused and
+     `loader.stats.duplicateLoadsSkipped` is incremented.
+
+Options to Control Network vs. RAM Behavior:
+```javascript
+// A) Default (Recommended): Use RAM nodes first; only fetch missing points via coalesced Range requests
+const resA = await extractZBatchAtXY(viewer, xyPoints, {
+    width: 1.0,
+    preferLoadedNodes: true,     // default: true
+    minPointsFromLoaded: 1,      // default: 1
+});
+
+// B) Strict Zero-Network Mode: Never send any HTTP Range requests (100% RAM-only, < 5ms)
+const resB = await extractZBatchAtXY(viewer, xyPoints, {
+    width: 1.0,
+    onlyLoadedNodes: true,
+});
+
+// C) Cap Maximum Octree Depth: Limit traversal depth (e.g., level 4) to prevent deep leaf requests
+const resC = await extractZBatchAtXY(viewer, xyPoints, {
+    width: 1.0,
+    maxDepth: 4,
+});
+
+// D) Force Full-Depth Network Download: Download every octree level down to deepest leaves
+const resD = await extractZBatchAtXY(viewer, xyPoints, {
+    width: 1.0,
+    forceFullDepth: true,
+});
+
+// Verify network & cache telemetry after any batch or circle call:
+console.log(resA.summary);
+// {
+//   ramNodesReused: 8,         // Loaded nodes reused from RAM
+//   httpRangeRequests: 0,      // Exact count of HTTP Range requests fired
+//   nodesCoalescedSaved: 0,    // Range requests saved by merging adjacent byte spans
+//   duplicateLoadsSkipped: 0,  // Duplicate node loads prevented
+//   elapsedMs: 2.8
+// }
 ```
 
 
