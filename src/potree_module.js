@@ -69,7 +69,7 @@ export {PointCloudSM} from "./utils/PointCloudSM.js";
 export {PolygonClipVolume} from "./utils/PolygonClipVolume.js";
 export {Profile} from "./utils/Profile.js";
 export {ProfileTool} from "./utils/ProfileTool.js";
-export {extractZAtXY, extractZBatchAtXY, extractZAtXYPoints, extractZHistogramAtXY, extractZHistogramBatchAtXY, extractZCircleAtXY, createDiscretizedCircleXY, createXYColumnProfile, createMultiXYColumnProfile} from "./utils/pointcloud_tools.js";
+export {extractZAtXY, extractZBatchAtXY, extractZAtXYPoints, extractZHistogramAtXY, extractZHistogramBatchAtXY, extractZCircleAtXY, createDiscretizedCircleXY, createXYColumnProfile, createMultiXYColumnProfile, clearPointCloudToolCaches} from "./utils/pointcloud_tools.js";
 export {ProfileFakeOctree} from "./viewer/profile.js";
 export {ScreenBoxSelectTool} from "./utils/ScreenBoxSelectTool.js";
 export {SpotLightHelper} from "./utils/SpotLightHelper.js";

@@ -36,6 +36,7 @@ import {
     createXYColumnProfile,
     createMultiXYColumnProfile,
     normalizeXYPointsCollection,
+    clearPointCloudToolCaches,
 } from './dist/potree_module.js';
 ```
 
@@ -317,8 +318,59 @@ console.log(resA.summary);
 //   httpRangeRequests: 0,      // Exact count of HTTP Range requests fired
 //   nodesCoalescedSaved: 0,    // Range requests saved by merging adjacent byte spans
 //   duplicateLoadsSkipped: 0,  // Duplicate node loads prevented
+//   disposedQueryNodes: 0,     // Non-visible query nodes evicted at end of call
+//   retainedQueryNodes: 0,     // Non-visible query nodes kept in fixed ring buffer (max 24)
 //   elapsedMs: 2.8
 // }
+```
+
+
+================================================================================
+7. MEMORY MANAGEMENT, FIXED BUFFERS & LRU PRESERVATION
+================================================================================
+
+To prevent browser RAM and WebGL GPU memory depletion across repeated queries:
+
+1. Fixed-Capacity Reusable Z Scratch Buffer (`SHARED_Z_SCRATCH_BUFFER`):
+   - Median and upward Z-histogram sorting reuse a single module-level
+     `Float32Array(65536)` scratch buffer instead of allocating and garbage-
+     collecting new arrays on every query.
+
+2. Zero-WebGL Lightweight Accumulators & Automatic End-of-Call Cleanup:
+   - Unless `showInProfileWindow: true` is passed, extraction calls do NOT
+     instantiate `ProfileFakeOctree` (`PointCloudMaterial` + 100k-point WebGL
+     `BufferGeometry`) or Three.js `Profile` meshes (`SphereGeometry`,
+     `BoxGeometry`).
+   - Inside `ProfileRequest`, non-position attributes (`rgba`, `intensity`,
+     `classification`, `normal`, `gps-time`) are skipped when `positionsOnly`
+     is active.
+   - At the end of every `extractZAtXY`, `extractZHistogramAtXY`,
+     `extractZBatchAtXY`, and `extractZCircleAtXY` call, all temporary point
+     buffers are automatically cleared and released before returning.
+
+3. Preserving the Viewer's `Potree.lru` & Bounded Query-Node Ring Buffer:
+   - Scanning already-loaded RAM nodes (`extractFromLoadedOctreeNodes`) does NOT
+     reorder `Potree.lru`, preserving the viewer's exact LRU state.
+   - Any non-visible octree nodes downloaded over the network during a query are
+     tracked in a fixed-capacity ring buffer (`MAX_RETAINED_QUERY_NODES = 24`,
+     configurable via `options.maxRetainedQueryNodes`).
+   - When the ring exceeds 24 nodes—or immediately at the end of the call if you
+     pass `{ clearLoadedNodesOnFinish: true }`—non-visible query nodes are
+     disposed (`node.dispose()`, `Potree.lru.remove(node)`) and
+     `Potree.lru.freeMemory()` is invoked.
+
+Options & Manual Cache Clearing:
+```javascript
+// Automatically dispose ALL newly-loaded non-visible octree nodes at the end of the query:
+const results = await extractZBatchAtXY(viewer, xyPoints, {
+    width: 1.0,
+    clearLoadedNodesOnFinish: true,   // Disposes all query-loaded non-visible nodes immediately
+    // maxRetainedQueryNodes: 16,     // Or keep a fixed ring buffer of at most N query nodes
+});
+
+// Or manually clear all query-loaded octree nodes, hierarchy caches, and trim Potree.lru at any time:
+const { disposedNodes } = clearPointCloudToolCaches(viewer);
+console.log('Disposed temporary query octree nodes:', disposedNodes);
 ```
 
 

@@ -1,6 +1,6 @@
 import {Vector3, SphereGeometry, MeshBasicMaterial, Mesh} from 'three';
 import {Potree, PScene, Viewer, Profile, Measure} from '../dist/potree_module.js';
-import {extractZAtXY, extractZBatchAtXY, extractZHistogramAtXY, extractZHistogramBatchAtXY, extractZCircleAtXY} from '../src/utils/pointcloud_tools.js';
+import {extractZAtXY, extractZBatchAtXY, extractZHistogramAtXY, extractZHistogramBatchAtXY, extractZCircleAtXY, clearPointCloudToolCaches} from '../src/utils/pointcloud_tools.js';
 import {VolumeLineTool} from '../src/utils/VolumeLineTool.js';
 import {SphereVolume} from '../src/utils/Volume.js';
 import {TetrahedralBoxTool, TetTool} from '../src/utils/TetrahedralBoxTool.js';
@@ -405,20 +405,15 @@ function init() {
 			run: async () => {
 				log("Clearing all drawings, paths, volumes and measurements...");
 				try {
+					clearExtractedZMarkers();
 					sceneSG.removeAllMeasurements();
 					while (sceneSG.profiles && sceneSG.profiles.length > 0) {
 						sceneSG.removeProfile(sceneSG.profiles[0]);
 					}
-					if (window.__extractedZMarkers) {
-						for (const m of window.__extractedZMarkers) {
-							if (sceneSG.measurements && sceneSG.measurements.includes(m)) {
-								sceneSG.removeMeasurement(m);
-							} else {
-								sceneSG.scene.remove(m);
-							}
-						}
-						window.__extractedZMarkers = [];
-					}
+					clearPointCloudToolCaches(viewer);
+					window.__lastExtractZResult = null;
+					window.__lastExtractZCircleResult = null;
+					window.__lastExtractZBatchResult = null;
 					if (viewer._profileWindow) {
 						viewer._profileWindow.hide();
 					}
@@ -1592,6 +1587,29 @@ function init() {
 		});
 	}
 
+	function disposeMeasureResources(m) {
+		if (!m) return;
+		if (typeof m.traverse === 'function') {
+			m.traverse((child) => {
+				if (!child) return;
+				if (child.geometry && typeof child.geometry.dispose === 'function') {
+					child.geometry.dispose();
+				}
+				if (child.material) {
+					if (child.material.map && typeof child.material.map.dispose === 'function') {
+						child.material.map.dispose();
+					}
+					if (typeof child.material.dispose === 'function') {
+						child.material.dispose();
+					}
+				}
+			});
+		}
+		if (m.sphereGeometry && typeof m.sphereGeometry.dispose === 'function') {
+			m.sphereGeometry.dispose();
+		}
+	}
+
 	function clearExtractedZMarkers() {
 		if (!window.__extractedZMarkers) {
 			window.__extractedZMarkers = [];
@@ -1603,6 +1621,7 @@ function init() {
 			} else if (sceneSG.scene) {
 				sceneSG.scene.remove(prev);
 			}
+			disposeMeasureResources(prev);
 		}
 	}
 

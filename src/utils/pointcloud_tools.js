@@ -4,6 +4,274 @@ import { ProfileRequest } from '../ProfileRequest.js';
 import { Profile } from './Profile.js';
 import { ProfileFakeOctree } from '../viewer/profile.js';
 
+// Fixed-capacity reusable scratch buffer for sorting Z values (median & upward histogram)
+// Avoids allocating/GC-ing new arrays on every point query.
+const FIXED_Z_BUFFER_CAPACITY = 65536;
+const SHARED_Z_SCRATCH_BUFFER = new Float32Array(FIXED_Z_BUFFER_CAPACITY);
+
+// Bounded ring buffer of non-visible octree nodes loaded specifically by query requests.
+// Keeps reuse fast for consecutive nearby queries while strictly bounding browser RAM & GPU memory.
+const MAX_RETAINED_QUERY_NODES = 24;
+const QUERY_LOADED_NODE_RING = [];
+
+/**
+ * Creates a zero-WebGL lightweight point accumulator compatible with ProfileFakeOctree.points.
+ * Avoids allocating a PointCloudMaterial, DataTextures, and 100,000-point BufferGeometry.
+ */
+function createLightweightFakeOctree(pointcloud) {
+	return {
+		isLightweightFakeOctree: true,
+		trueOctree: pointcloud,
+		pcoGeometry: pointcloud ? pointcloud.pcoGeometry : null,
+		points: [],
+		addPoints(data) {
+			if (data && data.numPoints > 0) {
+				this.points.push(data);
+			}
+		},
+		dispose() {
+			for (let i = 0; i < this.points.length; i++) {
+				const p = this.points[i];
+				if (p) {
+					p.data = {};
+					p.numPoints = 0;
+				}
+			}
+			this.points.length = 0;
+		},
+	};
+}
+
+/**
+ * Disposes and clears all point buffers inside a fakeOctrees Map (or array of Maps).
+ */
+function disposeFakeOctreeMap(fakeOctreeMap) {
+	if (!fakeOctreeMap || typeof fakeOctreeMap.values !== 'function') return;
+	for (const fo of fakeOctreeMap.values()) {
+		if (!fo) continue;
+		if (typeof fo.dispose === 'function') {
+			fo.dispose();
+		}
+		if (Array.isArray(fo.points)) {
+			for (let i = 0; i < fo.points.length; i++) {
+				if (fo.points[i]) {
+					fo.points[i].data = {};
+					fo.points[i].numPoints = 0;
+				}
+			}
+			fo.points.length = 0;
+		}
+	}
+	fakeOctreeMap.clear();
+}
+
+/**
+ * Disposes Three.js geometries and materials on a Profile instance when it is not attached to the scene.
+ */
+function disposeProfileResources(profile) {
+	if (!profile) return;
+	if (profile.sphereGeometry && typeof profile.sphereGeometry.dispose === 'function') {
+		profile.sphereGeometry.dispose();
+	}
+	if (Array.isArray(profile.spheres)) {
+		for (const s of profile.spheres) {
+			if (s && s.geometry && typeof s.geometry.dispose === 'function') s.geometry.dispose();
+			if (s && s.material && typeof s.material.dispose === 'function') s.material.dispose();
+		}
+		profile.spheres.length = 0;
+	}
+	if (Array.isArray(profile.edges)) {
+		for (const e of profile.edges) {
+			if (e && e.geometry && typeof e.geometry.dispose === 'function') e.geometry.dispose();
+			if (e && e.material && typeof e.material.dispose === 'function') e.material.dispose();
+		}
+		profile.edges.length = 0;
+	}
+	if (Array.isArray(profile.boxes)) {
+		for (const b of profile.boxes) {
+			if (b && b.geometry && typeof b.geometry.dispose === 'function') b.geometry.dispose();
+			if (b && b.material && typeof b.material.dispose === 'function') b.material.dispose();
+		}
+		profile.boxes.length = 0;
+	}
+}
+
+/**
+ * Collects the set of all currently loaded OctreeGeometryNodes across the given pointclouds,
+ * plus the set of geometry nodes currently visible on screen.
+ */
+function snapshotLoadedOctreeNodes(pointclouds) {
+	const preLoaded = new Set();
+	const visibleSet = new Set();
+
+	for (const pc of pointclouds) {
+		if (!pc || !pc.pcoGeometry || !pc.pcoGeometry.root) continue;
+
+		if (Array.isArray(pc.visibleNodes)) {
+			for (const vn of pc.visibleNodes) {
+				if (!vn) continue;
+				visibleSet.add(vn);
+				if (vn.geometryNode) visibleSet.add(vn.geometryNode);
+			}
+		}
+
+		const stack = [pc.pcoGeometry.root];
+		const visited = new Set();
+		while (stack.length > 0) {
+			const node = stack.pop();
+			if (!node || visited.has(node)) continue;
+			visited.add(node);
+			if (node.loaded) {
+				preLoaded.add(node);
+			}
+			if (node.children) {
+				for (let i = 0; i < 8; i++) {
+					const child = node.children[i];
+					if (child) stack.push(child);
+				}
+			}
+		}
+	}
+
+	return { preLoaded, visibleSet };
+}
+
+/**
+ * Preserves the viewer's LRU and enforces a strict memory cap on any octree nodes loaded during a query.
+ * If `clearAllQueryNodes` is true (or `options.clearLoadedNodesOnFinish === true`), all non-visible
+ * nodes loaded by the query are disposed immediately. Otherwise, only up to `maxRetainedNodes` (default 24)
+ * non-visible query nodes are kept in a fixed-size ring buffer and older ones are disposed.
+ */
+function preserveLRUAndCleanupQueryNodes(pointclouds, preLoadedSet, visibleSet, options = {}) {
+	const clearAll = Boolean(options.clearLoadedNodesOnFinish);
+	const maxRetained = clearAll
+		? 0
+		: (options.maxRetainedQueryNodes !== undefined ? Math.max(0, Number(options.maxRetainedQueryNodes)) : MAX_RETAINED_QUERY_NODES);
+
+	const lru = (typeof Potree !== 'undefined' && Potree.lru)
+		? Potree.lru
+		: (typeof window !== 'undefined' && window.Potree && window.Potree.lru)
+			? window.Potree.lru
+			: null;
+
+	let newlyLoadedCount = 0;
+	let disposedNodesCount = 0;
+
+	for (const pc of pointclouds) {
+		if (!pc || !pc.pcoGeometry || !pc.pcoGeometry.root) continue;
+
+		if (Array.isArray(pc.visibleNodes)) {
+			for (const vn of pc.visibleNodes) {
+				if (!vn) continue;
+				visibleSet.add(vn);
+				if (vn.geometryNode) visibleSet.add(vn.geometryNode);
+			}
+		}
+
+		const stack = [pc.pcoGeometry.root];
+		const visited = new Set();
+		while (stack.length > 0) {
+			const node = stack.pop();
+			if (!node || visited.has(node)) continue;
+			visited.add(node);
+
+			if (node.loaded && node.parent != null && !preLoadedSet.has(node) && !visibleSet.has(node)) {
+				newlyLoadedCount++;
+				if (!QUERY_LOADED_NODE_RING.includes(node)) {
+					QUERY_LOADED_NODE_RING.push(node);
+				}
+			}
+
+			if (node.children) {
+				for (let i = 0; i < 8; i++) {
+					const child = node.children[i];
+					if (child) stack.push(child);
+				}
+			}
+		}
+	}
+
+	// Evict oldest non-visible query nodes beyond the fixed ring capacity
+	while (QUERY_LOADED_NODE_RING.length > maxRetained) {
+		const oldNode = QUERY_LOADED_NODE_RING.shift();
+		if (!oldNode || visibleSet.has(oldNode) || oldNode.parent == null) continue;
+		if (oldNode.loaded) {
+			if (lru && typeof lru.remove === 'function') {
+				lru.remove(oldNode);
+			}
+			if (typeof oldNode.dispose === 'function') {
+				oldNode.dispose();
+			} else if (oldNode.geometry) {
+				oldNode.geometry.dispose();
+				oldNode.geometry = null;
+				oldNode.loaded = false;
+			}
+			disposedNodesCount++;
+		}
+	}
+
+	// Ensure global Potree LRU remains within pointLoadLimit
+	if (lru && typeof lru.freeMemory === 'function') {
+		lru.freeMemory();
+	}
+
+	return { newlyLoadedCount, disposedNodesCount, retainedQueryNodes: QUERY_LOADED_NODE_RING.length };
+}
+
+/**
+ * Explicitly clears all temporary query-loaded octree nodes, hierarchy caches, and trims Potree.lru.
+ * Can be called manually at any time or automatically via `{ clearLoadedNodesOnFinish: true }`.
+ */
+export function clearPointCloudToolCaches(viewerOrPointclouds) {
+	const { pointclouds } = resolvePointClouds(viewerOrPointclouds);
+	const lru = (typeof Potree !== 'undefined' && Potree.lru)
+		? Potree.lru
+		: (typeof window !== 'undefined' && window.Potree && window.Potree.lru)
+			? window.Potree.lru
+			: null;
+
+	const visibleSet = new Set();
+	for (const pc of pointclouds) {
+		if (!pc) continue;
+		if (Array.isArray(pc.visibleNodes)) {
+			for (const vn of pc.visibleNodes) {
+				if (!vn) continue;
+				visibleSet.add(vn);
+				if (vn.geometryNode) visibleSet.add(vn.geometryNode);
+			}
+		}
+		const loader = pc.pcoGeometry && pc.pcoGeometry.loader;
+		if (loader && loader.hierarchyCache && typeof loader.hierarchyCache.clear === 'function') {
+			loader.hierarchyCache.clear();
+		}
+	}
+
+	let disposedNodes = 0;
+	while (QUERY_LOADED_NODE_RING.length > 0) {
+		const node = QUERY_LOADED_NODE_RING.pop();
+		if (!node || visibleSet.has(node) || node.parent == null) continue;
+		if (node.loaded) {
+			if (lru && typeof lru.remove === 'function') {
+				lru.remove(node);
+			}
+			if (typeof node.dispose === 'function') {
+				node.dispose();
+			} else if (node.geometry) {
+				node.geometry.dispose();
+				node.geometry = null;
+				node.loaded = false;
+			}
+			disposedNodes++;
+		}
+	}
+
+	if (lru && typeof lru.freeMemory === 'function') {
+		lru.freeMemory();
+	}
+
+	return { disposedNodes };
+}
+
 /**
  * Normalizes the input target into { viewer, pointclouds }.
  * Accepts a Viewer, a PScene, a single PointCloudOctree, or an array of PointCloudOctrees.
@@ -44,15 +312,29 @@ function resolvePointClouds(viewerOrPointclouds) {
  * @param {number} width
  * @returns {Profile}
  */
-export function createXYColumnProfile(x, y, width = 1.0) {
+export function createXYColumnProfile(x, y, width = 1.0, options = {}) {
 	const safeWidth = Math.max(0.05, Number(width) || 1.0);
 	const half = safeWidth / 2;
+	const p0 = new Vector3(x - half, y, 0);
+	const p1 = new Vector3(x + half, y, 0);
+
+	// Use lightweight plain descriptor unless a 3D scene Profile with Meshes is explicitly needed
+	if (options.lightweight) {
+		return {
+			isLightweightProfile: true,
+			name: `XY_Z_Query_(${x.toFixed(2)},${y.toFixed(2)})`,
+			width: safeWidth,
+			points: [p0, p1],
+			positionsOnly: options.positionsOnly !== false,
+		};
+	}
 
 	const profile = new Profile();
 	profile.name = `XY_Z_Query_(${x.toFixed(2)},${y.toFixed(2)})`;
 	profile.setWidth(safeWidth);
-	profile.addMarker(new Vector3(x - half, y, 0));
-	profile.addMarker(new Vector3(x + half, y, 0));
+	profile.addMarker(p0);
+	profile.addMarker(p1);
+	profile.positionsOnly = Boolean(options.positionsOnly);
 
 	return profile;
 }
@@ -124,7 +406,9 @@ function loadProfileIntoFakeOctrees(pointclouds, profile, options = {}) {
 		}, timeoutMs);
 
 		for (const pointcloud of targetPointclouds) {
-			const fakeOctree = new ProfileFakeOctree(pointcloud);
+			const fakeOctree = options.showInProfileWindow
+				? new ProfileFakeOctree(pointcloud)
+				: createLightweightFakeOctree(pointcloud);
 			fakeOctrees.set(pointcloud, fakeOctree);
 
 			const req = new ProfileRequest(pointcloud, profile, maxDepth, {
@@ -201,25 +485,15 @@ function computeZStatsFromFakeOctrees(fakeOctrees, x, y, maxRadius = Infinity, m
 	let idwNumerator = 0;
 	let idwDenominator = 0;
 	let numPoints = 0;
-	const zValues = [];
+	let zOverflow = null;
 
 	const extractPointRecord = (pointsBatch, n, i, wx, wy, wz, distXY, mileageArr, pointcloud) => {
-		const attributes = {};
-		for (const attrName of Object.keys(pointsBatch.data)) {
-			if (attrName === 'position' || attrName === 'mileage') continue;
-			const arr = pointsBatch.data[attrName];
-			const itemSize = arr.length / n;
-			const slice = arr.subarray(itemSize * i, itemSize * i + itemSize);
-			attributes[attrName] = slice.length === 1 ? slice[0] : Array.from(slice);
-		}
 		return {
 			x: wx,
 			y: wy,
 			z: wz,
 			distanceXY: distXY,
 			mileage: mileageArr ? mileageArr[i] : 0,
-			pointcloud,
-			attributes,
 		};
 	};
 
@@ -245,9 +519,16 @@ function computeZStatsFromFakeOctrees(fakeOctrees, x, y, maxRadius = Infinity, m
 					continue;
 				}
 
+				if (numPoints < FIXED_Z_BUFFER_CAPACITY) {
+					SHARED_Z_SCRATCH_BUFFER[numPoints] = wz;
+				} else {
+					if (!zOverflow) {
+						zOverflow = Array.from(SHARED_Z_SCRATCH_BUFFER);
+					}
+					zOverflow.push(wz);
+				}
 				numPoints++;
 				zSum += wz;
-				zValues.push(wz);
 
 				if (wz < zMin) {
 					zMin = wz;
@@ -301,11 +582,22 @@ function computeZStatsFromFakeOctrees(fakeOctrees, x, y, maxRadius = Infinity, m
 		};
 	}
 
-	zValues.sort((a, b) => a - b);
-	const mid = Math.floor(zValues.length / 2);
-	const zMedian = (zValues.length % 2 === 1)
-		? zValues[mid]
-		: (zValues[mid - 1] + zValues[mid]) * 0.5;
+	let zMedian;
+	if (!zOverflow) {
+		const subView = SHARED_Z_SCRATCH_BUFFER.subarray(0, numPoints);
+		subView.sort();
+		const mid = Math.floor(numPoints / 2);
+		zMedian = (numPoints % 2 === 1)
+			? subView[mid]
+			: (subView[mid - 1] + subView[mid]) * 0.5;
+	} else {
+		zOverflow.sort((a, b) => a - b);
+		const mid = Math.floor(zOverflow.length / 2);
+		zMedian = (zOverflow.length % 2 === 1)
+			? zOverflow[mid]
+			: (zOverflow[mid - 1] + zOverflow[mid]) * 0.5;
+		zOverflow.length = 0;
+	}
 
 	const zClosest = closestPoint ? closestPoint.z : null;
 	const zIdw = idwDenominator > 0 ? idwNumerator / idwDenominator : zClosest;
@@ -389,7 +681,11 @@ export async function extractZAtXY(viewerOrPointclouds, x, y, options = {}) {
 		: Math.max(0.05, Number(options.width) || 1.0);
 
 	let currentWidth = initialWidth;
-	let profile = options.profile || createXYColumnProfile(numX, numY, currentWidth);
+	const useLightweightProfile = !options.showInProfileWindow && !options.profile;
+	let profile = options.profile || createXYColumnProfile(numX, numY, currentWidth, {
+		lightweight: useLightweightProfile,
+		positionsOnly: !options.showInProfileWindow,
+	});
 	const mode = options.mode || 'min';
 	const maxDepth = options.maxDepth !== undefined ? Number(options.maxDepth) : Number.MAX_VALUE;
 	const preferLoadedNodes = options.preferLoadedNodes !== false && !options.forceFullDepth && !options.showInProfileWindow;
@@ -413,15 +709,21 @@ export async function extractZAtXY(viewerOrPointclouds, x, y, options = {}) {
 			const ramRetry = extractFromLoadedOctreeNodes(pointclouds, singlePt, localExpandedWidth, maxDepth);
 			const retryStats = computeZStatsFromFakeOctrees(ramRetry.perPointFakeOctrees[0], numX, numY, Infinity, mode);
 			if (retryStats.numPoints > 0) {
+				disposeFakeOctreeMap(fakeOctrees);
 				currentWidth = localExpandedWidth;
 				fakeOctrees = ramRetry.perPointFakeOctrees[0];
 				highestLevelServed = Math.max(highestLevelServed, ramRetry.highestLevelServed);
 				stats = retryStats;
+			} else {
+				disposeFakeOctreeMap(ramRetry.perPointFakeOctrees[0]);
 			}
 		}
 	}
 
 	if (!onlyLoadedNodes && (!stats || stats.numPoints < minPointsFromLoaded)) {
+		const { preLoaded, visibleSet } = snapshotLoadedOctreeNodes(pointclouds);
+		if (fakeOctrees) disposeFakeOctreeMap(fakeOctrees);
+
 		const netLoad = await loadProfileIntoFakeOctrees(
 			pointclouds,
 			profile,
@@ -433,14 +735,21 @@ export async function extractZAtXY(viewerOrPointclouds, x, y, options = {}) {
 
 		// If no points fell inside the initial narrow column and autoExpand is enabled, retry with modest local expansion
 		if (stats.numPoints === 0 && options.autoExpand !== false && !options.profile) {
+			disposeFakeOctreeMap(fakeOctrees);
+			if (!useLightweightProfile) disposeProfileResources(profile);
 			currentWidth = Math.min(Math.max(initialWidth * 2.5, 2.5), Math.max(initialWidth * 4, 4.0));
-			profile = createXYColumnProfile(numX, numY, currentWidth);
+			profile = createXYColumnProfile(numX, numY, currentWidth, {
+				lightweight: useLightweightProfile,
+				positionsOnly: !options.showInProfileWindow,
+			});
 
 			const retryResult = await loadProfileIntoFakeOctrees(pointclouds, profile, options);
 			fakeOctrees = retryResult.fakeOctrees;
 			highestLevelServed = Math.max(highestLevelServed, retryResult.highestLevelServed);
 			stats = computeZStatsFromFakeOctrees(fakeOctrees, numX, numY, Infinity, mode);
 		}
+
+		preserveLRUAndCleanupQueryNodes(pointclouds, preLoaded, visibleSet, options);
 	}
 
 	if (options.showInProfileWindow && viewer) {
@@ -454,14 +763,20 @@ export async function extractZAtXY(viewerOrPointclouds, x, y, options = {}) {
 			viewer.profileWindow.show();
 			viewer.profileWindowController.setProfile(profile);
 		}
+	} else if (!options.keepFakeOctrees) {
+		// Automatically release temporary point buffers so browser memory stays flat
+		disposeFakeOctreeMap(fakeOctrees);
+		if (!useLightweightProfile && !options.profile) {
+			disposeProfileResources(profile);
+		}
 	}
 
 	return {
 		...stats,
 		width: currentWidth,
 		highestLevelServed,
-		profile,
-		fakeOctrees,
+		profile: options.showInProfileWindow ? profile : null,
+		fakeOctrees: (options.keepFakeOctrees || options.showInProfileWindow) ? fakeOctrees : null,
 	};
 }
 
@@ -527,14 +842,10 @@ export function normalizeXYPointsCollection(xyPoints) {
  * @param {number} [width=1.0]
  * @returns {Profile}
  */
-export function createMultiXYColumnProfile(xyPoints, width = 1.0) {
+export function createMultiXYColumnProfile(xyPoints, width = 1.0, options = {}) {
 	const normalized = normalizeXYPointsCollection(xyPoints);
 	const safeWidth = Math.max(0.05, Number(width) || 1.0);
 	const half = safeWidth / 2;
-
-	const profile = new Profile();
-	profile.name = `Multi_XY_Z_Query_(${normalized.length}_pts)`;
-	profile.setWidth(safeWidth);
 
 	const customSegments = [];
 	const customXYBox = new Box2();
@@ -557,16 +868,38 @@ export function createMultiXYColumnProfile(xyPoints, width = 1.0) {
 		customXYBox.expandByPoint({ x: pt.x + half, y: pt.y + half });
 	}
 
+	const points = [];
+	if (customSegments.length === 1) {
+		points.push(customSegments[0].start.clone(), customSegments[0].end.clone());
+	} else if (customSegments.length > 1) {
+		points.push(
+			new Vector3(customXYBox.min.x, customXYBox.min.y, 0),
+			new Vector3(customXYBox.max.x, customXYBox.max.y, 0)
+		);
+	}
+
+	// By default use a zero-WebGL lightweight descriptor so batch queries don't allocate Three.js Meshes/Materials
+	if (options.lightweight !== false) {
+		return {
+			isLightweightProfile: true,
+			name: `Multi_XY_Z_Query_(${normalized.length}_pts)`,
+			width: safeWidth,
+			points,
+			customSegments,
+			customXYBox,
+			positionsOnly: options.positionsOnly !== false,
+		};
+	}
+
+	const profile = new Profile();
+	profile.name = `Multi_XY_Z_Query_(${normalized.length}_pts)`;
+	profile.setWidth(safeWidth);
 	profile.customSegments = customSegments;
 	profile.customXYBox = customXYBox;
+	profile.positionsOnly = Boolean(options.positionsOnly);
 
-	// Populate profile.points with bounding/endpoint markers for compatibility
-	if (customSegments.length === 1) {
-		profile.addMarker(customSegments[0].start.clone());
-		profile.addMarker(customSegments[0].end.clone());
-	} else if (customSegments.length > 1) {
-		profile.addMarker(new Vector3(customXYBox.min.x, customXYBox.min.y, 0));
-		profile.addMarker(new Vector3(customXYBox.max.x, customXYBox.max.y, 0));
+	for (const pt of points) {
+		profile.addMarker(pt);
 	}
 
 	return profile;
@@ -658,22 +991,15 @@ function loadMultiXYProfileIntoFakeOctrees(pointclouds, profile, numQueries, opt
 		}, timeoutMs);
 
 		for (const pointcloud of targetPointclouds) {
-			const sharedFakeOctree = new ProfileFakeOctree(pointcloud);
-			sharedFakeOctrees.set(pointcloud, sharedFakeOctree);
+			const sharedFakeOctree = options.keepFakeOctrees
+				? createLightweightFakeOctree(pointcloud)
+				: null;
+			if (sharedFakeOctree) {
+				sharedFakeOctrees.set(pointcloud, sharedFakeOctree);
+			}
 
 			for (let k = 0; k < numQueries; k++) {
-				// Lightweight per-point accumulator compatible with ProfileFakeOctree.points
-				// (avoids allocating N separate 100k-point WebGL BufferGeometries & PointCloudMaterials)
-				perPointFakeOctrees[k].set(pointcloud, {
-					trueOctree: pointcloud,
-					pcoGeometry: pointcloud.pcoGeometry,
-					points: [],
-					addPoints(data) {
-						if (data && data.numPoints > 0) {
-							this.points.push(data);
-						}
-					},
-				});
+				perPointFakeOctrees[k].set(pointcloud, createLightweightFakeOctree(pointcloud));
 			}
 
 			const req = new ProfileRequest(pointcloud, profile, maxDepth, {
@@ -682,7 +1008,9 @@ function loadMultiXYProfileIntoFakeOctrees(pointclouds, profile, numQueries, opt
 					for (let sIdx = 0; sIdx < segments.length; sIdx++) {
 						const segment = segments[sIdx];
 						if (segment.points && segment.points.numPoints > 0) {
-							sharedFakeOctree.addPoints(segment.points);
+							if (sharedFakeOctree) {
+								sharedFakeOctree.addPoints(segment.points);
+							}
 							const qIdx = segment.queryIndex !== undefined ? segment.queryIndex : sIdx;
 							const ptMap = perPointFakeOctrees[qIdx];
 							if (ptMap) {
@@ -800,43 +1128,58 @@ function buildZHistogramFromBaseResult(baseResult, numX, numY, binSize = 0.25) {
 		};
 	}
 
-	const zList = [];
-	for (const [pointcloud, fakeOctree] of fakeOctrees.entries()) {
-		const pcOffsetZ = pointcloud.position.z;
-		for (const pointsBatch of fakeOctree.points) {
-			const n = pointsBatch.numPoints;
-			const posArr = pointsBatch.data.position;
-			if (!posArr) continue;
-			for (let i = 0; i < n; i++) {
-				zList.push(posArr[3 * i + 2] + pcOffsetZ);
+	// Reuse the fixed-capacity scratch buffer for Z histogram scanning to avoid heap churn
+	let zCount = 0;
+	let zOverflow = null;
+	if (fakeOctrees && typeof fakeOctrees.entries === 'function') {
+		for (const [pointcloud, fakeOctree] of fakeOctrees.entries()) {
+			const pcOffsetZ = pointcloud.position.z;
+			for (const pointsBatch of fakeOctree.points) {
+				const n = pointsBatch.numPoints;
+				const posArr = pointsBatch.data.position;
+				if (!posArr) continue;
+				for (let i = 0; i < n; i++) {
+					const wz = posArr[3 * i + 2] + pcOffsetZ;
+					if (zCount < FIXED_Z_BUFFER_CAPACITY) {
+						SHARED_Z_SCRATCH_BUFFER[zCount] = wz;
+					} else {
+						if (!zOverflow) {
+							zOverflow = Array.from(SHARED_Z_SCRATCH_BUFFER);
+						}
+						zOverflow.push(wz);
+					}
+					zCount++;
+				}
 			}
 		}
 	}
 
-	// Scan top-to-bottom first for min/max & variance
-	zList.sort((a, b) => b - a);
-	const zMax = zList[0];
-	const zMin = zList[zList.length - 1];
+	const zView = zOverflow ? zOverflow : SHARED_Z_SCRATCH_BUFFER.subarray(0, zCount);
+	const zMin = baseResult.zMin;
+	const zMax = baseResult.zMax;
 	const zSpan = Math.max(0, zMax - zMin);
 	const zMean = baseResult.zMean;
 
 	let varianceSum = 0;
-	for (let i = 0; i < zList.length; i++) {
-		const diff = zList[i] - zMean;
+	for (let i = 0; i < zCount; i++) {
+		const diff = zView[i] - zMean;
 		varianceSum += diff * diff;
 	}
-	const zStdDev = Math.sqrt(varianceSum / zList.length);
+	const zStdDev = zCount > 0 ? Math.sqrt(varianceSum / zCount) : 0;
 
 	// Scan upwards from zMin to zMax in safeBinSize steps
 	const numBins = Math.max(1, Math.ceil(zSpan / safeBinSize) || 1);
 	const counts = new Uint32Array(numBins);
 
-	for (let i = zList.length - 1; i >= 0; i--) {
-		const wz = zList[i];
+	for (let i = 0; i < zCount; i++) {
+		const wz = zView[i];
 		let binIdx = Math.floor((wz - zMin) / safeBinSize);
 		if (binIdx < 0) binIdx = 0;
 		if (binIdx >= numBins) binIdx = numBins - 1;
 		counts[binIdx]++;
+	}
+	if (zOverflow) {
+		zOverflow.length = 0;
 	}
 
 	const bins = [];
@@ -989,30 +1332,12 @@ function extractFromLoadedOctreeNodes(pointclouds, normalizedPoints, width, maxD
 	let highestLevelServed = 0;
 	const pos = new Vector3();
 
-	const lru = (typeof Potree !== 'undefined' && Potree.lru)
-		? Potree.lru
-		: (typeof window !== 'undefined' && window.Potree && window.Potree.lru)
-			? window.Potree.lru
-			: null;
-
 	for (const pointcloud of pointclouds) {
 		if (!pointcloud || !pointcloud.pcoGeometry || !pointcloud.pcoGeometry.root) continue;
 		pointcloud.updateMatrixWorld(true);
 
-		const sharedFakeOctree = new ProfileFakeOctree(pointcloud);
-		sharedFakeOctrees.set(pointcloud, sharedFakeOctree);
-
 		for (let k = 0; k < numQueries; k++) {
-			perPointFakeOctrees[k].set(pointcloud, {
-				trueOctree: pointcloud,
-				pcoGeometry: pointcloud.pcoGeometry,
-				points: [],
-				addPoints(data) {
-					if (data && data.numPoints > 0) {
-						this.points.push(data);
-					}
-				},
-			});
+			perPointFakeOctrees[k].set(pointcloud, createLightweightFakeOctree(pointcloud));
 		}
 
 		const visitedNodes = new Set();
@@ -1055,7 +1380,6 @@ function extractFromLoadedOctreeNodes(pointclouds, normalizedPoints, width, maxD
 					matchingQueries.push({
 						qb,
 						positions: [],
-						mileage: [],
 					});
 					if (qb.minX < nodeUnionMinX) nodeUnionMinX = qb.minX;
 					if (qb.maxX > nodeUnionMaxX) nodeUnionMaxX = qb.maxX;
@@ -1085,7 +1409,7 @@ function extractFromLoadedOctreeNodes(pointclouds, normalizedPoints, width, maxD
 
 			ramNodesReused++;
 			if (level > highestLevelServed) highestLevelServed = level;
-			if (lru) lru.touch(node);
+			// Do NOT call lru.touch(node) here so the viewer's original LRU ordering is preserved untouched
 
 			const numPoints = node.numPoints;
 			if (!numPoints) continue;
@@ -1115,20 +1439,19 @@ function extractFromLoadedOctreeNodes(pointclouds, normalizedPoints, width, maxD
 					const qb = mq.qb;
 					if (wx >= qb.minX && wx <= qb.maxX && wy >= qb.minY && wy <= qb.maxY) {
 						mq.positions.push(lx, ly, lz);
-						mq.mileage.push(wx - qb.minX);
 					}
 				}
 			}
 
 			for (let m = 0; m < matchingQueries.length; m++) {
 				const mq = matchingQueries[m];
-				const count = mq.mileage.length;
+				const count = mq.positions.length / 3;
 				if (count === 0) continue;
 
 				const pts = new Points();
 				pts.numPoints = count;
 				pts.data.position = new Float32Array(mq.positions);
-				pts.data.mileage = new Float64Array(mq.mileage);
+				mq.positions.length = 0;
 
 				const qIdx = mq.qb.index;
 				perPointFakeOctrees[qIdx].get(pointcloud).addPoints(pts);
@@ -1239,10 +1562,12 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 				const pt = normalizedPoints[origIdx];
 				const retryStats = computeZStatsFromFakeOctrees(ramRetryPass.perPointFakeOctrees[r], pt.x, pt.y, Infinity, mode);
 				if (retryStats.numPoints > 0) {
+					disposeFakeOctreeMap(perPointFakeOctrees[origIdx]);
 					perPointFakeOctrees[origIdx] = ramRetryPass.perPointFakeOctrees[r];
 					perPointWidths[origIdx] = localExpandedWidth;
 					statsList[origIdx] = retryStats;
 				} else {
+					disposeFakeOctreeMap(ramRetryPass.perPointFakeOctrees[r]);
 					indicesNeedingNetwork.push(origIdx);
 				}
 			}
@@ -1254,10 +1579,11 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 	}
 
 	// Step 2: Only issue network ProfileRequest (with coalesced HTTP Range requests) for query points not yet satisfied from RAM
-	const multiProfile = createMultiXYColumnProfile(normalizedPoints, initialWidth);
+	let lruCleanupStats = { newlyLoadedCount: 0, disposedNodesCount: 0, retainedQueryNodes: QUERY_LOADED_NODE_RING.length };
 	if (!onlyLoadedNodes && indicesNeedingNetwork.length > 0) {
+		const { preLoaded, visibleSet } = snapshotLoadedOctreeNodes(pointclouds);
 		const netQueryPoints = indicesNeedingNetwork.map(k => normalizedPoints[k]);
-		const netProfile = createMultiXYColumnProfile(netQueryPoints, initialWidth);
+		const netProfile = createMultiXYColumnProfile(netQueryPoints, initialWidth, { lightweight: true, positionsOnly: true });
 
 		const netLoad = await loadMultiXYProfileIntoFakeOctrees(
 			pointclouds,
@@ -1266,9 +1592,6 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 			options
 		);
 
-		if (sharedFakeOctrees.size === 0) {
-			sharedFakeOctrees = netLoad.sharedFakeOctrees;
-		}
 		highestLevelServed = Math.max(highestLevelServed, netLoad.highestLevelServed);
 		uniqueNodesQueued = Math.max(uniqueNodesQueued, netLoad.uniqueNodesQueued);
 
@@ -1276,6 +1599,7 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 		for (let r = 0; r < indicesNeedingNetwork.length; r++) {
 			const origIdx = indicesNeedingNetwork[r];
 			const pt = normalizedPoints[origIdx];
+			disposeFakeOctreeMap(perPointFakeOctrees[origIdx]);
 			perPointFakeOctrees[origIdx] = netLoad.perPointFakeOctrees[r];
 			const stats = computeZStatsFromFakeOctrees(perPointFakeOctrees[origIdx], pt.x, pt.y, Infinity, mode);
 			statsList[origIdx] = stats;
@@ -1288,7 +1612,7 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 		if (stillEmptyIndices.length > 0 && options.autoExpand !== false) {
 			const expandedWidth = Math.min(Math.max(initialWidth * 2.5, 2.5), Math.max(initialWidth * 4, 4.0));
 			const retryPoints = stillEmptyIndices.map(k => normalizedPoints[k]);
-			const retryProfile = createMultiXYColumnProfile(retryPoints, expandedWidth);
+			const retryProfile = createMultiXYColumnProfile(retryPoints, expandedWidth, { lightweight: true, positionsOnly: true });
 
 			const retryLoad = await loadMultiXYProfileIntoFakeOctrees(
 				pointclouds,
@@ -1303,6 +1627,7 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 			for (let r = 0; r < stillEmptyIndices.length; r++) {
 				const originalIdx = stillEmptyIndices[r];
 				const pt = normalizedPoints[originalIdx];
+				disposeFakeOctreeMap(perPointFakeOctrees[originalIdx]);
 				perPointFakeOctrees[originalIdx] = retryLoad.perPointFakeOctrees[r];
 				perPointWidths[originalIdx] = expandedWidth;
 				statsList[originalIdx] = computeZStatsFromFakeOctrees(
@@ -1314,6 +1639,9 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 				);
 			}
 		}
+
+		// Preserve viewer LRU & evict non-visible query nodes beyond the fixed ring budget
+		lruCleanupStats = preserveLRUAndCleanupQueryNodes(pointclouds, preLoaded, visibleSet, options);
 	}
 
 	const netAfter = getLoaderStatsSnapshot(pointclouds);
@@ -1323,6 +1651,7 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 	const nodesCoalescedSaved = netAfter.nodesCoalescedSaved - netBefore.nodesCoalescedSaved;
 	const duplicateLoadsSkipped = netAfter.duplicateLoadsSkipped - netBefore.duplicateLoadsSkipped;
 
+	const keepFakeOctrees = Boolean(options.keepFakeOctrees);
 	let totalPointsExtracted = 0;
 	const results = new Array(normalizedPoints.length);
 
@@ -1339,7 +1668,7 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 			width: ptWidth,
 			highestLevelServed,
 			fakeOctrees: ptFakeOctrees,
-			sharedFakeOctrees,
+			sharedFakeOctrees: keepFakeOctrees ? sharedFakeOctrees : null,
 		};
 
 		if (includeHistogram) {
@@ -1349,7 +1678,17 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 			itemResult.json = histPayload.json;
 		}
 
+		// Clear temporary point buffers immediately after statistics & histogram are computed
+		if (!keepFakeOctrees) {
+			disposeFakeOctreeMap(ptFakeOctrees);
+			itemResult.fakeOctrees = null;
+		}
+
 		results[k] = itemResult;
+	}
+
+	if (!keepFakeOctrees) {
+		disposeFakeOctreeMap(sharedFakeOctrees);
 	}
 
 	const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
@@ -1366,6 +1705,8 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 		nodesDecodedFromNetwork,
 		nodesCoalescedSaved,
 		duplicateLoadsSkipped,
+		disposedQueryNodes: lruCleanupStats.disposedNodesCount,
+		retainedQueryNodes: lruCleanupStats.retainedQueryNodes,
 		elapsedMs,
 	};
 
@@ -1387,8 +1728,7 @@ export async function extractZBatchAtXY(viewerOrPointclouds, xyPoints, options =
 	// Attach non-enumerable / convenience metadata to the returned Array so both array iteration and batch telemetry work
 	Object.defineProperties(results, {
 		summary: { value: summary, enumerable: false, configurable: true },
-		sharedFakeOctrees: { value: sharedFakeOctrees, enumerable: false, configurable: true },
-		profile: { value: multiProfile, enumerable: false, configurable: true },
+		sharedFakeOctrees: { value: keepFakeOctrees ? sharedFakeOctrees : null, enumerable: false, configurable: true },
 		highestLevelServed: { value: highestLevelServed, enumerable: false, configurable: true },
 		uniqueNodesQueued: { value: uniqueNodesQueued, enumerable: false, configurable: true },
 		elapsedMs: { value: elapsedMs, enumerable: false, configurable: true },
@@ -1642,6 +1982,14 @@ export async function extractZCircleAtXY(viewerOrPointclouds, centerPointOrMeasu
  */
 export async function extractZHistogramAtXY(viewerOrPointclouds, x, y, options = {}) {
 	const binSize = Math.max(0.01, Number(options.binSize) || 0.25);
-	const baseResult = await extractZAtXY(viewerOrPointclouds, x, y, options);
-	return buildZHistogramFromBaseResult(baseResult, Number(x), Number(y), binSize);
+	const baseResult = await extractZAtXY(viewerOrPointclouds, x, y, {
+		...options,
+		keepFakeOctrees: true,
+	});
+	const histResult = buildZHistogramFromBaseResult(baseResult, Number(x), Number(y), binSize);
+	if (!options.keepFakeOctrees && !options.showInProfileWindow && baseResult.fakeOctrees) {
+		disposeFakeOctreeMap(baseResult.fakeOctrees);
+		baseResult.fakeOctrees = null;
+	}
+	return histResult;
 }

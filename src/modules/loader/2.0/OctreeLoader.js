@@ -540,6 +540,14 @@ export class NodeLoader {
 
 		this.stats.hierarchyRangeRequests++;
 		let fetchPromise = this.fetchByteRange(hierarchyPath, first, last);
+
+		// Keep hierarchyCache bounded to a fixed maximum of 16 chunks to prevent memory growth
+		if (this.hierarchyCache.size >= 16) {
+			const oldestKey = this.hierarchyCache.keys().next().value;
+			if (oldestKey !== undefined) {
+				this.hierarchyCache.delete(oldestKey);
+			}
+		}
 		this.hierarchyCache.set(cacheKey, fetchPromise);
 
 		try {

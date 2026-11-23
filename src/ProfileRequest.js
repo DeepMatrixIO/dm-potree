@@ -435,7 +435,9 @@ export class ProfileRequest {
 				}
 			}
 
-			let relevantAttributes = Object.keys(geometry.attributes).filter(a => !["position", "indices"].includes(a));
+			let relevantAttributes = this.profile && this.profile.positionsOnly
+				? []
+				: Object.keys(geometry.attributes).filter(a => !["position", "indices"].includes(a));
 
 			for (let a = 0; a < activeSegs.length; a++) {
 				const bucket = activeSegs[a];
@@ -447,8 +449,10 @@ export class ProfileRequest {
 				let points = new Points();
 				points.numPoints = numAccepted;
 				points.data.position = new Float32Array(bucket.positions);
-				points.data.mileage = new Float64Array(bucket.mileage);
-				points.boundingBox.copy(bucket.boundingBox);
+				if (!this.profile || !this.profile.positionsOnly) {
+					points.data.mileage = new Float64Array(bucket.mileage);
+					points.boundingBox.copy(bucket.boundingBox);
+				}
 
 				for (let attributeName of relevantAttributes) {
 					let attribute = geometry.attributes[attributeName];
@@ -468,6 +472,10 @@ export class ProfileRequest {
 				}
 
 				bucket.meta.segment.points.add(points);
+				// Release temporary JS arrays immediately
+				bucket.accepted.length = 0;
+				bucket.mileage.length = 0;
+				bucket.positions.length = 0;
 			}
 
 			let duration = performance.now() - checkpoint;
